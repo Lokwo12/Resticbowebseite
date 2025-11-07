@@ -3,17 +3,6 @@ import { createClient } from '@supabase/supabase-js';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { toast } from 'sonner';
 import logo from 'figma:asset/2b36c5cb8ddf5552ba2d3e612fd68401a7bb193e.png';
-
-// Provide a minimal global JSX namespace when the project/tsconfig doesn't supply it,
-// which avoids "JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists."
-// This is a safe local workaround for build environments that don't include React's JSX types.
-declare global {
-  namespace JSX {
-    interface IntrinsicElements {
-      [elemName: string]: any;
-    }
-  }
-}
 import {
   LayoutDashboard,
   FileText,

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
 import { Button } from './ui/button';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
@@ -17,15 +17,27 @@ interface FormDialogProps {
 // Volunteer Opportunity Form Dialog
 export function OpportunityFormDialog({ show, onClose, editingItem, onSuccess, userRole }: FormDialogProps) {
   const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState({
+
+  type OpportunityFormData = {
+    title: string;
+    description: string;
+    requirements: string[];
+    timeCommitment: string;
+    location: string;
+    category: string;
+    openPositions: number;
+    benefits: string[];
+  };
+
+  const [formData, setFormData] = useState<OpportunityFormData>({
     title: editingItem?.title || '',
     description: editingItem?.description || '',
-    requirements: editingItem?.requirements || [],
+    requirements: Array.isArray(editingItem?.requirements) ? editingItem.requirements : [],
     timeCommitment: editingItem?.timeCommitment || '',
     location: editingItem?.location || '',
     category: editingItem?.category || 'general',
-    openPositions: editingItem?.openPositions || 1,
-    benefits: editingItem?.benefits || []
+    openPositions: typeof editingItem?.openPositions === 'number' ? editingItem.openPositions : 1,
+    benefits: Array.isArray(editingItem?.benefits) ? editingItem.benefits : []
   });
   const [requirementInput, setRequirementInput] = useState('');
   const [benefitInput, setBenefitInput] = useState('');
