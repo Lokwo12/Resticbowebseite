@@ -1764,6 +1764,20 @@ export function EnhancedAdminDashboard() {
               />
             </div>
 
+            {canManageUsers && (
+              <Button
+                onClick={() => {
+                  setActiveTab('users');
+                  if (window.innerWidth < 1024) setSidebarOpen(false);
+                }}
+                size="sm"
+                className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
+              >
+                <Shield size={16} />
+                Manage Users
+              </Button>
+            )}
+
             <button className="relative p-2 hover:bg-gray-100 rounded-lg transition">
               <Bell size={20} />
               <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
