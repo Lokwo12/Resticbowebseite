@@ -10,7 +10,7 @@ import {
   DollarSign,
   Globe
 } from 'lucide-react';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 import { loadStripe } from '@stripe/stripe-js';
 import { 
   Elements, 

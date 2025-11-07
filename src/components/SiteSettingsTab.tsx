@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 import { Save, RefreshCw, Plus, Trash2 } from 'lucide-react';
 import { Card } from './ui/card';
 import { Button } from './ui/button';

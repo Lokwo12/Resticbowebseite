@@ -3,7 +3,7 @@ import { Heart, Clock, MapPin, Users, CheckCircle } from 'lucide-react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { Card } from './ui/card';
 import { Badge } from './ui/badge';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 
 interface Opportunity {
   id: string;
