@@ -112,7 +112,7 @@ export function Footer() {
           {/* About */}
           <div>
             <div className="mb-4">
-              <img src={getLogoUrl()} alt={`${generalSettings.siteName} Logo`} className="h-20 w-auto mb-2" />
+              <img src={getLogoUrl()} alt={`${generalSettings.siteName} Logo`} className="h-24 w-auto mb-3 drop-shadow-md" />
               <h3 className="text-white mb-1">{generalSettings.siteName}</h3>
               <p className="text-sm text-gray-400 mb-3">{generalSettings.tagline}</p>
             </div>
