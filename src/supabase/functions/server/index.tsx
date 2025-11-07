@@ -2579,4 +2579,52 @@ app.post('/make-server-2a4be611/admin/users/:id/track-login', async (c) => {
   }
 })
 
+// ============= IMAGE UPLOAD ROUTE =============
+
+// Upload image to Supabase Storage
+app.post('/make-server-2a4be611/upload-image', async (c) => {
+  try {
+    const bucketName = 'make-2a4be611-uploads'
+    const formData = await c.req.formData()
+    const file = formData.get('file') as File
+    
+    if (!file) {
+      return c.json({ error: 'No file provided' }, 400)
+    }
+
+    // Generate unique filename
+    const fileExt = file.name.split('.').pop()
+    const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`
+    const filePath = `uploads/${fileName}`
+
+    // Convert File to ArrayBuffer
+    const arrayBuffer = await file.arrayBuffer()
+    const uint8Array = new Uint8Array(arrayBuffer)
+
+    // Upload to Supabase Storage
+    const { data, error } = await supabase.storage
+      .from(bucketName)
+      .upload(filePath, uint8Array, {
+        contentType: file.type,
+        upsert: false
+      })
+
+    if (error) {
+      console.error('Storage upload error:', error)
+      return c.json({ error: 'Failed to upload image', details: error.message }, 500)
+    }
+
+    // Get public URL
+    const { data: urlData } = supabase.storage
+      .from(bucketName)
+      .getPublicUrl(filePath)
+
+    console.log('Image uploaded successfully:', urlData.publicUrl)
+    return c.json({ success: true, url: urlData.publicUrl })
+  } catch (error) {
+    console.error('Error uploading image:', error)
+    return c.json({ error: 'Failed to upload image', details: String(error) }, 500)
+  }
+})
+
 Deno.serve(app.fetch)
