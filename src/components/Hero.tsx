@@ -87,41 +87,41 @@ export function Hero() {
   }
 
   return (
-    <section id="home" className="pt-16 bg-gradient-to-br from-emerald-50 to-teal-50">
+    <section id="home" className="pt-16 bg-gradient-to-br from-emerald-50 to-teal-50 overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-32">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           {/* Content */}
-          <div className="space-y-6">
-            <div className="inline-block bg-emerald-100 text-emerald-700 px-4 py-2 rounded-full text-sm">
+          <div className="space-y-6 animate-[fadeInUp_0.8s_ease-out]">
+            <div className="inline-block bg-emerald-100 text-emerald-700 px-4 py-2 rounded-full text-sm animate-[fadeIn_0.5s_ease-out] hover:scale-105 transition-transform duration-300">
               {settings.badgeText}
             </div>
-            <h1 className="text-4xl lg:text-6xl text-gray-900">
+            <h1 className="text-4xl lg:text-6xl text-gray-900 animate-[fadeInUp_0.8s_ease-out_0.2s_both]">
               {settings.title}
             </h1>
-            <p className="text-xl text-gray-600">
+            <p className="text-xl text-gray-600 animate-[fadeInUp_0.8s_ease-out_0.4s_both]">
               {settings.subtitle}
             </p>
-            <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex flex-col sm:flex-row gap-4 animate-[fadeInUp_0.8s_ease-out_0.6s_both]">
               <button
                 onClick={scrollToDonate}
-                className="bg-emerald-600 text-white px-8 py-4 rounded-lg hover:bg-emerald-700 transition-colors flex items-center justify-center gap-2"
+                className="group bg-emerald-600 text-white px-8 py-4 rounded-lg hover:bg-emerald-700 transition-all duration-300 flex items-center justify-center gap-2 hover:shadow-lg hover:-translate-y-0.5"
               >
                 {settings.primaryButtonText}
-                <ArrowRight size={20} />
+                <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform duration-300" />
               </button>
               <button
                 onClick={scrollToAbout}
-                className="border-2 border-emerald-600 text-emerald-600 px-8 py-4 rounded-lg hover:bg-emerald-50 transition-colors"
+                className="border-2 border-emerald-600 text-emerald-600 px-8 py-4 rounded-lg hover:bg-emerald-50 transition-all duration-300 hover:shadow-md hover:-translate-y-0.5"
               >
                 {settings.secondaryButtonText}
               </button>
             </div>
 
             {/* Stats */}
-            <div className="grid grid-cols-3 gap-6 pt-8">
+            <div className="grid grid-cols-3 gap-6 pt-8 animate-[fadeInUp_0.8s_ease-out_0.8s_both]">
               {settings.stats.map((stat, index) => (
-                <div key={index}>
-                  <div className="text-3xl text-emerald-600">{stat.value}</div>
+                <div key={index} className="group hover:scale-105 transition-transform duration-300">
+                  <div className="text-3xl text-emerald-600 group-hover:text-emerald-700 transition-colors">{stat.value}</div>
                   <div className="text-sm text-gray-600">{stat.label}</div>
                 </div>
               ))}
@@ -129,15 +129,15 @@ export function Hero() {
           </div>
 
           {/* Image */}
-          <div className="relative">
-            <div className="aspect-square rounded-2xl overflow-hidden shadow-2xl">
+          <div className="relative animate-[fadeInRight_0.8s_ease-out_0.4s_both]">
+            <div className="aspect-square rounded-2xl overflow-hidden shadow-2xl hover:shadow-3xl transition-shadow duration-500">
               <img
                 src={settings.imageUrl}
                 alt="Community empowerment"
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover hover:scale-105 transition-transform duration-700"
               />
             </div>
-            <div className="absolute -bottom-6 -right-6 bg-white p-6 rounded-xl shadow-lg hidden lg:block">
+            <div className="absolute -bottom-6 -right-6 bg-white p-6 rounded-xl shadow-lg hidden lg:block animate-[fadeIn_0.8s_ease-out_1s_both] hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
               <div className="text-3xl">🤝</div>
               <div className="mt-2">
                 <div className="text-sm text-gray-600">Community Impact</div>

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import Masonry, { ResponsiveMasonry } from 'react-responsive-masonry';
+import { useScrollAnimation } from '../utils/animations';
 
 interface GalleryImage {
   id: string;

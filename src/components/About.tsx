@@ -1,6 +1,7 @@
 import { Heart, Users, Target, Award } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
+import { useScrollAnimation, getStaggerDelay } from '../utils/animations';
 
 interface AboutValue {
   icon: string;
@@ -27,6 +28,7 @@ const iconMap: Record<string, typeof Heart> = {
 export function About() {
   const [settings, setSettings] = useState<AboutSettings | null>(null);
   const [loading, setLoading] = useState(true);
+  const { ref, isVisible } = useScrollAnimation();
 
   useEffect(() => {
     fetchSettings();
@@ -88,29 +90,29 @@ export function About() {
   }
 
   return (
-    <section id="about" className="py-20 bg-white">
+    <section id="about" className="py-20 bg-white" ref={ref}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Intro */}
-        <div className="max-w-3xl mx-auto text-center mb-16">
+        <div className={`max-w-3xl mx-auto text-center mb-16 transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
           <h2 className="text-3xl lg:text-5xl text-gray-900 mb-6">
             {settings.title}
           </h2>
-          <p className="text-lg text-gray-600">
+          <p className="text-lg text-gray-600 leading-relaxed">
             {settings.intro}
           </p>
         </div>
 
         {/* Mission & Vision */}
         <div className="grid md:grid-cols-2 gap-8 mb-16">
-          <div className="bg-gradient-to-br from-emerald-50 to-teal-50 p-8 rounded-2xl">
-            <h3 className="text-2xl text-gray-900 mb-4">Our Mission</h3>
-            <p className="text-gray-700">
+          <div className={`group bg-gradient-to-br from-emerald-50 to-teal-50 p-8 rounded-2xl hover:shadow-xl transition-all duration-500 ${isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-8'}`} style={{ transitionDelay: '200ms' }}>
+            <h3 className="text-2xl text-gray-900 mb-4 group-hover:text-emerald-600 transition-colors">Our Mission</h3>
+            <p className="text-gray-700 leading-relaxed">
               {settings.mission}
             </p>
           </div>
-          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-8 rounded-2xl">
-            <h3 className="text-2xl text-gray-900 mb-4">Our Vision</h3>
-            <p className="text-gray-700">
+          <div className={`group bg-gradient-to-br from-blue-50 to-indigo-50 p-8 rounded-2xl hover:shadow-xl transition-all duration-500 ${isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-8'}`} style={{ transitionDelay: '300ms' }}>
+            <h3 className="text-2xl text-gray-900 mb-4 group-hover:text-blue-600 transition-colors">Our Vision</h3>
+            <p className="text-gray-700 leading-relaxed">
               {settings.vision}
             </p>
           </div>
@@ -118,20 +120,21 @@ export function About() {
 
         {/* Values */}
         <div className="mb-12">
-          <h3 className="text-2xl text-gray-900 text-center mb-10">Our Core Values</h3>
+          <h3 className={`text-2xl text-gray-900 text-center mb-10 transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`} style={{ transitionDelay: '400ms' }}>Our Core Values</h3>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {settings.values.map((value, index) => {
               const IconComponent = iconMap[value.icon] || Heart;
               return (
                 <div
                   key={index}
-                  className="p-6 border border-gray-200 rounded-xl hover:shadow-lg transition-shadow"
+                  className={`group p-6 border border-gray-200 rounded-xl hover:shadow-xl hover:border-emerald-200 hover:-translate-y-2 transition-all duration-500 bg-white ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
+                  style={{ transitionDelay: isVisible ? getStaggerDelay(index, 100) : '0ms' }}
                 >
-                  <div className="w-12 h-12 bg-emerald-100 rounded-lg flex items-center justify-center mb-4">
-                    <IconComponent className="text-emerald-600" size={24} />
+                  <div className="w-12 h-12 bg-emerald-100 rounded-lg flex items-center justify-center mb-4 group-hover:bg-emerald-600 group-hover:scale-110 transition-all duration-300">
+                    <IconComponent className="text-emerald-600 group-hover:text-white transition-colors" size={24} />
                   </div>
-                  <h4 className="text-lg text-gray-900 mb-2">{value.title}</h4>
-                  <p className="text-sm text-gray-600">{value.description}</p>
+                  <h4 className="text-lg text-gray-900 mb-2 group-hover:text-emerald-600 transition-colors">{value.title}</h4>
+                  <p className="text-sm text-gray-600 leading-relaxed">{value.description}</p>
                 </div>
               );
             })}
@@ -139,11 +142,11 @@ export function About() {
         </div>
 
         {/* Story */}
-        <div className="bg-gray-50 p-8 lg:p-12 rounded-2xl">
+        <div className={`bg-gray-50 p-8 lg:p-12 rounded-2xl hover:shadow-lg transition-all duration-500 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`} style={{ transitionDelay: '800ms' }}>
           <div className="max-w-3xl mx-auto">
             <h3 className="text-2xl text-gray-900 mb-6">Our Story</h3>
             {settings.story.map((paragraph, index) => (
-              <p key={index} className="text-gray-700 mb-4">
+              <p key={index} className="text-gray-700 mb-4 leading-relaxed">
                 {paragraph}
               </p>
             ))}

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { Loader2 } from 'lucide-react';
+import { useScrollAnimation, getStaggerDelay } from '../utils/animations';
 
 interface Program {
   key: string;
@@ -18,6 +19,7 @@ export function Programs() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [sectionSettings, setSectionSettings] = useState({ title: 'Our Programs', description: 'We run comprehensive programs designed to address the most pressing needs in our community, creating pathways to opportunity and sustainable development.' });
+  const { ref, isVisible } = useScrollAnimation();
 
   useEffect(() => {
     fetchPrograms();
@@ -84,10 +86,10 @@ export function Programs() {
   }
 
   return (
-    <section id="programs" className="py-20 bg-gray-50">
+    <section id="programs" className="py-20 bg-gray-50" ref={ref}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
-        <div className="max-w-3xl mx-auto text-center mb-16">
+        <div className={`max-w-3xl mx-auto text-center mb-16 transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
           <h2 className="text-3xl lg:text-5xl text-gray-900 mb-6">
             {sectionSettings.title}
           </h2>
@@ -98,35 +100,36 @@ export function Programs() {
 
         {/* Error Message */}
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-8">
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-8 animate-[fadeIn_0.3s_ease-out]">
             {error}
           </div>
         )}
 
         {/* Programs Grid */}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {programs.filter(p => p && p.value).map((program) => (
+          {programs.filter(p => p && p.value).map((program, index) => (
             <div
               key={program.key}
-              className="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-xl transition-shadow"
+              className={`group bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-500 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
+              style={{ transitionDelay: isVisible ? getStaggerDelay(index, 100) : '0ms' }}
             >
               {program.value.image && (
-                <div className="aspect-video overflow-hidden">
+                <div className="aspect-video overflow-hidden bg-gray-100">
                   <img
                     src={program.value.image}
                     alt={program.value.title}
-                    className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                   />
                 </div>
               )}
               <div className="p-6">
-                <div className="inline-block bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-xs mb-3">
+                <div className="inline-block bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-xs mb-3 group-hover:bg-emerald-600 group-hover:text-white transition-colors duration-300">
                   {program.value.category}
                 </div>
-                <h3 className="text-xl text-gray-900 mb-3">
+                <h3 className="text-xl text-gray-900 mb-3 group-hover:text-emerald-600 transition-colors duration-300">
                   {program.value.title}
                 </h3>
-                <p className="text-gray-600">
+                <p className="text-gray-600 leading-relaxed">
                   {program.value.description}
                 </p>
               </div>
@@ -135,7 +138,7 @@ export function Programs() {
         </div>
 
         {programs.length === 0 && !error && (
-          <div className="text-center py-12">
+          <div className="text-center py-12 animate-[fadeIn_0.5s_ease-out]">
             <p className="text-gray-500">No programs available at the moment.</p>
           </div>
         )}

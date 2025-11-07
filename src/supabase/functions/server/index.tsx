@@ -888,10 +888,16 @@ app.post('/make-server-2a4be611/admin/contacts/:id/reply', async (c) => {
     const body = await c.req.json()
     const { message } = body
 
+    if (!message || !message.trim()) {
+      return c.json({ error: 'Reply message is required' }, 400)
+    }
+
     const contact = await kv.get(id)
     if (!contact) {
       return c.json({ error: 'Contact not found' }, 404)
     }
+
+    console.log(`Attempting to send reply to ${contact.email} for contact ${id}`)
 
     // Send email reply
     const emailResult = await sendEmail(
@@ -916,7 +922,17 @@ app.post('/make-server-2a4be611/admin/contacts/:id/reply', async (c) => {
     )
 
     if (!emailResult.success) {
-      return c.json({ error: 'Failed to send email', details: emailResult.error }, 500)
+      console.error('Email send failed:', emailResult)
+      if (!resendApiKey) {
+        return c.json({ 
+          error: 'Email service not configured. Please add RESEND_API_KEY to environment variables.',
+          details: 'The Resend API key is missing. Contact the administrator to configure email functionality.'
+        }, 500)
+      }
+      return c.json({ 
+        error: 'Failed to send email', 
+        details: emailResult.error || 'Unknown email error'
+      }, 500)
     }
 
     // Update contact status to replied
@@ -926,7 +942,7 @@ app.post('/make-server-2a4be611/admin/contacts/:id/reply', async (c) => {
       repliedAt: new Date().toISOString()
     })
 
-    console.log(`Reply sent to contact: ${id}`)
+    console.log(`Reply sent successfully to contact: ${id}`)
     return c.json({ success: true, message: 'Reply sent successfully' })
   } catch (error) {
     console.error('Error sending reply:', error)
