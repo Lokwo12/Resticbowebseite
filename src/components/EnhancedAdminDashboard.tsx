@@ -1871,6 +1871,12 @@ export function EnhancedAdminDashboard() {
                       <Users size={16} className="mr-2" />
                       Add Team Member
                     </Button>
+                    {canManageUsers && (
+                      <Button onClick={() => setActiveTab('users')} variant="outline" className="justify-start">
+                        <Shield size={16} className="mr-2" />
+                        Manage Users
+                      </Button>
+                    )}
                   </div>
                 </Card>
               </div>
