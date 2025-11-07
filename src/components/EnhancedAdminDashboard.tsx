@@ -1,8 +1,19 @@
-import React, { useState, useEffect } from 'react';
-import { createClient } from '@supabase/supabase-js@2';
+import React, { useState, useEffect, useMemo } from 'react';
+import { createClient } from '@supabase/supabase-js';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 import logo from 'figma:asset/2b36c5cb8ddf5552ba2d3e612fd68401a7bb193e.png';
+
+// Provide a minimal global JSX namespace when the project/tsconfig doesn't supply it,
+// which avoids "JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists."
+// This is a safe local workaround for build environments that don't include React's JSX types.
+declare global {
+  namespace JSX {
+    interface IntrinsicElements {
+      [elemName: string]: any;
+    }
+  }
+}
 import {
   LayoutDashboard,
   FileText,
@@ -241,6 +252,24 @@ export function EnhancedAdminDashboard() {
 
   const [uploadingImage, setUploadingImage] = useState(false);
 
+  const fetchSiteSettings = async () => {
+    try {
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/site-settings`,
+        { headers: { Authorization: `Bearer ${publicAnonKey}` } }
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to load site settings');
+      }
+
+      const data = await response.json();
+      setSiteSettings(data.settings || null);
+    } catch (err) {
+      console.error('Site settings load error:', err);
+    }
+  };
+
   useEffect(() => {
     checkAuth();
   }, []);
@@ -251,6 +280,36 @@ export function EnhancedAdminDashboard() {
       initializeDefaults(); // Initialize default data if needed
     }
   }, [activeTab, isAuthenticated]);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchSiteSettings();
+    }
+  }, [isAuthenticated]);
+
+  const siteTitle = useMemo(() => {
+    const name = siteSettings?.general?.siteName;
+    return typeof name === 'string' && name.trim().length > 0 ? name.trim() : 'Resti Kiryandongo CBO';
+  }, [siteSettings]);
+
+  const siteLogoUrl = useMemo(() => {
+    const customLogo = siteSettings?.general?.logoUrl;
+    if (typeof customLogo !== 'string') {
+      return logo;
+    }
+
+    const trimmed = customLogo.trim();
+    if (!trimmed || trimmed.includes('figma:asset')) {
+      return logo;
+    }
+
+    return trimmed;
+  }, [siteSettings]);
+
+  const siteTagline = useMemo(() => {
+    const tagline = siteSettings?.general?.tagline;
+    return typeof tagline === 'string' && tagline.trim().length > 0 ? tagline.trim() : 'Admin Dashboard';
+  }, [siteSettings]);
 
   const initializeDefaults = async () => {
     try {
@@ -290,6 +349,8 @@ export function EnhancedAdminDashboard() {
         );
         console.log('Default site settings initialized');
       }
+
+      setSiteSettings(settingsData.settings || null);
     } catch (err) {
       console.error('Initialization error:', err);
     }
@@ -1370,11 +1431,11 @@ export function EnhancedAdminDashboard() {
           <div className="text-center mb-8">
             <div className="flex flex-col items-center mb-6">
               <div className="bg-white rounded-full p-4 shadow-lg mb-4">
-                <img src={logo} alt="Resti Kiryandongo CBO Logo" className="h-20 w-auto object-contain" />
+                <img src={siteLogoUrl} alt={`${siteTitle} Logo`} className="h-20 w-auto object-contain" />
               </div>
               <div>
-                <h2 className="text-2xl text-emerald-700">Resti Kiryandongo CBO</h2>
-                <p className="text-sm text-gray-600">Community Based Organization</p>
+                <h2 className="text-2xl text-emerald-700">{siteTitle}</h2>
+                <p className="text-sm text-gray-600">{siteTagline}</p>
               </div>
             </div>
             <h1 className="text-3xl text-gray-900 mb-2">
@@ -1459,11 +1520,11 @@ export function EnhancedAdminDashboard() {
             >
               {sidebarOpen ? <XIcon size={24} /> : <Menu size={24} />}
             </button>
-              <div className="flex items-center gap-3">
-              <img src={logo} alt="Logo" className="h-10 w-auto object-contain" />
+            <div className="flex items-center gap-3">
+              <img src={siteLogoUrl} alt={`${siteTitle} Logo`} className="h-10 w-auto object-contain" />
               <div className="hidden md:block">
-                <h1 className="text-lg text-gray-900">Resti Kiryandongo CBO</h1>
-                <p className="text-xs text-gray-500">Admin Dashboard</p>
+                <h1 className="text-lg text-gray-900">{siteTitle}</h1>
+                <p className="text-xs text-gray-500">{siteTagline}</p>
               </div>
             </div>
           </div>
@@ -2621,8 +2682,11 @@ export function EnhancedAdminDashboard() {
 
             {/* Settings Tab */}
             {activeTab === 'settings' && (
-              <SiteSettingsTab onUpdate={loadData} />
-            )}
+                    <SiteSettingsTab settings={siteSettings} onUpdate={() => {
+                      loadData();
+                      fetchSiteSettings();
+                    }} />
+                  )}
 
             {/* Stories Management */}
             {activeTab === 'stories' && (
