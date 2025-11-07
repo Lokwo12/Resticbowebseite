@@ -217,8 +217,52 @@ export function EnhancedAdminDashboard() {
   useEffect(() => {
     if (isAuthenticated) {
       loadData();
+      initializeDefaults(); // Initialize default data if needed
     }
   }, [activeTab, isAuthenticated]);
+
+  const initializeDefaults = async () => {
+    try {
+      // Check if initialization is needed
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/programs`,
+        { headers: { Authorization: `Bearer ${publicAnonKey}` } }
+      );
+      const data = await response.json();
+      
+      // If no programs exist, initialize default data
+      if (!data.programs || data.programs.length === 0) {
+        await fetch(
+          `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/initialize`,
+          {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${publicAnonKey}` }
+          }
+        );
+        console.log('Default data initialized');
+      }
+
+      // Initialize default site settings if needed
+      const settingsResponse = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/site-settings`,
+        { headers: { Authorization: `Bearer ${publicAnonKey}` } }
+      );
+      const settingsData = await settingsResponse.json();
+      
+      if (!settingsData.settings || !settingsData.settings.createdAt) {
+        await fetch(
+          `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/site-settings/initialize`,
+          {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${publicAnonKey}` }
+          }
+        );
+        console.log('Default site settings initialized');
+      }
+    } catch (err) {
+      console.error('Initialization error:', err);
+    }
+  };
 
   const checkAuth = async () => {
     try {
@@ -663,7 +707,12 @@ export function EnhancedAdminDashboard() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${publicAnonKey}`,
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          title: formData.title,
+          description: formData.description,
+          imageUrl: formData.image, // Backend expects imageUrl, not image
+          category: formData.category
+        }),
       });
 
       if (!response.ok) throw new Error('Failed to save gallery item');
@@ -1919,7 +1968,7 @@ export function EnhancedAdminDashboard() {
                           }}
                           className="absolute top-2 left-2 z-10"
                         />
-                        <img src={item.value.image} alt={item.value.title} className="w-full h-48 object-cover rounded-lg mb-3" />
+                        <img src={item.value.imageUrl || item.value.image} alt={item.value.title} className="w-full h-48 object-cover rounded-lg mb-3" />
                       </div>
                       <h4 className="text-sm text-gray-900 mb-1 truncate">{item.value.title}</h4>
                       <p className="text-xs text-gray-600 mb-2 line-clamp-2">{item.value.description}</p>
@@ -1927,7 +1976,7 @@ export function EnhancedAdminDashboard() {
                         <Button
                           onClick={() => {
                             setEditingItem(item);
-                            setFormData(item.value);
+                            setFormData({ ...item.value, image: item.value.imageUrl || item.value.image });
                             setShowGalleryForm(true);
                           }}
                           variant="outline"
@@ -1966,24 +2015,16 @@ export function EnhancedAdminDashboard() {
                     <h3 className="text-xl text-gray-900">Team Members ({team.length})</h3>
                     <p className="text-sm text-gray-500">Manage your team</p>
                   </div>
-                  <TeamFormDialog
-                    isOpen={showTeamForm}
-                    onClose={() => {
-                      setShowTeamForm(false);
+                  <Button
+                    onClick={() => {
                       setEditingItem(null);
+                      setShowTeamForm(true);
                     }}
-                    onSubmit={() => {
-                      setShowTeamForm(false);
-                      setEditingItem(null);
-                      loadData();
-                    }}
-                    editingItem={editingItem}
+                    className="bg-emerald-600 hover:bg-emerald-700"
                   >
-                    <Button className="bg-emerald-600 hover:bg-emerald-700">
-                      <Plus size={16} className="mr-2" />
-                      Add Team Member
-                    </Button>
-                  </TeamFormDialog>
+                    <Plus size={16} className="mr-2" />
+                    Add Team Member
+                  </Button>
                 </div>
 
                 <div className="grid gap-4">
@@ -2004,7 +2045,7 @@ export function EnhancedAdminDashboard() {
                         <div className="flex gap-2">
                           <Button
                             onClick={() => {
-                              setEditingItem(member);
+                              setEditingItem(member.value);
                               setShowTeamForm(true);
                             }}
                             variant="outline"
@@ -2551,12 +2592,533 @@ export function EnhancedAdminDashboard() {
               <SiteSettingsTab onUpdate={loadData} />
             )}
 
-            {/* Other sections - Stories, Impact, Reports, Events, Partners, etc. */}
-            {['stories', 'impact', 'reports', 'events', 'partners', 'opportunities', 'faqs', 'resources'].includes(activeTab) && (
-              <div className="text-center py-12">
-                <CurrentIcon size={48} className="mx-auto text-gray-300 mb-4" />
-                <p className="text-gray-500">Management interface for {currentMenuItem?.label}</p>
-                <p className="text-sm text-gray-400 mt-2">Use the specialized form dialogs to manage this content</p>
+            {/* Stories Management */}
+            {activeTab === 'stories' && (
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-xl text-gray-900">Impact Stories ({stories.length})</h3>
+                    <p className="text-sm text-gray-500">Share success stories and testimonials</p>
+                  </div>
+                  <Button
+                    onClick={() => {
+                      setEditingItem(null);
+                      setShowStoryForm(true);
+                    }}
+                    className="bg-emerald-600 hover:bg-emerald-700"
+                  >
+                    <Plus size={16} className="mr-2" />
+                    Add Story
+                  </Button>
+                </div>
+
+                <div className="grid gap-4">
+                  {stories.map((story) => (
+                    <Card key={story.key} className="p-6 hover:shadow-lg transition">
+                      <div className="flex items-start gap-4">
+                        {story.value.image && (
+                          <img src={story.value.image} alt={story.value.name} className="w-24 h-24 object-cover rounded-lg" />
+                        )}
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h4 className="text-lg text-gray-900">{story.value.title}</h4>
+                            <Badge>{story.value.category}</Badge>
+                          </div>
+                          <p className="text-sm text-emerald-600 mb-2">{story.value.name}</p>
+                          <div className="text-sm text-gray-600 prose prose-sm" dangerouslySetInnerHTML={{ __html: story.value.story?.substring(0, 150) + '...' }} />
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            onClick={() => {
+                              setEditingItem(story.value);
+                              setShowStoryForm(true);
+                            }}
+                            variant="outline"
+                            size="sm"
+                          >
+                            <Edit size={14} className="mr-1" />
+                            Edit
+                          </Button>
+                          <Button
+                            onClick={() => handleDeleteStory(story.key)}
+                            variant="outline"
+                            size="sm"
+                            className="text-red-600 hover:bg-red-50"
+                          >
+                            <Trash2 size={14} />
+                          </Button>
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                  {stories.length === 0 && (
+                    <div className="text-center py-12 text-gray-500">
+                      <MessageSquare size={48} className="mx-auto mb-4 text-gray-300" />
+                      <p>No impact stories yet. Share your first success story!</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Impact Stats Management */}
+            {activeTab === 'impact' && (
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-xl text-gray-900">Impact Statistics</h3>
+                    <p className="text-sm text-gray-500">Update your organization's impact numbers</p>
+                  </div>
+                  <Button
+                    onClick={() => setShowImpactForm(true)}
+                    className="bg-emerald-600 hover:bg-emerald-700"
+                  >
+                    <Edit size={16} className="mr-2" />
+                    Update Stats
+                  </Button>
+                </div>
+
+                {impactStats && (
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    <Card className="p-6 text-center">
+                      <h4 className="text-3xl text-emerald-600 mb-2">{impactStats.value?.peopleServed?.toLocaleString() || 0}</h4>
+                      <p className="text-sm text-gray-600">People Served</p>
+                    </Card>
+                    <Card className="p-6 text-center">
+                      <h4 className="text-3xl text-blue-600 mb-2">{impactStats.value?.programsActive || 0}</h4>
+                      <p className="text-sm text-gray-600">Active Programs</p>
+                    </Card>
+                    <Card className="p-6 text-center">
+                      <h4 className="text-3xl text-purple-600 mb-2">{impactStats.value?.volunteersActive || 0}</h4>
+                      <p className="text-sm text-gray-600">Active Volunteers</p>
+                    </Card>
+                    <Card className="p-6 text-center">
+                      <h4 className="text-3xl text-green-600 mb-2">${impactStats.value?.fundsRaised?.toLocaleString() || 0}</h4>
+                      <p className="text-sm text-gray-600">Funds Raised</p>
+                    </Card>
+                    <Card className="p-6 text-center">
+                      <h4 className="text-3xl text-orange-600 mb-2">{impactStats.value?.communitiesReached || 0}</h4>
+                      <p className="text-sm text-gray-600">Communities Reached</p>
+                    </Card>
+                    <Card className="p-6 text-center">
+                      <h4 className="text-3xl text-teal-600 mb-2">{impactStats.value?.successRate || 0}%</h4>
+                      <p className="text-sm text-gray-600">Success Rate</p>
+                    </Card>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Reports Management */}
+            {activeTab === 'reports' && (
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-xl text-gray-900">Annual Reports ({reports.length})</h3>
+                    <p className="text-sm text-gray-500">Manage annual and financial reports</p>
+                  </div>
+                  <Button
+                    onClick={() => {
+                      setEditingItem(null);
+                      setShowReportForm(true);
+                    }}
+                    className="bg-emerald-600 hover:bg-emerald-700"
+                  >
+                    <Plus size={16} className="mr-2" />
+                    Add Report
+                  </Button>
+                </div>
+
+                <div className="grid gap-4">
+                  {reports.map((report) => (
+                    <Card key={report.key} className="p-6 hover:shadow-lg transition">
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h4 className="text-lg text-gray-900">{report.value.title}</h4>
+                            <Badge>{report.value.year}</Badge>
+                            {report.value.fileSize && <Badge variant="outline">{report.value.fileSize}</Badge>}
+                          </div>
+                          <p className="text-sm text-gray-600 mb-2">{report.value.description}</p>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            onClick={() => window.open(report.value.fileUrl, '_blank')}
+                            variant="outline"
+                            size="sm"
+                          >
+                            <Download size={14} className="mr-1" />
+                            Download
+                          </Button>
+                          <Button
+                            onClick={() => handleDeleteReport(report.key)}
+                            variant="outline"
+                            size="sm"
+                            className="text-red-600 hover:bg-red-50"
+                          >
+                            <Trash2 size={14} />
+                          </Button>
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                  {reports.length === 0 && (
+                    <div className="text-center py-12 text-gray-500">
+                      <Download size={48} className="mx-auto mb-4 text-gray-300" />
+                      <p>No reports yet. Add your first annual report!</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Events Management */}
+            {activeTab === 'events' && (
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-xl text-gray-900">Events ({events.length})</h3>
+                    <p className="text-sm text-gray-500">Manage upcoming and past events</p>
+                  </div>
+                  <Button
+                    onClick={() => {
+                      setEditingItem(null);
+                      setShowEventForm(true);
+                    }}
+                    className="bg-emerald-600 hover:bg-emerald-700"
+                  >
+                    <Plus size={16} className="mr-2" />
+                    Add Event
+                  </Button>
+                </div>
+
+                <div className="grid gap-4">
+                  {events.map((event) => (
+                    <Card key={event.key} className="p-6 hover:shadow-lg transition">
+                      <div className="flex items-start gap-4">
+                        {event.value.image && (
+                          <img src={event.value.image} alt={event.value.title} className="w-24 h-24 object-cover rounded-lg" />
+                        )}
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h4 className="text-lg text-gray-900">{event.value.title}</h4>
+                            <Badge className={
+                              event.value.status === 'upcoming' ? 'bg-blue-100 text-blue-700' :
+                              event.value.status === 'ongoing' ? 'bg-green-100 text-green-700' :
+                              event.value.status === 'completed' ? 'bg-gray-100 text-gray-700' :
+                              'bg-red-100 text-red-700'
+                            }>
+                              {event.value.status}
+                            </Badge>
+                          </div>
+                          <p className="text-sm text-gray-600 mb-2">{event.value.description}</p>
+                          <div className="flex items-center gap-4 text-xs text-gray-500">
+                            <span>📅 {event.value.date}</span>
+                            <span>🕐 {event.value.time}</span>
+                            <span>📍 {event.value.location}</span>
+                            <span>👥 {event.value.capacity} capacity</span>
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            onClick={() => {
+                              setEditingItem(event.value);
+                              setShowEventForm(true);
+                            }}
+                            variant="outline"
+                            size="sm"
+                          >
+                            <Edit size={14} className="mr-1" />
+                            Edit
+                          </Button>
+                          <Button
+                            onClick={() => handleDeleteEvent(event.key)}
+                            variant="outline"
+                            size="sm"
+                            className="text-red-600 hover:bg-red-50"
+                          >
+                            <Trash2 size={14} />
+                          </Button>
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                  {events.length === 0 && (
+                    <div className="text-center py-12 text-gray-500">
+                      <Calendar size={48} className="mx-auto mb-4 text-gray-300" />
+                      <p>No events yet. Create your first event!</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Partners Management */}
+            {activeTab === 'partners' && (
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-xl text-gray-900">Partners ({partners.length})</h3>
+                    <p className="text-sm text-gray-500">Manage partner organizations</p>
+                  </div>
+                  <Button
+                    onClick={() => {
+                      setEditingItem(null);
+                      setShowPartnerForm(true);
+                    }}
+                    className="bg-emerald-600 hover:bg-emerald-700"
+                  >
+                    <Plus size={16} className="mr-2" />
+                    Add Partner
+                  </Button>
+                </div>
+
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {partners.map((partner) => (
+                    <Card key={partner.key} className="p-6 hover:shadow-lg transition text-center">
+                      {partner.value.logo && (
+                        <img src={partner.value.logo} alt={partner.value.name} className="h-16 w-auto mx-auto mb-3 object-contain" />
+                      )}
+                      <h4 className="text-sm text-gray-900 mb-1">{partner.value.name}</h4>
+                      <p className="text-xs text-gray-600 mb-3 line-clamp-2">{partner.value.description}</p>
+                      <div className="flex gap-2 justify-center">
+                        <Button
+                          onClick={() => {
+                            setEditingItem(partner.value);
+                            setShowPartnerForm(true);
+                          }}
+                          variant="outline"
+                          size="sm"
+                        >
+                          <Edit size={12} />
+                        </Button>
+                        <Button
+                          onClick={() => handleDeletePartner(partner.key)}
+                          variant="outline"
+                          size="sm"
+                          className="text-red-600"
+                        >
+                          <Trash2 size={12} />
+                        </Button>
+                      </div>
+                    </Card>
+                  ))}
+                  {partners.length === 0 && (
+                    <div className="col-span-full text-center py-12 text-gray-500">
+                      <Handshake size={48} className="mx-auto mb-4 text-gray-300" />
+                      <p>No partners yet. Add your first partner organization!</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Opportunities Management */}
+            {activeTab === 'opportunities' && (
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-xl text-gray-900">Opportunities ({opportunities.length})</h3>
+                    <p className="text-sm text-gray-500">Manage volunteer opportunities</p>
+                  </div>
+                  <Button
+                    onClick={() => {
+                      setEditingItem(null);
+                      setShowOpportunityForm(true);
+                    }}
+                    className="bg-emerald-600 hover:bg-emerald-700"
+                  >
+                    <Plus size={16} className="mr-2" />
+                    Add Opportunity
+                  </Button>
+                </div>
+
+                <div className="grid gap-4">
+                  {opportunities.map((opp) => (
+                    <Card key={opp.key} className="p-6 hover:shadow-lg transition">
+                      <div className="flex items-start gap-4">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h4 className="text-lg text-gray-900">{opp.value.title}</h4>
+                            <Badge>{opp.value.type}</Badge>
+                            {opp.value.urgent && <Badge className="bg-red-100 text-red-700">Urgent</Badge>}
+                          </div>
+                          <p className="text-sm text-gray-600 mb-2">{opp.value.description}</p>
+                          <div className="flex items-center gap-4 text-xs text-gray-500">
+                            <span>📍 {opp.value.location}</span>
+                            <span>🕐 {opp.value.commitment}</span>
+                            {opp.value.spotsAvailable && <span>👥 {opp.value.spotsAvailable} spots</span>}
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            onClick={() => {
+                              setEditingItem(opp.value);
+                              setShowOpportunityForm(true);
+                            }}
+                            variant="outline"
+                            size="sm"
+                          >
+                            <Edit size={14} className="mr-1" />
+                            Edit
+                          </Button>
+                          <Button
+                            onClick={() => handleDeleteOpportunity(opp.key)}
+                            variant="outline"
+                            size="sm"
+                            className="text-red-600 hover:bg-red-50"
+                          >
+                            <Trash2 size={14} />
+                          </Button>
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                  {opportunities.length === 0 && (
+                    <div className="text-center py-12 text-gray-500">
+                      <Target size={48} className="mx-auto mb-4 text-gray-300" />
+                      <p>No opportunities yet. Create your first volunteer opportunity!</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* FAQs Management */}
+            {activeTab === 'faqs' && (
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-xl text-gray-900">FAQs ({faqs.length})</h3>
+                    <p className="text-sm text-gray-500">Manage frequently asked questions</p>
+                  </div>
+                  <Button
+                    onClick={() => {
+                      setEditingItem(null);
+                      setShowFAQForm(true);
+                    }}
+                    className="bg-emerald-600 hover:bg-emerald-700"
+                  >
+                    <Plus size={16} className="mr-2" />
+                    Add FAQ
+                  </Button>
+                </div>
+
+                <div className="grid gap-4">
+                  {faqs.map((faq) => (
+                    <Card key={faq.key} className="p-6 hover:shadow-lg transition">
+                      <div className="flex items-start gap-4">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <h4 className="text-lg text-gray-900">{faq.value.question}</h4>
+                            <Badge>{faq.value.category}</Badge>
+                          </div>
+                          <p className="text-sm text-gray-600">{faq.value.answer}</p>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            onClick={() => {
+                              setEditingItem(faq.value);
+                              setShowFAQForm(true);
+                            }}
+                            variant="outline"
+                            size="sm"
+                          >
+                            <Edit size={14} className="mr-1" />
+                            Edit
+                          </Button>
+                          <Button
+                            onClick={() => handleDeleteFAQ(faq.key)}
+                            variant="outline"
+                            size="sm"
+                            className="text-red-600 hover:bg-red-50"
+                          >
+                            <Trash2 size={14} />
+                          </Button>
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                  {faqs.length === 0 && (
+                    <div className="text-center py-12 text-gray-500">
+                      <HelpCircle size={48} className="mx-auto mb-4 text-gray-300" />
+                      <p>No FAQs yet. Add your first question and answer!</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Resources Management */}
+            {activeTab === 'resources' && (
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-xl text-gray-900">Resources ({resources.length})</h3>
+                    <p className="text-sm text-gray-500">Manage downloadable resources</p>
+                  </div>
+                  <Button
+                    onClick={() => {
+                      setEditingItem(null);
+                      setShowResourceForm(true);
+                    }}
+                    className="bg-emerald-600 hover:bg-emerald-700"
+                  >
+                    <Plus size={16} className="mr-2" />
+                    Add Resource
+                  </Button>
+                </div>
+
+                <div className="grid gap-4">
+                  {resources.map((resource) => (
+                    <Card key={resource.key} className="p-6 hover:shadow-lg transition">
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h4 className="text-lg text-gray-900">{resource.value.title}</h4>
+                            <Badge>{resource.value.type}</Badge>
+                            {resource.value.fileSize && <Badge variant="outline">{resource.value.fileSize}</Badge>}
+                          </div>
+                          <p className="text-sm text-gray-600 mb-2">{resource.value.description}</p>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            onClick={() => window.open(resource.value.fileUrl, '_blank')}
+                            variant="outline"
+                            size="sm"
+                          >
+                            <Download size={14} className="mr-1" />
+                            Download
+                          </Button>
+                          <Button
+                            onClick={() => {
+                              setEditingItem(resource.value);
+                              setShowResourceForm(true);
+                            }}
+                            variant="outline"
+                            size="sm"
+                          >
+                            <Edit size={14} />
+                          </Button>
+                          <Button
+                            onClick={() => handleDeleteResource(resource.key)}
+                            variant="outline"
+                            size="sm"
+                            className="text-red-600 hover:bg-red-50"
+                          >
+                            <Trash2 size={14} />
+                          </Button>
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                  {resources.length === 0 && (
+                    <div className="text-center py-12 text-gray-500">
+                      <BookOpen size={48} className="mx-auto mb-4 text-gray-300" />
+                      <p>No resources yet. Add your first downloadable resource!</p>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>
@@ -2983,6 +3545,121 @@ export function EnhancedAdminDashboard() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Form Dialogs from AdminFormDialogs */}
+      {showTeamForm && (
+        <TeamFormDialog
+          show={showTeamForm}
+          onClose={() => {
+            setShowTeamForm(false);
+            setEditingItem(null);
+          }}
+          editingItem={editingItem}
+          onSuccess={loadData}
+          userRole={userRole}
+        />
+      )}
+
+      {showStoryForm && (
+        <StoryFormDialog
+          show={showStoryForm}
+          onClose={() => {
+            setShowStoryForm(false);
+            setEditingItem(null);
+          }}
+          editingItem={editingItem}
+          onSuccess={loadData}
+          userRole={userRole}
+        />
+      )}
+
+      {showImpactForm && (
+        <ImpactStatsFormDialog
+          show={showImpactForm}
+          onClose={() => setShowImpactForm(false)}
+          currentStats={impactStats?.value}
+          onSuccess={loadData}
+          userRole={userRole}
+        />
+      )}
+
+      {showReportForm && (
+        <ReportFormDialog
+          show={showReportForm}
+          onClose={() => {
+            setShowReportForm(false);
+            setEditingItem(null);
+          }}
+          editingItem={editingItem}
+          onSuccess={loadData}
+          userRole={userRole}
+        />
+      )}
+
+      {showEventForm && (
+        <EventFormDialog
+          show={showEventForm}
+          onClose={() => {
+            setShowEventForm(false);
+            setEditingItem(null);
+          }}
+          editingItem={editingItem}
+          onSuccess={loadData}
+          userRole={userRole}
+        />
+      )}
+
+      {showPartnerForm && (
+        <PartnerFormDialog
+          show={showPartnerForm}
+          onClose={() => {
+            setShowPartnerForm(false);
+            setEditingItem(null);
+          }}
+          editingItem={editingItem}
+          onSuccess={loadData}
+          userRole={userRole}
+        />
+      )}
+
+      {showOpportunityForm && (
+        <OpportunityFormDialog
+          show={showOpportunityForm}
+          onClose={() => {
+            setShowOpportunityForm(false);
+            setEditingItem(null);
+          }}
+          editingItem={editingItem}
+          onSuccess={loadData}
+          userRole={userRole}
+        />
+      )}
+
+      {showFAQForm && (
+        <FAQFormDialog
+          show={showFAQForm}
+          onClose={() => {
+            setShowFAQForm(false);
+            setEditingItem(null);
+          }}
+          editingItem={editingItem}
+          onSuccess={loadData}
+          userRole={userRole}
+        />
+      )}
+
+      {showResourceForm && (
+        <ResourceFormDialog
+          show={showResourceForm}
+          onClose={() => {
+            setShowResourceForm(false);
+            setEditingItem(null);
+          }}
+          editingItem={editingItem}
+          onSuccess={loadData}
+          userRole={userRole}
+        />
+      )}
     </div>
   );
 }
