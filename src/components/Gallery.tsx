@@ -17,10 +17,34 @@ export function Gallery() {
   const [loading, setLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState<GalleryImage | null>(null);
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const [sectionSettings, setSectionSettings] = useState({ title: 'Photo Gallery', description: 'Explore moments from our programs, events, and the communities we serve.' });
 
   useEffect(() => {
     fetchGallery();
+    fetchSettings();
   }, []);
+
+  const fetchSettings = async () => {
+    try {
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/site-settings`,
+        {
+          headers: {
+            Authorization: `Bearer ${publicAnonKey}`,
+          },
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.settings?.sections?.gallery) {
+          setSectionSettings(data.settings.sections.gallery);
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching section settings:', err);
+    }
+  };
 
   const fetchGallery = async () => {
     try {
@@ -67,9 +91,9 @@ export function Gallery() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="text-center mb-12">
-          <h2 className="text-emerald-600 mb-4">Our Gallery</h2>
+          <h2 className="text-emerald-600 mb-4">{sectionSettings.title}</h2>
           <p className="text-gray-600 max-w-2xl mx-auto">
-            A visual journey through our community programs, events, and the positive impact we're making together
+            {sectionSettings.description}
           </p>
         </div>
 

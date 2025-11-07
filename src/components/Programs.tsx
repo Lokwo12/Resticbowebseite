@@ -17,10 +17,34 @@ export function Programs() {
   const [programs, setPrograms] = useState<Program[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [sectionSettings, setSectionSettings] = useState({ title: 'Our Programs', description: 'We run comprehensive programs designed to address the most pressing needs in our community, creating pathways to opportunity and sustainable development.' });
 
   useEffect(() => {
     fetchPrograms();
+    fetchSettings();
   }, []);
+
+  const fetchSettings = async () => {
+    try {
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/site-settings`,
+        {
+          headers: {
+            Authorization: `Bearer ${publicAnonKey}`,
+          },
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.settings?.sections?.programs) {
+          setSectionSettings(data.settings.sections.programs);
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching section settings:', err);
+    }
+  };
 
   const fetchPrograms = async () => {
     try {
@@ -65,10 +89,10 @@ export function Programs() {
         {/* Header */}
         <div className="max-w-3xl mx-auto text-center mb-16">
           <h2 className="text-3xl lg:text-5xl text-gray-900 mb-6">
-            Our Programs
+            {sectionSettings.title}
           </h2>
           <p className="text-lg text-gray-600">
-            We run comprehensive programs designed to address the most pressing needs in our community, creating pathways to opportunity and sustainable development.
+            {sectionSettings.description}
           </p>
         </div>
 
