@@ -602,6 +602,43 @@ export function EnhancedAdminDashboard() {
 
         const data = await response.json();
         const users = normalizeCollection(data.users, 'admin_user');
+
+        if ((users?.length ?? 0) === 0 && userId && userEmail) {
+          try {
+            const bootstrapResponse = await fetch(
+              `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/users/bootstrap`,
+              {
+                method: 'POST',
+                headers: {
+                  Authorization: `Bearer ${publicAnonKey}`,
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                  userId,
+                  email: userEmail,
+                  name: userName || userEmail.split('@')[0] || 'Super Admin'
+                })
+              }
+            );
+
+            if (bootstrapResponse.ok) {
+              setUserRole('super-admin');
+              toast.success('User management unlocked for this account.');
+              if (!userName) {
+                setUserName(userEmail.split('@')[0] || 'Super Admin');
+              }
+              return;
+            }
+
+            if (bootstrapResponse.status >= 500) {
+              roleHydrationAttempted.current = false;
+            }
+          } catch (bootstrapError) {
+            console.error('Admin bootstrap error:', bootstrapError);
+            roleHydrationAttempted.current = false;
+          }
+        }
+
         const targetEmail = typeof userEmail === 'string' ? userEmail.toLowerCase() : '';
 
         const matchedUser = users.find((entry) => {
@@ -626,6 +663,11 @@ export function EnhancedAdminDashboard() {
           if (!userName && matchedUser.value.name) {
             setUserName(matchedUser.value.name);
           }
+          return;
+        }
+
+        if (users.length > 0) {
+          roleHydrationAttempted.current = false;
         }
       } catch (err) {
         console.error('User role sync error:', err);
