@@ -86,16 +86,13 @@ export function Header() {
         <div className={`flex justify-between items-center transition-all duration-300 ${scrolled ? 'h-14' : 'h-16'}`}>
           {/* Logo */}
           <div className="flex items-center">
-            <button onClick={() => scrollToSection('home')} className="flex items-center gap-3 hover:opacity-90 transition-all duration-300 group">
+            <button onClick={() => scrollToSection('home')} className="flex items-center hover:opacity-90 transition-all duration-300 group">
               <img 
                 src={getLogoUrl()} 
                 alt={`${settings.siteName} Logo`} 
                 className={`w-auto transition-all duration-300 group-hover:scale-105 ${scrolled ? 'h-12 sm:h-14' : 'h-14 sm:h-16'}`} 
               />
-              <div className="hidden sm:block">
-                <h1 className="text-emerald-700 leading-tight group-hover:text-emerald-600 transition-colors">{settings.siteName}</h1>
-                <p className="text-xs text-gray-600">{settings.tagline}</p>
-              </div>
+              <span className="sr-only">{settings.siteName}</span>
             </button>
           </div>
 
