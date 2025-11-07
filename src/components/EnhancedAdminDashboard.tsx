@@ -1745,8 +1745,8 @@ export function EnhancedAdminDashboard() {
             >
               {sidebarOpen ? <XIcon size={24} /> : <Menu size={24} />}
             </button>
-            <div className="flex items-center gap-3">
-              <img src={siteLogoUrl} alt={`${siteTitle} Logo`} className="h-10 w-auto object-contain" />
+            <div className="flex items-center gap-4">
+              <img src={siteLogoUrl} alt={`${siteTitle} Logo`} className="h-14 w-auto object-contain drop-shadow-sm" />
               <div className="hidden md:block">
                 <h1 className="text-lg text-gray-900">{siteTitle}</h1>
                 <p className="text-xs text-gray-500">{siteTagline}</p>
