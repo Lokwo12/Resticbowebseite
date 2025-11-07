@@ -1864,6 +1864,52 @@ app.get('/make-server-2a4be611/site-settings', async (c) => {
           description: 'Empowering communities through education, healthcare, and sustainable development.',
           copyrightText: 'Resti Kiryandongo CBO. All rights reserved.',
           taglineBottom: 'Made with ❤️ for our community'
+        },
+        sections: {
+          programs: {
+            title: 'Our Programs',
+            description: 'We run comprehensive programs designed to address the most pressing needs in our community, creating pathways to opportunity and sustainable development.'
+          },
+          news: {
+            title: 'Latest News & Updates',
+            description: 'Stay informed about our recent activities, success stories, and upcoming events.'
+          },
+          gallery: {
+            title: 'Photo Gallery',
+            description: 'Explore moments from our programs, events, and the communities we serve.'
+          },
+          stories: {
+            title: 'Impact Stories',
+            description: 'Read inspiring stories from the lives we\'ve touched and the communities we\'ve transformed.'
+          },
+          team: {
+            title: 'Meet Our Team',
+            description: 'Get to know the dedicated individuals working tirelessly to make a difference in our community.'
+          },
+          events: {
+            title: 'Events Calendar',
+            description: 'Join us at our upcoming events and activities. Together, we can create positive change.'
+          },
+          partners: {
+            title: 'Our Partners & Sponsors',
+            description: 'We work with amazing organizations and individuals who share our vision for community development.'
+          },
+          faq: {
+            title: 'Frequently Asked Questions',
+            description: 'Find answers to common questions about our organization, programs, and how you can get involved.'
+          },
+          resources: {
+            title: 'Resources & Downloads',
+            description: 'Access our reports, publications, and educational materials to learn more about our work and impact.'
+          },
+          opportunities: {
+            title: 'Volunteer Opportunities',
+            description: 'Make a difference by volunteering with us. Explore available positions and find the perfect fit for your skills.'
+          },
+          impact: {
+            title: 'Impact Dashboard',
+            description: 'See the measurable impact of our work through data, statistics, and comprehensive reports.'
+          }
         }
       }
       
@@ -1962,6 +2008,52 @@ app.post('/make-server-2a4be611/site-settings/initialize', async (c) => {
         description: 'Empowering communities through education, healthcare, and sustainable development.',
         copyrightText: 'Resti Kiryandongo CBO. All rights reserved.',
         taglineBottom: 'Made with ❤️ for our community'
+      },
+      sections: {
+        programs: {
+          title: 'Our Programs',
+          description: 'We run comprehensive programs designed to address the most pressing needs in our community, creating pathways to opportunity and sustainable development.'
+        },
+        news: {
+          title: 'Latest News & Updates',
+          description: 'Stay informed about our recent activities, success stories, and upcoming events.'
+        },
+        gallery: {
+          title: 'Photo Gallery',
+          description: 'Explore moments from our programs, events, and the communities we serve.'
+        },
+        stories: {
+          title: 'Impact Stories',
+          description: 'Read inspiring stories from the lives we\'ve touched and the communities we\'ve transformed.'
+        },
+        team: {
+          title: 'Meet Our Team',
+          description: 'Get to know the dedicated individuals working tirelessly to make a difference in our community.'
+        },
+        events: {
+          title: 'Events Calendar',
+          description: 'Join us at our upcoming events and activities. Together, we can create positive change.'
+        },
+        partners: {
+          title: 'Our Partners & Sponsors',
+          description: 'We work with amazing organizations and individuals who share our vision for community development.'
+        },
+        faq: {
+          title: 'Frequently Asked Questions',
+          description: 'Find answers to common questions about our organization, programs, and how you can get involved.'
+        },
+        resources: {
+          title: 'Resources & Downloads',
+          description: 'Access our reports, publications, and educational materials to learn more about our work and impact.'
+        },
+        opportunities: {
+          title: 'Volunteer Opportunities',
+          description: 'Make a difference by volunteering with us. Explore available positions and find the perfect fit for your skills.'
+        },
+        impact: {
+          title: 'Impact Dashboard',
+          description: 'See the measurable impact of our work through data, statistics, and comprehensive reports.'
+        }
       },
       createdAt: new Date().toISOString()
     }

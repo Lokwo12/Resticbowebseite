@@ -21,10 +21,34 @@ export function Team() {
   const [team, setTeam] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedDepartment, setSelectedDepartment] = useState('all');
+  const [sectionSettings, setSectionSettings] = useState({ title: 'Meet Our Team', description: 'Get to know the dedicated individuals working tirelessly to make a difference in our community.' });
 
   useEffect(() => {
     fetchTeam();
+    fetchSettings();
   }, []);
+
+  const fetchSettings = async () => {
+    try {
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/site-settings`,
+        {
+          headers: {
+            Authorization: `Bearer ${publicAnonKey}`,
+          },
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.settings?.sections?.team) {
+          setSectionSettings(data.settings.sections.team);
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching section settings:', err);
+    }
+  };
 
   const fetchTeam = async () => {
     try {

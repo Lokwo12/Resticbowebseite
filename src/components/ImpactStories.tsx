@@ -19,10 +19,34 @@ export function ImpactStories() {
   const [stories, setStories] = useState<Story[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const [sectionSettings, setSectionSettings] = useState({ title: 'Impact Stories', description: 'Read inspiring stories from the lives we\'ve touched and the communities we\'ve transformed.' });
 
   useEffect(() => {
     fetchStories();
+    fetchSettings();
   }, []);
+
+  const fetchSettings = async () => {
+    try {
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/site-settings`,
+        {
+          headers: {
+            Authorization: `Bearer ${publicAnonKey}`,
+          },
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.settings?.sections?.stories) {
+          setSectionSettings(data.settings.sections.stories);
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching section settings:', err);
+    }
+  };
 
   const fetchStories = async () => {
     try {
@@ -70,11 +94,10 @@ export function ImpactStories() {
         <div className="text-center mb-12">
           <div className="flex items-center justify-center gap-2 mb-4">
             <Heart className="text-emerald-600" size={32} />
-            <h2 className="text-emerald-600">Impact Stories</h2>
+            <h2 className="text-emerald-600">{sectionSettings.title}</h2>
           </div>
           <p className="text-gray-600 max-w-3xl mx-auto">
-            Real stories of transformation and hope from the community members we serve. 
-            Every story represents a life changed, a family empowered, and a community strengthened.
+            {sectionSettings.description}
           </p>
         </div>
 

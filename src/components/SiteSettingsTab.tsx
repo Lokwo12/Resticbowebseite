@@ -116,6 +116,7 @@ export function SiteSettingsTab({ settings: initialSettings, onUpdate }: SiteSet
           <TabsTrigger value="about">About Section</TabsTrigger>
           <TabsTrigger value="contact">Contact Info</TabsTrigger>
           <TabsTrigger value="footer">Footer</TabsTrigger>
+          <TabsTrigger value="sections">Section Headers</TabsTrigger>
         </TabsList>
 
         {/* General Settings */}
@@ -636,6 +637,468 @@ export function SiteSettingsTab({ settings: initialSettings, onUpdate }: SiteSet
                   className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
                   placeholder="Made with ❤️ for our community"
                 />
+              </div>
+            </div>
+          </Card>
+        </TabsContent>
+
+        {/* Section Headers */}
+        <TabsContent value="sections">
+          <Card className="p-6">
+            <h3 className="text-lg text-gray-900 mb-6">Section Headers & Descriptions</h3>
+            <p className="text-sm text-gray-600 mb-6">
+              Customize the title and description for each major section of your website.
+            </p>
+            <div className="space-y-6">
+              {/* Programs Section */}
+              <div className="p-4 bg-gray-50 rounded-lg">
+                <h4 className="text-sm text-gray-900 mb-3">Programs Section</h4>
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-sm text-gray-700 mb-1">Title</label>
+                    <input
+                      type="text"
+                      value={settings.sections?.programs?.title || ''}
+                      onChange={(e) =>
+                        setSettings({
+                          ...settings,
+                          sections: {
+                            ...settings.sections,
+                            programs: { ...settings.sections?.programs, title: e.target.value },
+                          },
+                        })
+                      }
+                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-700 mb-1">Description</label>
+                    <textarea
+                      value={settings.sections?.programs?.description || ''}
+                      onChange={(e) =>
+                        setSettings({
+                          ...settings,
+                          sections: {
+                            ...settings.sections,
+                            programs: { ...settings.sections?.programs, description: e.target.value },
+                          },
+                        })
+                      }
+                      rows={2}
+                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* News Section */}
+              <div className="p-4 bg-gray-50 rounded-lg">
+                <h4 className="text-sm text-gray-900 mb-3">News Section</h4>
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-sm text-gray-700 mb-1">Title</label>
+                    <input
+                      type="text"
+                      value={settings.sections?.news?.title || ''}
+                      onChange={(e) =>
+                        setSettings({
+                          ...settings,
+                          sections: {
+                            ...settings.sections,
+                            news: { ...settings.sections?.news, title: e.target.value },
+                          },
+                        })
+                      }
+                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-700 mb-1">Description</label>
+                    <textarea
+                      value={settings.sections?.news?.description || ''}
+                      onChange={(e) =>
+                        setSettings({
+                          ...settings,
+                          sections: {
+                            ...settings.sections,
+                            news: { ...settings.sections?.news, description: e.target.value },
+                          },
+                        })
+                      }
+                      rows={2}
+                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Gallery Section */}
+              <div className="p-4 bg-gray-50 rounded-lg">
+                <h4 className="text-sm text-gray-900 mb-3">Gallery Section</h4>
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-sm text-gray-700 mb-1">Title</label>
+                    <input
+                      type="text"
+                      value={settings.sections?.gallery?.title || ''}
+                      onChange={(e) =>
+                        setSettings({
+                          ...settings,
+                          sections: {
+                            ...settings.sections,
+                            gallery: { ...settings.sections?.gallery, title: e.target.value },
+                          },
+                        })
+                      }
+                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-700 mb-1">Description</label>
+                    <textarea
+                      value={settings.sections?.gallery?.description || ''}
+                      onChange={(e) =>
+                        setSettings({
+                          ...settings,
+                          sections: {
+                            ...settings.sections,
+                            gallery: { ...settings.sections?.gallery, description: e.target.value },
+                          },
+                        })
+                      }
+                      rows={2}
+                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Impact Stories Section */}
+              <div className="p-4 bg-gray-50 rounded-lg">
+                <h4 className="text-sm text-gray-900 mb-3">Impact Stories Section</h4>
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-sm text-gray-700 mb-1">Title</label>
+                    <input
+                      type="text"
+                      value={settings.sections?.stories?.title || ''}
+                      onChange={(e) =>
+                        setSettings({
+                          ...settings,
+                          sections: {
+                            ...settings.sections,
+                            stories: { ...settings.sections?.stories, title: e.target.value },
+                          },
+                        })
+                      }
+                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-700 mb-1">Description</label>
+                    <textarea
+                      value={settings.sections?.stories?.description || ''}
+                      onChange={(e) =>
+                        setSettings({
+                          ...settings,
+                          sections: {
+                            ...settings.sections,
+                            stories: { ...settings.sections?.stories, description: e.target.value },
+                          },
+                        })
+                      }
+                      rows={2}
+                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Team Section */}
+              <div className="p-4 bg-gray-50 rounded-lg">
+                <h4 className="text-sm text-gray-900 mb-3">Team Section</h4>
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-sm text-gray-700 mb-1">Title</label>
+                    <input
+                      type="text"
+                      value={settings.sections?.team?.title || ''}
+                      onChange={(e) =>
+                        setSettings({
+                          ...settings,
+                          sections: {
+                            ...settings.sections,
+                            team: { ...settings.sections?.team, title: e.target.value },
+                          },
+                        })
+                      }
+                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-700 mb-1">Description</label>
+                    <textarea
+                      value={settings.sections?.team?.description || ''}
+                      onChange={(e) =>
+                        setSettings({
+                          ...settings,
+                          sections: {
+                            ...settings.sections,
+                            team: { ...settings.sections?.team, description: e.target.value },
+                          },
+                        })
+                      }
+                      rows={2}
+                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Events Section */}
+              <div className="p-4 bg-gray-50 rounded-lg">
+                <h4 className="text-sm text-gray-900 mb-3">Events Section</h4>
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-sm text-gray-700 mb-1">Title</label>
+                    <input
+                      type="text"
+                      value={settings.sections?.events?.title || ''}
+                      onChange={(e) =>
+                        setSettings({
+                          ...settings,
+                          sections: {
+                            ...settings.sections,
+                            events: { ...settings.sections?.events, title: e.target.value },
+                          },
+                        })
+                      }
+                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-700 mb-1">Description</label>
+                    <textarea
+                      value={settings.sections?.events?.description || ''}
+                      onChange={(e) =>
+                        setSettings({
+                          ...settings,
+                          sections: {
+                            ...settings.sections,
+                            events: { ...settings.sections?.events, description: e.target.value },
+                          },
+                        })
+                      }
+                      rows={2}
+                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Partners Section */}
+              <div className="p-4 bg-gray-50 rounded-lg">
+                <h4 className="text-sm text-gray-900 mb-3">Partners Section</h4>
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-sm text-gray-700 mb-1">Title</label>
+                    <input
+                      type="text"
+                      value={settings.sections?.partners?.title || ''}
+                      onChange={(e) =>
+                        setSettings({
+                          ...settings,
+                          sections: {
+                            ...settings.sections,
+                            partners: { ...settings.sections?.partners, title: e.target.value },
+                          },
+                        })
+                      }
+                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-700 mb-1">Description</label>
+                    <textarea
+                      value={settings.sections?.partners?.description || ''}
+                      onChange={(e) =>
+                        setSettings({
+                          ...settings,
+                          sections: {
+                            ...settings.sections,
+                            partners: { ...settings.sections?.partners, description: e.target.value },
+                          },
+                        })
+                      }
+                      rows={2}
+                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* FAQ Section */}
+              <div className="p-4 bg-gray-50 rounded-lg">
+                <h4 className="text-sm text-gray-900 mb-3">FAQ Section</h4>
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-sm text-gray-700 mb-1">Title</label>
+                    <input
+                      type="text"
+                      value={settings.sections?.faq?.title || ''}
+                      onChange={(e) =>
+                        setSettings({
+                          ...settings,
+                          sections: {
+                            ...settings.sections,
+                            faq: { ...settings.sections?.faq, title: e.target.value },
+                          },
+                        })
+                      }
+                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-700 mb-1">Description</label>
+                    <textarea
+                      value={settings.sections?.faq?.description || ''}
+                      onChange={(e) =>
+                        setSettings({
+                          ...settings,
+                          sections: {
+                            ...settings.sections,
+                            faq: { ...settings.sections?.faq, description: e.target.value },
+                          },
+                        })
+                      }
+                      rows={2}
+                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Resources Section */}
+              <div className="p-4 bg-gray-50 rounded-lg">
+                <h4 className="text-sm text-gray-900 mb-3">Resources Section</h4>
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-sm text-gray-700 mb-1">Title</label>
+                    <input
+                      type="text"
+                      value={settings.sections?.resources?.title || ''}
+                      onChange={(e) =>
+                        setSettings({
+                          ...settings,
+                          sections: {
+                            ...settings.sections,
+                            resources: { ...settings.sections?.resources, title: e.target.value },
+                          },
+                        })
+                      }
+                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-700 mb-1">Description</label>
+                    <textarea
+                      value={settings.sections?.resources?.description || ''}
+                      onChange={(e) =>
+                        setSettings({
+                          ...settings,
+                          sections: {
+                            ...settings.sections,
+                            resources: { ...settings.sections?.resources, description: e.target.value },
+                          },
+                        })
+                      }
+                      rows={2}
+                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Volunteer Opportunities Section */}
+              <div className="p-4 bg-gray-50 rounded-lg">
+                <h4 className="text-sm text-gray-900 mb-3">Volunteer Opportunities Section</h4>
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-sm text-gray-700 mb-1">Title</label>
+                    <input
+                      type="text"
+                      value={settings.sections?.opportunities?.title || ''}
+                      onChange={(e) =>
+                        setSettings({
+                          ...settings,
+                          sections: {
+                            ...settings.sections,
+                            opportunities: { ...settings.sections?.opportunities, title: e.target.value },
+                          },
+                        })
+                      }
+                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-700 mb-1">Description</label>
+                    <textarea
+                      value={settings.sections?.opportunities?.description || ''}
+                      onChange={(e) =>
+                        setSettings({
+                          ...settings,
+                          sections: {
+                            ...settings.sections,
+                            opportunities: { ...settings.sections?.opportunities, description: e.target.value },
+                          },
+                        })
+                      }
+                      rows={2}
+                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Impact Dashboard Section */}
+              <div className="p-4 bg-gray-50 rounded-lg">
+                <h4 className="text-sm text-gray-900 mb-3">Impact Dashboard Section</h4>
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-sm text-gray-700 mb-1">Title</label>
+                    <input
+                      type="text"
+                      value={settings.sections?.impact?.title || ''}
+                      onChange={(e) =>
+                        setSettings({
+                          ...settings,
+                          sections: {
+                            ...settings.sections,
+                            impact: { ...settings.sections?.impact, title: e.target.value },
+                          },
+                        })
+                      }
+                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-700 mb-1">Description</label>
+                    <textarea
+                      value={settings.sections?.impact?.description || ''}
+                      onChange={(e) =>
+                        setSettings({
+                          ...settings,
+                          sections: {
+                            ...settings.sections,
+                            impact: { ...settings.sections?.impact, description: e.target.value },
+                          },
+                        })
+                      }
+                      rows={2}
+                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
+                    />
+                  </div>
+                </div>
               </div>
             </div>
           </Card>

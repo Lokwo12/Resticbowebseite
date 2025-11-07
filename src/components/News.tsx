@@ -16,10 +16,34 @@ export function News() {
   const [news, setNews] = useState<NewsItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [sectionSettings, setSectionSettings] = useState({ title: 'Latest News & Updates', description: 'Stay informed about our recent activities, success stories, and upcoming events.' });
 
   useEffect(() => {
     fetchNews();
+    fetchSettings();
   }, []);
+
+  const fetchSettings = async () => {
+    try {
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/site-settings`,
+        {
+          headers: {
+            Authorization: `Bearer ${publicAnonKey}`,
+          },
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.settings?.sections?.news) {
+          setSectionSettings(data.settings.sections.news);
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching section settings:', err);
+    }
+  };
 
   const fetchNews = async () => {
     try {
@@ -73,10 +97,10 @@ export function News() {
         {/* Header */}
         <div className="max-w-3xl mx-auto text-center mb-16">
           <h2 className="text-3xl lg:text-5xl text-gray-900 mb-6">
-            Latest News & Updates
+            {sectionSettings.title}
           </h2>
           <p className="text-lg text-gray-600">
-            Stay informed about our recent activities, success stories, and upcoming events.
+            {sectionSettings.description}
           </p>
         </div>
 
