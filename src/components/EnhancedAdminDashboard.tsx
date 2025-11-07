@@ -516,20 +516,21 @@ export function EnhancedAdminDashboard() {
   const handleImageUpload = async (file: File) => {
     setUploadingImage(true);
     try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-      
-      const { data, error } = await supabase.storage
-        .from('make-2a4be611-images')
-        .upload(fileName, file);
+      // Use server-side upload endpoint to avoid client-side storage permission issues
+      // (this mirrors the approach used in AdminFormDialogs and ensures the same bucket
+      // and upload behavior is used across the dashboard).
+      const formDataObj = new FormData();
+      formDataObj.append('file', file);
 
-      if (error) throw error;
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/upload-image`,
+        { method: 'POST', headers: { Authorization: `Bearer ${publicAnonKey}` }, body: formDataObj }
+      );
 
-      const { data: { signedUrl } } = await supabase.storage
-        .from('make-2a4be611-images')
-        .createSignedUrl(fileName, 31536000);
-
-      return signedUrl;
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Upload failed');
+      // server returns { url }
+      return data.url;
     } catch (err: any) {
       console.error('Upload error:', err);
       toast.error('Failed to upload image');
