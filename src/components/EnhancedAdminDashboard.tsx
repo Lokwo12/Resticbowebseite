@@ -1370,7 +1370,7 @@ export function EnhancedAdminDashboard() {
           <div className="text-center mb-8">
             <div className="flex flex-col items-center mb-6">
               <div className="bg-white rounded-full p-4 shadow-lg mb-4">
-                <img src={logo} alt="Resti Kiryandongo CBO Logo" className="h-20 w-auto" />
+                <img src={logo} alt="Resti Kiryandongo CBO Logo" className="h-20 w-auto object-contain" />
               </div>
               <div>
                 <h2 className="text-2xl text-emerald-700">Resti Kiryandongo CBO</h2>
@@ -1459,8 +1459,8 @@ export function EnhancedAdminDashboard() {
             >
               {sidebarOpen ? <XIcon size={24} /> : <Menu size={24} />}
             </button>
-            <div className="flex items-center gap-3">
-              <img src={logo} alt="Logo" className="h-10 w-auto" />
+              <div className="flex items-center gap-3">
+              <img src={logo} alt="Logo" className="h-10 w-auto object-contain" />
               <div className="hidden md:block">
                 <h1 className="text-lg text-gray-900">Resti Kiryandongo CBO</h1>
                 <p className="text-xs text-gray-500">Admin Dashboard</p>
