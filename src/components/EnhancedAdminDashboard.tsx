@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js@2';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { toast } from 'sonner@2.0.3';
@@ -72,6 +72,37 @@ const supabase = createClient(
   `https://${projectId}.supabase.co`,
   publicAnonKey
 );
+
+// Simple Error Boundary to surface render errors in the admin UI
+class ErrorBoundary extends React.Component<any, { hasError: boolean; error?: Error | null }>{
+  constructor(props: any) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, info: any) {
+    // Log to console for now
+    console.error('ErrorBoundary caught:', error, info);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="p-6 bg-white rounded shadow max-w-4xl mx-auto mt-8">
+          <h2 className="text-lg font-semibold text-red-600 mb-2">An error occurred while rendering the admin UI</h2>
+          <pre className="whitespace-pre-wrap text-sm text-gray-700">{this.state.error?.message}</pre>
+          <button className="mt-4 px-3 py-2 bg-emerald-600 text-white rounded" onClick={() => window.location.reload()}>Reload</button>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
 
 const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 
