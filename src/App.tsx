@@ -20,7 +20,6 @@ import { Newsletter } from './components/Newsletter';
 import { Contact } from './components/Contact';
 import { Footer } from './components/Footer';
 import { EnhancedAdminDashboard } from './components/EnhancedAdminDashboard';
-import { DebugInfo } from './components/DebugInfo';
 import { projectId, publicAnonKey } from './utils/supabase/info';
 
 function HomePage() {
@@ -67,7 +66,6 @@ function HomePage() {
         <Contact />
       </main>
       <Footer />
-      <DebugInfo />
     </div>
   );
 }
