@@ -28,7 +28,8 @@ const iconMap: Record<string, typeof Heart> = {
 export function About() {
   const [settings, setSettings] = useState<AboutSettings | null>(null);
   const [loading, setLoading] = useState(true);
-  const { ref, isVisible } = useScrollAnimation();
+  // Start visible since About is near top of page
+  const { ref, isVisible } = useScrollAnimation({ startVisible: true });
 
   useEffect(() => {
     fetchSettings();
@@ -53,6 +54,7 @@ export function About() {
     };
 
     try {
+      console.log('🔄 Fetching About settings...');
       const response = await fetch(
         `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/site-settings`,
         {
@@ -62,41 +64,52 @@ export function About() {
         }
       );
 
+      console.log('📡 About fetch response status:', response.status);
+
       if (!response.ok) {
         throw new Error('Failed to fetch settings');
       }
 
       const data = await response.json();
-      console.log('About settings fetched:', data.settings?.about);
+      console.log('📦 Raw API response:', data);
+      console.log('📄 About settings from API:', data.settings?.about);
       
       // Check if we have valid about settings
       if (data.settings?.about) {
         const aboutData = data.settings.about;
         
-        // Merge with defaults to ensure all fields exist
-        setSettings({
+        const mergedSettings = {
           title: aboutData.title || defaultSettings.title,
           intro: aboutData.intro || defaultSettings.intro,
           mission: aboutData.mission || defaultSettings.mission,
           vision: aboutData.vision || defaultSettings.vision,
           values: (aboutData.values && aboutData.values.length > 0) ? aboutData.values : defaultSettings.values,
           story: (aboutData.story && aboutData.story.length > 0) ? aboutData.story : defaultSettings.story
-        });
+        };
+        
+        console.log('✅ Setting merged About settings:', mergedSettings);
+        setSettings(mergedSettings);
       } else {
         // No about settings, use defaults
-        console.log('No about settings found, using defaults');
+        console.log('⚠️ No about settings found in API, using defaults');
+        console.log('✅ Setting default About settings:', defaultSettings);
         setSettings(defaultSettings);
       }
     } catch (error) {
-      console.error('Error fetching about settings:', error);
+      console.error('❌ Error fetching about settings:', error);
       // Set default settings if fetch fails
+      console.log('✅ Setting default About settings (error fallback):', defaultSettings);
       setSettings(defaultSettings);
     } finally {
+      console.log('🏁 About fetch complete, loading = false');
       setLoading(false);
     }
   };
 
+  console.log('🎨 About component render - loading:', loading, 'settings:', settings);
+
   if (loading) {
+    console.log('⏳ Showing loading skeleton');
     return (
       <section id="about" className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -119,6 +132,8 @@ export function About() {
     values: [],
     story: []
   };
+  
+  console.log('🎯 About component rendering with displaySettings:', displaySettings);
 
   return (
     <section id="about" className="py-20 bg-white" ref={ref}>
