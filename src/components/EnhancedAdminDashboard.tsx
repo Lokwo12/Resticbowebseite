@@ -25,7 +25,10 @@ import {
   BarChart3,
   Shield,
   CheckSquare,
-  Square
+  Square,
+  Eye,
+  Reply,
+  Filter
 } from 'lucide-react';
 import { Card } from './ui/card';
 import { Badge } from './ui/badge';
@@ -86,6 +89,10 @@ export function EnhancedAdminDashboard() {
   const [selectedContacts, setSelectedContacts] = useState<string[]>([]);
   const [selectedVolunteers, setSelectedVolunteers] = useState<string[]>([]);
 
+  // Filter states
+  const [contactFilter, setContactFilter] = useState('all');
+  const [volunteerFilter, setVolunteerFilter] = useState('all');
+
   // Form states
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -96,7 +103,13 @@ export function EnhancedAdminDashboard() {
   const [showProgramForm, setShowProgramForm] = useState(false);
   const [showNewsForm, setShowNewsForm] = useState(false);
   const [showGalleryForm, setShowGalleryForm] = useState(false);
+  const [showContactDialog, setShowContactDialog] = useState(false);
+  const [showVolunteerDialog, setShowVolunteerDialog] = useState(false);
+  const [showReplyDialog, setShowReplyDialog] = useState(false);
   const [editingItem, setEditingItem] = useState<any>(null);
+  const [viewingItem, setViewingItem] = useState<any>(null);
+  const [replyMessage, setReplyMessage] = useState('');
+  
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -288,15 +301,15 @@ export function EnhancedAdminDashboard() {
   const handleImageUpload = async (file: File) => {
     setUploadingImage(true);
     try {
-      const formData = new FormData();
-      formData.append('file', file);
+      const formDataObj = new FormData();
+      formDataObj.append('file', file);
 
       const response = await fetch(
         `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/upload-image`,
         {
           method: 'POST',
           headers: { Authorization: `Bearer ${publicAnonKey}` },
-          body: formData
+          body: formDataObj
         }
       );
 
@@ -393,7 +406,193 @@ export function EnhancedAdminDashboard() {
     }
   };
 
-  const handleBulkDelete = async (type: 'programs' | 'news', ids: string[]) => {
+  const handleSubmitGallery = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (userRole === 'viewer') {
+      toast.error('You do not have permission to perform this action');
+      return;
+    }
+
+    try {
+      const url = editingItem
+        ? `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/gallery/${editingItem.key}`
+        : `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/gallery`;
+
+      const response = await fetch(url, {
+        method: editingItem ? 'PUT' : 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${publicAnonKey}`,
+        },
+        body: JSON.stringify({
+          title: formData.title,
+          description: formData.description,
+          image: formData.image,
+          category: formData.category
+        }),
+      });
+
+      if (!response.ok) throw new Error('Failed to save gallery item');
+
+      toast.success(editingItem ? 'Gallery item updated' : 'Gallery item added');
+      setShowGalleryForm(false);
+      setEditingItem(null);
+      setFormData({ title: '', description: '', content: '', image: '', category: 'general' });
+      loadData();
+    } catch (err: any) {
+      console.error('Save error:', err);
+      toast.error(err.message || 'Failed to save gallery item');
+    }
+  };
+
+  const handleReplyToContact = async () => {
+    if (userRole === 'viewer') {
+      toast.error('You do not have permission to perform this action');
+      return;
+    }
+
+    if (!replyMessage.trim() || !viewingItem) return;
+
+    try {
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/contacts/${viewingItem.key}/reply`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${publicAnonKey}`,
+          },
+          body: JSON.stringify({ message: replyMessage }),
+        }
+      );
+
+      if (!response.ok) throw new Error('Failed to send reply');
+
+      toast.success('Reply sent successfully');
+      setShowReplyDialog(false);
+      setReplyMessage('');
+      setViewingItem(null);
+      loadData();
+    } catch (err: any) {
+      console.error('Reply error:', err);
+      toast.error(err.message || 'Failed to send reply');
+    }
+  };
+
+  const handleDeleteContact = async (key: string) => {
+    if (userRole === 'viewer') {
+      toast.error('You do not have permission to perform this action');
+      return;
+    }
+
+    if (!confirm('Delete this contact message?')) return;
+
+    try {
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/contacts/${key}`,
+        {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${publicAnonKey}` },
+        }
+      );
+
+      if (!response.ok) throw new Error('Failed to delete contact');
+
+      toast.success('Contact deleted');
+      loadData();
+    } catch (err: any) {
+      console.error('Delete error:', err);
+      toast.error(err.message || 'Failed to delete contact');
+    }
+  };
+
+  const handleDeleteVolunteer = async (key: string) => {
+    if (userRole === 'viewer') {
+      toast.error('You do not have permission to perform this action');
+      return;
+    }
+
+    if (!confirm('Delete this volunteer application?')) return;
+
+    try {
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/volunteers/${key}`,
+        {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${publicAnonKey}` },
+        }
+      );
+
+      if (!response.ok) throw new Error('Failed to delete volunteer');
+
+      toast.success('Volunteer application deleted');
+      loadData();
+    } catch (err: any) {
+      console.error('Delete error:', err);
+      toast.error(err.message || 'Failed to delete volunteer');
+    }
+  };
+
+  const handleUpdateVolunteerStatus = async (key: string, status: string) => {
+    if (userRole === 'viewer') {
+      toast.error('You do not have permission to perform this action');
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/volunteers/${key}/status`,
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${publicAnonKey}`,
+          },
+          body: JSON.stringify({ status }),
+        }
+      );
+
+      if (!response.ok) throw new Error('Failed to update status');
+
+      toast.success(`Volunteer ${status}`);
+      loadData();
+    } catch (err: any) {
+      console.error('Update error:', err);
+      toast.error(err.message || 'Failed to update status');
+    }
+  };
+
+  const handleUpdateContactStatus = async (key: string, status: string) => {
+    if (userRole === 'viewer') {
+      toast.error('You do not have permission to perform this action');
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/contacts/${key}/status`,
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${publicAnonKey}`,
+          },
+          body: JSON.stringify({ status }),
+        }
+      );
+
+      if (!response.ok) throw new Error('Failed to update status');
+
+      toast.success(`Contact marked as ${status}`);
+      loadData();
+    } catch (err: any) {
+      console.error('Update error:', err);
+      toast.error(err.message || 'Failed to update status');
+    }
+  };
+
+  const handleBulkDelete = async (type: 'programs' | 'news' | 'gallery', ids: string[]) => {
     if (userRole === 'viewer') {
       toast.error('You do not have permission to perform this action');
       return;
@@ -403,7 +602,7 @@ export function EnhancedAdminDashboard() {
 
     try {
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/${type}/bulk-delete`,
+        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/${type === 'gallery' ? 'admin/gallery' : type}/bulk-delete`,
         {
           method: 'POST',
           headers: {
@@ -418,7 +617,8 @@ export function EnhancedAdminDashboard() {
 
       toast.success(`${ids.length} items deleted`);
       if (type === 'programs') setSelectedPrograms([]);
-      else setSelectedNews([]);
+      else if (type === 'news') setSelectedNews([]);
+      else setSelectedGallery([]);
       loadData();
     } catch (err: any) {
       console.error('Delete error:', err);
@@ -457,6 +657,70 @@ export function EnhancedAdminDashboard() {
     }
   };
 
+  const handleBulkDeleteContacts = async (ids: string[]) => {
+    if (userRole === 'viewer') {
+      toast.error('You do not have permission to perform this action');
+      return;
+    }
+
+    if (!confirm(`Are you sure you want to delete ${ids.length} contacts?`)) return;
+
+    try {
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/contacts/bulk-delete`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${publicAnonKey}`,
+          },
+          body: JSON.stringify({ ids }),
+        }
+      );
+
+      if (!response.ok) throw new Error('Failed to delete contacts');
+
+      toast.success(`${ids.length} contacts deleted`);
+      setSelectedContacts([]);
+      loadData();
+    } catch (err: any) {
+      console.error('Delete error:', err);
+      toast.error(err.message || 'Failed to delete contacts');
+    }
+  };
+
+  const handleBulkDeleteVolunteers = async (ids: string[]) => {
+    if (userRole === 'viewer') {
+      toast.error('You do not have permission to perform this action');
+      return;
+    }
+
+    if (!confirm(`Are you sure you want to delete ${ids.length} volunteer applications?`)) return;
+
+    try {
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/volunteers/bulk-delete`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${publicAnonKey}`,
+          },
+          body: JSON.stringify({ ids }),
+        }
+      );
+
+      if (!response.ok) throw new Error('Failed to delete volunteers');
+
+      toast.success(`${ids.length} volunteer applications deleted`);
+      setSelectedVolunteers([]);
+      loadData();
+    } catch (err: any) {
+      console.error('Delete error:', err);
+      toast.error(err.message || 'Failed to delete volunteers');
+    }
+  };
+
   const exportToCSV = (data: any[], filename: string) => {
     if (data.length === 0) {
       toast.error('No data to export');
@@ -481,6 +745,17 @@ export function EnhancedAdminDashboard() {
     a.click();
     window.URL.revokeObjectURL(url);
     toast.success('Data exported successfully');
+  };
+
+  // Filter functions
+  const getFilteredContacts = () => {
+    if (contactFilter === 'all') return contacts;
+    return contacts.filter(c => c.value.status === contactFilter);
+  };
+
+  const getFilteredVolunteers = () => {
+    if (volunteerFilter === 'all') return volunteers;
+    return volunteers.filter(v => v.value.status === volunteerFilter);
   };
 
   if (loading && !isAuthenticated) {
@@ -594,7 +869,7 @@ export function EnhancedAdminDashboard() {
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="mb-8">
+          <TabsList className="mb-8 flex-wrap">
             <TabsTrigger value="overview">
               <BarChart3 size={16} className="mr-2" />
               Analytics
@@ -733,7 +1008,7 @@ export function EnhancedAdminDashboard() {
                       </Card>
 
                       <Card className="p-6">
-                        <h3 className="text-lg text-gray-900 mb-6">Contact Status Distribution</h3>
+                        <h3 className="text-lg text-gray-900 mb-6">Contact Status</h3>
                         <ResponsiveContainer width="100%" height={250}>
                           <PieChart>
                             <Pie
@@ -744,7 +1019,7 @@ export function EnhancedAdminDashboard() {
                               label={(entry) => entry.name}
                               outerRadius={80}
                               fill="#8884d8"
-                              dataKey="value"
+                              dataKey="count"
                             >
                               {analytics.contactStatusData.map((entry, index) => (
                                 <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
@@ -758,18 +1033,17 @@ export function EnhancedAdminDashboard() {
 
                     {/* Growth Trends */}
                     <Card className="p-6">
-                      <h3 className="text-lg text-gray-900 mb-6">Activity Trends (Last 30 Days)</h3>
+                      <h3 className="text-lg text-gray-900 mb-6">Growth Trends</h3>
                       <ResponsiveContainer width="100%" height={300}>
                         <LineChart data={analytics.growthTrends}>
                           <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis dataKey="date" />
+                          <XAxis dataKey="month" />
                           <YAxis />
                           <Tooltip />
                           <Legend />
-                          <Line type="monotone" dataKey="donations" stroke="#10b981" name="Donations" />
                           <Line type="monotone" dataKey="contacts" stroke="#3b82f6" name="Contacts" />
-                          <Line type="monotone" dataKey="volunteers" stroke="#f59e0b" name="Volunteers" />
-                          <Line type="monotone" dataKey="subscribers" stroke="#8b5cf6" name="Subscribers" />
+                          <Line type="monotone" dataKey="volunteers" stroke="#8b5cf6" name="Volunteers" />
+                          <Line type="monotone" dataKey="donations" stroke="#10b981" name="Donations" />
                         </LineChart>
                       </ResponsiveContainer>
                     </Card>
@@ -779,10 +1053,10 @@ export function EnhancedAdminDashboard() {
             )}
           </TabsContent>
 
-          {/* Programs Tab with bulk actions and forms */}
+          {/* Programs Tab */}
           <TabsContent value="programs">
             <div className="space-y-6">
-              <div className="flex justify-between items-center">
+              <div className="flex flex-wrap justify-between items-center gap-4">
                 <div className="flex items-center gap-4">
                   <h2 className="text-2xl text-gray-900">Programs</h2>
                   {selectedPrograms.length > 0 && (
@@ -816,95 +1090,100 @@ export function EnhancedAdminDashboard() {
                 </div>
               </div>
 
-              <div className="space-y-4">
-                {programs.map((program) => (
-                  <Card key={program.key} className="p-6">
-                    <div className="flex items-start gap-4">
-                      <input
-                        type="checkbox"
-                        checked={selectedPrograms.includes(program.key)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setSelectedPrograms([...selectedPrograms, program.key]);
-                          } else {
-                            setSelectedPrograms(selectedPrograms.filter(id => id !== program.key));
-                          }
-                        }}
-                        className="mt-1"
-                      />
-                      {program.value.image && (
-                        <img
-                          src={program.value.image}
-                          alt={program.value.title}
-                          className="w-24 h-24 object-cover rounded-lg"
+              {programs.length === 0 ? (
+                <Card className="p-12 text-center">
+                  <FileText className="mx-auto text-gray-300 mb-4" size={48} />
+                  <p className="text-gray-500">No programs yet</p>
+                </Card>
+              ) : (
+                <div className="space-y-4">
+                  {programs.map((program) => (
+                    <Card key={program.key} className="p-6">
+                      <div className="flex items-start gap-4">
+                        <input
+                          type="checkbox"
+                          checked={selectedPrograms.includes(program.key)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedPrograms([...selectedPrograms, program.key]);
+                            } else {
+                              setSelectedPrograms(selectedPrograms.filter(id => id !== program.key));
+                            }
+                          }}
+                          className="mt-1"
                         />
-                      )}
-                      <div className="flex-1">
-                        <h3 className="text-lg text-gray-900 mb-2">{program.value.title}</h3>
-                        <p className="text-gray-600 text-sm mb-3">{program.value.description}</p>
-                        <div className="flex gap-2">
-                          <Badge>{program.value.category}</Badge>
-                          <Badge variant="outline">
-                            {new Date(program.value.createdAt).toLocaleDateString()}
-                          </Badge>
+                        {program.value.image && (
+                          <img
+                            src={program.value.image}
+                            alt={program.value.title}
+                            className="w-24 h-24 object-cover rounded-lg"
+                          />
+                        )}
+                        <div className="flex-1">
+                          <h3 className="text-lg text-gray-900 mb-2">{program.value.title}</h3>
+                          <p className="text-gray-600 text-sm mb-3">{program.value.description}</p>
+                          <div className="flex gap-2">
+                            <Badge>{program.value.category}</Badge>
+                            <Badge variant="outline">
+                              {new Date(program.value.createdAt).toLocaleDateString()}
+                            </Badge>
+                          </div>
                         </div>
+                        {userRole !== 'viewer' && (
+                          <div className="flex gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setEditingItem(program);
+                                setFormData({
+                                  title: program.value.title,
+                                  description: program.value.description,
+                                  content: '',
+                                  image: program.value.image || '',
+                                  category: program.value.category
+                                });
+                                setShowProgramForm(true);
+                              }}
+                            >
+                              <Edit size={16} />
+                            </Button>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={async () => {
+                                if (!confirm('Delete this program?')) return;
+                                try {
+                                  await fetch(
+                                    `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/programs/${program.key}`,
+                                    {
+                                      method: 'DELETE',
+                                      headers: { Authorization: `Bearer ${publicAnonKey}` },
+                                    }
+                                  );
+                                  toast.success('Program deleted');
+                                  loadData();
+                                } catch (err) {
+                                  toast.error('Failed to delete program');
+                                }
+                              }}
+                            >
+                              <Trash2 size={16} />
+                            </Button>
+                          </div>
+                        )}
                       </div>
-                      {userRole !== 'viewer' && (
-                        <div className="flex gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              setEditingItem(program);
-                              setFormData({
-                                title: program.value.title,
-                                description: program.value.description,
-                                content: '',
-                                image: program.value.image || '',
-                                category: program.value.category
-                              });
-                              setShowProgramForm(true);
-                            }}
-                          >
-                            <Edit size={16} />
-                          </Button>
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={async () => {
-                              if (!confirm('Delete this program?')) return;
-                              try {
-                                await fetch(
-                                  `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/programs/${program.key}`,
-                                  {
-                                    method: 'DELETE',
-                                    headers: { Authorization: `Bearer ${publicAnonKey}` },
-                                  }
-                                );
-                                toast.success('Program deleted');
-                                loadData();
-                              } catch (err) {
-                                toast.error('Failed to delete program');
-                              }
-                            }}
-                          >
-                            <Trash2 size={16} />
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-                  </Card>
-                ))}
-              </div>
+                    </Card>
+                  ))}
+                </div>
+              )}
             </div>
           </TabsContent>
 
-          {/* Similar implementation for News, Contacts, Volunteers tabs... */}
-          {/* For brevity, I'll show the key pattern but you'd repeat similar structure */}
-          
+          {/* News Tab */}
           <TabsContent value="news">
             <div className="space-y-6">
-              <div className="flex justify-between items-center">
+              <div className="flex flex-wrap justify-between items-center gap-4">
                 <div className="flex items-center gap-4">
                   <h2 className="text-2xl text-gray-900">News & Updates</h2>
                   {selectedNews.length > 0 && (
@@ -938,160 +1217,623 @@ export function EnhancedAdminDashboard() {
                 </div>
               </div>
 
-              <div className="space-y-4">
-                {news.map((item) => (
-                  <Card key={item.key} className="p-6">
-                    <div className="flex items-start gap-4">
-                      <input
-                        type="checkbox"
-                        checked={selectedNews.includes(item.key)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setSelectedNews([...selectedNews, item.key]);
-                          } else {
-                            setSelectedNews(selectedNews.filter(id => id !== item.key));
-                          }
-                        }}
-                        className="mt-1"
-                      />
-                      {item.value.image && (
-                        <img
-                          src={item.value.image}
-                          alt={item.value.title}
-                          className="w-24 h-24 object-cover rounded-lg"
+              {news.length === 0 ? (
+                <Card className="p-12 text-center">
+                  <Newspaper className="mx-auto text-gray-300 mb-4" size={48} />
+                  <p className="text-gray-500">No news articles yet</p>
+                </Card>
+              ) : (
+                <div className="space-y-4">
+                  {news.map((item) => (
+                    <Card key={item.key} className="p-6">
+                      <div className="flex items-start gap-4">
+                        <input
+                          type="checkbox"
+                          checked={selectedNews.includes(item.key)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedNews([...selectedNews, item.key]);
+                            } else {
+                              setSelectedNews(selectedNews.filter(id => id !== item.key));
+                            }
+                          }}
+                          className="mt-1"
                         />
-                      )}
-                      <div className="flex-1">
-                        <h3 className="text-lg text-gray-900 mb-2">{item.value.title}</h3>
-                        <div 
-                          className="text-gray-600 text-sm mb-3"
-                          dangerouslySetInnerHTML={{ __html: item.value.content }}
-                        />
-                        <Badge variant="outline">
-                          {new Date(item.value.timestamp).toLocaleDateString()}
-                        </Badge>
-                      </div>
-                      {userRole !== 'viewer' && (
-                        <div className="flex gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              setEditingItem(item);
-                              setFormData({
-                                title: item.value.title,
-                                description: '',
-                                content: item.value.content,
-                                image: item.value.image || '',
-                                category: 'general'
-                              });
-                              setShowNewsForm(true);
-                            }}
-                          >
-                            <Edit size={16} />
-                          </Button>
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={async () => {
-                              if (!confirm('Delete this news?')) return;
-                              try {
-                                await fetch(
-                                  `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/news/${item.key}`,
-                                  {
-                                    method: 'DELETE',
-                                    headers: { Authorization: `Bearer ${publicAnonKey}` },
-                                  }
-                                );
-                                toast.success('News deleted');
-                                loadData();
-                              } catch (err) {
-                                toast.error('Failed to delete news');
-                              }
-                            }}
-                          >
-                            <Trash2 size={16} />
-                          </Button>
+                        {item.value.image && (
+                          <img
+                            src={item.value.image}
+                            alt={item.value.title}
+                            className="w-24 h-24 object-cover rounded-lg"
+                          />
+                        )}
+                        <div className="flex-1">
+                          <h3 className="text-lg text-gray-900 mb-2">{item.value.title}</h3>
+                          <div 
+                            className="text-gray-600 text-sm mb-3 line-clamp-2"
+                            dangerouslySetInnerHTML={{ __html: item.value.content }}
+                          />
+                          <Badge variant="outline">
+                            {new Date(item.value.timestamp).toLocaleDateString()}
+                          </Badge>
                         </div>
-                      )}
-                    </div>
-                  </Card>
-                ))}
-              </div>
+                        {userRole !== 'viewer' && (
+                          <div className="flex gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setEditingItem(item);
+                                setFormData({
+                                  title: item.value.title,
+                                  description: '',
+                                  content: item.value.content,
+                                  image: item.value.image || '',
+                                  category: 'general'
+                                });
+                                setShowNewsForm(true);
+                              }}
+                            >
+                              <Edit size={16} />
+                            </Button>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={async () => {
+                                if (!confirm('Delete this news?')) return;
+                                try {
+                                  await fetch(
+                                    `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/news/${item.key}`,
+                                    {
+                                      method: 'DELETE',
+                                      headers: { Authorization: `Bearer ${publicAnonKey}` },
+                                    }
+                                  );
+                                  toast.success('News deleted');
+                                  loadData();
+                                } catch (err) {
+                                  toast.error('Failed to delete news');
+                                }
+                              }}
+                            >
+                              <Trash2 size={16} />
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              )}
             </div>
           </TabsContent>
 
-          {/* Remaining tabs omitted for brevity but follow same pattern */}
+          {/* Gallery Tab */}
+          <TabsContent value="gallery">
+            <div className="space-y-6">
+              <div className="flex flex-wrap justify-between items-center gap-4">
+                <div className="flex items-center gap-4">
+                  <h2 className="text-2xl text-gray-900">Gallery</h2>
+                  {selectedGallery.length > 0 && (
+                    <Badge variant="secondary">{selectedGallery.length} selected</Badge>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  {selectedGallery.length > 0 && userRole !== 'viewer' && (
+                    <Button
+                      variant="destructive"
+                      onClick={() => handleBulkDelete('gallery', selectedGallery)}
+                    >
+                      <Trash2 size={16} className="mr-2" />
+                      Delete Selected
+                    </Button>
+                  )}
+                  <Button onClick={() => exportToCSV(gallery, 'gallery')}>
+                    <Download size={16} className="mr-2" />
+                    Export CSV
+                  </Button>
+                  {userRole !== 'viewer' && (
+                    <Button onClick={() => {
+                      setShowGalleryForm(true);
+                      setEditingItem(null);
+                      setFormData({ title: '', description: '', content: '', image: '', category: 'event' });
+                    }}>
+                      <Plus size={16} className="mr-2" />
+                      Add Image
+                    </Button>
+                  )}
+                </div>
+              </div>
+
+              {gallery.length === 0 ? (
+                <Card className="p-12 text-center">
+                  <ImageIcon className="mx-auto text-gray-300 mb-4" size={48} />
+                  <p className="text-gray-500">No gallery images yet</p>
+                </Card>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {gallery.map((item) => (
+                    <Card key={item.key} className="overflow-hidden">
+                      <div className="relative">
+                        <input
+                          type="checkbox"
+                          checked={selectedGallery.includes(item.key)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedGallery([...selectedGallery, item.key]);
+                            } else {
+                              setSelectedGallery(selectedGallery.filter(id => id !== item.key));
+                            }
+                          }}
+                          className="absolute top-2 left-2 z-10"
+                        />
+                        {item.value.image && (
+                          <img
+                            src={item.value.image}
+                            alt={item.value.title}
+                            className="w-full h-48 object-cover"
+                          />
+                        )}
+                      </div>
+                      <div className="p-4">
+                        <h3 className="text-gray-900 mb-1">{item.value.title}</h3>
+                        <p className="text-gray-600 text-sm mb-3">{item.value.description}</p>
+                        <div className="flex items-center justify-between">
+                          <Badge>{item.value.category}</Badge>
+                          {userRole !== 'viewer' && (
+                            <div className="flex gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  setEditingItem(item);
+                                  setFormData({
+                                    title: item.value.title,
+                                    description: item.value.description,
+                                    content: '',
+                                    image: item.value.image || '',
+                                    category: item.value.category
+                                  });
+                                  setShowGalleryForm(true);
+                                }}
+                              >
+                                <Edit size={16} />
+                              </Button>
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={async () => {
+                                  if (!confirm('Delete this image?')) return;
+                                  try {
+                                    await fetch(
+                                      `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/gallery/${item.key}`,
+                                      {
+                                        method: 'DELETE',
+                                        headers: { Authorization: `Bearer ${publicAnonKey}` },
+                                      }
+                                    );
+                                    toast.success('Gallery item deleted');
+                                    loadData();
+                                  } catch (err) {
+                                    toast.error('Failed to delete gallery item');
+                                  }
+                                }}
+                              >
+                                <Trash2 size={16} />
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </div>
+          </TabsContent>
+
+          {/* Contacts Tab */}
           <TabsContent value="contacts">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl text-gray-900">Contact Messages</h2>
-              <div className="flex gap-2">
-                {selectedContacts.length > 0 && userRole !== 'viewer' && (
-                  <div className="flex gap-2">
-                    <Button onClick={() => handleBulkUpdateStatus('contacts', selectedContacts, 'resolved')}>
-                      <Check size={16} className="mr-2" />
-                      Mark Resolved
-                    </Button>
-                  </div>
-                )}
-                <Button onClick={() => exportToCSV(contacts, 'contacts')}>
-                  <Download size={16} className="mr-2" />
-                  Export CSV
-                </Button>
+            <div className="space-y-6">
+              <div className="flex flex-wrap justify-between items-center gap-4">
+                <div className="flex items-center gap-4">
+                  <h2 className="text-2xl text-gray-900">Contact Messages</h2>
+                  {selectedContacts.length > 0 && (
+                    <Badge variant="secondary">{selectedContacts.length} selected</Badge>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <select
+                    value={contactFilter}
+                    onChange={(e) => setContactFilter(e.target.value)}
+                    className="px-3 py-2 border rounded-lg text-sm"
+                  >
+                    <option value="all">All Status</option>
+                    <option value="new">New</option>
+                    <option value="read">Read</option>
+                    <option value="resolved">Resolved</option>
+                  </select>
+                  {selectedContacts.length > 0 && userRole !== 'viewer' && (
+                    <>
+                      <Button onClick={() => handleBulkUpdateStatus('contacts', selectedContacts, 'read')}>
+                        <Eye size={16} className="mr-2" />
+                        Mark Read
+                      </Button>
+                      <Button onClick={() => handleBulkUpdateStatus('contacts', selectedContacts, 'resolved')}>
+                        <Check size={16} className="mr-2" />
+                        Mark Resolved
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        onClick={() => handleBulkDeleteContacts(selectedContacts)}
+                      >
+                        <Trash2 size={16} className="mr-2" />
+                        Delete Selected
+                      </Button>
+                    </>
+                  )}
+                  <Button onClick={() => exportToCSV(getFilteredContacts(), 'contacts')}>
+                    <Download size={16} className="mr-2" />
+                    Export CSV
+                  </Button>
+                </div>
               </div>
+
+              {getFilteredContacts().length === 0 ? (
+                <Card className="p-12 text-center">
+                  <Mail className="mx-auto text-gray-300 mb-4" size={48} />
+                  <p className="text-gray-500">No contact messages</p>
+                </Card>
+              ) : (
+                <div className="space-y-4">
+                  {getFilteredContacts().map((contact) => (
+                    <Card key={contact.key} className="p-6">
+                      <div className="flex items-start gap-4">
+                        <input
+                          type="checkbox"
+                          checked={selectedContacts.includes(contact.key)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedContacts([...selectedContacts, contact.key]);
+                            } else {
+                              setSelectedContacts(selectedContacts.filter(id => id !== contact.key));
+                            }
+                          }}
+                          className="mt-1"
+                        />
+                        <div className="flex-1">
+                          <div className="flex items-start justify-between mb-2">
+                            <div>
+                              <h3 className="text-gray-900">{contact.value.name}</h3>
+                              <p className="text-sm text-gray-500">{contact.value.email}</p>
+                            </div>
+                            <div className="flex gap-2">
+                              <Badge variant={
+                                contact.value.status === 'new' ? 'destructive' :
+                                contact.value.status === 'read' ? 'default' : 'secondary'
+                              }>
+                                {contact.value.status || 'new'}
+                              </Badge>
+                              <Badge variant="outline">
+                                {new Date(contact.value.timestamp).toLocaleDateString()}
+                              </Badge>
+                            </div>
+                          </div>
+                          <p className="text-gray-600 text-sm mb-3">{contact.value.message}</p>
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setViewingItem(contact);
+                                setShowContactDialog(true);
+                              }}
+                            >
+                              <Eye size={16} className="mr-2" />
+                              View
+                            </Button>
+                            {userRole !== 'viewer' && (
+                              <>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => {
+                                    setViewingItem(contact);
+                                    setShowReplyDialog(true);
+                                  }}
+                                >
+                                  <Reply size={16} className="mr-2" />
+                                  Reply
+                                </Button>
+                                {contact.value.status !== 'resolved' && (
+                                  <Button
+                                    size="sm"
+                                    onClick={() => handleUpdateContactStatus(contact.key, 'resolved')}
+                                  >
+                                    <Check size={16} className="mr-2" />
+                                    Resolve
+                                  </Button>
+                                )}
+                                <Button
+                                  size="sm"
+                                  variant="destructive"
+                                  onClick={() => handleDeleteContact(contact.key)}
+                                >
+                                  <Trash2 size={16} />
+                                </Button>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              )}
             </div>
-            {/* Contact cards implementation */}
           </TabsContent>
 
+          {/* Volunteers Tab */}
           <TabsContent value="volunteers">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl text-gray-900">Volunteer Applications</h2>
-              <div className="flex gap-2">
-                {selectedVolunteers.length > 0 && userRole !== 'viewer' && (
-                  <div className="flex gap-2">
-                    <Button onClick={() => handleBulkUpdateStatus('volunteers', selectedVolunteers, 'approved')}>
-                      <Check size={16} className="mr-2" />
-                      Approve Selected
-                    </Button>
-                  </div>
-                )}
-                <Button onClick={() => exportToCSV(volunteers, 'volunteers')}>
+            <div className="space-y-6">
+              <div className="flex flex-wrap justify-between items-center gap-4">
+                <div className="flex items-center gap-4">
+                  <h2 className="text-2xl text-gray-900">Volunteer Applications</h2>
+                  {selectedVolunteers.length > 0 && (
+                    <Badge variant="secondary">{selectedVolunteers.length} selected</Badge>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <select
+                    value={volunteerFilter}
+                    onChange={(e) => setVolunteerFilter(e.target.value)}
+                    className="px-3 py-2 border rounded-lg text-sm"
+                  >
+                    <option value="all">All Status</option>
+                    <option value="pending">Pending</option>
+                    <option value="approved">Approved</option>
+                    <option value="rejected">Rejected</option>
+                  </select>
+                  {selectedVolunteers.length > 0 && userRole !== 'viewer' && (
+                    <>
+                      <Button onClick={() => handleBulkUpdateStatus('volunteers', selectedVolunteers, 'approved')}>
+                        <Check size={16} className="mr-2" />
+                        Approve Selected
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => handleBulkUpdateStatus('volunteers', selectedVolunteers, 'rejected')}
+                      >
+                        <X size={16} className="mr-2" />
+                        Reject Selected
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        onClick={() => handleBulkDeleteVolunteers(selectedVolunteers)}
+                      >
+                        <Trash2 size={16} className="mr-2" />
+                        Delete Selected
+                      </Button>
+                    </>
+                  )}
+                  <Button onClick={() => exportToCSV(getFilteredVolunteers(), 'volunteers')}>
+                    <Download size={16} className="mr-2" />
+                    Export CSV
+                  </Button>
+                </div>
+              </div>
+
+              {getFilteredVolunteers().length === 0 ? (
+                <Card className="p-12 text-center">
+                  <Users className="mx-auto text-gray-300 mb-4" size={48} />
+                  <p className="text-gray-500">No volunteer applications</p>
+                </Card>
+              ) : (
+                <div className="space-y-4">
+                  {getFilteredVolunteers().map((volunteer) => (
+                    <Card key={volunteer.key} className="p-6">
+                      <div className="flex items-start gap-4">
+                        <input
+                          type="checkbox"
+                          checked={selectedVolunteers.includes(volunteer.key)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedVolunteers([...selectedVolunteers, volunteer.key]);
+                            } else {
+                              setSelectedVolunteers(selectedVolunteers.filter(id => id !== volunteer.key));
+                            }
+                          }}
+                          className="mt-1"
+                        />
+                        <div className="flex-1">
+                          <div className="flex items-start justify-between mb-2">
+                            <div>
+                              <h3 className="text-gray-900">{volunteer.value.name}</h3>
+                              <p className="text-sm text-gray-500">{volunteer.value.email} • {volunteer.value.phone}</p>
+                            </div>
+                            <div className="flex gap-2">
+                              <Badge variant={
+                                volunteer.value.status === 'pending' ? 'default' :
+                                volunteer.value.status === 'approved' ? 'secondary' : 'destructive'
+                              }>
+                                {volunteer.value.status || 'pending'}
+                              </Badge>
+                              <Badge variant="outline">
+                                {new Date(volunteer.value.timestamp).toLocaleDateString()}
+                              </Badge>
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2 mb-3 text-sm">
+                            <div>
+                              <span className="text-gray-500">Interests:</span>
+                              <span className="text-gray-900 ml-1">{volunteer.value.interests || 'Not specified'}</span>
+                            </div>
+                            <div>
+                              <span className="text-gray-500">Availability:</span>
+                              <span className="text-gray-900 ml-1">{volunteer.value.availability || 'Not specified'}</span>
+                            </div>
+                          </div>
+                          {volunteer.value.message && (
+                            <p className="text-gray-600 text-sm mb-3">{volunteer.value.message}</p>
+                          )}
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setViewingItem(volunteer);
+                                setShowVolunteerDialog(true);
+                              }}
+                            >
+                              <Eye size={16} className="mr-2" />
+                              View Details
+                            </Button>
+                            {userRole !== 'viewer' && (
+                              <>
+                                {volunteer.value.status !== 'approved' && (
+                                  <Button
+                                    size="sm"
+                                    onClick={() => handleUpdateVolunteerStatus(volunteer.key, 'approved')}
+                                  >
+                                    <Check size={16} className="mr-2" />
+                                    Approve
+                                  </Button>
+                                )}
+                                {volunteer.value.status !== 'rejected' && (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => handleUpdateVolunteerStatus(volunteer.key, 'rejected')}
+                                  >
+                                    <X size={16} className="mr-2" />
+                                    Reject
+                                  </Button>
+                                )}
+                                <Button
+                                  size="sm"
+                                  variant="destructive"
+                                  onClick={() => handleDeleteVolunteer(volunteer.key)}
+                                >
+                                  <Trash2 size={16} />
+                                </Button>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </div>
+          </TabsContent>
+
+          {/* Donations Tab */}
+          <TabsContent value="donations">
+            <div className="space-y-6">
+              <div className="flex justify-between items-center">
+                <h2 className="text-2xl text-gray-900">Donations</h2>
+                <Button onClick={() => exportToCSV(donations, 'donations')}>
                   <Download size={16} className="mr-2" />
                   Export CSV
                 </Button>
               </div>
+
+              {donations.length === 0 ? (
+                <Card className="p-12 text-center">
+                  <Heart className="mx-auto text-gray-300 mb-4" size={48} />
+                  <p className="text-gray-500">No donations yet</p>
+                </Card>
+              ) : (
+                <div className="space-y-4">
+                  {donations.map((donation) => (
+                    <Card key={donation.key} className="p-6">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h3 className="text-gray-900 mb-1">{donation.value.name}</h3>
+                          <p className="text-sm text-gray-500 mb-2">{donation.value.email}</p>
+                          <div className="flex gap-2 text-sm">
+                            <Badge>${donation.value.amount}</Badge>
+                            <Badge variant="outline">{donation.value.paymentMethod}</Badge>
+                            <Badge variant="outline">
+                              {new Date(donation.value.timestamp).toLocaleDateString()}
+                            </Badge>
+                          </div>
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              )}
             </div>
-            {/* Volunteer cards implementation */}
           </TabsContent>
 
-          <TabsContent value="donations">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl text-gray-900">Donations</h2>
-              <Button onClick={() => exportToCSV(donations, 'donations')}>
-                <Download size={16} className="mr-2" />
-                Export CSV
-              </Button>
-            </div>
-            {/* Donation cards */}
-          </TabsContent>
-
+          {/* Newsletter Tab */}
           <TabsContent value="subscribers">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl text-gray-900">Newsletter Subscribers</h2>
-              <Button onClick={() => exportToCSV(subscribers, 'subscribers')}>
-                <Download size={16} className="mr-2" />
-                Export CSV
-              </Button>
+            <div className="space-y-6">
+              <div className="flex justify-between items-center">
+                <h2 className="text-2xl text-gray-900">Newsletter Subscribers</h2>
+                <Button onClick={() => exportToCSV(subscribers, 'subscribers')}>
+                  <Download size={16} className="mr-2" />
+                  Export CSV
+                </Button>
+              </div>
+
+              {subscribers.length === 0 ? (
+                <Card className="p-12 text-center">
+                  <Send className="mx-auto text-gray-300 mb-4" size={48} />
+                  <p className="text-gray-500">No subscribers yet</p>
+                </Card>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {subscribers.map((subscriber) => (
+                    <Card key={subscriber.key} className="p-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center">
+                          <Send className="text-emerald-600" size={18} />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-gray-900 text-sm">{subscriber.value.email}</p>
+                          <p className="text-xs text-gray-500">
+                            {new Date(subscriber.value.timestamp).toLocaleDateString()}
+                          </p>
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              )}
             </div>
-            {/* Subscriber cards */}
           </TabsContent>
 
+          {/* Users Management Tab */}
           {userRole === 'super-admin' && (
             <TabsContent value="users">
-              <div className="flex justify-between items-center mb-6">
+              <div className="space-y-6">
                 <h2 className="text-2xl text-gray-900">Admin Users</h2>
+                {adminUsers.length === 0 ? (
+                  <Card className="p-12 text-center">
+                    <Shield className="mx-auto text-gray-300 mb-4" size={48} />
+                    <p className="text-gray-500">No admin users</p>
+                  </Card>
+                ) : (
+                  <div className="space-y-4">
+                    {adminUsers.map((user) => (
+                      <Card key={user.id} className="p-6">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <h3 className="text-gray-900 mb-1">{user.user_metadata?.name || 'Unknown'}</h3>
+                            <p className="text-sm text-gray-500 mb-2">{user.email}</p>
+                            <Badge>{user.user_metadata?.role || 'viewer'}</Badge>
+                          </div>
+                          <Badge variant="outline">
+                            {new Date(user.created_at).toLocaleDateString()}
+                          </Badge>
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
+                )}
               </div>
-              {/* User management cards */}
             </TabsContent>
           )}
 
@@ -1243,10 +1985,216 @@ export function EnhancedAdminDashboard() {
                   Cancel
                 </Button>
                 <Button type="submit">
-                  {editingItem ? 'Update' : 'Publish'} News
+                  {editingItem ? 'Update' : 'Create'} News
                 </Button>
               </div>
             </form>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Gallery Form Dialog */}
+      {showGalleryForm && (
+        <Dialog open={showGalleryForm} onOpenChange={setShowGalleryForm}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>{editingItem ? 'Edit Gallery Item' : 'Add New Gallery Item'}</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleSubmitGallery} className="space-y-4">
+              <div>
+                <label className="block text-sm text-gray-700 mb-2">Title</label>
+                <input
+                  type="text"
+                  value={formData.title}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  required
+                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm text-gray-700 mb-2">Category</label>
+                <select
+                  value={formData.category}
+                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
+                >
+                  <option value="event">Event</option>
+                  <option value="project">Project</option>
+                  <option value="community">Community</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm text-gray-700 mb-2">Description</label>
+                <textarea
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  required
+                  rows={3}
+                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm text-gray-700 mb-2">Image</label>
+                <div className="flex items-center gap-4">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleImageUpload(file);
+                    }}
+                    required={!editingItem}
+                    className="flex-1"
+                  />
+                  {uploadingImage && <span className="text-sm text-gray-500">Uploading...</span>}
+                </div>
+                {formData.image && (
+                  <img src={formData.image} alt="Preview" className="mt-2 w-full h-48 object-cover rounded-lg" />
+                )}
+              </div>
+
+              <div className="flex gap-2 justify-end pt-4">
+                <Button type="button" variant="outline" onClick={() => setShowGalleryForm(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit">
+                  {editingItem ? 'Update' : 'Add'} Gallery Item
+                </Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Contact View Dialog */}
+      {showContactDialog && viewingItem && (
+        <Dialog open={showContactDialog} onOpenChange={setShowContactDialog}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Contact Message Details</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm text-gray-500">Name</label>
+                <p className="text-gray-900">{viewingItem.value.name}</p>
+              </div>
+              <div>
+                <label className="text-sm text-gray-500">Email</label>
+                <p className="text-gray-900">{viewingItem.value.email}</p>
+              </div>
+              <div>
+                <label className="text-sm text-gray-500">Date</label>
+                <p className="text-gray-900">{new Date(viewingItem.value.timestamp).toLocaleString()}</p>
+              </div>
+              <div>
+                <label className="text-sm text-gray-500">Status</label>
+                <div className="mt-1">
+                  <Badge>{viewingItem.value.status || 'new'}</Badge>
+                </div>
+              </div>
+              <div>
+                <label className="text-sm text-gray-500">Message</label>
+                <p className="text-gray-900 mt-1">{viewingItem.value.message}</p>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Volunteer View Dialog */}
+      {showVolunteerDialog && viewingItem && (
+        <Dialog open={showVolunteerDialog} onOpenChange={setShowVolunteerDialog}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Volunteer Application Details</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm text-gray-500">Name</label>
+                <p className="text-gray-900">{viewingItem.value.name}</p>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm text-gray-500">Email</label>
+                  <p className="text-gray-900">{viewingItem.value.email}</p>
+                </div>
+                <div>
+                  <label className="text-sm text-gray-500">Phone</label>
+                  <p className="text-gray-900">{viewingItem.value.phone}</p>
+                </div>
+              </div>
+              <div>
+                <label className="text-sm text-gray-500">Date Applied</label>
+                <p className="text-gray-900">{new Date(viewingItem.value.timestamp).toLocaleString()}</p>
+              </div>
+              <div>
+                <label className="text-sm text-gray-500">Status</label>
+                <div className="mt-1">
+                  <Badge>{viewingItem.value.status || 'pending'}</Badge>
+                </div>
+              </div>
+              <div>
+                <label className="text-sm text-gray-500">Interests</label>
+                <p className="text-gray-900">{viewingItem.value.interests || 'Not specified'}</p>
+              </div>
+              <div>
+                <label className="text-sm text-gray-500">Availability</label>
+                <p className="text-gray-900">{viewingItem.value.availability || 'Not specified'}</p>
+              </div>
+              {viewingItem.value.message && (
+                <div>
+                  <label className="text-sm text-gray-500">Message</label>
+                  <p className="text-gray-900 mt-1">{viewingItem.value.message}</p>
+                </div>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Reply Dialog */}
+      {showReplyDialog && viewingItem && (
+        <Dialog open={showReplyDialog} onOpenChange={setShowReplyDialog}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Reply to {viewingItem.value.name}</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm text-gray-500">To</label>
+                <p className="text-gray-900">{viewingItem.value.email}</p>
+              </div>
+              <div>
+                <label className="text-sm text-gray-500">Original Message</label>
+                <p className="text-gray-600 text-sm mt-1 p-3 bg-gray-50 rounded">{viewingItem.value.message}</p>
+              </div>
+              <div>
+                <label className="block text-sm text-gray-700 mb-2">Your Reply</label>
+                <textarea
+                  value={replyMessage}
+                  onChange={(e) => setReplyMessage(e.target.value)}
+                  rows={6}
+                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
+                  placeholder="Type your reply here..."
+                />
+              </div>
+              <div className="flex gap-2 justify-end">
+                <Button type="button" variant="outline" onClick={() => {
+                  setShowReplyDialog(false);
+                  setReplyMessage('');
+                }}>
+                  Cancel
+                </Button>
+                <Button onClick={handleReplyToContact} disabled={!replyMessage.trim()}>
+                  <Send size={16} className="mr-2" />
+                  Send Reply
+                </Button>
+              </div>
+            </div>
           </DialogContent>
         </Dialog>
       )}
