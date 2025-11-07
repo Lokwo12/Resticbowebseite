@@ -141,6 +141,7 @@ const NAVIGATION_ITEMS = [
   { id: 'donations', label: 'Donations', icon: Heart, color: 'text-emerald-600' },
   { id: 'subscribers', label: 'Subscribers', icon: Send, color: 'text-blue-600' },
   { id: 'settings', label: 'Settings', icon: Settings, color: 'text-gray-600' },
+  { id: 'users', label: 'Users', icon: Shield, color: 'text-red-600', requiresSuperAdmin: true },
 ];
 
 export function EnhancedAdminDashboard() {
@@ -1628,7 +1629,9 @@ export function EnhancedAdminDashboard() {
             <div className="mb-6">
               <h3 className="text-xs uppercase text-gray-500 mb-3 px-3">Navigation</h3>
               <nav className="space-y-1">
-                {NAVIGATION_ITEMS.map((item) => {
+                {NAVIGATION_ITEMS
+                  .filter((item) => !item.requiresSuperAdmin || userRole === 'super-admin')
+                  .map((item) => {
                   const Icon = item.icon;
                   const isActive = activeTab === item.id;
                   
@@ -1651,23 +1654,6 @@ export function EnhancedAdminDashboard() {
                     </button>
                   );
                 })}
-                {userRole === 'super-admin' && (
-                  <button
-                    onClick={() => {
-                      setActiveTab('users');
-                      if (window.innerWidth < 1024) setSidebarOpen(false);
-                    }}
-                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${
-                      activeTab === 'users'
-                        ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-md'
-                        : 'text-gray-700 hover:bg-gray-100'
-                    }`}
-                  >
-                    <Shield size={18} className={activeTab === 'users' ? 'text-white' : 'text-red-600'} />
-                    <span className="text-sm">Users</span>
-                    {activeTab === 'users' && <ChevronRight size={16} className="ml-auto" />}
-                  </button>
-                )}
               </nav>
             </div>
 
