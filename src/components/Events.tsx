@@ -22,10 +22,34 @@ interface Event {
 export function Events() {
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
+  const [sectionSettings, setSectionSettings] = useState({ title: 'Events Calendar', description: 'Join us at our upcoming events and activities. Together, we can create positive change.' });
 
   useEffect(() => {
     fetchEvents();
+    fetchSettings();
   }, []);
+
+  const fetchSettings = async () => {
+    try {
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/site-settings`,
+        {
+          headers: {
+            Authorization: `Bearer ${publicAnonKey}`,
+          },
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.settings?.sections?.events) {
+          setSectionSettings(data.settings.sections.events);
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching section settings:', err);
+    }
+  };
 
   const fetchEvents = async () => {
     try {
@@ -156,11 +180,10 @@ export function Events() {
         <div className="text-center mb-12">
           <div className="flex items-center justify-center gap-2 mb-4">
             <Calendar className="text-emerald-600" size={32} />
-            <h2 className="text-emerald-600">Events & Activities</h2>
+            <h2 className="text-emerald-600">{sectionSettings.title}</h2>
           </div>
           <p className="text-gray-600 max-w-3xl mx-auto">
-            Join us for upcoming community events, workshops, and programs. Together we're building 
-            a stronger, more connected Kiryandongo community.
+            {sectionSettings.description}
           </p>
         </div>
 

@@ -23,10 +23,34 @@ export function FAQ() {
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [sectionSettings, setSectionSettings] = useState({ title: 'Frequently Asked Questions', description: 'Find answers to common questions about our organization, programs, and how you can get involved.' });
 
   useEffect(() => {
     fetchFAQs();
+    fetchSettings();
   }, []);
+
+  const fetchSettings = async () => {
+    try {
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/site-settings`,
+        {
+          headers: {
+            Authorization: `Bearer ${publicAnonKey}`,
+          },
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.settings?.sections?.faq) {
+          setSectionSettings(data.settings.sections.faq);
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching section settings:', err);
+    }
+  };
 
   const fetchFAQs = async () => {
     try {
@@ -79,10 +103,10 @@ export function FAQ() {
         <div className="text-center mb-12">
           <div className="flex items-center justify-center gap-2 mb-4">
             <HelpCircle className="text-emerald-600" size={32} />
-            <h2 className="text-emerald-600">Frequently Asked Questions</h2>
+            <h2 className="text-emerald-600">{sectionSettings.title}</h2>
           </div>
           <p className="text-gray-600 max-w-3xl mx-auto">
-            Find answers to common questions about our organization, programs, donations, and volunteering.
+            {sectionSettings.description}
           </p>
         </div>
 

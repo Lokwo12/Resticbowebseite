@@ -31,10 +31,34 @@ export function VolunteerOpportunities() {
     experience: '',
     opportunityId: ''
   });
+  const [sectionSettings, setSectionSettings] = useState({ title: 'Volunteer Opportunities', description: 'Make a difference by volunteering with us. Explore available positions and find the perfect fit for your skills.' });
 
   useEffect(() => {
     fetchOpportunities();
+    fetchSettings();
   }, []);
+
+  const fetchSettings = async () => {
+    try {
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/site-settings`,
+        {
+          headers: {
+            Authorization: `Bearer ${publicAnonKey}`,
+          },
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.settings?.sections?.opportunities) {
+          setSectionSettings(data.settings.sections.opportunities);
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching section settings:', err);
+    }
+  };
 
   const fetchOpportunities = async () => {
     try {
@@ -127,11 +151,10 @@ export function VolunteerOpportunities() {
         <div className="text-center mb-12">
           <div className="flex items-center justify-center gap-2 mb-4">
             <Heart className="text-emerald-600" size={32} />
-            <h2 className="text-emerald-600">Volunteer Opportunities</h2>
+            <h2 className="text-emerald-600">{sectionSettings.title}</h2>
           </div>
           <p className="text-gray-600 max-w-3xl mx-auto">
-            Make a meaningful difference in the Kiryandongo community. Whether you have a few hours 
-            a week or want a long-term commitment, there's a place for you.
+            {sectionSettings.description}
           </p>
         </div>
 

@@ -27,10 +27,34 @@ export function ImpactDashboard() {
   const [stats, setStats] = useState<ImpactStats | null>(null);
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
+  const [sectionSettings, setSectionSettings] = useState({ title: 'Impact Dashboard', description: 'See the measurable impact of our work through data, statistics, and comprehensive reports.' });
 
   useEffect(() => {
     fetchData();
+    fetchSettings();
   }, []);
+
+  const fetchSettings = async () => {
+    try {
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/site-settings`,
+        {
+          headers: {
+            Authorization: `Bearer ${publicAnonKey}`,
+          },
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.settings?.sections?.impact) {
+          setSectionSettings(data.settings.sections.impact);
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching section settings:', err);
+    }
+  };
 
   const fetchData = async () => {
     try {
@@ -80,11 +104,10 @@ export function ImpactDashboard() {
         <div className="text-center mb-12">
           <div className="flex items-center justify-center gap-2 mb-4">
             <TrendingUp className="text-emerald-600" size={32} />
-            <h2 className="text-emerald-600">Our Impact</h2>
+            <h2 className="text-emerald-600">{sectionSettings.title}</h2>
           </div>
           <p className="text-gray-600 max-w-3xl mx-auto">
-            Measuring the difference we're making together in the Kiryandongo community. 
-            Every number represents a life touched, a problem solved, a future brightened.
+            {sectionSettings.description}
           </p>
         </div>
 

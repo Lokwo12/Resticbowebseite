@@ -19,10 +19,34 @@ export function Resources() {
   const [resources, setResources] = useState<Resource[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const [sectionSettings, setSectionSettings] = useState({ title: 'Resources & Downloads', description: 'Access our reports, publications, and educational materials to learn more about our work and impact.' });
 
   useEffect(() => {
     fetchResources();
+    fetchSettings();
   }, []);
+
+  const fetchSettings = async () => {
+    try {
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/site-settings`,
+        {
+          headers: {
+            Authorization: `Bearer ${publicAnonKey}`,
+          },
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.settings?.sections?.resources) {
+          setSectionSettings(data.settings.sections.resources);
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching section settings:', err);
+    }
+  };
 
   const fetchResources = async () => {
     try {
@@ -92,11 +116,10 @@ export function Resources() {
         <div className="text-center mb-12">
           <div className="flex items-center justify-center gap-2 mb-4">
             <FolderOpen className="text-emerald-600" size={32} />
-            <h2 className="text-emerald-600">Resources & Downloads</h2>
+            <h2 className="text-emerald-600">{sectionSettings.title}</h2>
           </div>
           <p className="text-gray-600 max-w-3xl mx-auto">
-            Access important documents, forms, educational materials, and policy documents. 
-            All resources are free to download and use.
+            {sectionSettings.description}
           </p>
         </div>
 
