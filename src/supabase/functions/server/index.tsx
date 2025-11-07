@@ -2124,6 +2124,13 @@ app.get('/make-server-2a4be611/site-settings', async (c) => {
             title: 'Impact Dashboard',
             description: 'See the measurable impact of our work through data, statistics, and comprehensive reports.'
           }
+        },
+        categories: {
+          programs: ['General', 'Education', 'Healthcare', 'Development'],
+          opportunities: ['General', 'Education', 'Healthcare', 'Community', 'Fundraising'],
+          events: ['General', 'Workshop', 'Fundraiser', 'Community', 'Awareness'],
+          resources: ['General', 'Training', 'Reports', 'Guides'],
+          partners: ['General', 'Corporate', 'NGO', 'Government']
         }
       }
       
@@ -2268,6 +2275,13 @@ app.post('/make-server-2a4be611/site-settings/initialize', async (c) => {
           title: 'Impact Dashboard',
           description: 'See the measurable impact of our work through data, statistics, and comprehensive reports.'
         }
+      },
+      categories: {
+        programs: ['General', 'Education', 'Healthcare', 'Development'],
+        opportunities: ['General', 'Education', 'Healthcare', 'Community', 'Fundraising'],
+        events: ['General', 'Workshop', 'Fundraiser', 'Community', 'Awareness'],
+        resources: ['General', 'Training', 'Reports', 'Guides'],
+        partners: ['General', 'Corporate', 'NGO', 'Government']
       },
       createdAt: new Date().toISOString()
     }

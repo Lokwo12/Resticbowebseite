@@ -3083,7 +3083,7 @@ export function EnhancedAdminDashboard() {
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
                             <h4 className="text-lg text-gray-900">{opp.value.title}</h4>
-                            <Badge>{opp.value.type}</Badge>
+                            <Badge>{opp.value.category || opp.value.type || 'General'}</Badge>
                             {opp.value.urgent && <Badge className="bg-red-100 text-red-700">Urgent</Badge>}
                           </div>
                           <p className="text-sm text-gray-600 mb-2">{opp.value.description}</p>
@@ -3775,6 +3775,7 @@ export function EnhancedAdminDashboard() {
           editingItem={editingItem}
           onSuccess={loadData}
           userRole={userRole}
+          categoryOptions={siteSettings?.categories?.opportunities}
         />
       )}
 
