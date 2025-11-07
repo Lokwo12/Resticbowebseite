@@ -39,6 +39,21 @@ import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, Cart
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import { SiteSettingsTab } from './SiteSettingsTab';
+import { 
+  TeamFormDialog, 
+  StoryFormDialog, 
+  ImpactStatsFormDialog 
+} from './AdminFormDialogs';
+import { 
+  ReportFormDialog, 
+  EventFormDialog, 
+  PartnerFormDialog 
+} from './AdminFormDialogsExtended';
+import { 
+  OpportunityFormDialog, 
+  FAQFormDialog, 
+  ResourceFormDialog 
+} from './AdminFormDialogsFinal';
 
 const supabase = createClient(
   `https://${projectId}.supabase.co`,
@@ -81,6 +96,17 @@ export function EnhancedAdminDashboard() {
   const [subscribers, setSubscribers] = useState<any[]>([]);
   const [adminUsers, setAdminUsers] = useState<any[]>([]);
   const [siteSettings, setSiteSettings] = useState<any>(null);
+  
+  // New data states for additional sections
+  const [team, setTeam] = useState<any[]>([]);
+  const [stories, setStories] = useState<any[]>([]);
+  const [impactStats, setImpactStats] = useState<any>(null);
+  const [reports, setReports] = useState<any[]>([]);
+  const [events, setEvents] = useState<any[]>([]);
+  const [partners, setPartners] = useState<any[]>([]);
+  const [opportunities, setOpportunities] = useState<any[]>([]);
+  const [faqs, setFAQs] = useState<any[]>([]);
+  const [resources, setResources] = useState<any[]>([]);
 
   // Selection states for bulk actions
   const [selectedPrograms, setSelectedPrograms] = useState<string[]>([]);
@@ -88,6 +114,12 @@ export function EnhancedAdminDashboard() {
   const [selectedGallery, setSelectedGallery] = useState<string[]>([]);
   const [selectedContacts, setSelectedContacts] = useState<string[]>([]);
   const [selectedVolunteers, setSelectedVolunteers] = useState<string[]>([]);
+  const [selectedTeam, setSelectedTeam] = useState<string[]>([]);
+  const [selectedStories, setSelectedStories] = useState<string[]>([]);
+  const [selectedEvents, setSelectedEvents] = useState<string[]>([]);
+  const [selectedPartners, setSelectedPartners] = useState<string[]>([]);
+  const [selectedFAQs, setSelectedFAQs] = useState<string[]>([]);
+  const [selectedResources, setSelectedResources] = useState<string[]>([]);
 
   // Filter states
   const [contactFilter, setContactFilter] = useState('all');
@@ -106,6 +138,15 @@ export function EnhancedAdminDashboard() {
   const [showContactDialog, setShowContactDialog] = useState(false);
   const [showVolunteerDialog, setShowVolunteerDialog] = useState(false);
   const [showReplyDialog, setShowReplyDialog] = useState(false);
+  const [showTeamForm, setShowTeamForm] = useState(false);
+  const [showStoryForm, setShowStoryForm] = useState(false);
+  const [showImpactStatsForm, setShowImpactStatsForm] = useState(false);
+  const [showReportForm, setShowReportForm] = useState(false);
+  const [showEventForm, setShowEventForm] = useState(false);
+  const [showPartnerForm, setShowPartnerForm] = useState(false);
+  const [showOpportunityForm, setShowOpportunityForm] = useState(false);
+  const [showFAQForm, setShowFAQForm] = useState(false);
+  const [showResourceForm, setShowResourceForm] = useState(false);
   const [editingItem, setEditingItem] = useState<any>(null);
   const [viewingItem, setViewingItem] = useState<any>(null);
   const [replyMessage, setReplyMessage] = useState('');
@@ -291,6 +332,69 @@ export function EnhancedAdminDashboard() {
         );
         const data = await response.json();
         setSiteSettings(data.settings || null);
+      } else if (activeTab === 'team') {
+        const response = await fetch(
+          `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/team`,
+          { headers: { Authorization: `Bearer ${publicAnonKey}` } }
+        );
+        const data = await response.json();
+        setTeam(data.team || []);
+      } else if (activeTab === 'stories') {
+        const response = await fetch(
+          `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/stories`,
+          { headers: { Authorization: `Bearer ${publicAnonKey}` } }
+        );
+        const data = await response.json();
+        setStories(data.stories || []);
+      } else if (activeTab === 'impact') {
+        const response = await fetch(
+          `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/impact-stats`,
+          { headers: { Authorization: `Bearer ${publicAnonKey}` } }
+        );
+        const data = await response.json();
+        setImpactStats(data.stats || null);
+      } else if (activeTab === 'reports') {
+        const response = await fetch(
+          `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/reports`,
+          { headers: { Authorization: `Bearer ${publicAnonKey}` } }
+        );
+        const data = await response.json();
+        setReports(data.reports || []);
+      } else if (activeTab === 'events') {
+        const response = await fetch(
+          `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/events`,
+          { headers: { Authorization: `Bearer ${publicAnonKey}` } }
+        );
+        const data = await response.json();
+        setEvents(data.events || []);
+      } else if (activeTab === 'partners') {
+        const response = await fetch(
+          `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/partners`,
+          { headers: { Authorization: `Bearer ${publicAnonKey}` } }
+        );
+        const data = await response.json();
+        setPartners(data.partners || []);
+      } else if (activeTab === 'opportunities') {
+        const response = await fetch(
+          `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/opportunities`,
+          { headers: { Authorization: `Bearer ${publicAnonKey}` } }
+        );
+        const data = await response.json();
+        setOpportunities(data.opportunities || []);
+      } else if (activeTab === 'faqs') {
+        const response = await fetch(
+          `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/faqs`,
+          { headers: { Authorization: `Bearer ${publicAnonKey}` } }
+        );
+        const data = await response.json();
+        setFAQs(data.faqs || []);
+      } else if (activeTab === 'resources') {
+        const response = await fetch(
+          `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/resources`,
+          { headers: { Authorization: `Bearer ${publicAnonKey}` } }
+        );
+        const data = await response.json();
+        setResources(data.resources || []);
       }
     } catch (err) {
       console.error('Error loading data:', err);
@@ -317,7 +421,7 @@ export function EnhancedAdminDashboard() {
 
       if (!response.ok) throw new Error(data.error);
 
-      setFormData({ ...formData, image: data.url });
+      setFormData(prev => ({ ...prev, image: data.url }));
       toast.success('Image uploaded successfully');
     } catch (err: any) {
       console.error('Upload error:', err);
@@ -414,6 +518,11 @@ export function EnhancedAdminDashboard() {
       return;
     }
 
+    if (!formData.image) {
+      toast.error('Please upload an image');
+      return;
+    }
+
     try {
       const url = editingItem
         ? `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/gallery/${editingItem.key}`
@@ -428,12 +537,15 @@ export function EnhancedAdminDashboard() {
         body: JSON.stringify({
           title: formData.title,
           description: formData.description,
-          image: formData.image,
+          imageUrl: formData.image,
           category: formData.category
         }),
       });
 
-      if (!response.ok) throw new Error('Failed to save gallery item');
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to save gallery item');
+      }
 
       toast.success(editingItem ? 'Gallery item updated' : 'Gallery item added');
       setShowGalleryForm(false);
@@ -452,7 +564,12 @@ export function EnhancedAdminDashboard() {
       return;
     }
 
-    if (!replyMessage.trim() || !viewingItem) return;
+    if (!replyMessage.trim()) {
+      toast.error('Please enter a reply message');
+      return;
+    }
+
+    if (!viewingItem) return;
 
     try {
       const response = await fetch(
@@ -467,9 +584,20 @@ export function EnhancedAdminDashboard() {
         }
       );
 
-      if (!response.ok) throw new Error('Failed to send reply');
+      const data = await response.json();
 
-      toast.success('Reply sent successfully');
+      if (!response.ok) {
+        if (data.error && data.error.includes('Email service not configured')) {
+          toast.error('Email service not configured. Please add your Resend API key in the environment settings.', {
+            duration: 8000
+          });
+        } else {
+          throw new Error(data.error || 'Failed to send reply');
+        }
+        return;
+      }
+
+      toast.success('Reply sent successfully! ✉️');
       setShowReplyDialog(false);
       setReplyMessage('');
       setViewingItem(null);
@@ -747,6 +875,166 @@ export function EnhancedAdminDashboard() {
     toast.success('Data exported successfully');
   };
 
+  // Team CRUD handlers
+  const handleDeleteTeam = async (id: string) => {
+    if (userRole === 'viewer' || userRole === 'editor') {
+      toast.error('You do not have permission to delete');
+      return;
+    }
+    if (!confirm('Delete this team member?')) return;
+    try {
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/team/${id}`,
+        { method: 'DELETE', headers: { Authorization: `Bearer ${publicAnonKey}` } }
+      );
+      if (!response.ok) throw new Error('Failed to delete');
+      toast.success('Team member deleted');
+      loadData();
+    } catch (err: any) {
+      toast.error(err.message);
+    }
+  };
+
+  // Story CRUD handlers
+  const handleDeleteStory = async (id: string) => {
+    if (userRole === 'viewer' || userRole === 'editor') {
+      toast.error('You do not have permission to delete');
+      return;
+    }
+    if (!confirm('Delete this story?')) return;
+    try {
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/stories/${id}`,
+        { method: 'DELETE', headers: { Authorization: `Bearer ${publicAnonKey}` } }
+      );
+      if (!response.ok) throw new Error('Failed to delete');
+      toast.success('Story deleted');
+      loadData();
+    } catch (err: any) {
+      toast.error(err.message);
+    }
+  };
+
+  // Report CRUD handlers
+  const handleDeleteReport = async (id: string) => {
+    if (userRole === 'viewer' || userRole === 'editor') {
+      toast.error('You do not have permission to delete');
+      return;
+    }
+    if (!confirm('Delete this report?')) return;
+    try {
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/reports/${id}`,
+        { method: 'DELETE', headers: { Authorization: `Bearer ${publicAnonKey}` } }
+      );
+      if (!response.ok) throw new Error('Failed to delete');
+      toast.success('Report deleted');
+      loadData();
+    } catch (err: any) {
+      toast.error(err.message);
+    }
+  };
+
+  // Event CRUD handlers
+  const handleDeleteEvent = async (id: string) => {
+    if (userRole === 'viewer' || userRole === 'editor') {
+      toast.error('You do not have permission to delete');
+      return;
+    }
+    if (!confirm('Delete this event?')) return;
+    try {
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/events/${id}`,
+        { method: 'DELETE', headers: { Authorization: `Bearer ${publicAnonKey}` } }
+      );
+      if (!response.ok) throw new Error('Failed to delete');
+      toast.success('Event deleted');
+      loadData();
+    } catch (err: any) {
+      toast.error(err.message);
+    }
+  };
+
+  // Partner CRUD handlers
+  const handleDeletePartner = async (id: string) => {
+    if (userRole === 'viewer' || userRole === 'editor') {
+      toast.error('You do not have permission to delete');
+      return;
+    }
+    if (!confirm('Delete this partner?')) return;
+    try {
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/partners/${id}`,
+        { method: 'DELETE', headers: { Authorization: `Bearer ${publicAnonKey}` } }
+      );
+      if (!response.ok) throw new Error('Failed to delete');
+      toast.success('Partner deleted');
+      loadData();
+    } catch (err: any) {
+      toast.error(err.message);
+    }
+  };
+
+  // Opportunity CRUD handlers
+  const handleDeleteOpportunity = async (id: string) => {
+    if (userRole === 'viewer' || userRole === 'editor') {
+      toast.error('You do not have permission to delete');
+      return;
+    }
+    if (!confirm('Delete this opportunity?')) return;
+    try {
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/opportunities/${id}`,
+        { method: 'DELETE', headers: { Authorization: `Bearer ${publicAnonKey}` } }
+      );
+      if (!response.ok) throw new Error('Failed to delete');
+      toast.success('Opportunity deleted');
+      loadData();
+    } catch (err: any) {
+      toast.error(err.message);
+    }
+  };
+
+  // FAQ CRUD handlers
+  const handleDeleteFAQ = async (id: string) => {
+    if (userRole === 'viewer' || userRole === 'editor') {
+      toast.error('You do not have permission to delete');
+      return;
+    }
+    if (!confirm('Delete this FAQ?')) return;
+    try {
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/faqs/${id}`,
+        { method: 'DELETE', headers: { Authorization: `Bearer ${publicAnonKey}` } }
+      );
+      if (!response.ok) throw new Error('Failed to delete');
+      toast.success('FAQ deleted');
+      loadData();
+    } catch (err: any) {
+      toast.error(err.message);
+    }
+  };
+
+  // Resource CRUD handlers
+  const handleDeleteResource = async (id: string) => {
+    if (userRole === 'viewer' || userRole === 'editor') {
+      toast.error('You do not have permission to delete');
+      return;
+    }
+    if (!confirm('Delete this resource?')) return;
+    try {
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/resources/${id}`,
+        { method: 'DELETE', headers: { Authorization: `Bearer ${publicAnonKey}` } }
+      );
+      if (!response.ok) throw new Error('Failed to delete');
+      toast.success('Resource deleted');
+      loadData();
+    } catch (err: any) {
+      toast.error(err.message);
+    }
+  };
+
   // Filter functions
   const getFilteredContacts = () => {
     if (contactFilter === 'all') return contacts;
@@ -901,6 +1189,42 @@ export function EnhancedAdminDashboard() {
             <TabsTrigger value="subscribers">
               <Send size={16} className="mr-2" />
               Newsletter
+            </TabsTrigger>
+            <TabsTrigger value="team">
+              <Users size={16} className="mr-2" />
+              Team
+            </TabsTrigger>
+            <TabsTrigger value="stories">
+              <Heart size={16} className="mr-2" />
+              Impact Stories
+            </TabsTrigger>
+            <TabsTrigger value="impact">
+              <TrendingUp size={16} className="mr-2" />
+              Impact Stats
+            </TabsTrigger>
+            <TabsTrigger value="reports">
+              <Download size={16} className="mr-2" />
+              Reports
+            </TabsTrigger>
+            <TabsTrigger value="events">
+              <LayoutDashboard size={16} className="mr-2" />
+              Events
+            </TabsTrigger>
+            <TabsTrigger value="partners">
+              <Heart size={16} className="mr-2" />
+              Partners
+            </TabsTrigger>
+            <TabsTrigger value="opportunities">
+              <Users size={16} className="mr-2" />
+              Opportunities
+            </TabsTrigger>
+            <TabsTrigger value="faqs">
+              <FileText size={16} className="mr-2" />
+              FAQs
+            </TabsTrigger>
+            <TabsTrigger value="resources">
+              <Download size={16} className="mr-2" />
+              Resources
             </TabsTrigger>
             {userRole === 'super-admin' && (
               <TabsTrigger value="users">
@@ -1366,9 +1690,9 @@ export function EnhancedAdminDashboard() {
                           }}
                           className="absolute top-2 left-2 z-10"
                         />
-                        {item.value.image && (
+                        {(item.value.imageUrl || item.value.image) && (
                           <img
-                            src={item.value.image}
+                            src={item.value.imageUrl || item.value.image}
                             alt={item.value.title}
                             className="w-full h-48 object-cover"
                           />
@@ -1390,7 +1714,7 @@ export function EnhancedAdminDashboard() {
                                     title: item.value.title,
                                     description: item.value.description,
                                     content: '',
-                                    image: item.value.image || '',
+                                    image: item.value.imageUrl || item.value.image || '',
                                     category: item.value.category
                                   });
                                   setShowGalleryForm(true);
@@ -1844,6 +2168,489 @@ export function EnhancedAdminDashboard() {
               onUpdate={() => loadData()} 
             />
           </TabsContent>
+
+          {/* Team Tab */}
+          <TabsContent value="team">
+            <div className="space-y-6">
+              <div className="flex justify-between items-center">
+                <h2 className="text-2xl text-gray-900">Team Members</h2>
+                <Button onClick={() => {
+                  setEditingItem(null);
+                  setFormData({ title: '', description: '', content: '', image: '', category: 'general' });
+                  setShowTeamForm(true);
+                }}>
+                  <Plus size={16} className="mr-2" />
+                  Add Team Member
+                </Button>
+              </div>
+
+              {team.length === 0 ? (
+                <Card className="p-12 text-center">
+                  <Users className="mx-auto text-gray-300 mb-4" size={48} />
+                  <p className="text-gray-500">No team members yet</p>
+                </Card>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {team.map((member) => (
+                    <Card key={member.id} className="p-6">
+                      {member.image && (
+                        <img 
+                          src={member.image} 
+                          alt={member.name}
+                          className="w-24 h-24 rounded-full mx-auto mb-4 object-cover"
+                        />
+                      )}
+                      <h3 className="text-center text-gray-900 mb-1">{member.name}</h3>
+                      <p className="text-center text-sm text-emerald-600 mb-2">{member.role}</p>
+                      <Badge variant="outline" className="mx-auto block w-fit">{member.department}</Badge>
+                      <p className="text-sm text-gray-600 mt-3 line-clamp-2">{member.bio}</p>
+                      <div className="flex gap-2 mt-4">
+                        <Button size="sm" variant="outline" className="flex-1" onClick={() => {
+                          setEditingItem(member);
+                          setShowTeamForm(true);
+                        }}>
+                          <Edit size={14} className="mr-1" />
+                          Edit
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={() => handleDeleteTeam(member.id)}>
+                          <Trash2 size={14} />
+                        </Button>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </div>
+          </TabsContent>
+
+          {/* Impact Stories Tab */}
+          <TabsContent value="stories">
+            <div className="space-y-6">
+              <div className="flex justify-between items-center">
+                <h2 className="text-2xl text-gray-900">Impact Stories</h2>
+                <Button onClick={() => {
+                  setEditingItem(null);
+                  setFormData({ title: '', description: '', content: '', image: '', category: 'general' });
+                  setShowStoryForm(true);
+                }}>
+                  <Plus size={16} className="mr-2" />
+                  Add Story
+                </Button>
+              </div>
+
+              {stories.length === 0 ? (
+                <Card className="p-12 text-center">
+                  <Heart className="mx-auto text-gray-300 mb-4" size={48} />
+                  <p className="text-gray-500">No impact stories yet</p>
+                </Card>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {stories.map((story) => (
+                    <Card key={story.id} className="p-6">
+                      {story.image && (
+                        <img 
+                          src={story.image} 
+                          alt={story.title}
+                          className="w-full h-48 object-cover rounded-lg mb-4"
+                        />
+                      )}
+                      <h3 className="text-gray-900 mb-2">{story.title}</h3>
+                      <p className="text-sm text-emerald-600 mb-2">{story.name}</p>
+                      <Badge variant="outline" className="mb-3">{story.category}</Badge>
+                      <p className="text-sm text-gray-600 line-clamp-3">{story.story}</p>
+                      <div className="flex gap-2 mt-4">
+                        <Button size="sm" variant="outline" className="flex-1" onClick={() => {
+                          setEditingItem(story);
+                          setShowStoryForm(true);
+                        }}>
+                          <Edit size={14} className="mr-1" />
+                          Edit
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={() => handleDeleteStory(story.id)}>
+                          <Trash2 size={14} />
+                        </Button>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </div>
+          </TabsContent>
+
+          {/* Impact Stats Tab */}
+          <TabsContent value="impact">
+            <div className="space-y-6">
+              <h2 className="text-2xl text-gray-900">Impact Dashboard Statistics</h2>
+              <Card className="p-6">
+                <p className="text-sm text-gray-600 mb-6">Update the key metrics displayed on the Impact Dashboard.</p>
+                <Button onClick={() => setShowImpactStatsForm(true)}>
+                  <Edit size={16} className="mr-2" />
+                  Update Statistics
+                </Button>
+                
+                {impactStats && (
+                  <div className="mt-6 grid grid-cols-2 md:grid-cols-3 gap-4">
+                    <div className="p-4 bg-emerald-50 rounded-lg">
+                      <p className="text-sm text-gray-600">People Served</p>
+                      <p className="text-2xl text-gray-900">{impactStats.peopleServed?.toLocaleString()}</p>
+                    </div>
+                    <div className="p-4 bg-emerald-50 rounded-lg">
+                      <p className="text-sm text-gray-600">Active Programs</p>
+                      <p className="text-2xl text-gray-900">{impactStats.programsActive}</p>
+                    </div>
+                    <div className="p-4 bg-emerald-50 rounded-lg">
+                      <p className="text-sm text-gray-600">Active Volunteers</p>
+                      <p className="text-2xl text-gray-900">{impactStats.volunteersActive}</p>
+                    </div>
+                    <div className="p-4 bg-emerald-50 rounded-lg">
+                      <p className="text-sm text-gray-600">Funds Raised</p>
+                      <p className="text-2xl text-gray-900">${impactStats.fundsRaised?.toLocaleString()}</p>
+                    </div>
+                    <div className="p-4 bg-emerald-50 rounded-lg">
+                      <p className="text-sm text-gray-600">Communities Reached</p>
+                      <p className="text-2xl text-gray-900">{impactStats.communitiesReached}</p>
+                    </div>
+                    <div className="p-4 bg-emerald-50 rounded-lg">
+                      <p className="text-sm text-gray-600">Success Rate</p>
+                      <p className="text-2xl text-gray-900">{impactStats.successRate}%</p>
+                    </div>
+                  </div>
+                )}
+              </Card>
+            </div>
+          </TabsContent>
+
+          {/* Annual Reports Tab */}
+          <TabsContent value="reports">
+            <div className="space-y-6">
+              <div className="flex justify-between items-center">
+                <h2 className="text-2xl text-gray-900">Annual Reports</h2>
+                <Button onClick={() => {
+                  setEditingItem(null);
+                  setShowReportForm(true);
+                }}>
+                  <Plus size={16} className="mr-2" />
+                  Add Report
+                </Button>
+              </div>
+
+              {reports.length === 0 ? (
+                <Card className="p-12 text-center">
+                  <Download className="mx-auto text-gray-300 mb-4" size={48} />
+                  <p className="text-gray-500">No reports yet</p>
+                </Card>
+              ) : (
+                <div className="space-y-4">
+                  {reports.map((report) => (
+                    <Card key={report.id} className="p-6">
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <h3 className="text-gray-900 mb-2">{report.title}</h3>
+                          <p className="text-sm text-gray-600 mb-3">{report.description}</p>
+                          <div className="flex gap-2 flex-wrap">
+                            <Badge>{report.year}</Badge>
+                            {report.fileSize && <Badge variant="outline">{report.fileSize}</Badge>}
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button size="sm" variant="outline" onClick={() => window.open(report.fileUrl, '_blank')}>
+                            <Download size={14} className="mr-1" />
+                            Download
+                          </Button>
+                          <Button size="sm" variant="outline" onClick={() => handleDeleteReport(report.id)}>
+                            <Trash2 size={14} />
+                          </Button>
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </div>
+          </TabsContent>
+
+          {/* Events Tab */}
+          <TabsContent value="events">
+            <div className="space-y-6">
+              <div className="flex justify-between items-center">
+                <h2 className="text-2xl text-gray-900">Events Calendar</h2>
+                <Button onClick={() => {
+                  setEditingItem(null);
+                  setFormData({ title: '', description: '', content: '', image: '', category: 'general' });
+                  setShowEventForm(true);
+                }}>
+                  <Plus size={16} className="mr-2" />
+                  Add Event
+                </Button>
+              </div>
+
+              {events.length === 0 ? (
+                <Card className="p-12 text-center">
+                  <LayoutDashboard className="mx-auto text-gray-300 mb-4" size={48} />
+                  <p className="text-gray-500">No events yet</p>
+                </Card>
+              ) : (
+                <div className="space-y-4">
+                  {events.map((event) => (
+                    <Card key={event.id} className="p-6">
+                      <div className="flex gap-4">
+                        {event.image && (
+                          <img 
+                            src={event.image} 
+                            alt={event.title}
+                            className="w-32 h-32 object-cover rounded-lg"
+                          />
+                        )}
+                        <div className="flex-1">
+                          <h3 className="text-gray-900 mb-2">{event.title}</h3>
+                          <p className="text-sm text-gray-600 mb-3 line-clamp-2">{event.description}</p>
+                          <div className="flex gap-2 flex-wrap mb-3">
+                            <Badge>{new Date(event.date).toLocaleDateString()}</Badge>
+                            <Badge variant="outline">{event.time}</Badge>
+                            <Badge variant="outline">{event.location}</Badge>
+                            <Badge variant="outline">{event.status}</Badge>
+                          </div>
+                          <p className="text-sm text-gray-500">Capacity: {event.registered || 0}/{event.capacity}</p>
+                        </div>
+                        <div className="flex flex-col gap-2">
+                          <Button size="sm" variant="outline" onClick={() => {
+                            setEditingItem(event);
+                            setShowEventForm(true);
+                          }}>
+                            <Edit size={14} />
+                          </Button>
+                          <Button size="sm" variant="outline" onClick={() => handleDeleteEvent(event.id)}>
+                            <Trash2 size={14} />
+                          </Button>
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </div>
+          </TabsContent>
+
+          {/* Partners Tab */}
+          <TabsContent value="partners">
+            <div className="space-y-6">
+              <div className="flex justify-between items-center">
+                <h2 className="text-2xl text-gray-900">Partners & Sponsors</h2>
+                <Button onClick={() => {
+                  setEditingItem(null);
+                  setFormData({ title: '', description: '', content: '', image: '', category: 'general' });
+                  setShowPartnerForm(true);
+                }}>
+                  <Plus size={16} className="mr-2" />
+                  Add Partner
+                </Button>
+              </div>
+
+              {partners.length === 0 ? (
+                <Card className="p-12 text-center">
+                  <Heart className="mx-auto text-gray-300 mb-4" size={48} />
+                  <p className="text-gray-500">No partners yet</p>
+                </Card>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {partners.map((partner) => (
+                    <Card key={partner.id} className="p-6">
+                      {partner.logo && (
+                        <img 
+                          src={partner.logo} 
+                          alt={partner.name}
+                          className="w-full h-32 object-contain mb-4"
+                        />
+                      )}
+                      <h3 className="text-gray-900 mb-2">{partner.name}</h3>
+                      <p className="text-sm text-gray-600 mb-3 line-clamp-2">{partner.description}</p>
+                      <div className="flex gap-2 mb-3">
+                        <Badge variant="outline">{partner.category}</Badge>
+                        <Badge variant="outline">Since {partner.since}</Badge>
+                      </div>
+                      {partner.website && (
+                        <a href={partner.website} target="_blank" rel="noopener noreferrer" className="text-sm text-emerald-600 hover:underline block mb-3">
+                          Visit Website →
+                        </a>
+                      )}
+                      <div className="flex gap-2">
+                        <Button size="sm" variant="outline" className="flex-1" onClick={() => {
+                          setEditingItem(partner);
+                          setShowPartnerForm(true);
+                        }}>
+                          <Edit size={14} className="mr-1" />
+                          Edit
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={() => handleDeletePartner(partner.id)}>
+                          <Trash2 size={14} />
+                        </Button>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </div>
+          </TabsContent>
+
+          {/* Volunteer Opportunities Tab */}
+          <TabsContent value="opportunities">
+            <div className="space-y-6">
+              <div className="flex justify-between items-center">
+                <h2 className="text-2xl text-gray-900">Volunteer Opportunities</h2>
+                <Button onClick={() => {
+                  setEditingItem(null);
+                  setFormData({ title: '', description: '', content: '', image: '', category: 'general' });
+                  setShowOpportunityForm(true);
+                }}>
+                  <Plus size={16} className="mr-2" />
+                  Add Opportunity
+                </Button>
+              </div>
+
+              {opportunities.length === 0 ? (
+                <Card className="p-12 text-center">
+                  <Users className="mx-auto text-gray-300 mb-4" size={48} />
+                  <p className="text-gray-500">No opportunities yet</p>
+                </Card>
+              ) : (
+                <div className="space-y-4">
+                  {opportunities.map((opp) => (
+                    <Card key={opp.id} className="p-6">
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <h3 className="text-gray-900 mb-2">{opp.title}</h3>
+                          <p className="text-sm text-gray-600 mb-3 line-clamp-2">{opp.description}</p>
+                          <div className="flex gap-2 flex-wrap mb-3">
+                            <Badge>{opp.category}</Badge>
+                            <Badge variant="outline">{opp.location}</Badge>
+                            <Badge variant="outline">{opp.timeCommitment}</Badge>
+                            <Badge variant="outline">{opp.openPositions} positions</Badge>
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button size="sm" variant="outline" onClick={() => {
+                            setEditingItem(opp);
+                            setShowOpportunityForm(true);
+                          }}>
+                            <Edit size={14} />
+                          </Button>
+                          <Button size="sm" variant="outline" onClick={() => handleDeleteOpportunity(opp.id)}>
+                            <Trash2 size={14} />
+                          </Button>
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </div>
+          </TabsContent>
+
+          {/* FAQs Tab */}
+          <TabsContent value="faqs">
+            <div className="space-y-6">
+              <div className="flex justify-between items-center">
+                <h2 className="text-2xl text-gray-900">Frequently Asked Questions</h2>
+                <Button onClick={() => {
+                  setEditingItem(null);
+                  setFormData({ title: '', description: '', content: '', image: '', category: 'general' });
+                  setShowFAQForm(true);
+                }}>
+                  <Plus size={16} className="mr-2" />
+                  Add FAQ
+                </Button>
+              </div>
+
+              {faqs.length === 0 ? (
+                <Card className="p-12 text-center">
+                  <FileText className="mx-auto text-gray-300 mb-4" size={48} />
+                  <p className="text-gray-500">No FAQs yet</p>
+                </Card>
+              ) : (
+                <div className="space-y-4">
+                  {faqs.map((faq) => (
+                    <Card key={faq.id} className="p-6">
+                      <div className="flex justify-between items-start gap-4">
+                        <div className="flex-1">
+                          <h3 className="text-gray-900 mb-2">{faq.question}</h3>
+                          <p className="text-sm text-gray-600 mb-3">{faq.answer}</p>
+                          <Badge variant="outline">{faq.category}</Badge>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button size="sm" variant="outline" onClick={() => {
+                            setEditingItem(faq);
+                            setShowFAQForm(true);
+                          }}>
+                            <Edit size={14} />
+                          </Button>
+                          <Button size="sm" variant="outline" onClick={() => handleDeleteFAQ(faq.id)}>
+                            <Trash2 size={14} />
+                          </Button>
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </div>
+          </TabsContent>
+
+          {/* Resources Tab */}
+          <TabsContent value="resources">
+            <div className="space-y-6">
+              <div className="flex justify-between items-center">
+                <h2 className="text-2xl text-gray-900">Resources & Downloads</h2>
+                <Button onClick={() => {
+                  setEditingItem(null);
+                  setFormData({ title: '', description: '', content: '', image: '', category: 'general' });
+                  setShowResourceForm(true);
+                }}>
+                  <Plus size={16} className="mr-2" />
+                  Add Resource
+                </Button>
+              </div>
+
+              {resources.length === 0 ? (
+                <Card className="p-12 text-center">
+                  <Download className="mx-auto text-gray-300 mb-4" size={48} />
+                  <p className="text-gray-500">No resources yet</p>
+                </Card>
+              ) : (
+                <div className="space-y-4">
+                  {resources.map((resource) => (
+                    <Card key={resource.id} className="p-6">
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <h3 className="text-gray-900 mb-2">{resource.title}</h3>
+                          <p className="text-sm text-gray-600 mb-3">{resource.description}</p>
+                          <div className="flex gap-2">
+                            <Badge>{resource.category}</Badge>
+                            <Badge variant="outline">{resource.fileType}</Badge>
+                            {resource.fileSize && <Badge variant="outline">{resource.fileSize}</Badge>}
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button size="sm" variant="outline" onClick={() => window.open(resource.fileUrl, '_blank')}>
+                            <Download size={14} className="mr-1" />
+                            Download
+                          </Button>
+                          <Button size="sm" variant="outline" onClick={() => {
+                            setEditingItem(resource);
+                            setShowResourceForm(true);
+                          }}>
+                            <Edit size={14} />
+                          </Button>
+                          <Button size="sm" variant="outline" onClick={() => handleDeleteResource(resource.id)}>
+                            <Trash2 size={14} />
+                          </Button>
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </div>
+          </TabsContent>
         </Tabs>
       </div>
 
@@ -2198,6 +3005,111 @@ export function EnhancedAdminDashboard() {
           </DialogContent>
         </Dialog>
       )}
+
+      {/* Team Form Dialog */}
+      <TeamFormDialog
+        show={showTeamForm}
+        onClose={() => {
+          setShowTeamForm(false);
+          setEditingItem(null);
+        }}
+        editingItem={editingItem}
+        onSuccess={loadData}
+        userRole={userRole}
+      />
+
+      {/* Story Form Dialog */}
+      <StoryFormDialog
+        show={showStoryForm}
+        onClose={() => {
+          setShowStoryForm(false);
+          setEditingItem(null);
+        }}
+        editingItem={editingItem}
+        onSuccess={loadData}
+        userRole={userRole}
+      />
+
+      {/* Impact Stats Form Dialog */}
+      <ImpactStatsFormDialog
+        show={showImpactStatsForm}
+        onClose={() => setShowImpactStatsForm(false)}
+        currentStats={impactStats}
+        onSuccess={loadData}
+        userRole={userRole}
+      />
+
+      {/* Report Form Dialog */}
+      <ReportFormDialog
+        show={showReportForm}
+        onClose={() => {
+          setShowReportForm(false);
+          setEditingItem(null);
+        }}
+        editingItem={editingItem}
+        onSuccess={loadData}
+        userRole={userRole}
+      />
+
+      {/* Event Form Dialog */}
+      <EventFormDialog
+        show={showEventForm}
+        onClose={() => {
+          setShowEventForm(false);
+          setEditingItem(null);
+        }}
+        editingItem={editingItem}
+        onSuccess={loadData}
+        userRole={userRole}
+      />
+
+      {/* Partner Form Dialog */}
+      <PartnerFormDialog
+        show={showPartnerForm}
+        onClose={() => {
+          setShowPartnerForm(false);
+          setEditingItem(null);
+        }}
+        editingItem={editingItem}
+        onSuccess={loadData}
+        userRole={userRole}
+      />
+
+      {/* Opportunity Form Dialog */}
+      <OpportunityFormDialog
+        show={showOpportunityForm}
+        onClose={() => {
+          setShowOpportunityForm(false);
+          setEditingItem(null);
+        }}
+        editingItem={editingItem}
+        onSuccess={loadData}
+        userRole={userRole}
+      />
+
+      {/* FAQ Form Dialog */}
+      <FAQFormDialog
+        show={showFAQForm}
+        onClose={() => {
+          setShowFAQForm(false);
+          setEditingItem(null);
+        }}
+        editingItem={editingItem}
+        onSuccess={loadData}
+        userRole={userRole}
+      />
+
+      {/* Resource Form Dialog */}
+      <ResourceFormDialog
+        show={showResourceForm}
+        onClose={() => {
+          setShowResourceForm(false);
+          setEditingItem(null);
+        }}
+        editingItem={editingItem}
+        onSuccess={loadData}
+        userRole={userRole}
+      />
     </div>
   );
 }

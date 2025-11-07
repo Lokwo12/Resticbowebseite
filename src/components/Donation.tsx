@@ -21,9 +21,15 @@ import {
 
 const PRESET_AMOUNTS = [10, 25, 50, 100, 250, 500];
 
-// Stripe publishable key - This is a TEST key. For production, replace with your LIVE key (pk_live_...)
-const STRIPE_PUBLISHABLE_KEY = 'pk_test_51QP8TmA7XqkYqH1ORKx5yJSdHvH4UaPdYH8gCGhvGKN7wXS3MZFSQyY9ZLPnX5CuGvqHLMa5M3JqGxEbNbXGpRKm00E3dPHEpj';
-const stripePromise = loadStripe(STRIPE_PUBLISHABLE_KEY);
+// ⚠️ IMPORTANT: Replace this with your own Stripe publishable key
+// Get your test key from: https://dashboard.stripe.com/test/apikeys
+// For production, use your LIVE key (pk_live_...)
+const STRIPE_PUBLISHABLE_KEY = 'YOUR_STRIPE_PUBLISHABLE_KEY_HERE';
+
+// Only load Stripe if a valid key is provided
+const stripePromise = STRIPE_PUBLISHABLE_KEY && STRIPE_PUBLISHABLE_KEY !== 'YOUR_STRIPE_PUBLISHABLE_KEY_HERE' 
+  ? loadStripe(STRIPE_PUBLISHABLE_KEY)
+  : null;
 
 interface DonationStats {
   totalAmount: number;
@@ -49,6 +55,7 @@ function CheckoutForm({
     e.preventDefault();
 
     if (!stripe || !elements) {
+      toast.error('Payment system is loading. Please wait a moment and try again.');
       return;
     }
 
@@ -64,29 +71,38 @@ function CheckoutForm({
       });
 
       if (error) {
-        toast.error(error.message || 'Payment failed');
+        console.error('Stripe payment error:', error);
+        toast.error(error.message || 'Payment failed. Please check your card details and try again.');
       } else if (paymentIntent && paymentIntent.status === 'succeeded') {
         // Record the donation
-        await fetch(
-          `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/donations`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${publicAnonKey}`,
-            },
-            body: JSON.stringify({
-              amount,
-              currency,
-              paymentMethod: 'stripe',
-              donorName: donorInfo.name,
-              donorEmail: donorInfo.email,
-              donorPhone: donorInfo.phone,
-              message: donorInfo.message,
-              paymentIntentId: paymentIntent.id,
-            }),
+        try {
+          const response = await fetch(
+            `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/donations`,
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${publicAnonKey}`,
+              },
+              body: JSON.stringify({
+                amount,
+                currency,
+                paymentMethod: 'stripe',
+                donorName: donorInfo.name,
+                donorEmail: donorInfo.email,
+                donorPhone: donorInfo.phone,
+                message: donorInfo.message,
+                paymentIntentId: paymentIntent.id,
+              }),
+            }
+          );
+
+          if (!response.ok) {
+            console.error('Failed to record donation:', await response.text());
           }
-        );
+        } catch (recordError) {
+          console.error('Error recording donation:', recordError);
+        }
 
         toast.success('Thank you for your donation! 🎉');
         onSuccess();
@@ -101,7 +117,10 @@ function CheckoutForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <PaymentElement />
+      <div className="bg-gray-50 p-4 rounded-lg mb-4">
+        <p className="text-sm text-gray-600 mb-2">Enter your card details below:</p>
+        <PaymentElement />
+      </div>
       <button
         type="submit"
         disabled={!stripe || processing}
@@ -110,15 +129,18 @@ function CheckoutForm({
         {processing ? (
           <>
             <Loader2 className="animate-spin" size={20} />
-            Processing...
+            Processing Payment...
           </>
         ) : (
           <>
             <Heart size={20} />
-            Donate ${amount}
+            Complete Donation - {currency} {amount}
           </>
         )}
       </button>
+      <p className="text-xs text-gray-500 text-center">
+        Powered by Stripe. Your payment information is secure and encrypted.
+      </p>
     </form>
   );
 }
@@ -176,6 +198,15 @@ export function Donation() {
     }
 
     if (paymentMethod === 'stripe') {
+      // Check if Stripe is configured
+      if (!stripePromise) {
+        toast.error(
+          'Stripe is not configured. Please add your Stripe publishable key in the Donation.tsx file.',
+          { duration: 8000 }
+        );
+        return;
+      }
+
       setLoading(true);
       try {
         // Create payment intent
@@ -403,8 +434,13 @@ export function Donation() {
                       )}
                     </div>
                     <CreditCard className="text-gray-600" size={24} />
-                    <div className="text-left">
-                      <div className="text-gray-900">Credit/Debit Card (Stripe)</div>
+                    <div className="text-left flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-gray-900">Credit/Debit Card (Stripe)</span>
+                        {!stripePromise && (
+                          <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded">Setup Required</span>
+                        )}
+                      </div>
                       <div className="text-xs text-gray-500">Global payment via Stripe</div>
                     </div>
                   </button>
@@ -548,15 +584,42 @@ export function Donation() {
                 ← Back
               </button>
 
-              {paymentMethod === 'stripe' && clientSecret ? (
-                <Elements stripe={stripePromise} options={{ clientSecret }}>
-                  <CheckoutForm 
-                    amount={amount} 
-                    currency={currency}
-                    donorInfo={donorInfo}
-                    onSuccess={resetForm}
-                  />
-                </Elements>
+              {paymentMethod === 'stripe' && clientSecret && stripePromise ? (
+                <div>
+                  <h3 className="text-xl text-gray-900 mb-6">Complete Your Donation</h3>
+                  <Elements stripe={stripePromise} options={{ clientSecret }}>
+                    <CheckoutForm 
+                      amount={amount} 
+                      currency={currency}
+                      donorInfo={donorInfo}
+                      onSuccess={resetForm}
+                    />
+                  </Elements>
+                </div>
+              ) : paymentMethod === 'stripe' && !stripePromise ? (
+                <div className="bg-yellow-50 border-2 border-yellow-200 rounded-lg p-8">
+                  <h3 className="text-lg text-gray-900 mb-4">⚙️ Stripe Configuration Required</h3>
+                  <p className="text-gray-700 mb-4">
+                    To accept credit card donations, you need to configure Stripe:
+                  </p>
+                  <ol className="list-decimal list-inside space-y-2 text-sm text-gray-600 mb-6">
+                    <li>Sign up for a Stripe account at <a href="https://dashboard.stripe.com/register" target="_blank" rel="noopener noreferrer" className="text-emerald-600 hover:underline">dashboard.stripe.com</a></li>
+                    <li>Get your publishable key from the <a href="https://dashboard.stripe.com/test/apikeys" target="_blank" rel="noopener noreferrer" className="text-emerald-600 hover:underline">API keys page</a></li>
+                    <li>Add your key to <code className="bg-gray-100 px-2 py-1 rounded">/components/Donation.tsx</code></li>
+                    <li>Restart your application</li>
+                  </ol>
+                  <button
+                    onClick={resetForm}
+                    className="w-full bg-gray-600 text-white px-6 py-3 rounded-lg hover:bg-gray-700 transition-colors"
+                  >
+                    Back
+                  </button>
+                </div>
+              ) : paymentMethod === 'stripe' && !clientSecret ? (
+                <div className="text-center py-8">
+                  <Loader2 className="animate-spin mx-auto text-emerald-600 mb-4" size={40} />
+                  <p className="text-gray-600">Initializing secure payment...</p>
+                </div>
               ) : paymentMethod === 'mobile-money' ? (
                 <div className="space-y-6">
                   <div className="bg-emerald-50 border-2 border-emerald-200 rounded-lg p-6">

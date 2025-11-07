@@ -125,12 +125,12 @@ export function Footer() {
           <div>
             <h4 className="mb-4">Quick Links</h4>
             <ul className="space-y-2 text-sm text-gray-400">
-              <li><button onClick={() => scrollToSection('home')} className="hover:text-emerald-400 transition-colors">Home</button></li>
-              <li><button onClick={() => scrollToSection('about')} className="hover:text-emerald-400 transition-colors">About Us</button></li>
-              <li><button onClick={() => scrollToSection('programs')} className="hover:text-emerald-400 transition-colors">Programs</button></li>
-              <li><button onClick={() => scrollToSection('team')} className="hover:text-emerald-400 transition-colors">Our Team</button></li>
-              <li><button onClick={() => scrollToSection('impact')} className="hover:text-emerald-400 transition-colors">Impact Stories</button></li>
-              <li><button onClick={() => scrollToSection('events')} className="hover:text-emerald-400 transition-colors">Events</button></li>
+              <li><button onClick={() => scrollToSection('home')} className="hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Home</button></li>
+              <li><button onClick={() => scrollToSection('about')} className="hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">About Us</button></li>
+              <li><button onClick={() => scrollToSection('programs')} className="hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Programs</button></li>
+              <li><button onClick={() => scrollToSection('team')} className="hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Our Team</button></li>
+              <li><button onClick={() => scrollToSection('impact')} className="hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Impact Stories</button></li>
+              <li><button onClick={() => scrollToSection('events')} className="hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Events</button></li>
             </ul>
           </div>
 
@@ -138,10 +138,10 @@ export function Footer() {
           <div>
             <h4 className="mb-4">Get Involved</h4>
             <ul className="space-y-2 text-sm text-gray-400">
-              <li><button onClick={() => scrollToSection('volunteer')} className="hover:text-emerald-400 transition-colors">Volunteer</button></li>
-              <li><button onClick={() => scrollToSection('donate')} className="hover:text-emerald-400 transition-colors">Donate</button></li>
-              <li><button onClick={() => scrollToSection('partners')} className="hover:text-emerald-400 transition-colors">Become a Partner</button></li>
-              <li><button onClick={() => scrollToSection('newsletter')} className="hover:text-emerald-400 transition-colors">Newsletter</button></li>
+              <li><button onClick={() => scrollToSection('volunteer')} className="hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Volunteer</button></li>
+              <li><button onClick={() => scrollToSection('donate')} className="hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Donate</button></li>
+              <li><button onClick={() => scrollToSection('partners')} className="hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Become a Partner</button></li>
+              <li><button onClick={() => scrollToSection('newsletter')} className="hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Newsletter</button></li>
             </ul>
           </div>
 
@@ -149,11 +149,11 @@ export function Footer() {
           <div>
             <h4 className="mb-4">Resources</h4>
             <ul className="space-y-2 text-sm text-gray-400">
-              <li><button onClick={() => scrollToSection('gallery')} className="hover:text-emerald-400 transition-colors">Gallery</button></li>
-              <li><button onClick={() => scrollToSection('news')} className="hover:text-emerald-400 transition-colors">News</button></li>
-              <li><button onClick={() => scrollToSection('faq')} className="hover:text-emerald-400 transition-colors">FAQ</button></li>
-              <li><button onClick={() => scrollToSection('resources')} className="hover:text-emerald-400 transition-colors">Downloads</button></li>
-              <li><button onClick={() => scrollToSection('impact-dashboard')} className="hover:text-emerald-400 transition-colors">Impact Dashboard</button></li>
+              <li><button onClick={() => scrollToSection('gallery')} className="hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Gallery</button></li>
+              <li><button onClick={() => scrollToSection('news')} className="hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">News</button></li>
+              <li><button onClick={() => scrollToSection('faq')} className="hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">FAQ</button></li>
+              <li><button onClick={() => scrollToSection('resources')} className="hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Downloads</button></li>
+              <li><button onClick={() => scrollToSection('impact-dashboard')} className="hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Impact Dashboard</button></li>
             </ul>
           </div>
 
@@ -177,7 +177,7 @@ export function Footer() {
             <div className="flex gap-3">
               <a
                 href={contactSettings.socialLinks.facebook}
-                className="w-10 h-10 bg-gray-800 rounded-lg flex items-center justify-center hover:bg-emerald-600 transition-colors"
+                className="w-10 h-10 bg-gray-800 rounded-lg flex items-center justify-center hover:bg-emerald-600 hover:scale-110 hover:-translate-y-1 transition-all duration-300"
                 aria-label="Facebook"
                 target="_blank"
                 rel="noopener noreferrer"
@@ -186,7 +186,7 @@ export function Footer() {
               </a>
               <a
                 href={contactSettings.socialLinks.twitter}
-                className="w-10 h-10 bg-gray-800 rounded-lg flex items-center justify-center hover:bg-emerald-600 transition-colors"
+                className="w-10 h-10 bg-gray-800 rounded-lg flex items-center justify-center hover:bg-emerald-600 hover:scale-110 hover:-translate-y-1 transition-all duration-300"
                 aria-label="Twitter"
                 target="_blank"
                 rel="noopener noreferrer"
@@ -195,7 +195,7 @@ export function Footer() {
               </a>
               <a
                 href={contactSettings.socialLinks.instagram}
-                className="w-10 h-10 bg-gray-800 rounded-lg flex items-center justify-center hover:bg-emerald-600 transition-colors"
+                className="w-10 h-10 bg-gray-800 rounded-lg flex items-center justify-center hover:bg-emerald-600 hover:scale-110 hover:-translate-y-1 transition-all duration-300"
                 aria-label="Instagram"
                 target="_blank"
                 rel="noopener noreferrer"

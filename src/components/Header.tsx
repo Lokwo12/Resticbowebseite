@@ -13,6 +13,15 @@ export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [settings, setSettings] = useState<GeneralSettings | null>(null);
   const [loading, setLoading] = useState(true);
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 20);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   useEffect(() => {
     fetchSettings();
@@ -72,15 +81,19 @@ export function Header() {
   }
 
   return (
-    <header className="fixed top-0 left-0 right-0 bg-white shadow-sm z-50">
+    <header className={`fixed top-0 left-0 right-0 bg-white z-50 transition-all duration-300 ${scrolled ? 'shadow-lg' : 'shadow-sm'}`}>
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
+        <div className={`flex justify-between items-center transition-all duration-300 ${scrolled ? 'h-14' : 'h-16'}`}>
           {/* Logo */}
           <div className="flex items-center">
-            <button onClick={() => scrollToSection('home')} className="flex items-center gap-3 hover:opacity-90 transition-opacity">
-              <img src={getLogoUrl()} alt={`${settings.siteName} Logo`} className="h-14 sm:h-16 w-auto" />
+            <button onClick={() => scrollToSection('home')} className="flex items-center gap-3 hover:opacity-90 transition-all duration-300 group">
+              <img 
+                src={getLogoUrl()} 
+                alt={`${settings.siteName} Logo`} 
+                className={`w-auto transition-all duration-300 group-hover:scale-105 ${scrolled ? 'h-12 sm:h-14' : 'h-14 sm:h-16'}`} 
+              />
               <div className="hidden sm:block">
-                <h1 className="text-emerald-700 leading-tight">{settings.siteName}</h1>
+                <h1 className="text-emerald-700 leading-tight group-hover:text-emerald-600 transition-colors">{settings.siteName}</h1>
                 <p className="text-xs text-gray-600">{settings.tagline}</p>
               </div>
             </button>
@@ -90,43 +103,43 @@ export function Header() {
           <div className="hidden lg:flex items-center space-x-6">
             <button
               onClick={() => scrollToSection('home')}
-              className="text-gray-700 hover:text-emerald-600 transition-colors"
+              className="text-gray-700 hover:text-emerald-600 transition-all duration-300 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-emerald-600 hover:after:w-full after:transition-all"
             >
               Home
             </button>
             <button
               onClick={() => scrollToSection('about')}
-              className="text-gray-700 hover:text-emerald-600 transition-colors"
+              className="text-gray-700 hover:text-emerald-600 transition-all duration-300 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-emerald-600 hover:after:w-full after:transition-all"
             >
               About
             </button>
             <button
               onClick={() => scrollToSection('programs')}
-              className="text-gray-700 hover:text-emerald-600 transition-colors"
+              className="text-gray-700 hover:text-emerald-600 transition-all duration-300 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-emerald-600 hover:after:w-full after:transition-all"
             >
               Programs
             </button>
             <button
               onClick={() => scrollToSection('impact')}
-              className="text-gray-700 hover:text-emerald-600 transition-colors"
+              className="text-gray-700 hover:text-emerald-600 transition-all duration-300 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-emerald-600 hover:after:w-full after:transition-all"
             >
               Impact
             </button>
             <button
               onClick={() => scrollToSection('volunteer')}
-              className="text-gray-700 hover:text-emerald-600 transition-colors"
+              className="text-gray-700 hover:text-emerald-600 transition-all duration-300 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-emerald-600 hover:after:w-full after:transition-all"
             >
               Get Involved
             </button>
             <button
               onClick={() => scrollToSection('contact')}
-              className="text-gray-700 hover:text-emerald-600 transition-colors"
+              className="text-gray-700 hover:text-emerald-600 transition-all duration-300 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-emerald-600 hover:after:w-full after:transition-all"
             >
               Contact
             </button>
             <button
               onClick={() => scrollToSection('donate')}
-              className="bg-emerald-600 text-white px-6 py-2 rounded-lg hover:bg-emerald-700 transition-colors"
+              className="bg-emerald-600 text-white px-6 py-2 rounded-lg hover:bg-emerald-700 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300"
             >
               Donate
             </button>
