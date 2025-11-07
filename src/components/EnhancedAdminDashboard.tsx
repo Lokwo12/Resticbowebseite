@@ -165,6 +165,13 @@ export function EnhancedAdminDashboard() {
   const [subscribers, setSubscribers] = useState<any[]>([]);
   const [adminUsers, setAdminUsers] = useState<any[]>([]);
   const [siteSettings, setSiteSettings] = useState<any>(null);
+  const dashboardStats = useMemo(() => ({
+    totalPrograms: stats?.totalPrograms ?? 0,
+    totalNews: stats?.totalNews ?? 0,
+    totalVolunteers: stats?.totalVolunteers ?? 0,
+    totalDonationAmount: stats?.totalDonationAmount ?? 0,
+    totalDonationsCount: stats?.totalDonations ?? 0,
+  }), [stats]);
   
   // New data states for additional sections
   const [team, setTeam] = useState<any[]>([]);
@@ -1701,36 +1708,38 @@ export function EnhancedAdminDashboard() {
                   <Card className="p-6 border-l-4 border-l-blue-500 hover:shadow-lg transition">
                     <div className="flex items-center justify-between mb-4">
                       <FileText className="text-blue-600" size={24} />
-                      <Badge variant="secondary">{stats.programs}</Badge>
+                      <Badge variant="secondary">{dashboardStats.totalPrograms}</Badge>
                     </div>
-                    <h3 className="text-2xl text-gray-900 mb-1">{stats.programs}</h3>
+                    <h3 className="text-2xl text-gray-900 mb-1">{dashboardStats.totalPrograms.toLocaleString()}</h3>
                     <p className="text-sm text-gray-600">Total Programs</p>
                   </Card>
 
                   <Card className="p-6 border-l-4 border-l-purple-500 hover:shadow-lg transition">
                     <div className="flex items-center justify-between mb-4">
                       <Newspaper className="text-purple-600" size={24} />
-                      <Badge variant="secondary">{stats.news}</Badge>
+                      <Badge variant="secondary">{dashboardStats.totalNews}</Badge>
                     </div>
-                    <h3 className="text-2xl text-gray-900 mb-1">{stats.news}</h3>
+                    <h3 className="text-2xl text-gray-900 mb-1">{dashboardStats.totalNews.toLocaleString()}</h3>
                     <p className="text-sm text-gray-600">News Articles</p>
                   </Card>
 
                   <Card className="p-6 border-l-4 border-l-rose-500 hover:shadow-lg transition">
                     <div className="flex items-center justify-between mb-4">
                       <Heart className="text-rose-600" size={24} />
-                      <Badge variant="secondary">{stats.volunteers}</Badge>
+                      <Badge variant="secondary">{dashboardStats.totalVolunteers}</Badge>
                     </div>
-                    <h3 className="text-2xl text-gray-900 mb-1">{stats.volunteers}</h3>
+                    <h3 className="text-2xl text-gray-900 mb-1">{dashboardStats.totalVolunteers.toLocaleString()}</h3>
                     <p className="text-sm text-gray-600">Volunteers</p>
                   </Card>
 
                   <Card className="p-6 border-l-4 border-l-emerald-500 hover:shadow-lg transition">
                     <div className="flex items-center justify-between mb-4">
                       <TrendingUp className="text-emerald-600" size={24} />
-                      <Badge variant="secondary">${stats.totalDonations}</Badge>
+                      <Badge variant="secondary">{dashboardStats.totalDonationsCount}</Badge>
                     </div>
-                    <h3 className="text-2xl text-gray-900 mb-1">${stats.totalDonations}</h3>
+                    <h3 className="text-2xl text-gray-900 mb-1">
+                      ${dashboardStats.totalDonationAmount.toLocaleString()}
+                    </h3>
                     <p className="text-sm text-gray-600">Total Donations</p>
                   </Card>
                 </div>
