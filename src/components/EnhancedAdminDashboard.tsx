@@ -658,10 +658,28 @@ export function EnhancedAdminDashboard() {
         });
 
         if (matchedUser?.value) {
-          const resolvedRole = normalizeUserRole(matchedUser.value.role);
+          const matchedUserData = matchedUser.value as any;
+          const roleSource =
+            matchedUserData?.user_metadata?.role ??
+            matchedUserData?.app_metadata?.role ??
+            (Array.isArray(matchedUserData?.app_metadata?.roles)
+              ? matchedUserData.app_metadata.roles[0]
+              : undefined) ??
+            matchedUserData?.role;
+
+          const resolvedRole = normalizeUserRole(roleSource ?? 'viewer');
           setUserRole(resolvedRole);
-          if (!userName && matchedUser.value.name) {
-            setUserName(matchedUser.value.name);
+
+          if (!userName) {
+            const derivedName =
+              matchedUserData?.user_metadata?.name ??
+              matchedUserData?.name ??
+              matchedUserData?.email ??
+              (typeof userEmail === 'string' ? userEmail : '');
+
+            if (derivedName) {
+              setUserName(derivedName);
+            }
           }
           return;
         }
@@ -1655,8 +1673,8 @@ export function EnhancedAdminDashboard() {
         <Card className="w-full max-w-md p-8 shadow-2xl border-0">
           <div className="text-center mb-8">
             <div className="flex flex-col items-center mb-6">
-              <div className="bg-white rounded-full p-4 shadow-lg mb-4">
-                <img src={siteLogoUrl} alt={`${siteTitle} Logo`} className="h-20 w-auto object-contain" />
+              <div className="bg-white rounded-full p-5 shadow-lg mb-4">
+                <img src={siteLogoUrl} alt={`${siteTitle} Logo`} className="h-24 md:h-28 w-auto object-contain" />
               </div>
               <div>
                 <h2 className="text-2xl text-emerald-700">{siteTitle}</h2>
@@ -1746,7 +1764,7 @@ export function EnhancedAdminDashboard() {
               {sidebarOpen ? <XIcon size={24} /> : <Menu size={24} />}
             </button>
             <div className="flex items-center gap-4">
-              <img src={siteLogoUrl} alt={`${siteTitle} Logo`} className="h-14 w-auto object-contain drop-shadow-sm" />
+              <img src={siteLogoUrl} alt={`${siteTitle} Logo`} className="h-16 md:h-20 w-auto object-contain drop-shadow-sm" />
               <div className="hidden md:block">
                 <h1 className="text-lg text-gray-900">{siteTitle}</h1>
                 <p className="text-xs text-gray-500">{siteTagline}</p>

@@ -125,14 +125,14 @@ export function Header() {
   return (
     <header className={`fixed top-0 left-0 right-0 bg-white z-50 transition-all duration-300 ${scrolled ? 'shadow-lg' : 'shadow-sm'}`}>
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className={`flex justify-between items-center transition-all duration-300 ${scrolled ? 'h-14' : 'h-16'}`}>
+  <div className={`flex justify-between items-center transition-all duration-300 ${scrolled ? 'h-16' : 'h-20'}`}>
           {/* Logo */}
           <div className="flex items-center">
-            <button onClick={() => scrollToSection('home')} className="flex items-center gap-3 hover:opacity-90 transition-all duration-300 group">
+            <button onClick={() => scrollToSection('home')} className="flex items-center gap-4 hover:opacity-90 transition-all duration-300 group">
               <img 
                 src={getLogoUrl()} 
                 alt={`${settings.siteName} Logo`} 
-                className={`w-auto transition-all duration-300 group-hover:scale-105 ${scrolled ? 'h-12 sm:h-14' : 'h-14 sm:h-16'}`} 
+                className={`w-auto transition-all duration-300 group-hover:scale-105 ${scrolled ? 'h-16 sm:h-20 lg:h-24' : 'h-20 sm:h-24 lg:h-28'}`} 
               />
               <div className="hidden sm:block">
                 <h1 className="text-emerald-700 leading-tight group-hover:text-emerald-600 transition-colors">{settings.siteName}</h1>
