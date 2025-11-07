@@ -1,15 +1,26 @@
-import { Hono } from 'npm:hono'
-import { cors } from 'npm:hono/cors'
-import { logger } from 'npm:hono/logger'
-import { createClient } from 'npm:@supabase/supabase-js@2'
-import Stripe from 'npm:stripe@17.5.0'
+// @ts-nocheck
+import { Hono } from 'https://deno.land/x/hono@v3.1.4/mod.ts'
+import { logger } from 'https://deno.land/x/hono@v3.1.4/middleware/logger.ts'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import Stripe from 'https://esm.sh/stripe@17.5.0'
 import * as kv from './kv_store.tsx'
 
 const app = new Hono()
 
-app.use('*', cors())
-app.use('*', logger(console.log))
+app.use('*', async (c, next) => {
+  // Basic CORS headers
+  c.header('Access-Control-Allow-Origin', '*')
+  c.header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS')
+  c.header('Access-Control-Allow-Headers', 'Content-Type, Authorization')
 
+  // Handle preflight requests
+  if (c.req.method === 'OPTIONS') {
+    return c.text('', 204)
+  }
+
+  await next()
+})
+app.use('*', logger(console.log))
 const supabase = createClient(
   Deno.env.get('SUPABASE_URL')!,
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
