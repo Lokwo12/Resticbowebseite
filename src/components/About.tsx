@@ -96,7 +96,7 @@ export function About() {
     }
   };
 
-  if (loading || !settings) {
+  if (loading) {
     return (
       <section id="about" className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -109,6 +109,16 @@ export function About() {
       </section>
     );
   }
+  
+  // Ensure settings exists (fallback to defaults if somehow null)
+  const displaySettings = settings || {
+    title: 'About Resti Kiryandongo CBO',
+    intro: 'Founded with a mission to empower and uplift communities in Kiryandongo District.',
+    mission: 'To empower communities in Kiryandongo through sustainable development programs.',
+    vision: 'A thriving, self-sustaining community.',
+    values: [],
+    story: []
+  };
 
   return (
     <section id="about" className="py-20 bg-white" ref={ref}>
@@ -116,10 +126,10 @@ export function About() {
         {/* Intro */}
         <div className={`max-w-3xl mx-auto text-center mb-16 transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
           <h2 className="text-3xl lg:text-5xl text-gray-900 mb-6">
-            {settings.title}
+            {displaySettings.title}
           </h2>
           <p className="text-lg text-gray-600 leading-relaxed">
-            {settings.intro}
+            {displaySettings.intro}
           </p>
         </div>
 
@@ -128,22 +138,23 @@ export function About() {
           <div className={`group bg-gradient-to-br from-emerald-50 to-teal-50 p-8 rounded-2xl hover:shadow-xl transition-all duration-500 ${isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-8'}`} style={{ transitionDelay: '200ms' }}>
             <h3 className="text-2xl text-gray-900 mb-4 group-hover:text-emerald-600 transition-colors">Our Mission</h3>
             <p className="text-gray-700 leading-relaxed">
-              {settings.mission}
+              {displaySettings.mission}
             </p>
           </div>
           <div className={`group bg-gradient-to-br from-blue-50 to-indigo-50 p-8 rounded-2xl hover:shadow-xl transition-all duration-500 ${isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-8'}`} style={{ transitionDelay: '300ms' }}>
             <h3 className="text-2xl text-gray-900 mb-4 group-hover:text-blue-600 transition-colors">Our Vision</h3>
             <p className="text-gray-700 leading-relaxed">
-              {settings.vision}
+              {displaySettings.vision}
             </p>
           </div>
         </div>
 
         {/* Values */}
-        <div className="mb-12">
-          <h3 className={`text-2xl text-gray-900 text-center mb-10 transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`} style={{ transitionDelay: '400ms' }}>Our Core Values</h3>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {settings.values.map((value, index) => {
+        {displaySettings.values && displaySettings.values.length > 0 && (
+          <div className="mb-12">
+            <h3 className={`text-2xl text-gray-900 text-center mb-10 transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`} style={{ transitionDelay: '400ms' }}>Our Core Values</h3>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {displaySettings.values.map((value, index) => {
               const IconComponent = iconMap[value.icon] || Heart;
               return (
                 <div
@@ -159,20 +170,23 @@ export function About() {
                 </div>
               );
             })}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Story */}
-        <div className={`bg-gray-50 p-8 lg:p-12 rounded-2xl hover:shadow-lg transition-all duration-500 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`} style={{ transitionDelay: '800ms' }}>
-          <div className="max-w-3xl mx-auto">
-            <h3 className="text-2xl text-gray-900 mb-6">Our Story</h3>
-            {settings.story.map((paragraph, index) => (
-              <p key={index} className="text-gray-700 mb-4 leading-relaxed">
-                {paragraph}
-              </p>
-            ))}
+        {displaySettings.story && displaySettings.story.length > 0 && (
+          <div className={`bg-gray-50 p-8 lg:p-12 rounded-2xl hover:shadow-lg transition-all duration-500 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`} style={{ transitionDelay: '800ms' }}>
+            <div className="max-w-3xl mx-auto">
+              <h3 className="text-2xl text-gray-900 mb-6">Our Story</h3>
+              {displaySettings.story.map((paragraph, index) => (
+                <p key={index} className="text-gray-700 mb-4 leading-relaxed">
+                  {paragraph}
+                </p>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </section>
   );
