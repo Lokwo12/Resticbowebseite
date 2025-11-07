@@ -442,6 +442,64 @@ export function EnhancedAdminDashboard() {
     toast.info('Logged out successfully');
   };
 
+  const normalizeCollection = (items: any, prefix: string) => {
+    if (!Array.isArray(items)) {
+      return [];
+    }
+
+    return items.map((item, index) => {
+      const fallbackKey = `${prefix}-${index}`;
+
+      if (!item || typeof item !== 'object') {
+        return { key: fallbackKey, value: item };
+      }
+
+      if ('key' in item && 'value' in item) {
+        const key = (item as any).key ?? fallbackKey;
+        const rawValue = (item as any).value;
+        const value =
+          rawValue && typeof rawValue === 'object' && !Array.isArray(rawValue)
+            ? { ...rawValue, id: rawValue.id ?? key }
+            : rawValue;
+
+        return { key, value };
+      }
+
+      const { id, key: embeddedKey, value: embeddedValue, ...rest } = item as any;
+      const key = (typeof id === 'string' && id) || (typeof embeddedKey === 'string' && embeddedKey) || fallbackKey;
+
+      if (embeddedValue !== undefined) {
+        const value =
+          embeddedValue && typeof embeddedValue === 'object' && !Array.isArray(embeddedValue)
+            ? { ...embeddedValue, id: embeddedValue.id ?? key }
+            : embeddedValue;
+
+        return { key, value };
+      }
+
+      const value =
+        rest && typeof rest === 'object' && !Array.isArray(rest)
+          ? { ...rest, id: rest.id ?? key }
+          : rest;
+
+      return { key, value };
+    });
+  };
+
+  const normalizeSingle = (payload: any, key: string) => {
+    if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+      return payload;
+    }
+
+    return {
+      key,
+      value: {
+        ...payload,
+        id: payload.id ?? key
+      }
+    };
+  };
+
   const loadData = async () => {
     try {
       if (activeTab === 'overview') {
@@ -467,56 +525,56 @@ export function EnhancedAdminDashboard() {
           { headers: { Authorization: `Bearer ${publicAnonKey}` } }
         );
         const data = await response.json();
-        setPrograms(data.programs || []);
+        setPrograms(normalizeCollection(data.programs, 'program'));
       } else if (activeTab === 'news') {
         const response = await fetch(
           `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/news`,
           { headers: { Authorization: `Bearer ${publicAnonKey}` } }
         );
         const data = await response.json();
-        setNews(data.news || []);
+        setNews(normalizeCollection(data.news, 'news'));
       } else if (activeTab === 'gallery') {
         const response = await fetch(
           `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/gallery`,
           { headers: { Authorization: `Bearer ${publicAnonKey}` } }
         );
         const data = await response.json();
-        setGallery(data.images || []);
+        setGallery(normalizeCollection(data.images, 'gallery'));
       } else if (activeTab === 'contacts') {
         const response = await fetch(
           `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/contacts`,
           { headers: { Authorization: `Bearer ${publicAnonKey}` } }
         );
         const data = await response.json();
-        setContacts(data.contacts || []);
+        setContacts(normalizeCollection(data.contacts, 'contact'));
       } else if (activeTab === 'volunteers') {
         const response = await fetch(
           `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/volunteers`,
           { headers: { Authorization: `Bearer ${publicAnonKey}` } }
         );
         const data = await response.json();
-        setVolunteers(data.volunteers || []);
+        setVolunteers(normalizeCollection(data.volunteers, 'volunteer'));
       } else if (activeTab === 'donations') {
         const response = await fetch(
           `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/donations`,
           { headers: { Authorization: `Bearer ${publicAnonKey}` } }
         );
         const data = await response.json();
-        setDonations(data.donations || []);
+        setDonations(normalizeCollection(data.donations, 'donation'));
       } else if (activeTab === 'subscribers') {
         const response = await fetch(
           `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/newsletter`,
           { headers: { Authorization: `Bearer ${publicAnonKey}` } }
         );
         const data = await response.json();
-        setSubscribers(data.subscribers || []);
+        setSubscribers(normalizeCollection(data.subscribers, 'subscriber'));
       } else if (activeTab === 'users' && userRole === 'super-admin') {
         const response = await fetch(
           `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/users`,
           { headers: { Authorization: `Bearer ${publicAnonKey}` } }
         );
         const data = await response.json();
-        setAdminUsers(data.users || []);
+        setAdminUsers(normalizeCollection(data.users, 'admin_user'));
       } else if (activeTab === 'settings') {
         const response = await fetch(
           `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/site-settings`,
@@ -530,63 +588,63 @@ export function EnhancedAdminDashboard() {
           { headers: { Authorization: `Bearer ${publicAnonKey}` } }
         );
         const data = await response.json();
-        setTeam(data.team || []);
+        setTeam(normalizeCollection(data.team, 'team'));
       } else if (activeTab === 'stories') {
         const response = await fetch(
           `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/stories`,
           { headers: { Authorization: `Bearer ${publicAnonKey}` } }
         );
         const data = await response.json();
-        setStories(data.stories || []);
+        setStories(normalizeCollection(data.stories, 'story'));
       } else if (activeTab === 'impact') {
         const response = await fetch(
           `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/impact-stats`,
           { headers: { Authorization: `Bearer ${publicAnonKey}` } }
         );
         const data = await response.json();
-        setImpactStats(data.stats || null);
+        setImpactStats(data.stats ? normalizeSingle(data.stats, 'impact-stats') : null);
       } else if (activeTab === 'reports') {
         const response = await fetch(
           `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/reports`,
           { headers: { Authorization: `Bearer ${publicAnonKey}` } }
         );
         const data = await response.json();
-        setReports(data.reports || []);
+        setReports(normalizeCollection(data.reports, 'report'));
       } else if (activeTab === 'events') {
         const response = await fetch(
           `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/events`,
           { headers: { Authorization: `Bearer ${publicAnonKey}` } }
         );
         const data = await response.json();
-        setEvents(data.events || []);
+        setEvents(normalizeCollection(data.events, 'event'));
       } else if (activeTab === 'partners') {
         const response = await fetch(
           `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/partners`,
           { headers: { Authorization: `Bearer ${publicAnonKey}` } }
         );
         const data = await response.json();
-        setPartners(data.partners || []);
+        setPartners(normalizeCollection(data.partners, 'partner'));
       } else if (activeTab === 'opportunities') {
         const response = await fetch(
           `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/opportunities`,
           { headers: { Authorization: `Bearer ${publicAnonKey}` } }
         );
         const data = await response.json();
-        setOpportunities(data.opportunities || []);
+        setOpportunities(normalizeCollection(data.opportunities, 'opportunity'));
       } else if (activeTab === 'faqs') {
         const response = await fetch(
           `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/faqs`,
           { headers: { Authorization: `Bearer ${publicAnonKey}` } }
         );
         const data = await response.json();
-        setFAQs(data.faqs || []);
+        setFAQs(normalizeCollection(data.faqs, 'faq'));
       } else if (activeTab === 'resources') {
         const response = await fetch(
           `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/resources`,
           { headers: { Authorization: `Bearer ${publicAnonKey}` } }
         );
         const data = await response.json();
-        setResources(data.resources || []);
+        setResources(normalizeCollection(data.resources, 'resource'));
       }
     } catch (err) {
       console.error('Error loading data:', err);
