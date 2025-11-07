@@ -141,7 +141,7 @@ const NAVIGATION_ITEMS = [
   { id: 'donations', label: 'Donations', icon: Heart, color: 'text-emerald-600' },
   { id: 'subscribers', label: 'Subscribers', icon: Send, color: 'text-blue-600' },
   { id: 'settings', label: 'Settings', icon: Settings, color: 'text-gray-600' },
-  { id: 'users', label: 'Users', icon: Shield, color: 'text-red-600', requiresSuperAdmin: true },
+  { id: 'users', label: 'Users', icon: Shield, color: 'text-red-600', requiresUserManagement: true },
 ];
 
 export function EnhancedAdminDashboard() {
@@ -198,6 +198,8 @@ export function EnhancedAdminDashboard() {
   const [selectedFAQs, setSelectedFAQs] = useState<string[]>([]);
   const [selectedResources, setSelectedResources] = useState<string[]>([]);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
+
+  const canManageUsers = userRole === 'super-admin' || userRole === 'admin';
 
   // Filter states
   const [contactFilter, setContactFilter] = useState('all');
@@ -283,6 +285,12 @@ export function EnhancedAdminDashboard() {
       fetchSiteSettings();
     }
   }, [isAuthenticated]);
+
+  useEffect(() => {
+    if (!canManageUsers && activeTab === 'users') {
+      setActiveTab('overview');
+    }
+  }, [canManageUsers, activeTab]);
 
   const siteTitle = useMemo(() => {
     const name = siteSettings?.general?.siteName;
@@ -576,7 +584,7 @@ export function EnhancedAdminDashboard() {
         );
         const data = await response.json();
         setSubscribers(normalizeCollection(data.subscribers, 'subscriber'));
-      } else if (activeTab === 'users' && userRole === 'super-admin') {
+      } else if (activeTab === 'users' && canManageUsers) {
         const response = await fetch(
           `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/users`,
           { headers: { Authorization: `Bearer ${publicAnonKey}` } }
@@ -1229,8 +1237,8 @@ export function EnhancedAdminDashboard() {
   // User Management Handlers
   const handleSubmitUser = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (userRole !== 'super-admin') {
-      toast.error('Only super admins can manage users');
+    if (!canManageUsers) {
+      toast.error('You do not have permission to manage users');
       return;
     }
 
@@ -1265,8 +1273,8 @@ export function EnhancedAdminDashboard() {
   };
 
   const handleDeleteUser = async (id: string) => {
-    if (userRole !== 'super-admin') {
-      toast.error('Only super admins can delete users');
+    if (!canManageUsers) {
+      toast.error('You do not have permission to manage users');
       return;
     }
     if (!confirm('Delete this user? This action cannot be undone.')) return;
@@ -1291,8 +1299,8 @@ export function EnhancedAdminDashboard() {
   };
 
   const handleBulkDeleteUsers = async (ids: string[]) => {
-    if (userRole !== 'super-admin') {
-      toast.error('Only super admins can delete users');
+    if (!canManageUsers) {
+      toast.error('You do not have permission to manage users');
       return;
     }
     if (!confirm(`Delete ${ids.length} users? This action cannot be undone.`)) return;
@@ -1322,8 +1330,8 @@ export function EnhancedAdminDashboard() {
   };
 
   const handleBulkUpdateUserRole = async (ids: string[], role: string) => {
-    if (userRole !== 'super-admin') {
-      toast.error('Only super admins can change roles');
+    if (!canManageUsers) {
+      toast.error('You do not have permission to manage users');
       return;
     }
 
@@ -1352,8 +1360,8 @@ export function EnhancedAdminDashboard() {
   };
 
   const handleBulkUpdateUserStatus = async (ids: string[], status: string) => {
-    if (userRole !== 'super-admin') {
-      toast.error('Only super admins can change status');
+    if (!canManageUsers) {
+      toast.error('You do not have permission to manage users');
       return;
     }
 
@@ -1382,8 +1390,8 @@ export function EnhancedAdminDashboard() {
   };
 
   const handleResetPassword = async (userId: string) => {
-    if (userRole !== 'super-admin') {
-      toast.error('Only super admins can reset passwords');
+    if (!canManageUsers) {
+      toast.error('You do not have permission to manage users');
       return;
     }
     if (!newPassword) {
@@ -1630,7 +1638,7 @@ export function EnhancedAdminDashboard() {
               <h3 className="text-xs uppercase text-gray-500 mb-3 px-3">Navigation</h3>
               <nav className="space-y-1">
                 {NAVIGATION_ITEMS
-                  .filter((item) => !item.requiresSuperAdmin || userRole === 'super-admin')
+                  .filter((item) => !item.requiresUserManagement || canManageUsers)
                   .map((item) => {
                   const Icon = item.icon;
                   const isActive = activeTab === item.id;
@@ -2524,8 +2532,8 @@ export function EnhancedAdminDashboard() {
               </div>
             )}
 
-            {/* User Management - Super Admin Only */}
-            {activeTab === 'users' && userRole === 'super-admin' && (
+            {/* User Management */}
+            {activeTab === 'users' && canManageUsers && (
               <div className="space-y-6">
                 <div className="flex items-center justify-between">
                   <div>
