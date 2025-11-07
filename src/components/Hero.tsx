@@ -1,5 +1,6 @@
 import { ArrowRight } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import logo from 'figma:asset/2b36c5cb8ddf5552ba2d3e612fd68401a7bb193e.png';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 
 interface HeroSettings {
@@ -11,6 +12,21 @@ interface HeroSettings {
   imageUrl: string;
   stats: Array<{ value: string; label: string }>;
 }
+
+const fallbackHeroSettings: HeroSettings = {
+  badgeText: 'Making a Difference in Kiryandongo',
+  title: 'Empowering Communities Through Action',
+  subtitle:
+    'Resti Kiryandongo CBO is dedicated to improving lives through education, healthcare, and community development initiatives in Kiryandongo District, Uganda.',
+  primaryButtonText: 'Donate Now',
+  secondaryButtonText: 'Learn More',
+  imageUrl: logo,
+  stats: [
+    { value: '500+', label: 'Families Supported' },
+    { value: '10+', label: 'Active Programs' },
+    { value: '50+', label: 'Volunteers' },
+  ],
+};
 
 export function Hero() {
   const [settings, setSettings] = useState<HeroSettings | null>(null);
@@ -36,23 +52,23 @@ export function Hero() {
       }
 
       const data = await response.json();
-      setSettings(data.settings.hero);
+      const heroData = data.settings?.hero ?? {};
+      const trimmedImageUrl = typeof heroData.imageUrl === 'string' ? heroData.imageUrl.trim() : '';
+      const sanitizedImageUrl =
+        trimmedImageUrl &&
+        !trimmedImageUrl.toLowerCase().includes('placeholder') &&
+        !trimmedImageUrl.includes('unsplash.com')
+          ? trimmedImageUrl
+          : fallbackHeroSettings.imageUrl;
+
+      setSettings({
+        ...fallbackHeroSettings,
+        ...heroData,
+        imageUrl: sanitizedImageUrl,
+      });
     } catch (error) {
       console.error('Error fetching hero settings:', error);
-      // Set default settings if fetch fails
-      setSettings({
-        badgeText: 'Making a Difference in Kiryandongo',
-        title: 'Empowering Communities Through Action',
-        subtitle: 'Resti Kiryandongo CBO is dedicated to improving lives through education, healthcare, and community development initiatives in Kiryandongo District, Uganda.',
-        primaryButtonText: 'Donate Now',
-        secondaryButtonText: 'Learn More',
-        imageUrl: 'https://images.unsplash.com/photo-1606471015285-85fa1288aa4e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxhZnJpY2FuJTIwY29tbXVuaXR5JTIwZW1wb3dlcm1lbnR8ZW58MXx8fHwxNzYyNDU3NTkyfDA&ixlib=rb-4.1.0&q=80&w=1080',
-        stats: [
-          { value: '500+', label: 'Families Supported' },
-          { value: '10+', label: 'Active Programs' },
-          { value: '50+', label: 'Volunteers' }
-        ]
-      });
+      setSettings(fallbackHeroSettings);
     } finally {
       setLoading(false);
     }
