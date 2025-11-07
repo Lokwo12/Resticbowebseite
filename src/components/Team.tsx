@@ -65,7 +65,7 @@ export function Team() {
       
       if (response.ok) {
         const data = await response.json();
-        setTeam(data.team || []);
+        setTeam(normalizeTeamMembers(data.team));
       }
     } catch (error) {
       console.error('Error fetching team:', error);
@@ -229,4 +229,41 @@ export function Team() {
       </div>
     </section>
   );
+}
+
+function normalizeTeamMembers(payload: any): TeamMember[] {
+  if (!Array.isArray(payload)) {
+    return [];
+  }
+
+  return payload
+    .map((item, index) => {
+      const candidate = item?.value
+        ? { id: item.key ?? item.value?.id, ...item.value }
+        : item;
+
+      if (!candidate || typeof candidate !== 'object') {
+        return null;
+      }
+
+      const idSource = candidate.id ?? candidate.key ?? `team-${index}`;
+
+      const parsedOrder = Number(candidate.order);
+      const order = Number.isFinite(parsedOrder) ? parsedOrder : 999;
+
+      return {
+        id: String(idSource),
+        name: candidate.name ?? 'Unnamed Team Member',
+        role: candidate.role ?? '',
+        department: candidate.department ?? 'general',
+        bio: candidate.bio ?? '',
+        image: candidate.image ?? '',
+        email: candidate.email ?? '',
+        linkedin: candidate.linkedin ?? '',
+        twitter: candidate.twitter ?? '',
+        order,
+      } as TeamMember;
+    })
+    .filter((member): member is TeamMember => Boolean(member))
+    .sort((a, b) => a.order - b.order);
 }
