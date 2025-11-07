@@ -3,7 +3,6 @@ import { Users, Mail, Linkedin, Twitter } from 'lucide-react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { Card } from './ui/card';
 import { Badge } from './ui/badge';
-import { useScrollAnimation, getStaggerDelay } from '../utils/animations';
 
 interface TeamMember {
   id: string;
@@ -23,7 +22,6 @@ export function Team() {
   const [loading, setLoading] = useState(true);
   const [selectedDepartment, setSelectedDepartment] = useState('all');
   const [sectionSettings, setSectionSettings] = useState({ title: 'Meet Our Team', description: 'Get to know the dedicated individuals working tirelessly to make a difference in our community.' });
-  const { ref, isVisible } = useScrollAnimation();
 
   useEffect(() => {
     fetchTeam();
@@ -92,12 +90,12 @@ export function Team() {
   }
 
   return (
-    <section id="team" className="py-16 bg-gray-50" ref={ref}>
+    <section id="team" className="py-16 bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
-        <div className={`text-center mb-12 transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+        <div className="text-center mb-12">
           <div className="flex items-center justify-center gap-2 mb-4">
-            <Users className="text-emerald-600 animate-[scaleIn_0.5s_ease-out]" size={32} />
+            <Users className="text-emerald-600" size={32} />
             <h2 className="text-emerald-600">{sectionSettings.title}</h2>
           </div>
           <p className="text-gray-600 max-w-3xl mx-auto">
@@ -127,11 +125,10 @@ export function Team() {
         {/* Team Grid */}
         {filteredTeam.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {filteredTeam.map((member, index) => (
+            {filteredTeam.map((member) => (
               <Card 
                 key={member.id} 
-                className={`overflow-hidden hover:shadow-2xl transition-all duration-500 group ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
-                style={{ transitionDelay: isVisible ? getStaggerDelay(index, 100) : '0ms' }}
+                className="overflow-hidden hover:shadow-2xl transition-all duration-500 group"
               >
                 {/* Image */}
                 <div className="relative h-64 bg-gradient-to-br from-emerald-400 to-emerald-600 overflow-hidden">
