@@ -12,11 +12,26 @@ interface FormDialogProps {
   editingItem: any;
   onSuccess: () => void;
   userRole: string;
+  categoryOptions?: string[];
 }
 
 // Volunteer Opportunity Form Dialog
-export function OpportunityFormDialog({ show, onClose, editingItem, onSuccess, userRole }: FormDialogProps) {
+export function OpportunityFormDialog({ show, onClose, editingItem, onSuccess, userRole, categoryOptions }: FormDialogProps) {
   const [loading, setLoading] = useState(false);
+
+  const defaultCategories = ['General', 'Education', 'Healthcare', 'Community', 'Fundraising'];
+  const baseCategories = (categoryOptions && categoryOptions.length > 0 ? categoryOptions : defaultCategories)
+    .map((item) => item.trim())
+    .filter((item) => item.length > 0);
+  const editingCategory = (editingItem?.category || editingItem?.type || '').trim();
+  const availableCategories = [...baseCategories];
+
+  if (editingCategory && !availableCategories.some((item) => item.toLowerCase() === editingCategory.toLowerCase())) {
+    availableCategories.push(editingCategory);
+  }
+
+  const uniqueCategories = availableCategories.filter((item, index, arr) => arr.findIndex((value) => value.toLowerCase() === item.toLowerCase()) === index);
+  const categoryFallback = uniqueCategories[0] || 'General';
 
   type OpportunityFormData = {
     title: string;
@@ -35,7 +50,7 @@ export function OpportunityFormDialog({ show, onClose, editingItem, onSuccess, u
     requirements: Array.isArray(editingItem?.requirements) ? editingItem.requirements : [],
     timeCommitment: editingItem?.timeCommitment || '',
     location: editingItem?.location || '',
-    category: editingItem?.category || 'general',
+  category: editingItem?.category || editingItem?.type || categoryFallback,
     openPositions: typeof editingItem?.openPositions === 'number' ? editingItem.openPositions : 1,
     benefits: Array.isArray(editingItem?.benefits) ? editingItem.benefits : []
   });
@@ -171,11 +186,11 @@ export function OpportunityFormDialog({ show, onClose, editingItem, onSuccess, u
                 onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                 className="w-full px-4 py-2 border rounded-lg"
               >
-                <option value="general">General</option>
-                <option value="education">Education</option>
-                <option value="healthcare">Healthcare</option>
-                <option value="community">Community</option>
-                <option value="fundraising">Fundraising</option>
+                {uniqueCategories.map((category) => (
+                  <option key={category} value={category}>
+                    {category}
+                  </option>
+                ))}
               </select>
             </div>
             <div>
