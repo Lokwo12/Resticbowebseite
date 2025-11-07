@@ -1433,9 +1433,6 @@ export function EnhancedAdminDashboard() {
               <h3 className="text-xs uppercase text-gray-500 mb-3 px-3">Navigation</h3>
               <nav className="space-y-1">
                 {NAVIGATION_ITEMS.map((item) => {
-                  // Hide users tab if not super-admin
-                  if (item.id === 'users' && userRole !== 'super-admin') return null;
-                  
                   const Icon = item.icon;
                   const isActive = activeTab === item.id;
                   
@@ -1458,6 +1455,23 @@ export function EnhancedAdminDashboard() {
                     </button>
                   );
                 })}
+                {userRole === 'super-admin' && (
+                  <button
+                    onClick={() => {
+                      setActiveTab('users');
+                      if (window.innerWidth < 1024) setSidebarOpen(false);
+                    }}
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${
+                      activeTab === 'users'
+                        ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-md'
+                        : 'text-gray-700 hover:bg-gray-100'
+                    }`}
+                  >
+                    <Shield size={18} className={activeTab === 'users' ? 'text-white' : 'text-red-600'} />
+                    <span className="text-sm">Users</span>
+                    {activeTab === 'users' && <ChevronRight size={16} className="ml-auto" />}
+                  </button>
+                )}
               </nav>
             </div>
 
@@ -1645,12 +1659,904 @@ export function EnhancedAdminDashboard() {
               </div>
             )}
 
-            {/* Placeholder for other tabs - will add detailed content in next message */}
-            {activeTab !== 'overview' && (
+            {/* Programs Management */}
+            {activeTab === 'programs' && (
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-xl text-gray-900">Programs ({programs.length})</h3>
+                    <p className="text-sm text-gray-500">Manage your community programs</p>
+                  </div>
+                  <Button
+                    onClick={() => {
+                      setEditingItem(null);
+                      setFormData({ title: '', description: '', content: '', image: '', category: 'general' });
+                      setShowProgramForm(true);
+                    }}
+                    className="bg-emerald-600 hover:bg-emerald-700"
+                  >
+                    <Plus size={16} className="mr-2" />
+                    Add Program
+                  </Button>
+                </div>
+
+                {selectedPrograms.length > 0 && (
+                  <div className="flex items-center gap-3 p-4 bg-emerald-50 rounded-lg border border-emerald-200">
+                    <span className="text-sm text-gray-700">{selectedPrograms.length} selected</span>
+                    <Button
+                      onClick={() => handleBulkDeletePrograms(selectedPrograms)}
+                      variant="outline"
+                      size="sm"
+                      className="text-red-600 hover:bg-red-50"
+                    >
+                      <Trash2 size={14} className="mr-1" />
+                      Delete Selected
+                    </Button>
+                    <Button
+                      onClick={() => setSelectedPrograms([])}
+                      variant="outline"
+                      size="sm"
+                    >
+                      Clear Selection
+                    </Button>
+                  </div>
+                )}
+
+                <div className="grid gap-4">
+                  {programs.map((program) => (
+                    <Card key={program.key} className="p-6 hover:shadow-lg transition">
+                      <div className="flex items-start gap-4">
+                        <input
+                          type="checkbox"
+                          checked={selectedPrograms.includes(program.key)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedPrograms([...selectedPrograms, program.key]);
+                            } else {
+                              setSelectedPrograms(selectedPrograms.filter(id => id !== program.key));
+                            }
+                          }}
+                          className="mt-1"
+                        />
+                        {program.value.image && (
+                          <img src={program.value.image} alt={program.value.title} className="w-24 h-24 object-cover rounded-lg" />
+                        )}
+                        <div className="flex-1">
+                          <h4 className="text-lg text-gray-900 mb-1">{program.value.title}</h4>
+                          <p className="text-sm text-gray-600 mb-2">{program.value.description}</p>
+                          <Badge>{program.value.category}</Badge>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            onClick={() => {
+                              setEditingItem(program);
+                              setFormData(program.value);
+                              setShowProgramForm(true);
+                            }}
+                            variant="outline"
+                            size="sm"
+                          >
+                            <Edit size={14} className="mr-1" />
+                            Edit
+                          </Button>
+                          <Button
+                            onClick={() => handleDeleteProgram(program.key)}
+                            variant="outline"
+                            size="sm"
+                            className="text-red-600 hover:bg-red-50"
+                          >
+                            <Trash2 size={14} />
+                          </Button>
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                  {programs.length === 0 && (
+                    <div className="text-center py-12 text-gray-500">
+                      <FileText size={48} className="mx-auto mb-4 text-gray-300" />
+                      <p>No programs yet. Create your first program!</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* News Management */}
+            {activeTab === 'news' && (
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-xl text-gray-900">News Articles ({news.length})</h3>
+                    <p className="text-sm text-gray-500">Manage news and updates</p>
+                  </div>
+                  <Button
+                    onClick={() => {
+                      setEditingItem(null);
+                      setFormData({ title: '', description: '', content: '', image: '', category: 'general' });
+                      setShowNewsForm(true);
+                    }}
+                    className="bg-emerald-600 hover:bg-emerald-700"
+                  >
+                    <Plus size={16} className="mr-2" />
+                    Add News
+                  </Button>
+                </div>
+
+                {selectedNews.length > 0 && (
+                  <div className="flex items-center gap-3 p-4 bg-emerald-50 rounded-lg border border-emerald-200">
+                    <span className="text-sm text-gray-700">{selectedNews.length} selected</span>
+                    <Button
+                      onClick={() => handleBulkDeleteNews(selectedNews)}
+                      variant="outline"
+                      size="sm"
+                      className="text-red-600 hover:bg-red-50"
+                    >
+                      <Trash2 size={14} className="mr-1" />
+                      Delete Selected
+                    </Button>
+                    <Button onClick={() => setSelectedNews([])} variant="outline" size="sm">
+                      Clear Selection
+                    </Button>
+                  </div>
+                )}
+
+                <div className="grid gap-4">
+                  {news.map((item) => (
+                    <Card key={item.key} className="p-6 hover:shadow-lg transition">
+                      <div className="flex items-start gap-4">
+                        <input
+                          type="checkbox"
+                          checked={selectedNews.includes(item.key)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedNews([...selectedNews, item.key]);
+                            } else {
+                              setSelectedNews(selectedNews.filter(id => id !== item.key));
+                            }
+                          }}
+                          className="mt-1"
+                        />
+                        {item.value.image && (
+                          <img src={item.value.image} alt={item.value.title} className="w-24 h-24 object-cover rounded-lg" />
+                        )}
+                        <div className="flex-1">
+                          <h4 className="text-lg text-gray-900 mb-1">{item.value.title}</h4>
+                          <p className="text-sm text-gray-600 mb-2">{item.value.description}</p>
+                          <div className="flex items-center gap-2">
+                            <Badge>{item.value.category}</Badge>
+                            <span className="text-xs text-gray-400">
+                              {new Date(item.value.created_at).toLocaleDateString()}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            onClick={() => {
+                              setEditingItem(item);
+                              setFormData(item.value);
+                              setShowNewsForm(true);
+                            }}
+                            variant="outline"
+                            size="sm"
+                          >
+                            <Edit size={14} className="mr-1" />
+                            Edit
+                          </Button>
+                          <Button
+                            onClick={() => handleDeleteNews(item.key)}
+                            variant="outline"
+                            size="sm"
+                            className="text-red-600 hover:bg-red-50"
+                          >
+                            <Trash2 size={14} />
+                          </Button>
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                  {news.length === 0 && (
+                    <div className="text-center py-12 text-gray-500">
+                      <Newspaper size={48} className="mx-auto mb-4 text-gray-300" />
+                      <p>No news articles yet. Create your first article!</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Gallery Management */}
+            {activeTab === 'gallery' && (
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-xl text-gray-900">Gallery ({gallery.length})</h3>
+                    <p className="text-sm text-gray-500">Manage images and media</p>
+                  </div>
+                  <Button
+                    onClick={() => {
+                      setEditingItem(null);
+                      setFormData({ title: '', description: '', content: '', image: '', category: 'general' });
+                      setShowGalleryForm(true);
+                    }}
+                    className="bg-emerald-600 hover:bg-emerald-700"
+                  >
+                    <Plus size={16} className="mr-2" />
+                    Add Image
+                  </Button>
+                </div>
+
+                {selectedGallery.length > 0 && (
+                  <div className="flex items-center gap-3 p-4 bg-emerald-50 rounded-lg border border-emerald-200">
+                    <span className="text-sm text-gray-700">{selectedGallery.length} selected</span>
+                    <Button
+                      onClick={() => handleBulkDeleteGallery(selectedGallery)}
+                      variant="outline"
+                      size="sm"
+                      className="text-red-600 hover:bg-red-50"
+                    >
+                      <Trash2 size={14} className="mr-1" />
+                      Delete Selected
+                    </Button>
+                    <Button onClick={() => setSelectedGallery([])} variant="outline" size="sm">
+                      Clear Selection
+                    </Button>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {gallery.map((item) => (
+                    <Card key={item.key} className="p-4 hover:shadow-lg transition">
+                      <div className="relative">
+                        <input
+                          type="checkbox"
+                          checked={selectedGallery.includes(item.key)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedGallery([...selectedGallery, item.key]);
+                            } else {
+                              setSelectedGallery(selectedGallery.filter(id => id !== item.key));
+                            }
+                          }}
+                          className="absolute top-2 left-2 z-10"
+                        />
+                        <img src={item.value.image} alt={item.value.title} className="w-full h-48 object-cover rounded-lg mb-3" />
+                      </div>
+                      <h4 className="text-sm text-gray-900 mb-1 truncate">{item.value.title}</h4>
+                      <p className="text-xs text-gray-600 mb-2 line-clamp-2">{item.value.description}</p>
+                      <div className="flex gap-2">
+                        <Button
+                          onClick={() => {
+                            setEditingItem(item);
+                            setFormData(item.value);
+                            setShowGalleryForm(true);
+                          }}
+                          variant="outline"
+                          size="sm"
+                          className="flex-1"
+                        >
+                          <Edit size={12} className="mr-1" />
+                          Edit
+                        </Button>
+                        <Button
+                          onClick={() => handleDeleteGallery(item.key)}
+                          variant="outline"
+                          size="sm"
+                          className="text-red-600"
+                        >
+                          <Trash2 size={12} />
+                        </Button>
+                      </div>
+                    </Card>
+                  ))}
+                  {gallery.length === 0 && (
+                    <div className="col-span-full text-center py-12 text-gray-500">
+                      <ImageIcon size={48} className="mx-auto mb-4 text-gray-300" />
+                      <p>No images yet. Upload your first image!</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Team Management */}
+            {activeTab === 'team' && (
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-xl text-gray-900">Team Members ({team.length})</h3>
+                    <p className="text-sm text-gray-500">Manage your team</p>
+                  </div>
+                  <TeamFormDialog
+                    isOpen={showTeamForm}
+                    onClose={() => {
+                      setShowTeamForm(false);
+                      setEditingItem(null);
+                    }}
+                    onSubmit={() => {
+                      setShowTeamForm(false);
+                      setEditingItem(null);
+                      loadData();
+                    }}
+                    editingItem={editingItem}
+                  >
+                    <Button className="bg-emerald-600 hover:bg-emerald-700">
+                      <Plus size={16} className="mr-2" />
+                      Add Team Member
+                    </Button>
+                  </TeamFormDialog>
+                </div>
+
+                <div className="grid gap-4">
+                  {team.map((member) => (
+                    <Card key={member.key} className="p-6 hover:shadow-lg transition">
+                      <div className="flex items-start gap-4">
+                        {member.value.image && (
+                          <Avatar className="h-16 w-16">
+                            <AvatarImage src={member.value.image} alt={member.value.name} />
+                            <AvatarFallback>{member.value.name?.charAt(0)}</AvatarFallback>
+                          </Avatar>
+                        )}
+                        <div className="flex-1">
+                          <h4 className="text-lg text-gray-900 mb-1">{member.value.name}</h4>
+                          <p className="text-sm text-emerald-600 mb-2">{member.value.role}</p>
+                          <p className="text-sm text-gray-600">{member.value.bio}</p>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            onClick={() => {
+                              setEditingItem(member);
+                              setShowTeamForm(true);
+                            }}
+                            variant="outline"
+                            size="sm"
+                          >
+                            <Edit size={14} className="mr-1" />
+                            Edit
+                          </Button>
+                          <Button
+                            onClick={() => handleDeleteTeam(member.key)}
+                            variant="outline"
+                            size="sm"
+                            className="text-red-600 hover:bg-red-50"
+                          >
+                            <Trash2 size={14} />
+                          </Button>
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                  {team.length === 0 && (
+                    <div className="text-center py-12 text-gray-500">
+                      <Users size={48} className="mx-auto mb-4 text-gray-300" />
+                      <p>No team members yet. Add your first team member!</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Contacts Management */}
+            {activeTab === 'contacts' && (
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-xl text-gray-900">Contact Messages ({getFilteredContacts().length})</h3>
+                    <p className="text-sm text-gray-500">Manage incoming messages</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <select
+                      value={contactFilter}
+                      onChange={(e) => setContactFilter(e.target.value)}
+                      className="px-3 py-2 border rounded-lg text-sm"
+                    >
+                      <option value="all">All Status</option>
+                      <option value="new">New</option>
+                      <option value="read">Read</option>
+                      <option value="responded">Responded</option>
+                    </select>
+                  </div>
+                </div>
+
+                {selectedContacts.length > 0 && (
+                  <div className="flex items-center gap-3 p-4 bg-emerald-50 rounded-lg border border-emerald-200">
+                    <span className="text-sm text-gray-700">{selectedContacts.length} selected</span>
+                    <Button
+                      onClick={() => handleBulkDeleteContacts(selectedContacts)}
+                      variant="outline"
+                      size="sm"
+                      className="text-red-600 hover:bg-red-50"
+                    >
+                      <Trash2 size={14} className="mr-1" />
+                      Delete Selected
+                    </Button>
+                    <Button onClick={() => setSelectedContacts([])} variant="outline" size="sm">
+                      Clear Selection
+                    </Button>
+                  </div>
+                )}
+
+                <div className="grid gap-4">
+                  {getFilteredContacts().map((contact) => (
+                    <Card key={contact.key} className="p-6 hover:shadow-lg transition">
+                      <div className="flex items-start gap-4">
+                        <input
+                          type="checkbox"
+                          checked={selectedContacts.includes(contact.key)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedContacts([...selectedContacts, contact.key]);
+                            } else {
+                              setSelectedContacts(selectedContacts.filter(id => id !== contact.key));
+                            }
+                          }}
+                          className="mt-1"
+                        />
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <h4 className="text-lg text-gray-900">{contact.value.name}</h4>
+                            <Badge className={
+                              contact.value.status === 'new' ? 'bg-blue-100 text-blue-700' :
+                              contact.value.status === 'read' ? 'bg-gray-100 text-gray-700' :
+                              'bg-green-100 text-green-700'
+                            }>
+                              {contact.value.status}
+                            </Badge>
+                          </div>
+                          <p className="text-sm text-gray-600 mb-1">{contact.value.email}</p>
+                          <p className="text-sm text-gray-700 mb-2">{contact.value.message}</p>
+                          <span className="text-xs text-gray-400">
+                            {new Date(contact.value.created_at).toLocaleString()}
+                          </span>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            onClick={() => setViewingItem(contact)}
+                            variant="outline"
+                            size="sm"
+                          >
+                            <Eye size={14} className="mr-1" />
+                            View
+                          </Button>
+                          <Button
+                            onClick={() => {
+                              setViewingItem(contact);
+                              handleUpdateContactStatus(contact.key, 'read');
+                            }}
+                            variant="outline"
+                            size="sm"
+                          >
+                            <Reply size={14} className="mr-1" />
+                            Reply
+                          </Button>
+                          <Button
+                            onClick={() => handleDeleteContact(contact.key)}
+                            variant="outline"
+                            size="sm"
+                            className="text-red-600"
+                          >
+                            <Trash2 size={14} />
+                          </Button>
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                  {getFilteredContacts().length === 0 && (
+                    <div className="text-center py-12 text-gray-500">
+                      <Mail size={48} className="mx-auto mb-4 text-gray-300" />
+                      <p>No contact messages</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Volunteers Management */}
+            {activeTab === 'volunteers' && (
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-xl text-gray-900">Volunteer Applications ({getFilteredVolunteers().length})</h3>
+                    <p className="text-sm text-gray-500">Manage volunteer registrations</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <select
+                      value={volunteerFilter}
+                      onChange={(e) => setVolunteerFilter(e.target.value)}
+                      className="px-3 py-2 border rounded-lg text-sm"
+                    >
+                      <option value="all">All Status</option>
+                      <option value="pending">Pending</option>
+                      <option value="approved">Approved</option>
+                      <option value="rejected">Rejected</option>
+                    </select>
+                  </div>
+                </div>
+
+                {selectedVolunteers.length > 0 && (
+                  <div className="flex items-center gap-3 p-4 bg-emerald-50 rounded-lg border border-emerald-200">
+                    <span className="text-sm text-gray-700">{selectedVolunteers.length} selected</span>
+                    <Button
+                      onClick={() => handleBulkDeleteVolunteers(selectedVolunteers)}
+                      variant="outline"
+                      size="sm"
+                      className="text-red-600 hover:bg-red-50"
+                    >
+                      <Trash2 size={14} className="mr-1" />
+                      Delete Selected
+                    </Button>
+                    <Button onClick={() => setSelectedVolunteers([])} variant="outline" size="sm">
+                      Clear Selection
+                    </Button>
+                  </div>
+                )}
+
+                <div className="grid gap-4">
+                  {getFilteredVolunteers().map((volunteer) => (
+                    <Card key={volunteer.key} className="p-6 hover:shadow-lg transition">
+                      <div className="flex items-start gap-4">
+                        <input
+                          type="checkbox"
+                          checked={selectedVolunteers.includes(volunteer.key)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedVolunteers([...selectedVolunteers, volunteer.key]);
+                            } else {
+                              setSelectedVolunteers(selectedVolunteers.filter(id => id !== volunteer.key));
+                            }
+                          }}
+                          className="mt-1"
+                        />
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <h4 className="text-lg text-gray-900">{volunteer.value.name}</h4>
+                            <Badge className={
+                              volunteer.value.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                              volunteer.value.status === 'approved' ? 'bg-green-100 text-green-700' :
+                              'bg-red-100 text-red-700'
+                            }>
+                              {volunteer.value.status}
+                            </Badge>
+                          </div>
+                          <p className="text-sm text-gray-600 mb-1">{volunteer.value.email} • {volunteer.value.phone}</p>
+                          <p className="text-sm text-gray-700 mb-2">Skills: {volunteer.value.skills}</p>
+                          <span className="text-xs text-gray-400">
+                            Applied: {new Date(volunteer.value.created_at).toLocaleDateString()}
+                          </span>
+                        </div>
+                        <div className="flex flex-col gap-2">
+                          <Button
+                            onClick={() => handleUpdateVolunteerStatus(volunteer.key, 'approved')}
+                            variant="outline"
+                            size="sm"
+                            className="text-green-600"
+                          >
+                            <Check size={14} className="mr-1" />
+                            Approve
+                          </Button>
+                          <Button
+                            onClick={() => handleUpdateVolunteerStatus(volunteer.key, 'rejected')}
+                            variant="outline"
+                            size="sm"
+                            className="text-red-600"
+                          >
+                            <X size={14} className="mr-1" />
+                            Reject
+                          </Button>
+                          <Button
+                            onClick={() => handleDeleteVolunteer(volunteer.key)}
+                            variant="outline"
+                            size="sm"
+                            className="text-red-600"
+                          >
+                            <Trash2 size={14} />
+                          </Button>
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                  {getFilteredVolunteers().length === 0 && (
+                    <div className="text-center py-12 text-gray-500">
+                      <Heart size={48} className="mx-auto mb-4 text-gray-300" />
+                      <p>No volunteer applications</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Donations Management */}
+            {activeTab === 'donations' && (
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-xl text-gray-900">Donations ({donations.length})</h3>
+                    <p className="text-sm text-gray-500">View donation records</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm text-gray-600">Total Donations</p>
+                    <p className="text-2xl text-emerald-600">
+                      ${donations.reduce((sum, d) => sum + (d.value.amount || 0), 0).toFixed(2)}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid gap-4">
+                  {donations.map((donation) => (
+                    <Card key={donation.key} className="p-6 hover:shadow-lg transition">
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <h4 className="text-lg text-gray-900">{donation.value.name}</h4>
+                            <Badge className="bg-emerald-100 text-emerald-700">
+                              ${donation.value.amount}
+                            </Badge>
+                          </div>
+                          <p className="text-sm text-gray-600 mb-1">{donation.value.email}</p>
+                          <p className="text-sm text-gray-700">Payment: {donation.value.payment_method}</p>
+                          <span className="text-xs text-gray-400">
+                            {new Date(donation.value.created_at).toLocaleString()}
+                          </span>
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                  {donations.length === 0 && (
+                    <div className="text-center py-12 text-gray-500">
+                      <Heart size={48} className="mx-auto mb-4 text-gray-300" />
+                      <p>No donations yet</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Subscribers Management */}
+            {activeTab === 'subscribers' && (
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-xl text-gray-900">Newsletter Subscribers ({subscribers.length})</h3>
+                    <p className="text-sm text-gray-500">Manage newsletter subscribers</p>
+                  </div>
+                  <Button variant="outline">
+                    <Download size={16} className="mr-2" />
+                    Export List
+                  </Button>
+                </div>
+
+                <div className="grid gap-4">
+                  {subscribers.map((subscriber) => (
+                    <Card key={subscriber.key} className="p-6 hover:shadow-lg transition">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-lg text-gray-900">{subscriber.value.email}</p>
+                          <span className="text-xs text-gray-400">
+                            Subscribed: {new Date(subscriber.value.created_at).toLocaleDateString()}
+                          </span>
+                        </div>
+                        <Badge className="bg-green-100 text-green-700">Active</Badge>
+                      </div>
+                    </Card>
+                  ))}
+                  {subscribers.length === 0 && (
+                    <div className="text-center py-12 text-gray-500">
+                      <Send size={48} className="mx-auto mb-4 text-gray-300" />
+                      <p>No subscribers yet</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* User Management - Super Admin Only */}
+            {activeTab === 'users' && userRole === 'super-admin' && (
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-xl text-gray-900">User Management ({getFilteredUsers().length})</h3>
+                    <p className="text-sm text-gray-500">Manage admin users and permissions</p>
+                  </div>
+                  <Button
+                    onClick={() => {
+                      setEditingItem(null);
+                      setUserFormData({ name: '', email: '', password: '', role: 'viewer', status: 'active' });
+                      setShowUserForm(true);
+                    }}
+                    className="bg-emerald-600 hover:bg-emerald-700"
+                  >
+                    <Plus size={16} className="mr-2" />
+                    Add User
+                  </Button>
+                </div>
+
+                {/* Filters */}
+                <div className="flex flex-wrap items-center gap-3 p-4 bg-gray-50 rounded-lg">
+                  <div className="flex items-center gap-2">
+                    <Filter size={16} className="text-gray-500" />
+                    <span className="text-sm text-gray-600">Filters:</span>
+                  </div>
+                  <select
+                    value={userFilter}
+                    onChange={(e) => setUserFilter(e.target.value)}
+                    className="px-3 py-1.5 border rounded-lg text-sm"
+                  >
+                    <option value="all">All Status</option>
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                  </select>
+                  <select
+                    value={userRoleFilter}
+                    onChange={(e) => setUserRoleFilter(e.target.value)}
+                    className="px-3 py-1.5 border rounded-lg text-sm"
+                  >
+                    <option value="all">All Roles</option>
+                    <option value="super-admin">Super Admin</option>
+                    <option value="admin">Admin</option>
+                    <option value="editor">Editor</option>
+                    <option value="viewer">Viewer</option>
+                  </select>
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search by name or email..."
+                    className="px-3 py-1.5 border rounded-lg text-sm flex-1 min-w-[200px]"
+                  />
+                </div>
+
+                {/* Bulk Actions */}
+                {selectedUsers.length > 0 && (
+                  <div className="flex items-center gap-3 p-4 bg-emerald-50 rounded-lg border border-emerald-200">
+                    <span className="text-sm text-gray-700">{selectedUsers.length} selected</span>
+                    <div className="flex gap-2 flex-wrap">
+                      <Button
+                        onClick={() => handleBulkDeleteUsers(selectedUsers)}
+                        variant="outline"
+                        size="sm"
+                        className="text-red-600 hover:bg-red-50"
+                      >
+                        <Trash2 size={14} className="mr-1" />
+                        Delete Selected
+                      </Button>
+                      <select
+                        onChange={(e) => {
+                          if (e.target.value) {
+                            handleBulkUpdateUserRole(selectedUsers, e.target.value);
+                            e.target.value = '';
+                          }
+                        }}
+                        className="px-3 py-1.5 border rounded-lg text-sm"
+                      >
+                        <option value="">Change Role...</option>
+                        <option value="super-admin">Super Admin</option>
+                        <option value="admin">Admin</option>
+                        <option value="editor">Editor</option>
+                        <option value="viewer">Viewer</option>
+                      </select>
+                      <select
+                        onChange={(e) => {
+                          if (e.target.value) {
+                            handleBulkUpdateUserStatus(selectedUsers, e.target.value);
+                            e.target.value = '';
+                          }
+                        }}
+                        className="px-3 py-1.5 border rounded-lg text-sm"
+                      >
+                        <option value="">Change Status...</option>
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
+                      </select>
+                    </div>
+                    <Button onClick={() => setSelectedUsers([])} variant="outline" size="sm">
+                      Clear Selection
+                    </Button>
+                  </div>
+                )}
+
+                {/* Users Table */}
+                <div className="grid gap-4">
+                  {getFilteredUsers().map((user) => (
+                    <Card key={user.key} className="p-6 hover:shadow-lg transition">
+                      <div className="flex items-start gap-4">
+                        <input
+                          type="checkbox"
+                          checked={selectedUsers.includes(user.key)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedUsers([...selectedUsers, user.key]);
+                            } else {
+                              setSelectedUsers(selectedUsers.filter(id => id !== user.key));
+                            }
+                          }}
+                          className="mt-1"
+                        />
+                        <Avatar className="h-12 w-12">
+                          <AvatarFallback className="bg-gradient-to-br from-emerald-500 to-teal-600 text-white">
+                            {getUserInitials(user.value.name)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h4 className="text-lg text-gray-900">{user.value.name}</h4>
+                            <Badge className={getRoleBadgeColor(user.value.role)}>
+                              {USER_ROLES.find(r => r.value === user.value.role)?.label}
+                            </Badge>
+                            <Badge className={
+                              user.value.status === 'active'
+                                ? 'bg-green-100 text-green-700 border-green-300'
+                                : 'bg-gray-100 text-gray-700 border-gray-300'
+                            }>
+                              {user.value.status}
+                            </Badge>
+                          </div>
+                          <p className="text-sm text-gray-600 mb-1">{user.value.email}</p>
+                          <p className="text-xs text-gray-400">
+                            Created: {new Date(user.value.created_at).toLocaleDateString()}
+                          </p>
+                        </div>
+                        <div className="flex flex-col gap-2">
+                          <Button
+                            onClick={() => {
+                              setEditingItem(user);
+                              setUserFormData({
+                                name: user.value.name,
+                                email: user.value.email,
+                                password: '',
+                                role: user.value.role,
+                                status: user.value.status
+                              });
+                              setShowUserForm(true);
+                            }}
+                            variant="outline"
+                            size="sm"
+                          >
+                            <Edit size={14} className="mr-1" />
+                            Edit
+                          </Button>
+                          <Button
+                            onClick={() => {
+                              setViewingItem(user);
+                              setShowPasswordResetDialog(true);
+                            }}
+                            variant="outline"
+                            size="sm"
+                          >
+                            <Shield size={14} className="mr-1" />
+                            Reset Password
+                          </Button>
+                          <Button
+                            onClick={() => handleDeleteUser(user.value.id)}
+                            variant="outline"
+                            size="sm"
+                            className="text-red-600 hover:bg-red-50"
+                          >
+                            <Trash2 size={14} />
+                          </Button>
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                  {getFilteredUsers().length === 0 && (
+                    <div className="text-center py-12 text-gray-500">
+                      <Users size={48} className="mx-auto mb-4 text-gray-300" />
+                      <p>No users found</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Settings Tab */}
+            {activeTab === 'settings' && (
+              <SiteSettingsTab onUpdate={loadData} />
+            )}
+
+            {/* Other sections - Stories, Impact, Reports, Events, Partners, etc. */}
+            {['stories', 'impact', 'reports', 'events', 'partners', 'opportunities', 'faqs', 'resources'].includes(activeTab) && (
               <div className="text-center py-12">
                 <CurrentIcon size={48} className="mx-auto text-gray-300 mb-4" />
-                <p className="text-gray-500">Content management interface for {currentMenuItem?.label} will appear here</p>
-                <p className="text-sm text-gray-400 mt-2">The full content management UI is being prepared...</p>
+                <p className="text-gray-500">Management interface for {currentMenuItem?.label}</p>
+                <p className="text-sm text-gray-400 mt-2">Use the specialized form dialogs to manage this content</p>
               </div>
             )}
           </div>
@@ -1664,6 +2570,419 @@ export function EnhancedAdminDashboard() {
           onClick={() => setSidebarOpen(false)}
         />
       )}
+
+      {/* Program Form Dialog */}
+      <Dialog open={showProgramForm} onOpenChange={setShowProgramForm}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{editingItem ? 'Edit Program' : 'Add Program'}</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSubmitProgram} className="space-y-4">
+            <div>
+              <label className="block text-sm mb-2">Title</label>
+              <input
+                type="text"
+                value={formData.title}
+                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                className="w-full px-3 py-2 border rounded-lg"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm mb-2">Description</label>
+              <textarea
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                className="w-full px-3 py-2 border rounded-lg"
+                rows={3}
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm mb-2">Content</label>
+              <ReactQuill
+                value={formData.content}
+                onChange={(value) => setFormData({ ...formData, content: value })}
+                className="bg-white"
+              />
+            </div>
+            <div>
+              <label className="block text-sm mb-2">Category</label>
+              <select
+                value={formData.category}
+                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                className="w-full px-3 py-2 border rounded-lg"
+              >
+                <option value="general">General</option>
+                <option value="education">Education</option>
+                <option value="health">Health</option>
+                <option value="environment">Environment</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm mb-2">Image</label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={async (e) => {
+                  if (e.target.files?.[0]) {
+                    const url = await handleImageUpload(e.target.files[0]);
+                    if (url) setFormData({ ...formData, image: url });
+                  }
+                }}
+                className="w-full px-3 py-2 border rounded-lg"
+              />
+              {uploadingImage && <p className="text-sm text-gray-500 mt-1">Uploading...</p>}
+              {formData.image && (
+                <img src={formData.image} alt="Preview" className="mt-2 w-32 h-32 object-cover rounded-lg" />
+              )}
+            </div>
+            <div className="flex gap-2 justify-end">
+              <Button type="button" variant="outline" onClick={() => setShowProgramForm(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700">
+                {editingItem ? 'Update' : 'Create'}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* News Form Dialog */}
+      <Dialog open={showNewsForm} onOpenChange={setShowNewsForm}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{editingItem ? 'Edit News' : 'Add News'}</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSubmitNews} className="space-y-4">
+            <div>
+              <label className="block text-sm mb-2">Title</label>
+              <input
+                type="text"
+                value={formData.title}
+                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                className="w-full px-3 py-2 border rounded-lg"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm mb-2">Description</label>
+              <textarea
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                className="w-full px-3 py-2 border rounded-lg"
+                rows={3}
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm mb-2">Content</label>
+              <ReactQuill
+                value={formData.content}
+                onChange={(value) => setFormData({ ...formData, content: value })}
+                className="bg-white"
+              />
+            </div>
+            <div>
+              <label className="block text-sm mb-2">Category</label>
+              <select
+                value={formData.category}
+                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                className="w-full px-3 py-2 border rounded-lg"
+              >
+                <option value="general">General</option>
+                <option value="events">Events</option>
+                <option value="announcements">Announcements</option>
+                <option value="success-stories">Success Stories</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm mb-2">Image</label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={async (e) => {
+                  if (e.target.files?.[0]) {
+                    const url = await handleImageUpload(e.target.files[0]);
+                    if (url) setFormData({ ...formData, image: url });
+                  }
+                }}
+                className="w-full px-3 py-2 border rounded-lg"
+              />
+              {uploadingImage && <p className="text-sm text-gray-500 mt-1">Uploading...</p>}
+              {formData.image && (
+                <img src={formData.image} alt="Preview" className="mt-2 w-32 h-32 object-cover rounded-lg" />
+              )}
+            </div>
+            <div className="flex gap-2 justify-end">
+              <Button type="button" variant="outline" onClick={() => setShowNewsForm(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700">
+                {editingItem ? 'Update' : 'Create'}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Gallery Form Dialog */}
+      <Dialog open={showGalleryForm} onOpenChange={setShowGalleryForm}>
+        <DialogContent className="max-w-xl">
+          <DialogHeader>
+            <DialogTitle>{editingItem ? 'Edit Image' : 'Add Image'}</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSubmitGallery} className="space-y-4">
+            <div>
+              <label className="block text-sm mb-2">Title</label>
+              <input
+                type="text"
+                value={formData.title}
+                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                className="w-full px-3 py-2 border rounded-lg"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm mb-2">Description</label>
+              <textarea
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                className="w-full px-3 py-2 border rounded-lg"
+                rows={2}
+              />
+            </div>
+            <div>
+              <label className="block text-sm mb-2">Category</label>
+              <select
+                value={formData.category}
+                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                className="w-full px-3 py-2 border rounded-lg"
+              >
+                <option value="general">General</option>
+                <option value="events">Events</option>
+                <option value="projects">Projects</option>
+                <option value="community">Community</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm mb-2">Image</label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={async (e) => {
+                  if (e.target.files?.[0]) {
+                    const url = await handleImageUpload(e.target.files[0]);
+                    if (url) setFormData({ ...formData, image: url });
+                  }
+                }}
+                className="w-full px-3 py-2 border rounded-lg"
+                required={!editingItem}
+              />
+              {uploadingImage && <p className="text-sm text-gray-500 mt-1">Uploading...</p>}
+              {formData.image && (
+                <img src={formData.image} alt="Preview" className="mt-2 w-full h-48 object-cover rounded-lg" />
+              )}
+            </div>
+            <div className="flex gap-2 justify-end">
+              <Button type="button" variant="outline" onClick={() => setShowGalleryForm(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700">
+                {editingItem ? 'Update' : 'Create'}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Contact View/Reply Dialog */}
+      {viewingItem && activeTab === 'contacts' && (
+        <Dialog open={!!viewingItem} onOpenChange={() => {
+          setViewingItem(null);
+          setReplyMessage('');
+        }}>
+          <DialogContent className="max-w-xl">
+            <DialogHeader>
+              <DialogTitle>Contact Message</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <p className="text-sm text-gray-600 mb-1">From</p>
+                <p className="text-base">{viewingItem.value.name}</p>
+                <p className="text-sm text-gray-600">{viewingItem.value.email}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-600 mb-1">Message</p>
+                <p className="text-base">{viewingItem.value.message}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-600 mb-1">Received</p>
+                <p className="text-sm">{new Date(viewingItem.value.created_at).toLocaleString()}</p>
+              </div>
+              <div>
+                <label className="block text-sm text-gray-600 mb-2">Reply</label>
+                <textarea
+                  value={replyMessage}
+                  onChange={(e) => setReplyMessage(e.target.value)}
+                  className="w-full px-3 py-2 border rounded-lg"
+                  rows={4}
+                  placeholder="Type your reply..."
+                />
+              </div>
+              <div className="flex gap-2 justify-end">
+                <Button variant="outline" onClick={() => {
+                  setViewingItem(null);
+                  setReplyMessage('');
+                }}>
+                  Close
+                </Button>
+                <Button
+                  onClick={() => handleReplyContact(viewingItem.key)}
+                  className="bg-emerald-600 hover:bg-emerald-700"
+                >
+                  <Send size={16} className="mr-2" />
+                  Send Reply
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* User Form Dialog */}
+      <Dialog open={showUserForm} onOpenChange={setShowUserForm}>
+        <DialogContent className="max-w-xl">
+          <DialogHeader>
+            <DialogTitle>{editingItem ? 'Edit User' : 'Add User'}</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSubmitUser} className="space-y-4">
+            <div>
+              <label className="block text-sm mb-2">Full Name</label>
+              <input
+                type="text"
+                value={userFormData.name}
+                onChange={(e) => setUserFormData({ ...userFormData, name: e.target.value })}
+                className="w-full px-3 py-2 border rounded-lg"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm mb-2">Email</label>
+              <input
+                type="email"
+                value={userFormData.email}
+                onChange={(e) => setUserFormData({ ...userFormData, email: e.target.value })}
+                className="w-full px-3 py-2 border rounded-lg"
+                required
+                disabled={!!editingItem}
+              />
+              {editingItem && (
+                <p className="text-xs text-gray-500 mt-1">Email cannot be changed</p>
+              )}
+            </div>
+            {!editingItem && (
+              <div>
+                <label className="block text-sm mb-2">Password</label>
+                <input
+                  type="password"
+                  value={userFormData.password}
+                  onChange={(e) => setUserFormData({ ...userFormData, password: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-lg"
+                  required
+                  minLength={6}
+                />
+                <p className="text-xs text-gray-500 mt-1">Minimum 6 characters</p>
+              </div>
+            )}
+            <div>
+              <label className="block text-sm mb-2">Role</label>
+              <select
+                value={userFormData.role}
+                onChange={(e) => setUserFormData({ ...userFormData, role: e.target.value })}
+                className="w-full px-3 py-2 border rounded-lg"
+                required
+              >
+                {USER_ROLES.map((role) => (
+                  <option key={role.value} value={role.value}>
+                    {role.label} - {role.description}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm mb-2">Status</label>
+              <select
+                value={userFormData.status}
+                onChange={(e) => setUserFormData({ ...userFormData, status: e.target.value })}
+                className="w-full px-3 py-2 border rounded-lg"
+                required
+              >
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+              </select>
+            </div>
+            <div className="flex gap-2 justify-end">
+              <Button type="button" variant="outline" onClick={() => setShowUserForm(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700">
+                {editingItem ? 'Update User' : 'Create User'}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Password Reset Dialog */}
+      <Dialog open={showPasswordResetDialog} onOpenChange={setShowPasswordResetDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Reset Password</DialogTitle>
+          </DialogHeader>
+          {viewingItem && (
+            <div className="space-y-4">
+              <div className="p-4 bg-gray-50 rounded-lg">
+                <p className="text-sm text-gray-600 mb-1">User</p>
+                <p className="text-base">{viewingItem.value.name}</p>
+                <p className="text-sm text-gray-600">{viewingItem.value.email}</p>
+              </div>
+              <div>
+                <label className="block text-sm mb-2">New Password</label>
+                <input
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  className="w-full px-3 py-2 border rounded-lg"
+                  placeholder="Enter new password"
+                  minLength={6}
+                />
+                <p className="text-xs text-gray-500 mt-1">Minimum 6 characters</p>
+              </div>
+              <div className="flex gap-2 justify-end">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setShowPasswordResetDialog(false);
+                    setNewPassword('');
+                    setViewingItem(null);
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={() => handleResetPassword(viewingItem.value.id)}
+                  className="bg-emerald-600 hover:bg-emerald-700"
+                >
+                  Reset Password
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
