@@ -842,6 +842,204 @@ app.post('/make-server-2a4be611/admin/volunteers/bulk-update', async (c) => {
   }
 })
 
+// Update contact status (admin)
+app.put('/make-server-2a4be611/admin/contacts/:id/status', async (c) => {
+  try {
+    const id = c.req.param('id')
+    const body = await c.req.json()
+    const { status } = body
+
+    const existing = await kv.get(id)
+    if (!existing) {
+      return c.json({ error: 'Contact not found' }, 404)
+    }
+
+    await kv.set(id, {
+      ...existing,
+      status,
+      updatedAt: new Date().toISOString()
+    })
+
+    console.log(`Contact status updated: ${id} -> ${status}`)
+    return c.json({ success: true, message: 'Contact status updated successfully' })
+  } catch (error) {
+    console.error('Error updating contact status:', error)
+    return c.json({ error: 'Failed to update contact status', details: String(error) }, 500)
+  }
+})
+
+// Delete contact (admin)
+app.delete('/make-server-2a4be611/admin/contacts/:id', async (c) => {
+  try {
+    const id = c.req.param('id')
+    await kv.del(id)
+    console.log(`Contact deleted: ${id}`)
+    return c.json({ success: true, message: 'Contact deleted successfully' })
+  } catch (error) {
+    console.error('Error deleting contact:', error)
+    return c.json({ error: 'Failed to delete contact', details: String(error) }, 500)
+  }
+})
+
+// Reply to contact via email (admin)
+app.post('/make-server-2a4be611/admin/contacts/:id/reply', async (c) => {
+  try {
+    const id = c.req.param('id')
+    const body = await c.req.json()
+    const { message } = body
+
+    const contact = await kv.get(id)
+    if (!contact) {
+      return c.json({ error: 'Contact not found' }, 404)
+    }
+
+    // Send email reply
+    const emailResult = await sendEmail(
+      contact.email,
+      `Re: Your message to Resti Kiryandongo CBO`,
+      `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #10b981;">Resti Kiryandongo CBO</h2>
+          <p>Dear ${contact.name},</p>
+          <p>Thank you for contacting us. Here's our response to your message:</p>
+          <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
+            <p><strong>Your original message:</strong></p>
+            <p style="color: #6b7280;">${contact.message}</p>
+          </div>
+          <div style="background-color: #ecfdf5; padding: 15px; border-radius: 8px; margin: 20px 0;">
+            <p><strong>Our response:</strong></p>
+            <p>${message.replace(/\n/g, '<br>')}</p>
+          </div>
+          <p>Best regards,<br>Resti Kiryandongo CBO Team</p>
+        </div>
+      `
+    )
+
+    if (!emailResult.success) {
+      return c.json({ error: 'Failed to send email', details: emailResult.error }, 500)
+    }
+
+    // Update contact status to replied
+    await kv.set(id, {
+      ...contact,
+      status: 'resolved',
+      repliedAt: new Date().toISOString()
+    })
+
+    console.log(`Reply sent to contact: ${id}`)
+    return c.json({ success: true, message: 'Reply sent successfully' })
+  } catch (error) {
+    console.error('Error sending reply:', error)
+    return c.json({ error: 'Failed to send reply', details: String(error) }, 500)
+  }
+})
+
+// Bulk delete contacts (admin)
+app.post('/make-server-2a4be611/admin/contacts/bulk-delete', async (c) => {
+  try {
+    const body = await c.req.json()
+    const { ids } = body
+
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      return c.json({ error: 'Invalid or empty IDs array' }, 400)
+    }
+
+    await kv.mdel(ids)
+    console.log(`Bulk deleted ${ids.length} contacts`)
+    return c.json({ success: true, message: `${ids.length} contacts deleted successfully` })
+  } catch (error) {
+    console.error('Error bulk deleting contacts:', error)
+    return c.json({ error: 'Failed to bulk delete contacts', details: String(error) }, 500)
+  }
+})
+
+// Update volunteer status (admin)
+app.put('/make-server-2a4be611/admin/volunteers/:id/status', async (c) => {
+  try {
+    const id = c.req.param('id')
+    const body = await c.req.json()
+    const { status } = body
+
+    const existing = await kv.get(id)
+    if (!existing) {
+      return c.json({ error: 'Volunteer not found' }, 404)
+    }
+
+    await kv.set(id, {
+      ...existing,
+      status,
+      updatedAt: new Date().toISOString()
+    })
+
+    // Send email notification to volunteer
+    if (status === 'approved' || status === 'rejected') {
+      const subject = status === 'approved' 
+        ? 'Your Volunteer Application Has Been Approved!'
+        : 'Update on Your Volunteer Application'
+      
+      const message = status === 'approved'
+        ? `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #10b981;">Congratulations ${existing.name}!</h2>
+            <p>We're excited to inform you that your volunteer application has been approved!</p>
+            <p>We'll be in touch soon with more details about next steps and opportunities to get involved.</p>
+            <p>Thank you for your interest in supporting our community!</p>
+            <p>Best regards,<br>Resti Kiryandongo CBO Team</p>
+          </div>
+        `
+        : `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #10b981;">Thank you for your interest</h2>
+            <p>Dear ${existing.name},</p>
+            <p>Thank you for your interest in volunteering with Resti Kiryandongo CBO.</p>
+            <p>While we aren't able to move forward with your application at this time, we encourage you to stay connected with our work and consider applying for future opportunities.</p>
+            <p>Best regards,<br>Resti Kiryandongo CBO Team</p>
+          </div>
+        `
+      
+      await sendEmail(existing.email, subject, message)
+    }
+
+    console.log(`Volunteer status updated: ${id} -> ${status}`)
+    return c.json({ success: true, message: 'Volunteer status updated successfully' })
+  } catch (error) {
+    console.error('Error updating volunteer status:', error)
+    return c.json({ error: 'Failed to update volunteer status', details: String(error) }, 500)
+  }
+})
+
+// Delete volunteer (admin)
+app.delete('/make-server-2a4be611/admin/volunteers/:id', async (c) => {
+  try {
+    const id = c.req.param('id')
+    await kv.del(id)
+    console.log(`Volunteer deleted: ${id}`)
+    return c.json({ success: true, message: 'Volunteer deleted successfully' })
+  } catch (error) {
+    console.error('Error deleting volunteer:', error)
+    return c.json({ error: 'Failed to delete volunteer', details: String(error) }, 500)
+  }
+})
+
+// Bulk delete volunteers (admin)
+app.post('/make-server-2a4be611/admin/volunteers/bulk-delete', async (c) => {
+  try {
+    const body = await c.req.json()
+    const { ids } = body
+
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      return c.json({ error: 'Invalid or empty IDs array' }, 400)
+    }
+
+    await kv.mdel(ids)
+    console.log(`Bulk deleted ${ids.length} volunteers`)
+    return c.json({ success: true, message: `${ids.length} volunteers deleted successfully` })
+  } catch (error) {
+    console.error('Error bulk deleting volunteers:', error)
+    return c.json({ error: 'Failed to bulk delete volunteers', details: String(error) }, 500)
+  }
+})
+
 // Update news (admin)
 app.put('/make-server-2a4be611/news/:id', async (c) => {
   try {
