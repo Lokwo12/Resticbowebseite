@@ -35,6 +35,23 @@ export function About() {
   }, []);
 
   const fetchSettings = async () => {
+    const defaultSettings = {
+      title: 'About Resti Kiryandongo CBO',
+      intro: 'Founded with a mission to empower and uplift communities in Kiryandongo District, we are a community-based organization dedicated to creating sustainable positive change through collaborative action and locally-driven solutions.',
+      mission: 'To empower communities in Kiryandongo through sustainable development programs in education, healthcare, and economic empowerment, fostering self-reliance and improved quality of life for all.',
+      vision: 'A thriving, self-sustaining community where every individual has access to quality education, healthcare, and opportunities for economic prosperity.',
+      values: [
+        { icon: 'Heart', title: 'Compassion', description: 'We approach every initiative with empathy and understanding for community needs.' },
+        { icon: 'Users', title: 'Community', description: 'Working together with local leaders and residents to create lasting change.' },
+        { icon: 'Target', title: 'Impact', description: 'Focused on measurable outcomes that improve quality of life.' },
+        { icon: 'Award', title: 'Excellence', description: 'Committed to delivering high-quality programs and services.' }
+      ],
+      story: [
+        'Resti Kiryandongo CBO was born from a shared vision among community members who recognized the need for organized, sustainable development initiatives in our district. What started as small-scale educational support has grown into a comprehensive community development organization.',
+        'Today, we work closely with local government, international partners, and most importantly, the communities we serve, to identify needs, develop solutions, and implement programs that create lasting positive change. Our grassroots approach ensures that every initiative is community-driven and culturally appropriate.'
+      ]
+    };
+
     try {
       const response = await fetch(
         `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/site-settings`,
@@ -50,26 +67,30 @@ export function About() {
       }
 
       const data = await response.json();
-      setSettings(data.settings.about);
+      console.log('About settings fetched:', data.settings?.about);
+      
+      // Check if we have valid about settings
+      if (data.settings?.about) {
+        const aboutData = data.settings.about;
+        
+        // Merge with defaults to ensure all fields exist
+        setSettings({
+          title: aboutData.title || defaultSettings.title,
+          intro: aboutData.intro || defaultSettings.intro,
+          mission: aboutData.mission || defaultSettings.mission,
+          vision: aboutData.vision || defaultSettings.vision,
+          values: (aboutData.values && aboutData.values.length > 0) ? aboutData.values : defaultSettings.values,
+          story: (aboutData.story && aboutData.story.length > 0) ? aboutData.story : defaultSettings.story
+        });
+      } else {
+        // No about settings, use defaults
+        console.log('No about settings found, using defaults');
+        setSettings(defaultSettings);
+      }
     } catch (error) {
       console.error('Error fetching about settings:', error);
       // Set default settings if fetch fails
-      setSettings({
-        title: 'About Resti Kiryandongo CBO',
-        intro: 'Founded with a mission to empower and uplift communities in Kiryandongo District, we are a community-based organization dedicated to creating sustainable positive change through collaborative action and locally-driven solutions.',
-        mission: 'To empower communities in Kiryandongo through sustainable development programs in education, healthcare, and economic empowerment, fostering self-reliance and improved quality of life for all.',
-        vision: 'A thriving, self-sustaining community where every individual has access to quality education, healthcare, and opportunities for economic prosperity.',
-        values: [
-          { icon: 'Heart', title: 'Compassion', description: 'We approach every initiative with empathy and understanding for community needs.' },
-          { icon: 'Users', title: 'Community', description: 'Working together with local leaders and residents to create lasting change.' },
-          { icon: 'Target', title: 'Impact', description: 'Focused on measurable outcomes that improve quality of life.' },
-          { icon: 'Award', title: 'Excellence', description: 'Committed to delivering high-quality programs and services.' }
-        ],
-        story: [
-          'Resti Kiryandongo CBO was born from a shared vision among community members who recognized the need for organized, sustainable development initiatives in our district. What started as small-scale educational support has grown into a comprehensive community development organization.',
-          'Today, we work closely with local government, international partners, and most importantly, the communities we serve, to identify needs, develop solutions, and implement programs that create lasting positive change. Our grassroots approach ensures that every initiative is community-driven and culturally appropriate.'
-        ]
-      });
+      setSettings(defaultSettings);
     } finally {
       setLoading(false);
     }
