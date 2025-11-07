@@ -17,8 +17,10 @@ export function SiteSettingsTab({ settings: initialSettings, onUpdate }: SiteSet
   const [saving, setSaving] = useState(false);
   const [activeSection, setActiveSection] = useState('general');
   const [logoUploading, setLogoUploading] = useState(false);
+  const [heroImageUploading, setHeroImageUploading] = useState(false);
   const [newOpportunityCategory, setNewOpportunityCategory] = useState('');
   const logoFileInputRef = useRef<HTMLInputElement | null>(null);
+  const heroImageFileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     if (initialSettings) {
@@ -127,6 +129,53 @@ export function SiteSettingsTab({ settings: initialSettings, onUpdate }: SiteSet
         logoFileInputRef.current.value = '';
       }
       setLogoUploading(false);
+    }
+  };
+
+  const handleHeroImageFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) {
+      return;
+    }
+
+    setHeroImageUploading(true);
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/upload-image`,
+        {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${publicAnonKey}` },
+          body: formData,
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to upload hero image');
+      }
+
+      setSettings((prev: any) => ({
+        ...prev,
+        hero: {
+          ...(prev?.hero || {}),
+          imageUrl: data.url,
+        },
+      }));
+
+      toast.success('Hero image uploaded successfully');
+    } catch (error) {
+      console.error('Hero image upload error:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to upload hero image');
+    } finally {
+      if (heroImageFileInputRef.current) {
+        heroImageFileInputRef.current.value = '';
+      }
+      setHeroImageUploading(false);
     }
   };
 
@@ -474,6 +523,30 @@ export function SiteSettingsTab({ settings: initialSettings, onUpdate }: SiteSet
                   }
                   className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
                 />
+                <div className="flex items-center gap-3 mt-3">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => heroImageFileInputRef.current?.click()}
+                    disabled={heroImageUploading}
+                  >
+                    {heroImageUploading ? 'Uploading...' : 'Upload Hero Image'}
+                  </Button>
+                  <input
+                    ref={heroImageFileInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleHeroImageFileChange}
+                  />
+                  {settings.hero?.imageUrl && (
+                    <img
+                      src={settings.hero.imageUrl}
+                      alt="Hero preview"
+                      className="h-16 w-16 rounded object-cover border"
+                    />
+                  )}
+                </div>
               </div>
 
               <div>
