@@ -544,13 +544,20 @@ app.post('/make-server-2a4be611/admin/signup', async (c) => {
       return c.json({ error: 'Email and password are required' }, 400)
     }
 
-    // Default role is 'editor', first user can be 'super-admin'
-    const userRole = role || 'editor'
+    const existingAdmins = await kv.getByPrefix('admin_user:')
+    const isFirstAdmin = !existingAdmins || existingAdmins.length === 0
+
+    const assignedRole = role
+      ? String(role)
+      : isFirstAdmin
+        ? 'super-admin'
+        : 'editor'
 
     const { data, error } = await supabase.auth.admin.createUser({
       email,
       password,
-      user_metadata: { name: name || '', role: userRole },
+      user_metadata: { name: name || '', role: assignedRole },
+      app_metadata: { role: assignedRole },
       email_confirm: true // Auto-confirm since email server not configured
     })
 
@@ -559,7 +566,34 @@ app.post('/make-server-2a4be611/admin/signup', async (c) => {
       return c.json({ error: error.message }, 400)
     }
 
-    console.log(`Admin user created: ${data.user.id} with role: ${userRole}`)
+    const userId = data.user.id
+
+    if (userId) {
+      await kv.set(`admin_user:${userId}`, {
+        id: userId,
+        email,
+        name: name || '',
+        role: assignedRole,
+        status: 'active',
+        createdAt: new Date().toISOString(),
+        lastLogin: null,
+        loginCount: 0
+      })
+    }
+
+    await sendEmail(
+      email,
+      'Welcome to Resti Kiryandongo CBO Admin',
+      `
+        <h2>Welcome ${name || 'Admin'}!</h2>
+        <p>Your admin account has been created with the role: <strong>${assignedRole}</strong></p>
+        <p>You can login at: <a href="${Deno.env.get('SUPABASE_URL')}/admin">Admin Dashboard</a></p>
+        <p>Email: ${email}</p>
+        <p>Please keep your password secure.</p>
+      `
+    )
+
+    console.log(`Admin user created: ${userId} with role: ${assignedRole}`)
     return c.json({ success: true, message: 'Admin account created successfully', user: data.user })
   } catch (error) {
     console.error('Error creating admin account:', error)
@@ -2536,6 +2570,61 @@ app.post('/make-server-2a4be611/admin/users/bulk-delete', async (c) => {
   } catch (error) {
     console.error('Error bulk deleting users:', error)
     return c.json({ error: 'Failed to bulk delete users', details: String(error) }, 500)
+  }
+})
+
+app.post('/make-server-2a4be611/admin/users/bootstrap', async (c) => {
+  try {
+    const body = await c.req.json()
+    const { userId, email, name } = body
+
+    if (!userId || !email) {
+      return c.json({ error: 'userId and email are required' }, 400)
+    }
+
+    const existingAdmins = await kv.getByPrefix('admin_user:')
+    if (existingAdmins && existingAdmins.length > 0) {
+      return c.json({ error: 'Admin users already initialized' }, 400)
+    }
+
+    const fallbackName = name || (typeof email === 'string' ? email.split('@')[0] : 'Super Admin')
+
+    const { error } = await supabase.auth.admin.updateUserById(userId, {
+      user_metadata: { role: 'super-admin', name: fallbackName },
+      app_metadata: { role: 'super-admin' }
+    })
+
+    if (error) {
+      console.error('Bootstrap role update error:', error)
+      return c.json({ error: error.message }, 400)
+    }
+
+    await kv.set(`admin_user:${userId}`, {
+      id: userId,
+      email,
+      name: fallbackName,
+      role: 'super-admin',
+      status: 'active',
+      createdAt: new Date().toISOString(),
+      lastLogin: null,
+      loginCount: 0
+    })
+
+    await sendEmail(
+      email,
+      'Admin Access Granted',
+      `
+        <h2>Admin Access Activated</h2>
+        <p>Your account has been granted <strong>super-admin</strong> access.</p>
+        <p>You can now manage users and site settings directly from the dashboard.</p>
+      `
+    )
+
+    console.log(`Bootstrap promoted user ${userId} to super-admin`)
+    return c.json({ success: true, role: 'super-admin' })
+  } catch (error) {
+    console.error('Error bootstrapping admin user:', error)
+    return c.json({ error: 'Failed to bootstrap admin user', details: String(error) }, 500)
   }
 })
 
