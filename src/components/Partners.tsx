@@ -18,10 +18,34 @@ export function Partners() {
   const [partners, setPartners] = useState<Partner[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const [sectionSettings, setSectionSettings] = useState({ title: 'Our Partners & Sponsors', description: 'We work with amazing organizations and individuals who share our vision for community development.' });
 
   useEffect(() => {
     fetchPartners();
+    fetchSettings();
   }, []);
+
+  const fetchSettings = async () => {
+    try {
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/site-settings`,
+        {
+          headers: {
+            Authorization: `Bearer ${publicAnonKey}`,
+          },
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.settings?.sections?.partners) {
+          setSectionSettings(data.settings.sections.partners);
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching section settings:', err);
+    }
+  };
 
   const fetchPartners = async () => {
     try {
@@ -69,11 +93,10 @@ export function Partners() {
         <div className="text-center mb-12">
           <div className="flex items-center justify-center gap-2 mb-4">
             <Handshake className="text-emerald-600" size={32} />
-            <h2 className="text-emerald-600">Our Partners & Sponsors</h2>
+            <h2 className="text-emerald-600">{sectionSettings.title}</h2>
           </div>
           <p className="text-gray-600 max-w-3xl mx-auto">
-            We are grateful to work alongside these amazing organizations and individuals 
-            who share our vision for a thriving Kiryandongo community.
+            {sectionSettings.description}
           </p>
         </div>
 

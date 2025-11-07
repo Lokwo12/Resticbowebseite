@@ -96,11 +96,10 @@ export function Team() {
         <div className="text-center mb-12">
           <div className="flex items-center justify-center gap-2 mb-4">
             <Users className="text-emerald-600" size={32} />
-            <h2 className="text-emerald-600">Our Team</h2>
+            <h2 className="text-emerald-600">{sectionSettings.title}</h2>
           </div>
           <p className="text-gray-600 max-w-3xl mx-auto">
-            Meet the dedicated individuals working tirelessly to bring positive change to the 
-            Kiryandongo community. Our team combines passion, expertise, and local knowledge.
+            {sectionSettings.description}
           </p>
         </div>
 

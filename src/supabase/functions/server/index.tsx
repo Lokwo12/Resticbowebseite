@@ -39,7 +39,7 @@ async function sendEmail(to: string, subject: string, html: string) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: 'Resti Kiryandongo CBO <noreply@restikirya.org>', // TODO: Update with your verified domain email
+        from: 'onboarding@resend.dev', // Using Resend's test domain. Replace with 'Resti Kiryandongo CBO <noreply@yourdomain.com>' after verifying your domain
         to: [to],
         subject,
         html,
