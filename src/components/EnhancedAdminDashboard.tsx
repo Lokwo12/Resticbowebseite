@@ -106,6 +106,8 @@ class ErrorBoundary extends React.Component<any, { hasError: boolean; error?: Er
 
 const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 
+type UserRole = 'super-admin' | 'admin' | 'editor' | 'viewer';
+
 const USER_ROLES = [
   { value: 'super-admin', label: 'Super Admin', description: 'Full access to everything' },
   { value: 'admin', label: 'Admin', description: 'Manage content and users' },
@@ -148,7 +150,7 @@ export function EnhancedAdminDashboard() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
   const [accessToken, setAccessToken] = useState('');
-  const [userRole, setUserRole] = useState('');
+  const [userRole, setUserRole] = useState<UserRole>('viewer');
   const [userName, setUserName] = useState('');
   const [userEmail, setUserEmail] = useState('');
   const [stats, setStats] = useState<any>(null);
@@ -198,6 +200,18 @@ export function EnhancedAdminDashboard() {
   const [selectedFAQs, setSelectedFAQs] = useState<string[]>([]);
   const [selectedResources, setSelectedResources] = useState<string[]>([]);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
+
+  const normalizeUserRole = (raw: unknown): UserRole => {
+    if (typeof raw !== 'string') return 'viewer';
+    const cleaned = raw.trim().toLowerCase().replace(/\s+/g, '-');
+    if (cleaned === 'superadmin') return 'super-admin';
+    if (cleaned === 'administrator') return 'admin';
+    if (cleaned === 'admins') return 'admin';
+    if (['super-admin', 'admin', 'editor', 'viewer'].includes(cleaned)) {
+      return cleaned as UserRole;
+    }
+    return 'viewer';
+  };
 
   const canManageUsers = userRole === 'super-admin' || userRole === 'admin';
 
@@ -372,9 +386,13 @@ export function EnhancedAdminDashboard() {
         // Get user metadata
         const { data: { user } } = await supabase.auth.getUser(session.access_token);
         if (user?.user_metadata) {
-          setUserRole(user.user_metadata.role || 'viewer');
+          setUserRole(normalizeUserRole(user.user_metadata.role));
           setUserName(user.user_metadata.name || '');
           setUserEmail(user.email || '');
+        } else {
+          setUserRole('viewer');
+          setUserName('');
+          setUserEmail(user?.email || '');
         }
       }
     } catch (err) {
@@ -402,9 +420,13 @@ export function EnhancedAdminDashboard() {
         
         // Get user metadata
         if (data.user?.user_metadata) {
-          setUserRole(data.user.user_metadata.role || 'viewer');
+          setUserRole(normalizeUserRole(data.user.user_metadata.role));
           setUserName(data.user.user_metadata.name || '');
           setUserEmail(data.user.email || '');
+        } else {
+          setUserRole('viewer');
+          setUserName('');
+          setUserEmail(data.user?.email || '');
         }
         
         toast.success('Welcome back!');
@@ -455,6 +477,9 @@ export function EnhancedAdminDashboard() {
     await supabase.auth.signOut();
     setIsAuthenticated(false);
     setAccessToken('');
+    setUserRole('viewer');
+    setUserName('');
+    setUserEmail('');
     toast.info('Logged out successfully');
   };
 
