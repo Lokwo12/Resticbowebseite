@@ -1796,4 +1796,183 @@ app.post('/make-server-2a4be611/initialize', async (c) => {
   }
 })
 
+// ============= SITE SETTINGS ROUTES =============
+
+// Get all site settings
+app.get('/make-server-2a4be611/site-settings', async (c) => {
+  try {
+    const settings = await kv.get('site_settings')
+    
+    // Return default settings if none exist
+    if (!settings) {
+      const defaultSettings = {
+        general: {
+          siteName: 'Resti Kiryandongo CBO',
+          tagline: 'Community Based Organization',
+          description: 'Empowering communities through education, healthcare, and sustainable development.',
+          logoUrl: 'figma:asset/2b36c5cb8ddf5552ba2d3e612fd68401a7bb193e.png',
+          primaryColor: '#10b981', // emerald-600
+        },
+        hero: {
+          badgeText: 'Making a Difference in Kiryandongo',
+          title: 'Empowering Communities Through Action',
+          subtitle: 'Resti Kiryandongo CBO is dedicated to improving lives through education, healthcare, and community development initiatives in Kiryandongo District, Uganda.',
+          primaryButtonText: 'Donate Now',
+          secondaryButtonText: 'Learn More',
+          imageUrl: 'https://images.unsplash.com/photo-1606471015285-85fa1288aa4e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxhZnJpY2FuJTIwY29tbXVuaXR5JTIwZW1wb3dlcm1lbnR8ZW58MXx8fHwxNzYyNDU3NTkyfDA&ixlib=rb-4.1.0&q=80&w=1080',
+          stats: [
+            { value: '500+', label: 'Families Supported' },
+            { value: '10+', label: 'Active Programs' },
+            { value: '50+', label: 'Volunteers' }
+          ]
+        },
+        about: {
+          title: 'About Resti Kiryandongo CBO',
+          intro: 'Founded with a mission to empower and uplift communities in Kiryandongo District, we are a community-based organization dedicated to creating sustainable positive change through collaborative action and locally-driven solutions.',
+          mission: 'To empower communities in Kiryandongo through sustainable development programs in education, healthcare, and economic empowerment, fostering self-reliance and improved quality of life for all.',
+          vision: 'A thriving, self-sustaining community where every individual has access to quality education, healthcare, and opportunities for economic prosperity.',
+          values: [
+            { icon: 'Heart', title: 'Compassion', description: 'We approach every initiative with empathy and understanding for community needs.' },
+            { icon: 'Users', title: 'Community', description: 'Working together with local leaders and residents to create lasting change.' },
+            { icon: 'Target', title: 'Impact', description: 'Focused on measurable outcomes that improve quality of life.' },
+            { icon: 'Award', title: 'Excellence', description: 'Committed to delivering high-quality programs and services.' }
+          ],
+          story: [
+            'Resti Kiryandongo CBO was born from a shared vision among community members who recognized the need for organized, sustainable development initiatives in our district. What started as small-scale educational support has grown into a comprehensive community development organization.',
+            'Today, we work closely with local government, international partners, and most importantly, the communities we serve, to identify needs, develop solutions, and implement programs that create lasting positive change. Our grassroots approach ensures that every initiative is community-driven and culturally appropriate.'
+          ]
+        },
+        contact: {
+          title: 'Get Involved',
+          subtitle: 'Join us in making a difference! Whether you want to volunteer, donate, or simply learn more about our work, we\'d love to hear from you.',
+          address: 'Kiryandongo District, Uganda',
+          email: 'info@restikirya.org',
+          phone: '+256 XXX XXX XXX',
+          socialLinks: {
+            facebook: '#',
+            twitter: '#',
+            instagram: '#'
+          },
+          supportItems: [
+            'Volunteer your time and skills',
+            'Make a donation to support our programs',
+            'Partner with us on community initiatives',
+            'Spread the word about our work'
+          ]
+        },
+        footer: {
+          description: 'Empowering communities through education, healthcare, and sustainable development.',
+          copyrightText: 'Resti Kiryandongo CBO. All rights reserved.',
+          taglineBottom: 'Made with ❤️ for our community'
+        }
+      }
+      
+      return c.json({ settings: defaultSettings })
+    }
+    
+    return c.json({ settings })
+  } catch (error) {
+    console.error('Error fetching site settings:', error)
+    return c.json({ error: 'Failed to fetch site settings', details: String(error) }, 500)
+  }
+})
+
+// Update site settings (admin only)
+app.put('/make-server-2a4be611/site-settings', async (c) => {
+  try {
+    const body = await c.req.json()
+    const { settings } = body
+    
+    if (!settings) {
+      return c.json({ error: 'Settings object is required' }, 400)
+    }
+    
+    await kv.set('site_settings', {
+      ...settings,
+      updatedAt: new Date().toISOString()
+    })
+    
+    console.log('Site settings updated')
+    return c.json({ success: true, message: 'Site settings updated successfully' })
+  } catch (error) {
+    console.error('Error updating site settings:', error)
+    return c.json({ error: 'Failed to update site settings', details: String(error) }, 500)
+  }
+})
+
+// Initialize default site settings
+app.post('/make-server-2a4be611/site-settings/initialize', async (c) => {
+  try {
+    const defaultSettings = {
+      general: {
+        siteName: 'Resti Kiryandongo CBO',
+        tagline: 'Community Based Organization',
+        description: 'Empowering communities through education, healthcare, and sustainable development.',
+        logoUrl: 'figma:asset/2b36c5cb8ddf5552ba2d3e612fd68401a7bb193e.png',
+        primaryColor: '#10b981',
+      },
+      hero: {
+        badgeText: 'Making a Difference in Kiryandongo',
+        title: 'Empowering Communities Through Action',
+        subtitle: 'Resti Kiryandongo CBO is dedicated to improving lives through education, healthcare, and community development initiatives in Kiryandongo District, Uganda.',
+        primaryButtonText: 'Donate Now',
+        secondaryButtonText: 'Learn More',
+        imageUrl: 'https://images.unsplash.com/photo-1606471015285-85fa1288aa4e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxhZnJpY2FuJTIwY29tbXVuaXR5JTIwZW1wb3dlcm1lbnR8ZW58MXx8fHwxNzYyNDU3NTkyfDA&ixlib=rb-4.1.0&q=80&w=1080',
+        stats: [
+          { value: '500+', label: 'Families Supported' },
+          { value: '10+', label: 'Active Programs' },
+          { value: '50+', label: 'Volunteers' }
+        ]
+      },
+      about: {
+        title: 'About Resti Kiryandongo CBO',
+        intro: 'Founded with a mission to empower and uplift communities in Kiryandongo District, we are a community-based organization dedicated to creating sustainable positive change through collaborative action and locally-driven solutions.',
+        mission: 'To empower communities in Kiryandongo through sustainable development programs in education, healthcare, and economic empowerment, fostering self-reliance and improved quality of life for all.',
+        vision: 'A thriving, self-sustaining community where every individual has access to quality education, healthcare, and opportunities for economic prosperity.',
+        values: [
+          { icon: 'Heart', title: 'Compassion', description: 'We approach every initiative with empathy and understanding for community needs.' },
+          { icon: 'Users', title: 'Community', description: 'Working together with local leaders and residents to create lasting change.' },
+          { icon: 'Target', title: 'Impact', description: 'Focused on measurable outcomes that improve quality of life.' },
+          { icon: 'Award', title: 'Excellence', description: 'Committed to delivering high-quality programs and services.' }
+        ],
+        story: [
+          'Resti Kiryandongo CBO was born from a shared vision among community members who recognized the need for organized, sustainable development initiatives in our district. What started as small-scale educational support has grown into a comprehensive community development organization.',
+          'Today, we work closely with local government, international partners, and most importantly, the communities we serve, to identify needs, develop solutions, and implement programs that create lasting positive change. Our grassroots approach ensures that every initiative is community-driven and culturally appropriate.'
+        ]
+      },
+      contact: {
+        title: 'Get Involved',
+        subtitle: 'Join us in making a difference! Whether you want to volunteer, donate, or simply learn more about our work, we\'d love to hear from you.',
+        address: 'Kiryandongo District, Uganda',
+        email: 'info@restikirya.org',
+        phone: '+256 XXX XXX XXX',
+        socialLinks: {
+          facebook: '#',
+          twitter: '#',
+          instagram: '#'
+        },
+        supportItems: [
+          'Volunteer your time and skills',
+          'Make a donation to support our programs',
+          'Partner with us on community initiatives',
+          'Spread the word about our work'
+        ]
+      },
+      footer: {
+        description: 'Empowering communities through education, healthcare, and sustainable development.',
+        copyrightText: 'Resti Kiryandongo CBO. All rights reserved.',
+        taglineBottom: 'Made with ❤️ for our community'
+      },
+      createdAt: new Date().toISOString()
+    }
+    
+    await kv.set('site_settings', defaultSettings)
+    console.log('Default site settings initialized')
+    return c.json({ success: true, message: 'Default site settings initialized' })
+  } catch (error) {
+    console.error('Error initializing site settings:', error)
+    return c.json({ error: 'Failed to initialize site settings', details: String(error) }, 500)
+  }
+})
+
 Deno.serve(app.fetch)
