@@ -28,14 +28,27 @@ import {
   Square,
   Eye,
   Reply,
-  Filter
+  Filter,
+  Settings,
+  Calendar,
+  Handshake,
+  HelpCircle,
+  BookOpen,
+  Target,
+  Award,
+  MessageSquare,
+  Bell,
+  Search,
+  Menu,
+  X as XIcon,
+  ChevronRight
 } from 'lucide-react';
 import { Card } from './ui/card';
 import { Badge } from './ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
+import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
 import { Button } from './ui/button';
-import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import { SiteSettingsTab } from './SiteSettingsTab';
@@ -77,14 +90,39 @@ interface Analytics {
   growthTrends: any[];
 }
 
+// Navigation menu items
+const NAVIGATION_ITEMS = [
+  { id: 'overview', label: 'Dashboard', icon: LayoutDashboard, color: 'text-emerald-600' },
+  { id: 'programs', label: 'Programs', icon: FileText, color: 'text-blue-600' },
+  { id: 'news', label: 'News', icon: Newspaper, color: 'text-purple-600' },
+  { id: 'gallery', label: 'Gallery', icon: ImageIcon, color: 'text-pink-600' },
+  { id: 'team', label: 'Team', icon: Users, color: 'text-cyan-600' },
+  { id: 'stories', label: 'Stories', icon: MessageSquare, color: 'text-orange-600' },
+  { id: 'impact', label: 'Impact Stats', icon: TrendingUp, color: 'text-green-600' },
+  { id: 'reports', label: 'Reports', icon: Download, color: 'text-indigo-600' },
+  { id: 'events', label: 'Events', icon: Calendar, color: 'text-red-600' },
+  { id: 'partners', label: 'Partners', icon: Handshake, color: 'text-teal-600' },
+  { id: 'opportunities', label: 'Opportunities', icon: Target, color: 'text-amber-600' },
+  { id: 'faqs', label: 'FAQs', icon: HelpCircle, color: 'text-violet-600' },
+  { id: 'resources', label: 'Resources', icon: BookOpen, color: 'text-lime-600' },
+  { id: 'contacts', label: 'Contacts', icon: Mail, color: 'text-sky-600' },
+  { id: 'volunteers', label: 'Volunteers', icon: Heart, color: 'text-rose-600' },
+  { id: 'donations', label: 'Donations', icon: Heart, color: 'text-emerald-600' },
+  { id: 'subscribers', label: 'Subscribers', icon: Send, color: 'text-blue-600' },
+  { id: 'settings', label: 'Settings', icon: Settings, color: 'text-gray-600' },
+];
+
 export function EnhancedAdminDashboard() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
   const [accessToken, setAccessToken] = useState('');
   const [userRole, setUserRole] = useState('');
+  const [userName, setUserName] = useState('');
+  const [userEmail, setUserEmail] = useState('');
   const [stats, setStats] = useState<any>(null);
   const [activeTab, setActiveTab] = useState('overview');
   const [analytics, setAnalytics] = useState<Analytics | null>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   // Data states
   const [programs, setPrograms] = useState<any[]>([]);
@@ -120,10 +158,14 @@ export function EnhancedAdminDashboard() {
   const [selectedPartners, setSelectedPartners] = useState<string[]>([]);
   const [selectedFAQs, setSelectedFAQs] = useState<string[]>([]);
   const [selectedResources, setSelectedResources] = useState<string[]>([]);
+  const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
 
   // Filter states
   const [contactFilter, setContactFilter] = useState('all');
   const [volunteerFilter, setVolunteerFilter] = useState('all');
+  const [userFilter, setUserFilter] = useState('all');
+  const [userRoleFilter, setUserRoleFilter] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Form states
   const [email, setEmail] = useState('');
@@ -135,22 +177,29 @@ export function EnhancedAdminDashboard() {
   const [showProgramForm, setShowProgramForm] = useState(false);
   const [showNewsForm, setShowNewsForm] = useState(false);
   const [showGalleryForm, setShowGalleryForm] = useState(false);
-  const [showContactDialog, setShowContactDialog] = useState(false);
-  const [showVolunteerDialog, setShowVolunteerDialog] = useState(false);
-  const [showReplyDialog, setShowReplyDialog] = useState(false);
   const [showTeamForm, setShowTeamForm] = useState(false);
   const [showStoryForm, setShowStoryForm] = useState(false);
-  const [showImpactStatsForm, setShowImpactStatsForm] = useState(false);
+  const [showImpactForm, setShowImpactForm] = useState(false);
   const [showReportForm, setShowReportForm] = useState(false);
   const [showEventForm, setShowEventForm] = useState(false);
   const [showPartnerForm, setShowPartnerForm] = useState(false);
   const [showOpportunityForm, setShowOpportunityForm] = useState(false);
   const [showFAQForm, setShowFAQForm] = useState(false);
   const [showResourceForm, setShowResourceForm] = useState(false);
+  const [showUserForm, setShowUserForm] = useState(false);
+  const [showPasswordResetDialog, setShowPasswordResetDialog] = useState(false);
   const [editingItem, setEditingItem] = useState<any>(null);
   const [viewingItem, setViewingItem] = useState<any>(null);
   const [replyMessage, setReplyMessage] = useState('');
-  
+  const [userFormData, setUserFormData] = useState({
+    name: '',
+    email: '',
+    password: '',
+    role: 'viewer',
+    status: 'active'
+  });
+  const [newPassword, setNewPassword] = useState('');
+
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -158,6 +207,7 @@ export function EnhancedAdminDashboard() {
     image: '',
     category: 'general'
   });
+
   const [uploadingImage, setUploadingImage] = useState(false);
 
   useEffect(() => {
@@ -168,15 +218,23 @@ export function EnhancedAdminDashboard() {
     if (isAuthenticated) {
       loadData();
     }
-  }, [isAuthenticated, activeTab]);
+  }, [activeTab, isAuthenticated]);
 
   const checkAuth = async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
+      
       if (session?.access_token) {
-        setAccessToken(session.access_token);
-        setUserRole(session.user.user_metadata?.role || 'viewer');
         setIsAuthenticated(true);
+        setAccessToken(session.access_token);
+        
+        // Get user metadata
+        const { data: { user } } = await supabase.auth.getUser(session.access_token);
+        if (user?.user_metadata) {
+          setUserRole(user.user_metadata.role || 'viewer');
+          setUserName(user.user_metadata.name || '');
+          setUserEmail(user.email || '');
+        }
       }
     } catch (err) {
       console.error('Auth check error:', err);
@@ -197,10 +255,19 @@ export function EnhancedAdminDashboard() {
 
       if (error) throw error;
 
-      setAccessToken(data.session.access_token);
-      setUserRole(data.user.user_metadata?.role || 'viewer');
-      setIsAuthenticated(true);
-      toast.success('Welcome back! 👋');
+      if (data.session) {
+        setIsAuthenticated(true);
+        setAccessToken(data.session.access_token);
+        
+        // Get user metadata
+        if (data.user?.user_metadata) {
+          setUserRole(data.user.user_metadata.role || 'viewer');
+          setUserName(data.user.user_metadata.name || '');
+          setUserEmail(data.user.email || '');
+        }
+        
+        toast.success('Welcome back!');
+      }
     } catch (err: any) {
       console.error('Login error:', err);
       toast.error(err.message || 'Failed to login');
@@ -405,43 +472,35 @@ export function EnhancedAdminDashboard() {
   const handleImageUpload = async (file: File) => {
     setUploadingImage(true);
     try {
-      const formDataObj = new FormData();
-      formDataObj.append('file', file);
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+      
+      const { data, error } = await supabase.storage
+        .from('make-2a4be611-images')
+        .upload(fileName, file);
 
-      const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/upload-image`,
-        {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${publicAnonKey}` },
-          body: formDataObj
-        }
-      );
+      if (error) throw error;
 
-      const data = await response.json();
+      const { data: { signedUrl } } = await supabase.storage
+        .from('make-2a4be611-images')
+        .createSignedUrl(fileName, 31536000);
 
-      if (!response.ok) throw new Error(data.error);
-
-      setFormData(prev => ({ ...prev, image: data.url }));
-      toast.success('Image uploaded successfully');
+      return signedUrl;
     } catch (err: any) {
       console.error('Upload error:', err);
-      toast.error(err.message || 'Failed to upload image');
+      toast.error('Failed to upload image');
+      return null;
     } finally {
       setUploadingImage(false);
     }
   };
 
+  // Program handlers
   const handleSubmitProgram = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (userRole === 'viewer') {
-      toast.error('You do not have permission to perform this action');
-      return;
-    }
-
     try {
       const url = editingItem
-        ? `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/programs/${editingItem.key}`
+        ? `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/programs/${editingItem.id}`
         : `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/programs`;
 
       const response = await fetch(url, {
@@ -450,12 +509,7 @@ export function EnhancedAdminDashboard() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${publicAnonKey}`,
         },
-        body: JSON.stringify({
-          title: formData.title,
-          description: formData.description,
-          image: formData.image,
-          category: formData.category
-        }),
+        body: JSON.stringify(formData),
       });
 
       if (!response.ok) throw new Error('Failed to save program');
@@ -471,17 +525,59 @@ export function EnhancedAdminDashboard() {
     }
   };
 
-  const handleSubmitNews = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (userRole === 'viewer') {
-      toast.error('You do not have permission to perform this action');
-      return;
-    }
+  const handleDeleteProgram = async (id: string) => {
+    if (!confirm('Delete this program?')) return;
 
     try {
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/programs/${id}`,
+        {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${publicAnonKey}` },
+        }
+      );
+
+      if (!response.ok) throw new Error('Failed to delete program');
+
+      toast.success('Program deleted');
+      loadData();
+    } catch (err: any) {
+      console.error('Delete error:', err);
+      toast.error(err.message || 'Failed to delete program');
+    }
+  };
+
+  const handleBulkDeletePrograms = async (ids: string[]) => {
+    if (!confirm(`Delete ${ids.length} programs?`)) return;
+
+    try {
+      await Promise.all(
+        ids.map(id =>
+          fetch(
+            `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/programs/${id}`,
+            {
+              method: 'DELETE',
+              headers: { Authorization: `Bearer ${publicAnonKey}` },
+            }
+          )
+        )
+      );
+
+      toast.success(`${ids.length} programs deleted`);
+      setSelectedPrograms([]);
+      loadData();
+    } catch (err: any) {
+      console.error('Bulk delete error:', err);
+      toast.error(err.message || 'Failed to delete programs');
+    }
+  };
+
+  // News handlers
+  const handleSubmitNews = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
       const url = editingItem
-        ? `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/news/${editingItem.key}`
+        ? `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/news/${editingItem.id}`
         : `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/news`;
 
       const response = await fetch(url, {
@@ -490,11 +586,7 @@ export function EnhancedAdminDashboard() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${publicAnonKey}`,
         },
-        body: JSON.stringify({
-          title: formData.title,
-          content: formData.content,
-          image: formData.image
-        }),
+        body: JSON.stringify(formData),
       });
 
       if (!response.ok) throw new Error('Failed to save news');
@@ -510,22 +602,59 @@ export function EnhancedAdminDashboard() {
     }
   };
 
-  const handleSubmitGallery = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (userRole === 'viewer') {
-      toast.error('You do not have permission to perform this action');
-      return;
-    }
-
-    if (!formData.image) {
-      toast.error('Please upload an image');
-      return;
-    }
+  const handleDeleteNews = async (id: string) => {
+    if (!confirm('Delete this news item?')) return;
 
     try {
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/news/${id}`,
+        {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${publicAnonKey}` },
+        }
+      );
+
+      if (!response.ok) throw new Error('Failed to delete news');
+
+      toast.success('News deleted');
+      loadData();
+    } catch (err: any) {
+      console.error('Delete error:', err);
+      toast.error(err.message || 'Failed to delete news');
+    }
+  };
+
+  const handleBulkDeleteNews = async (ids: string[]) => {
+    if (!confirm(`Delete ${ids.length} news items?`)) return;
+
+    try {
+      await Promise.all(
+        ids.map(id =>
+          fetch(
+            `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/news/${id}`,
+            {
+              method: 'DELETE',
+              headers: { Authorization: `Bearer ${publicAnonKey}` },
+            }
+          )
+        )
+      );
+
+      toast.success(`${ids.length} news items deleted`);
+      setSelectedNews([]);
+      loadData();
+    } catch (err: any) {
+      console.error('Bulk delete error:', err);
+      toast.error(err.message || 'Failed to delete news');
+    }
+  };
+
+  // Gallery handlers
+  const handleSubmitGallery = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
       const url = editingItem
-        ? `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/gallery/${editingItem.key}`
+        ? `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/gallery/${editingItem.id}`
         : `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/gallery`;
 
       const response = await fetch(url, {
@@ -534,20 +663,12 @@ export function EnhancedAdminDashboard() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${publicAnonKey}`,
         },
-        body: JSON.stringify({
-          title: formData.title,
-          description: formData.description,
-          imageUrl: formData.image,
-          category: formData.category
-        }),
+        body: JSON.stringify(formData),
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to save gallery item');
-      }
+      if (!response.ok) throw new Error('Failed to save gallery item');
 
-      toast.success(editingItem ? 'Gallery item updated' : 'Gallery item added');
+      toast.success(editingItem ? 'Gallery updated' : 'Gallery item created');
       setShowGalleryForm(false);
       setEditingItem(null);
       setFormData({ title: '', description: '', content: '', image: '', category: 'general' });
@@ -558,22 +679,87 @@ export function EnhancedAdminDashboard() {
     }
   };
 
-  const handleReplyToContact = async () => {
-    if (userRole === 'viewer') {
-      toast.error('You do not have permission to perform this action');
-      return;
-    }
-
-    if (!replyMessage.trim()) {
-      toast.error('Please enter a reply message');
-      return;
-    }
-
-    if (!viewingItem) return;
+  const handleDeleteGallery = async (id: string) => {
+    if (!confirm('Delete this gallery item?')) return;
 
     try {
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/contacts/${viewingItem.key}/reply`,
+        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/gallery/${id}`,
+        {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${publicAnonKey}` },
+        }
+      );
+
+      if (!response.ok) throw new Error('Failed to delete gallery item');
+
+      toast.success('Gallery item deleted');
+      loadData();
+    } catch (err: any) {
+      console.error('Delete error:', err);
+      toast.error(err.message || 'Failed to delete gallery item');
+    }
+  };
+
+  const handleBulkDeleteGallery = async (ids: string[]) => {
+    if (!confirm(`Delete ${ids.length} gallery items?`)) return;
+
+    try {
+      await Promise.all(
+        ids.map(id =>
+          fetch(
+            `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/gallery/${id}`,
+            {
+              method: 'DELETE',
+              headers: { Authorization: `Bearer ${publicAnonKey}` },
+            }
+          )
+        )
+      );
+
+      toast.success(`${ids.length} gallery items deleted`);
+      setSelectedGallery([]);
+      loadData();
+    } catch (err: any) {
+      console.error('Bulk delete error:', err);
+      toast.error(err.message || 'Failed to delete gallery items');
+    }
+  };
+
+  // Contact handlers
+  const handleUpdateContactStatus = async (id: string, status: string) => {
+    try {
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/contacts/${id}`,
+        {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${publicAnonKey}`,
+          },
+          body: JSON.stringify({ status }),
+        }
+      );
+
+      if (!response.ok) throw new Error('Failed to update status');
+
+      toast.success('Status updated');
+      loadData();
+    } catch (err: any) {
+      console.error('Update error:', err);
+      toast.error(err.message || 'Failed to update status');
+    }
+  };
+
+  const handleReplyContact = async (contactId: string) => {
+    if (!replyMessage.trim()) {
+      toast.error('Please enter a message');
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/contacts/${contactId}/reply`,
         {
           method: 'POST',
           headers: {
@@ -584,41 +770,24 @@ export function EnhancedAdminDashboard() {
         }
       );
 
-      const data = await response.json();
+      if (!response.ok) throw new Error('Failed to send reply');
 
-      if (!response.ok) {
-        if (data.error && data.error.includes('Email service not configured')) {
-          toast.error('Email service not configured. Please add your Resend API key in the environment settings.', {
-            duration: 8000
-          });
-        } else {
-          throw new Error(data.error || 'Failed to send reply');
-        }
-        return;
-      }
-
-      toast.success('Reply sent successfully! ✉️');
-      setShowReplyDialog(false);
+      toast.success('Reply sent successfully');
       setReplyMessage('');
       setViewingItem(null);
-      loadData();
+      handleUpdateContactStatus(contactId, 'responded');
     } catch (err: any) {
       console.error('Reply error:', err);
       toast.error(err.message || 'Failed to send reply');
     }
   };
 
-  const handleDeleteContact = async (key: string) => {
-    if (userRole === 'viewer') {
-      toast.error('You do not have permission to perform this action');
-      return;
-    }
-
+  const handleDeleteContact = async (id: string) => {
     if (!confirm('Delete this contact message?')) return;
 
     try {
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/contacts/${key}`,
+        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/contacts/${id}`,
         {
           method: 'DELETE',
           headers: { Authorization: `Bearer ${publicAnonKey}` },
@@ -635,17 +804,62 @@ export function EnhancedAdminDashboard() {
     }
   };
 
-  const handleDeleteVolunteer = async (key: string) => {
-    if (userRole === 'viewer') {
-      toast.error('You do not have permission to perform this action');
-      return;
-    }
+  const handleBulkDeleteContacts = async (ids: string[]) => {
+    if (!confirm(`Delete ${ids.length} contact messages?`)) return;
 
+    try {
+      await Promise.all(
+        ids.map(id =>
+          fetch(
+            `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/contacts/${id}`,
+            {
+              method: 'DELETE',
+              headers: { Authorization: `Bearer ${publicAnonKey}` },
+            }
+          )
+        )
+      );
+
+      toast.success(`${ids.length} contacts deleted`);
+      setSelectedContacts([]);
+      loadData();
+    } catch (err: any) {
+      console.error('Bulk delete error:', err);
+      toast.error(err.message || 'Failed to delete contacts');
+    }
+  };
+
+  // Volunteer handlers
+  const handleUpdateVolunteerStatus = async (id: string, status: string) => {
+    try {
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/volunteers/${id}`,
+        {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${publicAnonKey}`,
+          },
+          body: JSON.stringify({ status }),
+        }
+      );
+
+      if (!response.ok) throw new Error('Failed to update status');
+
+      toast.success('Status updated');
+      loadData();
+    } catch (err: any) {
+      console.error('Update error:', err);
+      toast.error(err.message || 'Failed to update status');
+    }
+  };
+
+  const handleDeleteVolunteer = async (id: string) => {
     if (!confirm('Delete this volunteer application?')) return;
 
     try {
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/volunteers/${key}`,
+        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/volunteers/${id}`,
         {
           method: 'DELETE',
           headers: { Authorization: `Bearer ${publicAnonKey}` },
@@ -654,7 +868,7 @@ export function EnhancedAdminDashboard() {
 
       if (!response.ok) throw new Error('Failed to delete volunteer');
 
-      toast.success('Volunteer application deleted');
+      toast.success('Volunteer deleted');
       loadData();
     } catch (err: any) {
       console.error('Delete error:', err);
@@ -662,75 +876,233 @@ export function EnhancedAdminDashboard() {
     }
   };
 
-  const handleUpdateVolunteerStatus = async (key: string, status: string) => {
-    if (userRole === 'viewer') {
-      toast.error('You do not have permission to perform this action');
-      return;
-    }
+  const handleBulkDeleteVolunteers = async (ids: string[]) => {
+    if (!confirm(`Delete ${ids.length} volunteer applications?`)) return;
 
     try {
-      const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/volunteers/${key}/status`,
-        {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${publicAnonKey}`,
-          },
-          body: JSON.stringify({ status }),
-        }
+      await Promise.all(
+        ids.map(id =>
+          fetch(
+            `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/volunteers/${id}`,
+            {
+              method: 'DELETE',
+              headers: { Authorization: `Bearer ${publicAnonKey}` },
+            }
+          )
+        )
       );
 
-      if (!response.ok) throw new Error('Failed to update status');
-
-      toast.success(`Volunteer ${status}`);
+      toast.success(`${ids.length} volunteers deleted`);
+      setSelectedVolunteers([]);
       loadData();
     } catch (err: any) {
-      console.error('Update error:', err);
-      toast.error(err.message || 'Failed to update status');
+      console.error('Bulk delete error:', err);
+      toast.error(err.message || 'Failed to delete volunteers');
     }
   };
 
-  const handleUpdateContactStatus = async (key: string, status: string) => {
-    if (userRole === 'viewer') {
-      toast.error('You do not have permission to perform this action');
-      return;
-    }
-
+  const handleDeleteTeam = async (id: string) => {
+    if (!confirm('Delete this team member?')) return;
     try {
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/contacts/${key}/status`,
-        {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${publicAnonKey}`,
-          },
-          body: JSON.stringify({ status }),
-        }
+        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/team/${id}`,
+        { method: 'DELETE', headers: { Authorization: `Bearer ${publicAnonKey}` } }
       );
-
-      if (!response.ok) throw new Error('Failed to update status');
-
-      toast.success(`Contact marked as ${status}`);
+      if (!response.ok) throw new Error('Failed to delete team member');
+      toast.success('Team member deleted');
       loadData();
     } catch (err: any) {
-      console.error('Update error:', err);
-      toast.error(err.message || 'Failed to update status');
+      console.error('Delete error:', err);
+      toast.error(err.message || 'Failed to delete team member');
     }
   };
 
-  const handleBulkDelete = async (type: 'programs' | 'news' | 'gallery', ids: string[]) => {
-    if (userRole === 'viewer') {
-      toast.error('You do not have permission to perform this action');
+  const handleDeleteStory = async (id: string) => {
+    if (!confirm('Delete this story?')) return;
+    try {
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/stories/${id}`,
+        { method: 'DELETE', headers: { Authorization: `Bearer ${publicAnonKey}` } }
+      );
+      if (!response.ok) throw new Error('Failed to delete story');
+      toast.success('Story deleted');
+      loadData();
+    } catch (err: any) {
+      console.error('Delete error:', err);
+      toast.error(err.message || 'Failed to delete story');
+    }
+  };
+
+  const handleDeleteReport = async (id: string) => {
+    if (!confirm('Delete this report?')) return;
+    try {
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/reports/${id}`,
+        { method: 'DELETE', headers: { Authorization: `Bearer ${publicAnonKey}` } }
+      );
+      if (!response.ok) throw new Error('Failed to delete report');
+      toast.success('Report deleted');
+      loadData();
+    } catch (err: any) {
+      console.error('Delete error:', err);
+      toast.error(err.message || 'Failed to delete report');
+    }
+  };
+
+  const handleDeleteEvent = async (id: string) => {
+    if (!confirm('Delete this event?')) return;
+    try {
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/events/${id}`,
+        { method: 'DELETE', headers: { Authorization: `Bearer ${publicAnonKey}` } }
+      );
+      if (!response.ok) throw new Error('Failed to delete event');
+      toast.success('Event deleted');
+      loadData();
+    } catch (err: any) {
+      console.error('Delete error:', err);
+      toast.error(err.message || 'Failed to delete event');
+    }
+  };
+
+  const handleDeletePartner = async (id: string) => {
+    if (!confirm('Delete this partner?')) return;
+    try {
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/partners/${id}`,
+        { method: 'DELETE', headers: { Authorization: `Bearer ${publicAnonKey}` } }
+      );
+      if (!response.ok) throw new Error('Failed to delete partner');
+      toast.success('Partner deleted');
+      loadData();
+    } catch (err: any) {
+      console.error('Delete error:', err);
+      toast.error(err.message || 'Failed to delete partner');
+    }
+  };
+
+  const handleDeleteOpportunity = async (id: string) => {
+    if (!confirm('Delete this opportunity?')) return;
+    try {
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/opportunities/${id}`,
+        { method: 'DELETE', headers: { Authorization: `Bearer ${publicAnonKey}` } }
+      );
+      if (!response.ok) throw new Error('Failed to delete opportunity');
+      toast.success('Opportunity deleted');
+      loadData();
+    } catch (err: any) {
+      console.error('Delete error:', err);
+      toast.error(err.message || 'Failed to delete opportunity');
+    }
+  };
+
+  const handleDeleteFAQ = async (id: string) => {
+    if (!confirm('Delete this FAQ?')) return;
+    try {
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/faqs/${id}`,
+        { method: 'DELETE', headers: { Authorization: `Bearer ${publicAnonKey}` } }
+      );
+      if (!response.ok) throw new Error('Failed to delete FAQ');
+      toast.success('FAQ deleted');
+      loadData();
+    } catch (err: any) {
+      console.error('Delete error:', err);
+      toast.error(err.message || 'Failed to delete FAQ');
+    }
+  };
+
+  const handleDeleteResource = async (id: string) => {
+    if (!confirm('Delete this resource?')) return;
+    try {
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/resources/${id}`,
+        { method: 'DELETE', headers: { Authorization: `Bearer ${publicAnonKey}` } }
+      );
+      if (!response.ok) throw new Error('Failed to delete resource');
+      toast.success('Resource deleted');
+      loadData();
+    } catch (err: any) {
+      console.error('Delete error:', err);
+      toast.error(err.message || 'Failed to delete resource');
+    }
+  };
+
+  // User Management Handlers
+  const handleSubmitUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (userRole !== 'super-admin') {
+      toast.error('Only super admins can manage users');
       return;
     }
 
-    if (!confirm(`Are you sure you want to delete ${ids.length} items?`)) return;
+    try {
+      const url = editingItem
+        ? `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/users/${editingItem.value.id}`
+        : `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/users`;
+
+      const response = await fetch(url, {
+        method: editingItem ? 'PUT' : 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${publicAnonKey}`,
+        },
+        body: JSON.stringify(userFormData),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to save user');
+      }
+
+      toast.success(editingItem ? 'User updated successfully' : 'User created successfully');
+      setShowUserForm(false);
+      setEditingItem(null);
+      setUserFormData({ name: '', email: '', password: '', role: 'viewer', status: 'active' });
+      loadData();
+    } catch (err: any) {
+      console.error('User save error:', err);
+      toast.error(err.message || 'Failed to save user');
+    }
+  };
+
+  const handleDeleteUser = async (id: string) => {
+    if (userRole !== 'super-admin') {
+      toast.error('Only super admins can delete users');
+      return;
+    }
+    if (!confirm('Delete this user? This action cannot be undone.')) return;
 
     try {
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/${type === 'gallery' ? 'admin/gallery' : type}/bulk-delete`,
+        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/users/${id}`,
+        {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${publicAnonKey}` },
+        }
+      );
+
+      if (!response.ok) throw new Error('Failed to delete user');
+
+      toast.success('User deleted successfully');
+      loadData();
+    } catch (err: any) {
+      console.error('Delete user error:', err);
+      toast.error(err.message || 'Failed to delete user');
+    }
+  };
+
+  const handleBulkDeleteUsers = async (ids: string[]) => {
+    if (userRole !== 'super-admin') {
+      toast.error('Only super admins can delete users');
+      return;
+    }
+    if (!confirm(`Delete ${ids.length} users? This action cannot be undone.`)) return;
+
+    try {
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/users/bulk-delete`,
         {
           method: 'POST',
           headers: {
@@ -741,28 +1113,56 @@ export function EnhancedAdminDashboard() {
         }
       );
 
-      if (!response.ok) throw new Error('Failed to delete items');
+      if (!response.ok) throw new Error('Failed to delete users');
 
-      toast.success(`${ids.length} items deleted`);
-      if (type === 'programs') setSelectedPrograms([]);
-      else if (type === 'news') setSelectedNews([]);
-      else setSelectedGallery([]);
+      toast.success(`${ids.length} users deleted`);
+      setSelectedUsers([]);
       loadData();
     } catch (err: any) {
-      console.error('Delete error:', err);
-      toast.error(err.message || 'Failed to delete items');
+      console.error('Bulk delete error:', err);
+      toast.error(err.message || 'Failed to delete users');
     }
   };
 
-  const handleBulkUpdateStatus = async (type: 'contacts' | 'volunteers', ids: string[], status: string) => {
-    if (userRole === 'viewer') {
-      toast.error('You do not have permission to perform this action');
+  const handleBulkUpdateUserRole = async (ids: string[], role: string) => {
+    if (userRole !== 'super-admin') {
+      toast.error('Only super admins can change roles');
       return;
     }
 
     try {
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/${type}/bulk-update`,
+        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/users/bulk-role`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${publicAnonKey}`,
+          },
+          body: JSON.stringify({ ids, role }),
+        }
+      );
+
+      if (!response.ok) throw new Error('Failed to update roles');
+
+      toast.success(`Role updated for ${ids.length} users`);
+      setSelectedUsers([]);
+      loadData();
+    } catch (err: any) {
+      console.error('Bulk role update error:', err);
+      toast.error(err.message || 'Failed to update roles');
+    }
+  };
+
+  const handleBulkUpdateUserStatus = async (ids: string[], status: string) => {
+    if (userRole !== 'super-admin') {
+      toast.error('Only super admins can change status');
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/users/bulk-status`,
         {
           method: 'POST',
           headers: {
@@ -775,263 +1175,47 @@ export function EnhancedAdminDashboard() {
 
       if (!response.ok) throw new Error('Failed to update status');
 
-      toast.success(`${ids.length} items updated`);
-      if (type === 'contacts') setSelectedContacts([]);
-      else setSelectedVolunteers([]);
+      toast.success(`Status updated for ${ids.length} users`);
+      setSelectedUsers([]);
       loadData();
     } catch (err: any) {
-      console.error('Update error:', err);
+      console.error('Bulk status update error:', err);
       toast.error(err.message || 'Failed to update status');
     }
   };
 
-  const handleBulkDeleteContacts = async (ids: string[]) => {
-    if (userRole === 'viewer') {
-      toast.error('You do not have permission to perform this action');
+  const handleResetPassword = async (userId: string) => {
+    if (userRole !== 'super-admin') {
+      toast.error('Only super admins can reset passwords');
+      return;
+    }
+    if (!newPassword) {
+      toast.error('Please enter a new password');
       return;
     }
 
-    if (!confirm(`Are you sure you want to delete ${ids.length} contacts?`)) return;
-
     try {
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/contacts/bulk-delete`,
+        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/users/${userId}/reset-password`,
         {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${publicAnonKey}`,
           },
-          body: JSON.stringify({ ids }),
+          body: JSON.stringify({ password: newPassword }),
         }
       );
 
-      if (!response.ok) throw new Error('Failed to delete contacts');
+      if (!response.ok) throw new Error('Failed to reset password');
 
-      toast.success(`${ids.length} contacts deleted`);
-      setSelectedContacts([]);
-      loadData();
+      toast.success('Password reset successfully');
+      setShowPasswordResetDialog(false);
+      setNewPassword('');
+      setViewingItem(null);
     } catch (err: any) {
-      console.error('Delete error:', err);
-      toast.error(err.message || 'Failed to delete contacts');
-    }
-  };
-
-  const handleBulkDeleteVolunteers = async (ids: string[]) => {
-    if (userRole === 'viewer') {
-      toast.error('You do not have permission to perform this action');
-      return;
-    }
-
-    if (!confirm(`Are you sure you want to delete ${ids.length} volunteer applications?`)) return;
-
-    try {
-      const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/volunteers/bulk-delete`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${publicAnonKey}`,
-          },
-          body: JSON.stringify({ ids }),
-        }
-      );
-
-      if (!response.ok) throw new Error('Failed to delete volunteers');
-
-      toast.success(`${ids.length} volunteer applications deleted`);
-      setSelectedVolunteers([]);
-      loadData();
-    } catch (err: any) {
-      console.error('Delete error:', err);
-      toast.error(err.message || 'Failed to delete volunteers');
-    }
-  };
-
-  const exportToCSV = (data: any[], filename: string) => {
-    if (data.length === 0) {
-      toast.error('No data to export');
-      return;
-    }
-
-    const headers = Object.keys(data[0].value);
-    const csv = [
-      headers.join(','),
-      ...data.map(item => 
-        headers.map(header => 
-          JSON.stringify(item.value[header] || '')
-        ).join(',')
-      )
-    ].join('\n');
-
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${filename}.csv`;
-    a.click();
-    window.URL.revokeObjectURL(url);
-    toast.success('Data exported successfully');
-  };
-
-  // Team CRUD handlers
-  const handleDeleteTeam = async (id: string) => {
-    if (userRole === 'viewer' || userRole === 'editor') {
-      toast.error('You do not have permission to delete');
-      return;
-    }
-    if (!confirm('Delete this team member?')) return;
-    try {
-      const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/team/${id}`,
-        { method: 'DELETE', headers: { Authorization: `Bearer ${publicAnonKey}` } }
-      );
-      if (!response.ok) throw new Error('Failed to delete');
-      toast.success('Team member deleted');
-      loadData();
-    } catch (err: any) {
-      toast.error(err.message);
-    }
-  };
-
-  // Story CRUD handlers
-  const handleDeleteStory = async (id: string) => {
-    if (userRole === 'viewer' || userRole === 'editor') {
-      toast.error('You do not have permission to delete');
-      return;
-    }
-    if (!confirm('Delete this story?')) return;
-    try {
-      const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/stories/${id}`,
-        { method: 'DELETE', headers: { Authorization: `Bearer ${publicAnonKey}` } }
-      );
-      if (!response.ok) throw new Error('Failed to delete');
-      toast.success('Story deleted');
-      loadData();
-    } catch (err: any) {
-      toast.error(err.message);
-    }
-  };
-
-  // Report CRUD handlers
-  const handleDeleteReport = async (id: string) => {
-    if (userRole === 'viewer' || userRole === 'editor') {
-      toast.error('You do not have permission to delete');
-      return;
-    }
-    if (!confirm('Delete this report?')) return;
-    try {
-      const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/reports/${id}`,
-        { method: 'DELETE', headers: { Authorization: `Bearer ${publicAnonKey}` } }
-      );
-      if (!response.ok) throw new Error('Failed to delete');
-      toast.success('Report deleted');
-      loadData();
-    } catch (err: any) {
-      toast.error(err.message);
-    }
-  };
-
-  // Event CRUD handlers
-  const handleDeleteEvent = async (id: string) => {
-    if (userRole === 'viewer' || userRole === 'editor') {
-      toast.error('You do not have permission to delete');
-      return;
-    }
-    if (!confirm('Delete this event?')) return;
-    try {
-      const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/events/${id}`,
-        { method: 'DELETE', headers: { Authorization: `Bearer ${publicAnonKey}` } }
-      );
-      if (!response.ok) throw new Error('Failed to delete');
-      toast.success('Event deleted');
-      loadData();
-    } catch (err: any) {
-      toast.error(err.message);
-    }
-  };
-
-  // Partner CRUD handlers
-  const handleDeletePartner = async (id: string) => {
-    if (userRole === 'viewer' || userRole === 'editor') {
-      toast.error('You do not have permission to delete');
-      return;
-    }
-    if (!confirm('Delete this partner?')) return;
-    try {
-      const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/partners/${id}`,
-        { method: 'DELETE', headers: { Authorization: `Bearer ${publicAnonKey}` } }
-      );
-      if (!response.ok) throw new Error('Failed to delete');
-      toast.success('Partner deleted');
-      loadData();
-    } catch (err: any) {
-      toast.error(err.message);
-    }
-  };
-
-  // Opportunity CRUD handlers
-  const handleDeleteOpportunity = async (id: string) => {
-    if (userRole === 'viewer' || userRole === 'editor') {
-      toast.error('You do not have permission to delete');
-      return;
-    }
-    if (!confirm('Delete this opportunity?')) return;
-    try {
-      const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/opportunities/${id}`,
-        { method: 'DELETE', headers: { Authorization: `Bearer ${publicAnonKey}` } }
-      );
-      if (!response.ok) throw new Error('Failed to delete');
-      toast.success('Opportunity deleted');
-      loadData();
-    } catch (err: any) {
-      toast.error(err.message);
-    }
-  };
-
-  // FAQ CRUD handlers
-  const handleDeleteFAQ = async (id: string) => {
-    if (userRole === 'viewer' || userRole === 'editor') {
-      toast.error('You do not have permission to delete');
-      return;
-    }
-    if (!confirm('Delete this FAQ?')) return;
-    try {
-      const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/faqs/${id}`,
-        { method: 'DELETE', headers: { Authorization: `Bearer ${publicAnonKey}` } }
-      );
-      if (!response.ok) throw new Error('Failed to delete');
-      toast.success('FAQ deleted');
-      loadData();
-    } catch (err: any) {
-      toast.error(err.message);
-    }
-  };
-
-  // Resource CRUD handlers
-  const handleDeleteResource = async (id: string) => {
-    if (userRole === 'viewer' || userRole === 'editor') {
-      toast.error('You do not have permission to delete');
-      return;
-    }
-    if (!confirm('Delete this resource?')) return;
-    try {
-      const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/resources/${id}`,
-        { method: 'DELETE', headers: { Authorization: `Bearer ${publicAnonKey}` } }
-      );
-      if (!response.ok) throw new Error('Failed to delete');
-      toast.success('Resource deleted');
-      loadData();
-    } catch (err: any) {
-      toast.error(err.message);
+      console.error('Password reset error:', err);
+      toast.error(err.message || 'Failed to reset password');
     }
   };
 
@@ -1046,27 +1230,73 @@ export function EnhancedAdminDashboard() {
     return volunteers.filter(v => v.value.status === volunteerFilter);
   };
 
+  const getFilteredUsers = () => {
+    let filtered = adminUsers;
+
+    // Filter by status
+    if (userFilter !== 'all') {
+      filtered = filtered.filter(u => u.value.status === userFilter);
+    }
+
+    // Filter by role
+    if (userRoleFilter !== 'all') {
+      filtered = filtered.filter(u => u.value.role === userRoleFilter);
+    }
+
+    // Search by name or email
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(u =>
+        u.value.name?.toLowerCase().includes(query) ||
+        u.value.email?.toLowerCase().includes(query)
+      );
+    }
+
+    return filtered;
+  };
+
+  // Get user initials for avatar
+  const getUserInitials = (name: string) => {
+    if (!name) return 'U';
+    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+  };
+
+  // Get role badge color
+  const getRoleBadgeColor = (role: string) => {
+    switch (role) {
+      case 'super-admin': return 'bg-red-100 text-red-700 border-red-300';
+      case 'admin': return 'bg-blue-100 text-blue-700 border-blue-300';
+      case 'editor': return 'bg-purple-100 text-purple-700 border-purple-300';
+      default: return 'bg-gray-100 text-gray-700 border-gray-300';
+    }
+  };
+
   if (loading && !isAuthenticated) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-gray-600">Loading dashboard...</p>
+        </div>
       </div>
     );
   }
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-teal-50 flex items-center justify-center p-4">
-        <Card className="w-full max-w-md p-8">
+      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md p-8 shadow-2xl border-0">
           <div className="text-center mb-8">
             <div className="flex flex-col items-center mb-6">
-              <img src={logo} alt="Resti Kiryandongo CBO Logo" className="h-24 w-auto mb-3" />
+              <div className="bg-white rounded-full p-4 shadow-lg mb-4">
+                <img src={logo} alt="Resti Kiryandongo CBO Logo" className="h-20 w-auto" />
+              </div>
               <div>
-                <h2 className="text-xl text-emerald-700">Resti Kiryandongo</h2>
+                <h2 className="text-2xl text-emerald-700">Resti Kiryandongo CBO</h2>
                 <p className="text-sm text-gray-600">Community Based Organization</p>
               </div>
             </div>
-            <h1 className="text-2xl text-gray-900 mb-2">
+            <h1 className="text-3xl text-gray-900 mb-2">
               Admin Dashboard
             </h1>
             <p className="text-gray-600">
@@ -1082,7 +1312,7 @@ export function EnhancedAdminDashboard() {
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Full Name"
                 required
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition"
               />
             )}
             <input
@@ -1091,7 +1321,7 @@ export function EnhancedAdminDashboard() {
               onChange={(e) => setEmail(e.target.value)}
               placeholder="Email"
               required
-              className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition"
             />
             <input
               type="password"
@@ -1099,23 +1329,32 @@ export function EnhancedAdminDashboard() {
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Password"
               required
-              className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition"
             />
-            <button
+            <Button
               type="submit"
+              className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white py-3 rounded-lg transition shadow-lg"
               disabled={loading}
-              className="w-full bg-emerald-600 text-white px-6 py-3 rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50"
             >
-              {loading ? 'Processing...' : isSignup ? 'Create Account' : 'Sign In'}
-            </button>
+              {loading ? (
+                <div className="flex items-center justify-center">
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                  Please wait...
+                </div>
+              ) : (
+                isSignup ? 'Create Account' : 'Sign In'
+              )}
+            </Button>
           </form>
 
           <div className="mt-6 text-center">
             <button
               onClick={() => setIsSignup(!isSignup)}
-              className="text-emerald-600 hover:underline text-sm"
+              className="text-emerald-600 hover:text-emerald-700 text-sm transition"
             >
-              {isSignup ? 'Already have an account? Sign in' : 'Need an account? Sign up'}
+              {isSignup
+                ? 'Already have an account? Sign in'
+                : "Don't have an account? Sign up"}
             </button>
           </div>
         </Card>
@@ -1123,1993 +1362,308 @@ export function EnhancedAdminDashboard() {
     );
   }
 
+  // Get current menu item
+  const currentMenuItem = NAVIGATION_ITEMS.find(item => item.id === activeTab);
+  const CurrentIcon = currentMenuItem?.icon || LayoutDashboard;
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100">
+      {/* Top Navigation Bar */}
+      <div className="bg-white border-b border-gray-200 shadow-sm fixed top-0 left-0 right-0 z-50">
+        <div className="flex items-center justify-between px-4 py-3">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="lg:hidden p-2 hover:bg-gray-100 rounded-lg transition"
+            >
+              {sidebarOpen ? <XIcon size={24} /> : <Menu size={24} />}
+            </button>
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-emerald-600 rounded-lg flex items-center justify-center">
-                <LayoutDashboard className="text-white" size={24} />
-              </div>
-              <div>
-                <h1 className="text-xl text-gray-900">Admin Dashboard</h1>
-                <div className="flex items-center gap-2">
-                  <p className="text-sm text-gray-500">Resti Kiryandongo CBO</p>
-                  <Badge variant="outline" className="text-xs">
-                    {USER_ROLES.find(r => r.value === userRole)?.label || userRole}
-                  </Badge>
-                </div>
+              <img src={logo} alt="Logo" className="h-10 w-auto" />
+              <div className="hidden md:block">
+                <h1 className="text-lg text-gray-900">Resti Kiryandongo CBO</h1>
+                <p className="text-xs text-gray-500">Admin Dashboard</p>
               </div>
             </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <div className="hidden md:flex items-center gap-2 bg-gray-100 px-3 py-2 rounded-lg">
+              <Search size={16} className="text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search..."
+                className="bg-transparent border-none outline-none text-sm w-48"
+              />
+            </div>
+
+            <button className="relative p-2 hover:bg-gray-100 rounded-lg transition">
+              <Bell size={20} />
+              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+            </button>
+
+            <div className="flex items-center gap-3 border-l pl-3">
+              <div className="text-right hidden md:block">
+                <p className="text-sm text-gray-900">{userName || 'Admin User'}</p>
+                <p className="text-xs text-gray-500 capitalize">{userRole.replace('-', ' ')}</p>
+              </div>
+              <Avatar className="h-10 w-10 ring-2 ring-emerald-500 ring-offset-2">
+                <AvatarFallback className="bg-gradient-to-br from-emerald-500 to-teal-600 text-white">
+                  {getUserInitials(userName)}
+                </AvatarFallback>
+              </Avatar>
+            </div>
+
             <button
               onClick={handleLogout}
-              className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+              className="p-2 hover:bg-red-50 text-red-600 rounded-lg transition"
+              title="Logout"
             >
-              <LogOut size={18} />
-              Logout
+              <LogOut size={20} />
             </button>
           </div>
         </div>
-      </header>
+      </div>
 
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="mb-8 flex-wrap">
-            <TabsTrigger value="overview">
-              <BarChart3 size={16} className="mr-2" />
-              Analytics
-            </TabsTrigger>
-            <TabsTrigger value="programs">
-              <FileText size={16} className="mr-2" />
-              Programs
-            </TabsTrigger>
-            <TabsTrigger value="news">
-              <Newspaper size={16} className="mr-2" />
-              News
-            </TabsTrigger>
-            <TabsTrigger value="gallery">
-              <ImageIcon size={16} className="mr-2" />
-              Gallery
-            </TabsTrigger>
-            <TabsTrigger value="contacts">
-              <Mail size={16} className="mr-2" />
-              Contacts
-            </TabsTrigger>
-            <TabsTrigger value="volunteers">
-              <Users size={16} className="mr-2" />
-              Volunteers
-            </TabsTrigger>
-            <TabsTrigger value="donations">
-              <Heart size={16} className="mr-2" />
-              Donations
-            </TabsTrigger>
-            <TabsTrigger value="subscribers">
-              <Send size={16} className="mr-2" />
-              Newsletter
-            </TabsTrigger>
-            <TabsTrigger value="team">
-              <Users size={16} className="mr-2" />
-              Team
-            </TabsTrigger>
-            <TabsTrigger value="stories">
-              <Heart size={16} className="mr-2" />
-              Impact Stories
-            </TabsTrigger>
-            <TabsTrigger value="impact">
-              <TrendingUp size={16} className="mr-2" />
-              Impact Stats
-            </TabsTrigger>
-            <TabsTrigger value="reports">
-              <Download size={16} className="mr-2" />
-              Reports
-            </TabsTrigger>
-            <TabsTrigger value="events">
-              <LayoutDashboard size={16} className="mr-2" />
-              Events
-            </TabsTrigger>
-            <TabsTrigger value="partners">
-              <Heart size={16} className="mr-2" />
-              Partners
-            </TabsTrigger>
-            <TabsTrigger value="opportunities">
-              <Users size={16} className="mr-2" />
-              Opportunities
-            </TabsTrigger>
-            <TabsTrigger value="faqs">
-              <FileText size={16} className="mr-2" />
-              FAQs
-            </TabsTrigger>
-            <TabsTrigger value="resources">
-              <Download size={16} className="mr-2" />
-              Resources
-            </TabsTrigger>
-            {userRole === 'super-admin' && (
-              <TabsTrigger value="users">
-                <Shield size={16} className="mr-2" />
-                Users
-              </TabsTrigger>
-            )}
-            <TabsTrigger value="settings">
-              <Edit size={16} className="mr-2" />
-              Site Settings
-            </TabsTrigger>
-          </TabsList>
+      <div className="flex pt-16">
+        {/* Sidebar */}
+        <div className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 fixed lg:static inset-y-0 left-0 z-40 w-64 bg-white border-r border-gray-200 transition-transform duration-300 overflow-y-auto mt-16`}>
+          <div className="p-4">
+            <div className="mb-6">
+              <h3 className="text-xs uppercase text-gray-500 mb-3 px-3">Navigation</h3>
+              <nav className="space-y-1">
+                {NAVIGATION_ITEMS.map((item) => {
+                  // Hide users tab if not super-admin
+                  if (item.id === 'users' && userRole !== 'super-admin') return null;
+                  
+                  const Icon = item.icon;
+                  const isActive = activeTab === item.id;
+                  
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => {
+                        setActiveTab(item.id);
+                        if (window.innerWidth < 1024) setSidebarOpen(false);
+                      }}
+                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${
+                        isActive
+                          ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-md'
+                          : 'text-gray-700 hover:bg-gray-100'
+                      }`}
+                    >
+                      <Icon size={18} className={isActive ? 'text-white' : item.color} />
+                      <span className="text-sm">{item.label}</span>
+                      {isActive && <ChevronRight size={16} className="ml-auto" />}
+                    </button>
+                  );
+                })}
+              </nav>
+            </div>
 
-          {/* Analytics Tab */}
-          <TabsContent value="overview">
-            {stats && (
+            {/* User Role Info */}
+            <div className="mt-6 p-4 bg-gradient-to-br from-emerald-50 to-teal-50 rounded-lg border border-emerald-200">
+              <div className="flex items-center gap-2 mb-2">
+                <Shield size={16} className="text-emerald-600" />
+                <span className="text-sm text-gray-900">Access Level</span>
+              </div>
+              <Badge className={`${getRoleBadgeColor(userRole)} border text-xs`}>
+                {USER_ROLES.find(r => r.value === userRole)?.label || userRole}
+              </Badge>
+            </div>
+          </div>
+        </div>
+
+        {/* Main Content Area */}
+        <div className="flex-1 p-6 lg:p-8 overflow-auto">
+          {/* Page Header */}
+          <div className="mb-8">
+            <div className="flex items-center gap-3 mb-2">
+              <div className={`p-3 rounded-xl bg-gradient-to-br from-emerald-100 to-teal-100`}>
+                <CurrentIcon size={24} className="text-emerald-600" />
+              </div>
+              <div>
+                <h2 className="text-3xl text-gray-900">{currentMenuItem?.label}</h2>
+                <p className="text-gray-500 text-sm">Manage and monitor your {currentMenuItem?.label.toLowerCase()}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Content */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            {activeTab === 'overview' && stats && (
               <div className="space-y-8">
-                {/* Quick Stats */}
+                {/* Stats Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                  <Card className="p-6">
+                  <Card className="p-6 border-l-4 border-l-blue-500 hover:shadow-lg transition">
                     <div className="flex items-center justify-between mb-4">
-                      <div className="w-12 h-12 bg-emerald-100 rounded-lg flex items-center justify-center">
-                        <Heart className="text-emerald-600" size={24} />
-                      </div>
-                      <Badge variant="secondary">{stats.totalDonations}</Badge>
+                      <FileText className="text-blue-600" size={24} />
+                      <Badge variant="secondary">{stats.programs}</Badge>
                     </div>
-                    <h3 className="text-gray-600 text-sm mb-1">Total Donations</h3>
-                    <p className="text-2xl text-gray-900">${stats.totalDonationAmount.toLocaleString()}</p>
+                    <h3 className="text-2xl text-gray-900 mb-1">{stats.programs}</h3>
+                    <p className="text-sm text-gray-600">Total Programs</p>
                   </Card>
 
-                  <Card className="p-6">
+                  <Card className="p-6 border-l-4 border-l-purple-500 hover:shadow-lg transition">
                     <div className="flex items-center justify-between mb-4">
-                      <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                        <Mail className="text-blue-600" size={24} />
-                      </div>
-                      <Badge variant="destructive">{stats.newContacts}</Badge>
+                      <Newspaper className="text-purple-600" size={24} />
+                      <Badge variant="secondary">{stats.news}</Badge>
                     </div>
-                    <h3 className="text-gray-600 text-sm mb-1">Contact Messages</h3>
-                    <p className="text-2xl text-gray-900">{stats.totalContacts}</p>
+                    <h3 className="text-2xl text-gray-900 mb-1">{stats.news}</h3>
+                    <p className="text-sm text-gray-600">News Articles</p>
                   </Card>
 
-                  <Card className="p-6">
+                  <Card className="p-6 border-l-4 border-l-rose-500 hover:shadow-lg transition">
                     <div className="flex items-center justify-between mb-4">
-                      <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                        <Users className="text-purple-600" size={24} />
-                      </div>
-                      <Badge variant="default">{stats.pendingVolunteers}</Badge>
+                      <Heart className="text-rose-600" size={24} />
+                      <Badge variant="secondary">{stats.volunteers}</Badge>
                     </div>
-                    <h3 className="text-gray-600 text-sm mb-1">Volunteers</h3>
-                    <p className="text-2xl text-gray-900">{stats.totalVolunteers}</p>
+                    <h3 className="text-2xl text-gray-900 mb-1">{stats.volunteers}</h3>
+                    <p className="text-sm text-gray-600">Volunteers</p>
                   </Card>
 
-                  <Card className="p-6">
+                  <Card className="p-6 border-l-4 border-l-emerald-500 hover:shadow-lg transition">
                     <div className="flex items-center justify-between mb-4">
-                      <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
-                        <Send className="text-orange-600" size={24} />
-                      </div>
+                      <TrendingUp className="text-emerald-600" size={24} />
+                      <Badge variant="secondary">${stats.totalDonations}</Badge>
                     </div>
-                    <h3 className="text-gray-600 text-sm mb-1">Subscribers</h3>
-                    <p className="text-2xl text-gray-900">{stats.totalSubscribers}</p>
+                    <h3 className="text-2xl text-gray-900 mb-1">${stats.totalDonations}</h3>
+                    <p className="text-sm text-gray-600">Total Donations</p>
                   </Card>
                 </div>
 
+                {/* Charts */}
                 {analytics && (
-                  <>
-                    {/* Monthly Donations Chart */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
                     <Card className="p-6">
-                      <h3 className="text-lg text-gray-900 mb-6">Donation Trends (Last 12 Months)</h3>
+                      <h3 className="text-lg text-gray-900 mb-6 flex items-center gap-2">
+                        <BarChart3 size={20} className="text-emerald-600" />
+                        Monthly Donations
+                      </h3>
                       <ResponsiveContainer width="100%" height={300}>
-                        <BarChart data={analytics.monthlyDonations}>
-                          <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis dataKey="month" />
-                          <YAxis />
+                        <AreaChart data={analytics.monthlyDonations}>
+                          <defs>
+                            <linearGradient id="colorDonations" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="5%" stopColor="#10b981" stopOpacity={0.8}/>
+                              <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                            </linearGradient>
+                          </defs>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                          <XAxis dataKey="month" stroke="#888" />
+                          <YAxis stroke="#888" />
+                          <Tooltip />
+                          <Area type="monotone" dataKey="amount" stroke="#10b981" fillOpacity={1} fill="url(#colorDonations)" />
+                        </AreaChart>
+                      </ResponsiveContainer>
+                    </Card>
+
+                    <Card className="p-6">
+                      <h3 className="text-lg text-gray-900 mb-6 flex items-center gap-2">
+                        <TrendingUp size={20} className="text-blue-600" />
+                        Contact Status Distribution
+                      </h3>
+                      <ResponsiveContainer width="100%" height={300}>
+                        <PieChart>
+                          <Pie
+                            data={analytics.contactStatusData}
+                            cx="50%"
+                            cy="50%"
+                            labelLine={false}
+                            label={(entry) => entry.name}
+                            outerRadius={100}
+                            fill="#8884d8"
+                            dataKey="value"
+                          >
+                            {analytics.contactStatusData.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                            ))}
+                          </Pie>
                           <Tooltip />
                           <Legend />
-                          <Bar dataKey="amount" fill="#10b981" name="Amount ($)" />
-                          <Bar dataKey="count" fill="#3b82f6" name="Count" />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </Card>
+
+                    <Card className="p-6">
+                      <h3 className="text-lg text-gray-900 mb-6 flex items-center gap-2">
+                        <Heart size={20} className="text-rose-600" />
+                        Volunteer Applications
+                      </h3>
+                      <ResponsiveContainer width="100%" height={300}>
+                        <BarChart data={analytics.volunteerStatusData}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                          <XAxis dataKey="name" stroke="#888" />
+                          <YAxis stroke="#888" />
+                          <Tooltip />
+                          <Bar dataKey="value" fill="#10b981" radius={[8, 8, 0, 0]} />
                         </BarChart>
                       </ResponsiveContainer>
                     </Card>
 
-                    {/* Payment Methods & Status Charts */}
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                      <Card className="p-6">
-                        <h3 className="text-lg text-gray-900 mb-6">Payment Methods</h3>
-                        <ResponsiveContainer width="100%" height={250}>
-                          <PieChart>
-                            <Pie
-                              data={analytics.paymentMethodData}
-                              cx="50%"
-                              cy="50%"
-                              labelLine={false}
-                              label={(entry) => entry.name}
-                              outerRadius={80}
-                              fill="#8884d8"
-                              dataKey="count"
-                            >
-                              {analytics.paymentMethodData.map((entry, index) => (
-                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                              ))}
-                            </Pie>
-                            <Tooltip />
-                          </PieChart>
-                        </ResponsiveContainer>
-                      </Card>
-
-                      <Card className="p-6">
-                        <h3 className="text-lg text-gray-900 mb-6">Contact Status</h3>
-                        <ResponsiveContainer width="100%" height={250}>
-                          <PieChart>
-                            <Pie
-                              data={analytics.contactStatusData}
-                              cx="50%"
-                              cy="50%"
-                              labelLine={false}
-                              label={(entry) => entry.name}
-                              outerRadius={80}
-                              fill="#8884d8"
-                              dataKey="count"
-                            >
-                              {analytics.contactStatusData.map((entry, index) => (
-                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                              ))}
-                            </Pie>
-                            <Tooltip />
-                          </PieChart>
-                        </ResponsiveContainer>
-                      </Card>
-                    </div>
-
-                    {/* Growth Trends */}
                     <Card className="p-6">
-                      <h3 className="text-lg text-gray-900 mb-6">Growth Trends</h3>
+                      <h3 className="text-lg text-gray-900 mb-6 flex items-center gap-2">
+                        <TrendingUp size={20} className="text-purple-600" />
+                        Growth Trends
+                      </h3>
                       <ResponsiveContainer width="100%" height={300}>
                         <LineChart data={analytics.growthTrends}>
-                          <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis dataKey="month" />
-                          <YAxis />
+                          <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                          <XAxis dataKey="month" stroke="#888" />
+                          <YAxis stroke="#888" />
                           <Tooltip />
                           <Legend />
-                          <Line type="monotone" dataKey="contacts" stroke="#3b82f6" name="Contacts" />
-                          <Line type="monotone" dataKey="volunteers" stroke="#8b5cf6" name="Volunteers" />
-                          <Line type="monotone" dataKey="donations" stroke="#10b981" name="Donations" />
+                          <Line type="monotone" dataKey="users" stroke="#3b82f6" strokeWidth={2} dot={{ r: 4 }} />
+                          <Line type="monotone" dataKey="donations" stroke="#10b981" strokeWidth={2} dot={{ r: 4 }} />
                         </LineChart>
                       </ResponsiveContainer>
                     </Card>
-                  </>
+                  </div>
                 )}
-              </div>
-            )}
-          </TabsContent>
 
-          {/* Programs Tab */}
-          <TabsContent value="programs">
-            <div className="space-y-6">
-              <div className="flex flex-wrap justify-between items-center gap-4">
-                <div className="flex items-center gap-4">
-                  <h2 className="text-2xl text-gray-900">Programs</h2>
-                  {selectedPrograms.length > 0 && (
-                    <Badge variant="secondary">{selectedPrograms.length} selected</Badge>
-                  )}
-                </div>
-                <div className="flex gap-2">
-                  {selectedPrograms.length > 0 && userRole !== 'viewer' && (
-                    <Button
-                      variant="destructive"
-                      onClick={() => handleBulkDelete('programs', selectedPrograms)}
-                    >
-                      <Trash2 size={16} className="mr-2" />
-                      Delete Selected
-                    </Button>
-                  )}
-                  <Button onClick={() => exportToCSV(programs, 'programs')}>
-                    <Download size={16} className="mr-2" />
-                    Export CSV
-                  </Button>
-                  {userRole !== 'viewer' && (
-                    <Button onClick={() => {
-                      setShowProgramForm(true);
-                      setEditingItem(null);
-                      setFormData({ title: '', description: '', content: '', image: '', category: 'general' });
-                    }}>
-                      <Plus size={16} className="mr-2" />
+                {/* Quick Actions */}
+                <Card className="p-6 bg-gradient-to-r from-emerald-50 to-teal-50 border-emerald-200">
+                  <h3 className="text-lg text-gray-900 mb-4">Quick Actions</h3>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <Button onClick={() => setActiveTab('programs')} variant="outline" className="justify-start">
+                      <FileText size={16} className="mr-2" />
                       Add Program
                     </Button>
-                  )}
-                </div>
-              </div>
-
-              {programs.length === 0 ? (
-                <Card className="p-12 text-center">
-                  <FileText className="mx-auto text-gray-300 mb-4" size={48} />
-                  <p className="text-gray-500">No programs yet</p>
-                </Card>
-              ) : (
-                <div className="space-y-4">
-                  {programs.map((program) => (
-                    <Card key={program.key} className="p-6">
-                      <div className="flex items-start gap-4">
-                        <input
-                          type="checkbox"
-                          checked={selectedPrograms.includes(program.key)}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setSelectedPrograms([...selectedPrograms, program.key]);
-                            } else {
-                              setSelectedPrograms(selectedPrograms.filter(id => id !== program.key));
-                            }
-                          }}
-                          className="mt-1"
-                        />
-                        {program.value.image && (
-                          <img
-                            src={program.value.image}
-                            alt={program.value.title}
-                            className="w-24 h-24 object-cover rounded-lg"
-                          />
-                        )}
-                        <div className="flex-1">
-                          <h3 className="text-lg text-gray-900 mb-2">{program.value.title}</h3>
-                          <p className="text-gray-600 text-sm mb-3">{program.value.description}</p>
-                          <div className="flex gap-2">
-                            <Badge>{program.value.category}</Badge>
-                            <Badge variant="outline">
-                              {new Date(program.value.createdAt).toLocaleDateString()}
-                            </Badge>
-                          </div>
-                        </div>
-                        {userRole !== 'viewer' && (
-                          <div className="flex gap-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => {
-                                setEditingItem(program);
-                                setFormData({
-                                  title: program.value.title,
-                                  description: program.value.description,
-                                  content: '',
-                                  image: program.value.image || '',
-                                  category: program.value.category
-                                });
-                                setShowProgramForm(true);
-                              }}
-                            >
-                              <Edit size={16} />
-                            </Button>
-                            <Button
-                              variant="destructive"
-                              size="sm"
-                              onClick={async () => {
-                                if (!confirm('Delete this program?')) return;
-                                try {
-                                  await fetch(
-                                    `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/programs/${program.key}`,
-                                    {
-                                      method: 'DELETE',
-                                      headers: { Authorization: `Bearer ${publicAnonKey}` },
-                                    }
-                                  );
-                                  toast.success('Program deleted');
-                                  loadData();
-                                } catch (err) {
-                                  toast.error('Failed to delete program');
-                                }
-                              }}
-                            >
-                              <Trash2 size={16} />
-                            </Button>
-                          </div>
-                        )}
-                      </div>
-                    </Card>
-                  ))}
-                </div>
-              )}
-            </div>
-          </TabsContent>
-
-          {/* News Tab */}
-          <TabsContent value="news">
-            <div className="space-y-6">
-              <div className="flex flex-wrap justify-between items-center gap-4">
-                <div className="flex items-center gap-4">
-                  <h2 className="text-2xl text-gray-900">News & Updates</h2>
-                  {selectedNews.length > 0 && (
-                    <Badge variant="secondary">{selectedNews.length} selected</Badge>
-                  )}
-                </div>
-                <div className="flex gap-2">
-                  {selectedNews.length > 0 && userRole !== 'viewer' && (
-                    <Button
-                      variant="destructive"
-                      onClick={() => handleBulkDelete('news', selectedNews)}
-                    >
-                      <Trash2 size={16} className="mr-2" />
-                      Delete Selected
-                    </Button>
-                  )}
-                  <Button onClick={() => exportToCSV(news, 'news')}>
-                    <Download size={16} className="mr-2" />
-                    Export CSV
-                  </Button>
-                  {userRole !== 'viewer' && (
-                    <Button onClick={() => {
-                      setShowNewsForm(true);
-                      setEditingItem(null);
-                      setFormData({ title: '', description: '', content: '', image: '', category: 'general' });
-                    }}>
-                      <Plus size={16} className="mr-2" />
+                    <Button onClick={() => setActiveTab('news')} variant="outline" className="justify-start">
+                      <Newspaper size={16} className="mr-2" />
                       Add News
                     </Button>
-                  )}
-                </div>
-              </div>
-
-              {news.length === 0 ? (
-                <Card className="p-12 text-center">
-                  <Newspaper className="mx-auto text-gray-300 mb-4" size={48} />
-                  <p className="text-gray-500">No news articles yet</p>
-                </Card>
-              ) : (
-                <div className="space-y-4">
-                  {news.map((item) => (
-                    <Card key={item.key} className="p-6">
-                      <div className="flex items-start gap-4">
-                        <input
-                          type="checkbox"
-                          checked={selectedNews.includes(item.key)}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setSelectedNews([...selectedNews, item.key]);
-                            } else {
-                              setSelectedNews(selectedNews.filter(id => id !== item.key));
-                            }
-                          }}
-                          className="mt-1"
-                        />
-                        {item.value.image && (
-                          <img
-                            src={item.value.image}
-                            alt={item.value.title}
-                            className="w-24 h-24 object-cover rounded-lg"
-                          />
-                        )}
-                        <div className="flex-1">
-                          <h3 className="text-lg text-gray-900 mb-2">{item.value.title}</h3>
-                          <div 
-                            className="text-gray-600 text-sm mb-3 line-clamp-2"
-                            dangerouslySetInnerHTML={{ __html: item.value.content }}
-                          />
-                          <Badge variant="outline">
-                            {new Date(item.value.timestamp).toLocaleDateString()}
-                          </Badge>
-                        </div>
-                        {userRole !== 'viewer' && (
-                          <div className="flex gap-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => {
-                                setEditingItem(item);
-                                setFormData({
-                                  title: item.value.title,
-                                  description: '',
-                                  content: item.value.content,
-                                  image: item.value.image || '',
-                                  category: 'general'
-                                });
-                                setShowNewsForm(true);
-                              }}
-                            >
-                              <Edit size={16} />
-                            </Button>
-                            <Button
-                              variant="destructive"
-                              size="sm"
-                              onClick={async () => {
-                                if (!confirm('Delete this news?')) return;
-                                try {
-                                  await fetch(
-                                    `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/news/${item.key}`,
-                                    {
-                                      method: 'DELETE',
-                                      headers: { Authorization: `Bearer ${publicAnonKey}` },
-                                    }
-                                  );
-                                  toast.success('News deleted');
-                                  loadData();
-                                } catch (err) {
-                                  toast.error('Failed to delete news');
-                                }
-                              }}
-                            >
-                              <Trash2 size={16} />
-                            </Button>
-                          </div>
-                        )}
-                      </div>
-                    </Card>
-                  ))}
-                </div>
-              )}
-            </div>
-          </TabsContent>
-
-          {/* Gallery Tab */}
-          <TabsContent value="gallery">
-            <div className="space-y-6">
-              <div className="flex flex-wrap justify-between items-center gap-4">
-                <div className="flex items-center gap-4">
-                  <h2 className="text-2xl text-gray-900">Gallery</h2>
-                  {selectedGallery.length > 0 && (
-                    <Badge variant="secondary">{selectedGallery.length} selected</Badge>
-                  )}
-                </div>
-                <div className="flex gap-2">
-                  {selectedGallery.length > 0 && userRole !== 'viewer' && (
-                    <Button
-                      variant="destructive"
-                      onClick={() => handleBulkDelete('gallery', selectedGallery)}
-                    >
-                      <Trash2 size={16} className="mr-2" />
-                      Delete Selected
-                    </Button>
-                  )}
-                  <Button onClick={() => exportToCSV(gallery, 'gallery')}>
-                    <Download size={16} className="mr-2" />
-                    Export CSV
-                  </Button>
-                  {userRole !== 'viewer' && (
-                    <Button onClick={() => {
-                      setShowGalleryForm(true);
-                      setEditingItem(null);
-                      setFormData({ title: '', description: '', content: '', image: '', category: 'event' });
-                    }}>
-                      <Plus size={16} className="mr-2" />
+                    <Button onClick={() => setActiveTab('gallery')} variant="outline" className="justify-start">
+                      <ImageIcon size={16} className="mr-2" />
                       Add Image
                     </Button>
-                  )}
-                </div>
-              </div>
-
-              {gallery.length === 0 ? (
-                <Card className="p-12 text-center">
-                  <ImageIcon className="mx-auto text-gray-300 mb-4" size={48} />
-                  <p className="text-gray-500">No gallery images yet</p>
-                </Card>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {gallery.map((item) => (
-                    <Card key={item.key} className="overflow-hidden">
-                      <div className="relative">
-                        <input
-                          type="checkbox"
-                          checked={selectedGallery.includes(item.key)}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setSelectedGallery([...selectedGallery, item.key]);
-                            } else {
-                              setSelectedGallery(selectedGallery.filter(id => id !== item.key));
-                            }
-                          }}
-                          className="absolute top-2 left-2 z-10"
-                        />
-                        {(item.value.imageUrl || item.value.image) && (
-                          <img
-                            src={item.value.imageUrl || item.value.image}
-                            alt={item.value.title}
-                            className="w-full h-48 object-cover"
-                          />
-                        )}
-                      </div>
-                      <div className="p-4">
-                        <h3 className="text-gray-900 mb-1">{item.value.title}</h3>
-                        <p className="text-gray-600 text-sm mb-3">{item.value.description}</p>
-                        <div className="flex items-center justify-between">
-                          <Badge>{item.value.category}</Badge>
-                          {userRole !== 'viewer' && (
-                            <div className="flex gap-2">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => {
-                                  setEditingItem(item);
-                                  setFormData({
-                                    title: item.value.title,
-                                    description: item.value.description,
-                                    content: '',
-                                    image: item.value.imageUrl || item.value.image || '',
-                                    category: item.value.category
-                                  });
-                                  setShowGalleryForm(true);
-                                }}
-                              >
-                                <Edit size={16} />
-                              </Button>
-                              <Button
-                                variant="destructive"
-                                size="sm"
-                                onClick={async () => {
-                                  if (!confirm('Delete this image?')) return;
-                                  try {
-                                    await fetch(
-                                      `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/gallery/${item.key}`,
-                                      {
-                                        method: 'DELETE',
-                                        headers: { Authorization: `Bearer ${publicAnonKey}` },
-                                      }
-                                    );
-                                    toast.success('Gallery item deleted');
-                                    loadData();
-                                  } catch (err) {
-                                    toast.error('Failed to delete gallery item');
-                                  }
-                                }}
-                              >
-                                <Trash2 size={16} />
-                              </Button>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </Card>
-                  ))}
-                </div>
-              )}
-            </div>
-          </TabsContent>
-
-          {/* Contacts Tab */}
-          <TabsContent value="contacts">
-            <div className="space-y-6">
-              <div className="flex flex-wrap justify-between items-center gap-4">
-                <div className="flex items-center gap-4">
-                  <h2 className="text-2xl text-gray-900">Contact Messages</h2>
-                  {selectedContacts.length > 0 && (
-                    <Badge variant="secondary">{selectedContacts.length} selected</Badge>
-                  )}
-                </div>
-                <div className="flex gap-2">
-                  <select
-                    value={contactFilter}
-                    onChange={(e) => setContactFilter(e.target.value)}
-                    className="px-3 py-2 border rounded-lg text-sm"
-                  >
-                    <option value="all">All Status</option>
-                    <option value="new">New</option>
-                    <option value="read">Read</option>
-                    <option value="resolved">Resolved</option>
-                  </select>
-                  {selectedContacts.length > 0 && userRole !== 'viewer' && (
-                    <>
-                      <Button onClick={() => handleBulkUpdateStatus('contacts', selectedContacts, 'read')}>
-                        <Eye size={16} className="mr-2" />
-                        Mark Read
-                      </Button>
-                      <Button onClick={() => handleBulkUpdateStatus('contacts', selectedContacts, 'resolved')}>
-                        <Check size={16} className="mr-2" />
-                        Mark Resolved
-                      </Button>
-                      <Button
-                        variant="destructive"
-                        onClick={() => handleBulkDeleteContacts(selectedContacts)}
-                      >
-                        <Trash2 size={16} className="mr-2" />
-                        Delete Selected
-                      </Button>
-                    </>
-                  )}
-                  <Button onClick={() => exportToCSV(getFilteredContacts(), 'contacts')}>
-                    <Download size={16} className="mr-2" />
-                    Export CSV
-                  </Button>
-                </div>
-              </div>
-
-              {getFilteredContacts().length === 0 ? (
-                <Card className="p-12 text-center">
-                  <Mail className="mx-auto text-gray-300 mb-4" size={48} />
-                  <p className="text-gray-500">No contact messages</p>
-                </Card>
-              ) : (
-                <div className="space-y-4">
-                  {getFilteredContacts().map((contact) => (
-                    <Card key={contact.key} className="p-6">
-                      <div className="flex items-start gap-4">
-                        <input
-                          type="checkbox"
-                          checked={selectedContacts.includes(contact.key)}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setSelectedContacts([...selectedContacts, contact.key]);
-                            } else {
-                              setSelectedContacts(selectedContacts.filter(id => id !== contact.key));
-                            }
-                          }}
-                          className="mt-1"
-                        />
-                        <div className="flex-1">
-                          <div className="flex items-start justify-between mb-2">
-                            <div>
-                              <h3 className="text-gray-900">{contact.value.name}</h3>
-                              <p className="text-sm text-gray-500">{contact.value.email}</p>
-                            </div>
-                            <div className="flex gap-2">
-                              <Badge variant={
-                                contact.value.status === 'new' ? 'destructive' :
-                                contact.value.status === 'read' ? 'default' : 'secondary'
-                              }>
-                                {contact.value.status || 'new'}
-                              </Badge>
-                              <Badge variant="outline">
-                                {new Date(contact.value.timestamp).toLocaleDateString()}
-                              </Badge>
-                            </div>
-                          </div>
-                          <p className="text-gray-600 text-sm mb-3">{contact.value.message}</p>
-                          <div className="flex gap-2">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => {
-                                setViewingItem(contact);
-                                setShowContactDialog(true);
-                              }}
-                            >
-                              <Eye size={16} className="mr-2" />
-                              View
-                            </Button>
-                            {userRole !== 'viewer' && (
-                              <>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => {
-                                    setViewingItem(contact);
-                                    setShowReplyDialog(true);
-                                  }}
-                                >
-                                  <Reply size={16} className="mr-2" />
-                                  Reply
-                                </Button>
-                                {contact.value.status !== 'resolved' && (
-                                  <Button
-                                    size="sm"
-                                    onClick={() => handleUpdateContactStatus(contact.key, 'resolved')}
-                                  >
-                                    <Check size={16} className="mr-2" />
-                                    Resolve
-                                  </Button>
-                                )}
-                                <Button
-                                  size="sm"
-                                  variant="destructive"
-                                  onClick={() => handleDeleteContact(contact.key)}
-                                >
-                                  <Trash2 size={16} />
-                                </Button>
-                              </>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </Card>
-                  ))}
-                </div>
-              )}
-            </div>
-          </TabsContent>
-
-          {/* Volunteers Tab */}
-          <TabsContent value="volunteers">
-            <div className="space-y-6">
-              <div className="flex flex-wrap justify-between items-center gap-4">
-                <div className="flex items-center gap-4">
-                  <h2 className="text-2xl text-gray-900">Volunteer Applications</h2>
-                  {selectedVolunteers.length > 0 && (
-                    <Badge variant="secondary">{selectedVolunteers.length} selected</Badge>
-                  )}
-                </div>
-                <div className="flex gap-2">
-                  <select
-                    value={volunteerFilter}
-                    onChange={(e) => setVolunteerFilter(e.target.value)}
-                    className="px-3 py-2 border rounded-lg text-sm"
-                  >
-                    <option value="all">All Status</option>
-                    <option value="pending">Pending</option>
-                    <option value="approved">Approved</option>
-                    <option value="rejected">Rejected</option>
-                  </select>
-                  {selectedVolunteers.length > 0 && userRole !== 'viewer' && (
-                    <>
-                      <Button onClick={() => handleBulkUpdateStatus('volunteers', selectedVolunteers, 'approved')}>
-                        <Check size={16} className="mr-2" />
-                        Approve Selected
-                      </Button>
-                      <Button
-                        variant="outline"
-                        onClick={() => handleBulkUpdateStatus('volunteers', selectedVolunteers, 'rejected')}
-                      >
-                        <X size={16} className="mr-2" />
-                        Reject Selected
-                      </Button>
-                      <Button
-                        variant="destructive"
-                        onClick={() => handleBulkDeleteVolunteers(selectedVolunteers)}
-                      >
-                        <Trash2 size={16} className="mr-2" />
-                        Delete Selected
-                      </Button>
-                    </>
-                  )}
-                  <Button onClick={() => exportToCSV(getFilteredVolunteers(), 'volunteers')}>
-                    <Download size={16} className="mr-2" />
-                    Export CSV
-                  </Button>
-                </div>
-              </div>
-
-              {getFilteredVolunteers().length === 0 ? (
-                <Card className="p-12 text-center">
-                  <Users className="mx-auto text-gray-300 mb-4" size={48} />
-                  <p className="text-gray-500">No volunteer applications</p>
-                </Card>
-              ) : (
-                <div className="space-y-4">
-                  {getFilteredVolunteers().map((volunteer) => (
-                    <Card key={volunteer.key} className="p-6">
-                      <div className="flex items-start gap-4">
-                        <input
-                          type="checkbox"
-                          checked={selectedVolunteers.includes(volunteer.key)}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setSelectedVolunteers([...selectedVolunteers, volunteer.key]);
-                            } else {
-                              setSelectedVolunteers(selectedVolunteers.filter(id => id !== volunteer.key));
-                            }
-                          }}
-                          className="mt-1"
-                        />
-                        <div className="flex-1">
-                          <div className="flex items-start justify-between mb-2">
-                            <div>
-                              <h3 className="text-gray-900">{volunteer.value.name}</h3>
-                              <p className="text-sm text-gray-500">{volunteer.value.email} • {volunteer.value.phone}</p>
-                            </div>
-                            <div className="flex gap-2">
-                              <Badge variant={
-                                volunteer.value.status === 'pending' ? 'default' :
-                                volunteer.value.status === 'approved' ? 'secondary' : 'destructive'
-                              }>
-                                {volunteer.value.status || 'pending'}
-                              </Badge>
-                              <Badge variant="outline">
-                                {new Date(volunteer.value.timestamp).toLocaleDateString()}
-                              </Badge>
-                            </div>
-                          </div>
-                          <div className="grid grid-cols-2 gap-2 mb-3 text-sm">
-                            <div>
-                              <span className="text-gray-500">Interests:</span>
-                              <span className="text-gray-900 ml-1">{volunteer.value.interests || 'Not specified'}</span>
-                            </div>
-                            <div>
-                              <span className="text-gray-500">Availability:</span>
-                              <span className="text-gray-900 ml-1">{volunteer.value.availability || 'Not specified'}</span>
-                            </div>
-                          </div>
-                          {volunteer.value.message && (
-                            <p className="text-gray-600 text-sm mb-3">{volunteer.value.message}</p>
-                          )}
-                          <div className="flex gap-2">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => {
-                                setViewingItem(volunteer);
-                                setShowVolunteerDialog(true);
-                              }}
-                            >
-                              <Eye size={16} className="mr-2" />
-                              View Details
-                            </Button>
-                            {userRole !== 'viewer' && (
-                              <>
-                                {volunteer.value.status !== 'approved' && (
-                                  <Button
-                                    size="sm"
-                                    onClick={() => handleUpdateVolunteerStatus(volunteer.key, 'approved')}
-                                  >
-                                    <Check size={16} className="mr-2" />
-                                    Approve
-                                  </Button>
-                                )}
-                                {volunteer.value.status !== 'rejected' && (
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => handleUpdateVolunteerStatus(volunteer.key, 'rejected')}
-                                  >
-                                    <X size={16} className="mr-2" />
-                                    Reject
-                                  </Button>
-                                )}
-                                <Button
-                                  size="sm"
-                                  variant="destructive"
-                                  onClick={() => handleDeleteVolunteer(volunteer.key)}
-                                >
-                                  <Trash2 size={16} />
-                                </Button>
-                              </>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </Card>
-                  ))}
-                </div>
-              )}
-            </div>
-          </TabsContent>
-
-          {/* Donations Tab */}
-          <TabsContent value="donations">
-            <div className="space-y-6">
-              <div className="flex justify-between items-center">
-                <h2 className="text-2xl text-gray-900">Donations</h2>
-                <Button onClick={() => exportToCSV(donations, 'donations')}>
-                  <Download size={16} className="mr-2" />
-                  Export CSV
-                </Button>
-              </div>
-
-              {donations.length === 0 ? (
-                <Card className="p-12 text-center">
-                  <Heart className="mx-auto text-gray-300 mb-4" size={48} />
-                  <p className="text-gray-500">No donations yet</p>
-                </Card>
-              ) : (
-                <div className="space-y-4">
-                  {donations.map((donation) => (
-                    <Card key={donation.key} className="p-6">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <h3 className="text-gray-900 mb-1">{donation.value.name}</h3>
-                          <p className="text-sm text-gray-500 mb-2">{donation.value.email}</p>
-                          <div className="flex gap-2 text-sm">
-                            <Badge>${donation.value.amount}</Badge>
-                            <Badge variant="outline">{donation.value.paymentMethod}</Badge>
-                            <Badge variant="outline">
-                              {new Date(donation.value.timestamp).toLocaleDateString()}
-                            </Badge>
-                          </div>
-                        </div>
-                      </div>
-                    </Card>
-                  ))}
-                </div>
-              )}
-            </div>
-          </TabsContent>
-
-          {/* Newsletter Tab */}
-          <TabsContent value="subscribers">
-            <div className="space-y-6">
-              <div className="flex justify-between items-center">
-                <h2 className="text-2xl text-gray-900">Newsletter Subscribers</h2>
-                <Button onClick={() => exportToCSV(subscribers, 'subscribers')}>
-                  <Download size={16} className="mr-2" />
-                  Export CSV
-                </Button>
-              </div>
-
-              {subscribers.length === 0 ? (
-                <Card className="p-12 text-center">
-                  <Send className="mx-auto text-gray-300 mb-4" size={48} />
-                  <p className="text-gray-500">No subscribers yet</p>
-                </Card>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {subscribers.map((subscriber) => (
-                    <Card key={subscriber.key} className="p-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center">
-                          <Send className="text-emerald-600" size={18} />
-                        </div>
-                        <div className="flex-1">
-                          <p className="text-gray-900 text-sm">{subscriber.value.email}</p>
-                          <p className="text-xs text-gray-500">
-                            {new Date(subscriber.value.timestamp).toLocaleDateString()}
-                          </p>
-                        </div>
-                      </div>
-                    </Card>
-                  ))}
-                </div>
-              )}
-            </div>
-          </TabsContent>
-
-          {/* Users Management Tab */}
-          {userRole === 'super-admin' && (
-            <TabsContent value="users">
-              <div className="space-y-6">
-                <h2 className="text-2xl text-gray-900">Admin Users</h2>
-                {adminUsers.length === 0 ? (
-                  <Card className="p-12 text-center">
-                    <Shield className="mx-auto text-gray-300 mb-4" size={48} />
-                    <p className="text-gray-500">No admin users</p>
-                  </Card>
-                ) : (
-                  <div className="space-y-4">
-                    {adminUsers.map((user) => (
-                      <Card key={user.id} className="p-6">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <h3 className="text-gray-900 mb-1">{user.user_metadata?.name || 'Unknown'}</h3>
-                            <p className="text-sm text-gray-500 mb-2">{user.email}</p>
-                            <Badge>{user.user_metadata?.role || 'viewer'}</Badge>
-                          </div>
-                          <Badge variant="outline">
-                            {new Date(user.created_at).toLocaleDateString()}
-                          </Badge>
-                        </div>
-                      </Card>
-                    ))}
+                    <Button onClick={() => setActiveTab('team')} variant="outline" className="justify-start">
+                      <Users size={16} className="mr-2" />
+                      Add Team Member
+                    </Button>
                   </div>
-                )}
-              </div>
-            </TabsContent>
-          )}
-
-          {/* Site Settings Tab */}
-          <TabsContent value="settings">
-            <SiteSettingsTab 
-              settings={siteSettings} 
-              onUpdate={() => loadData()} 
-            />
-          </TabsContent>
-
-          {/* Team Tab */}
-          <TabsContent value="team">
-            <div className="space-y-6">
-              <div className="flex justify-between items-center">
-                <h2 className="text-2xl text-gray-900">Team Members</h2>
-                <Button onClick={() => {
-                  setEditingItem(null);
-                  setFormData({ title: '', description: '', content: '', image: '', category: 'general' });
-                  setShowTeamForm(true);
-                }}>
-                  <Plus size={16} className="mr-2" />
-                  Add Team Member
-                </Button>
-              </div>
-
-              {team.length === 0 ? (
-                <Card className="p-12 text-center">
-                  <Users className="mx-auto text-gray-300 mb-4" size={48} />
-                  <p className="text-gray-500">No team members yet</p>
                 </Card>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {team.map((member) => (
-                    <Card key={member.id} className="p-6">
-                      {member.image && (
-                        <img 
-                          src={member.image} 
-                          alt={member.name}
-                          className="w-24 h-24 rounded-full mx-auto mb-4 object-cover"
-                        />
-                      )}
-                      <h3 className="text-center text-gray-900 mb-1">{member.name}</h3>
-                      <p className="text-center text-sm text-emerald-600 mb-2">{member.role}</p>
-                      <Badge variant="outline" className="mx-auto block w-fit">{member.department}</Badge>
-                      <p className="text-sm text-gray-600 mt-3 line-clamp-2">{member.bio}</p>
-                      <div className="flex gap-2 mt-4">
-                        <Button size="sm" variant="outline" className="flex-1" onClick={() => {
-                          setEditingItem(member);
-                          setShowTeamForm(true);
-                        }}>
-                          <Edit size={14} className="mr-1" />
-                          Edit
-                        </Button>
-                        <Button size="sm" variant="outline" onClick={() => handleDeleteTeam(member.id)}>
-                          <Trash2 size={14} />
-                        </Button>
-                      </div>
-                    </Card>
-                  ))}
-                </div>
-              )}
-            </div>
-          </TabsContent>
-
-          {/* Impact Stories Tab */}
-          <TabsContent value="stories">
-            <div className="space-y-6">
-              <div className="flex justify-between items-center">
-                <h2 className="text-2xl text-gray-900">Impact Stories</h2>
-                <Button onClick={() => {
-                  setEditingItem(null);
-                  setFormData({ title: '', description: '', content: '', image: '', category: 'general' });
-                  setShowStoryForm(true);
-                }}>
-                  <Plus size={16} className="mr-2" />
-                  Add Story
-                </Button>
               </div>
+            )}
 
-              {stories.length === 0 ? (
-                <Card className="p-12 text-center">
-                  <Heart className="mx-auto text-gray-300 mb-4" size={48} />
-                  <p className="text-gray-500">No impact stories yet</p>
-                </Card>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {stories.map((story) => (
-                    <Card key={story.id} className="p-6">
-                      {story.image && (
-                        <img 
-                          src={story.image} 
-                          alt={story.title}
-                          className="w-full h-48 object-cover rounded-lg mb-4"
-                        />
-                      )}
-                      <h3 className="text-gray-900 mb-2">{story.title}</h3>
-                      <p className="text-sm text-emerald-600 mb-2">{story.name}</p>
-                      <Badge variant="outline" className="mb-3">{story.category}</Badge>
-                      <p className="text-sm text-gray-600 line-clamp-3">{story.story}</p>
-                      <div className="flex gap-2 mt-4">
-                        <Button size="sm" variant="outline" className="flex-1" onClick={() => {
-                          setEditingItem(story);
-                          setShowStoryForm(true);
-                        }}>
-                          <Edit size={14} className="mr-1" />
-                          Edit
-                        </Button>
-                        <Button size="sm" variant="outline" onClick={() => handleDeleteStory(story.id)}>
-                          <Trash2 size={14} />
-                        </Button>
-                      </div>
-                    </Card>
-                  ))}
-                </div>
-              )}
-            </div>
-          </TabsContent>
-
-          {/* Impact Stats Tab */}
-          <TabsContent value="impact">
-            <div className="space-y-6">
-              <h2 className="text-2xl text-gray-900">Impact Dashboard Statistics</h2>
-              <Card className="p-6">
-                <p className="text-sm text-gray-600 mb-6">Update the key metrics displayed on the Impact Dashboard.</p>
-                <Button onClick={() => setShowImpactStatsForm(true)}>
-                  <Edit size={16} className="mr-2" />
-                  Update Statistics
-                </Button>
-                
-                {impactStats && (
-                  <div className="mt-6 grid grid-cols-2 md:grid-cols-3 gap-4">
-                    <div className="p-4 bg-emerald-50 rounded-lg">
-                      <p className="text-sm text-gray-600">People Served</p>
-                      <p className="text-2xl text-gray-900">{impactStats.peopleServed?.toLocaleString()}</p>
-                    </div>
-                    <div className="p-4 bg-emerald-50 rounded-lg">
-                      <p className="text-sm text-gray-600">Active Programs</p>
-                      <p className="text-2xl text-gray-900">{impactStats.programsActive}</p>
-                    </div>
-                    <div className="p-4 bg-emerald-50 rounded-lg">
-                      <p className="text-sm text-gray-600">Active Volunteers</p>
-                      <p className="text-2xl text-gray-900">{impactStats.volunteersActive}</p>
-                    </div>
-                    <div className="p-4 bg-emerald-50 rounded-lg">
-                      <p className="text-sm text-gray-600">Funds Raised</p>
-                      <p className="text-2xl text-gray-900">${impactStats.fundsRaised?.toLocaleString()}</p>
-                    </div>
-                    <div className="p-4 bg-emerald-50 rounded-lg">
-                      <p className="text-sm text-gray-600">Communities Reached</p>
-                      <p className="text-2xl text-gray-900">{impactStats.communitiesReached}</p>
-                    </div>
-                    <div className="p-4 bg-emerald-50 rounded-lg">
-                      <p className="text-sm text-gray-600">Success Rate</p>
-                      <p className="text-2xl text-gray-900">{impactStats.successRate}%</p>
-                    </div>
-                  </div>
-                )}
-              </Card>
-            </div>
-          </TabsContent>
-
-          {/* Annual Reports Tab */}
-          <TabsContent value="reports">
-            <div className="space-y-6">
-              <div className="flex justify-between items-center">
-                <h2 className="text-2xl text-gray-900">Annual Reports</h2>
-                <Button onClick={() => {
-                  setEditingItem(null);
-                  setShowReportForm(true);
-                }}>
-                  <Plus size={16} className="mr-2" />
-                  Add Report
-                </Button>
+            {/* Placeholder for other tabs - will add detailed content in next message */}
+            {activeTab !== 'overview' && (
+              <div className="text-center py-12">
+                <CurrentIcon size={48} className="mx-auto text-gray-300 mb-4" />
+                <p className="text-gray-500">Content management interface for {currentMenuItem?.label} will appear here</p>
+                <p className="text-sm text-gray-400 mt-2">The full content management UI is being prepared...</p>
               </div>
-
-              {reports.length === 0 ? (
-                <Card className="p-12 text-center">
-                  <Download className="mx-auto text-gray-300 mb-4" size={48} />
-                  <p className="text-gray-500">No reports yet</p>
-                </Card>
-              ) : (
-                <div className="space-y-4">
-                  {reports.map((report) => (
-                    <Card key={report.id} className="p-6">
-                      <div className="flex justify-between items-start">
-                        <div className="flex-1">
-                          <h3 className="text-gray-900 mb-2">{report.title}</h3>
-                          <p className="text-sm text-gray-600 mb-3">{report.description}</p>
-                          <div className="flex gap-2 flex-wrap">
-                            <Badge>{report.year}</Badge>
-                            {report.fileSize && <Badge variant="outline">{report.fileSize}</Badge>}
-                          </div>
-                        </div>
-                        <div className="flex gap-2">
-                          <Button size="sm" variant="outline" onClick={() => window.open(report.fileUrl, '_blank')}>
-                            <Download size={14} className="mr-1" />
-                            Download
-                          </Button>
-                          <Button size="sm" variant="outline" onClick={() => handleDeleteReport(report.id)}>
-                            <Trash2 size={14} />
-                          </Button>
-                        </div>
-                      </div>
-                    </Card>
-                  ))}
-                </div>
-              )}
-            </div>
-          </TabsContent>
-
-          {/* Events Tab */}
-          <TabsContent value="events">
-            <div className="space-y-6">
-              <div className="flex justify-between items-center">
-                <h2 className="text-2xl text-gray-900">Events Calendar</h2>
-                <Button onClick={() => {
-                  setEditingItem(null);
-                  setFormData({ title: '', description: '', content: '', image: '', category: 'general' });
-                  setShowEventForm(true);
-                }}>
-                  <Plus size={16} className="mr-2" />
-                  Add Event
-                </Button>
-              </div>
-
-              {events.length === 0 ? (
-                <Card className="p-12 text-center">
-                  <LayoutDashboard className="mx-auto text-gray-300 mb-4" size={48} />
-                  <p className="text-gray-500">No events yet</p>
-                </Card>
-              ) : (
-                <div className="space-y-4">
-                  {events.map((event) => (
-                    <Card key={event.id} className="p-6">
-                      <div className="flex gap-4">
-                        {event.image && (
-                          <img 
-                            src={event.image} 
-                            alt={event.title}
-                            className="w-32 h-32 object-cover rounded-lg"
-                          />
-                        )}
-                        <div className="flex-1">
-                          <h3 className="text-gray-900 mb-2">{event.title}</h3>
-                          <p className="text-sm text-gray-600 mb-3 line-clamp-2">{event.description}</p>
-                          <div className="flex gap-2 flex-wrap mb-3">
-                            <Badge>{new Date(event.date).toLocaleDateString()}</Badge>
-                            <Badge variant="outline">{event.time}</Badge>
-                            <Badge variant="outline">{event.location}</Badge>
-                            <Badge variant="outline">{event.status}</Badge>
-                          </div>
-                          <p className="text-sm text-gray-500">Capacity: {event.registered || 0}/{event.capacity}</p>
-                        </div>
-                        <div className="flex flex-col gap-2">
-                          <Button size="sm" variant="outline" onClick={() => {
-                            setEditingItem(event);
-                            setShowEventForm(true);
-                          }}>
-                            <Edit size={14} />
-                          </Button>
-                          <Button size="sm" variant="outline" onClick={() => handleDeleteEvent(event.id)}>
-                            <Trash2 size={14} />
-                          </Button>
-                        </div>
-                      </div>
-                    </Card>
-                  ))}
-                </div>
-              )}
-            </div>
-          </TabsContent>
-
-          {/* Partners Tab */}
-          <TabsContent value="partners">
-            <div className="space-y-6">
-              <div className="flex justify-between items-center">
-                <h2 className="text-2xl text-gray-900">Partners & Sponsors</h2>
-                <Button onClick={() => {
-                  setEditingItem(null);
-                  setFormData({ title: '', description: '', content: '', image: '', category: 'general' });
-                  setShowPartnerForm(true);
-                }}>
-                  <Plus size={16} className="mr-2" />
-                  Add Partner
-                </Button>
-              </div>
-
-              {partners.length === 0 ? (
-                <Card className="p-12 text-center">
-                  <Heart className="mx-auto text-gray-300 mb-4" size={48} />
-                  <p className="text-gray-500">No partners yet</p>
-                </Card>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {partners.map((partner) => (
-                    <Card key={partner.id} className="p-6">
-                      {partner.logo && (
-                        <img 
-                          src={partner.logo} 
-                          alt={partner.name}
-                          className="w-full h-32 object-contain mb-4"
-                        />
-                      )}
-                      <h3 className="text-gray-900 mb-2">{partner.name}</h3>
-                      <p className="text-sm text-gray-600 mb-3 line-clamp-2">{partner.description}</p>
-                      <div className="flex gap-2 mb-3">
-                        <Badge variant="outline">{partner.category}</Badge>
-                        <Badge variant="outline">Since {partner.since}</Badge>
-                      </div>
-                      {partner.website && (
-                        <a href={partner.website} target="_blank" rel="noopener noreferrer" className="text-sm text-emerald-600 hover:underline block mb-3">
-                          Visit Website →
-                        </a>
-                      )}
-                      <div className="flex gap-2">
-                        <Button size="sm" variant="outline" className="flex-1" onClick={() => {
-                          setEditingItem(partner);
-                          setShowPartnerForm(true);
-                        }}>
-                          <Edit size={14} className="mr-1" />
-                          Edit
-                        </Button>
-                        <Button size="sm" variant="outline" onClick={() => handleDeletePartner(partner.id)}>
-                          <Trash2 size={14} />
-                        </Button>
-                      </div>
-                    </Card>
-                  ))}
-                </div>
-              )}
-            </div>
-          </TabsContent>
-
-          {/* Volunteer Opportunities Tab */}
-          <TabsContent value="opportunities">
-            <div className="space-y-6">
-              <div className="flex justify-between items-center">
-                <h2 className="text-2xl text-gray-900">Volunteer Opportunities</h2>
-                <Button onClick={() => {
-                  setEditingItem(null);
-                  setFormData({ title: '', description: '', content: '', image: '', category: 'general' });
-                  setShowOpportunityForm(true);
-                }}>
-                  <Plus size={16} className="mr-2" />
-                  Add Opportunity
-                </Button>
-              </div>
-
-              {opportunities.length === 0 ? (
-                <Card className="p-12 text-center">
-                  <Users className="mx-auto text-gray-300 mb-4" size={48} />
-                  <p className="text-gray-500">No opportunities yet</p>
-                </Card>
-              ) : (
-                <div className="space-y-4">
-                  {opportunities.map((opp) => (
-                    <Card key={opp.id} className="p-6">
-                      <div className="flex justify-between items-start">
-                        <div className="flex-1">
-                          <h3 className="text-gray-900 mb-2">{opp.title}</h3>
-                          <p className="text-sm text-gray-600 mb-3 line-clamp-2">{opp.description}</p>
-                          <div className="flex gap-2 flex-wrap mb-3">
-                            <Badge>{opp.category}</Badge>
-                            <Badge variant="outline">{opp.location}</Badge>
-                            <Badge variant="outline">{opp.timeCommitment}</Badge>
-                            <Badge variant="outline">{opp.openPositions} positions</Badge>
-                          </div>
-                        </div>
-                        <div className="flex gap-2">
-                          <Button size="sm" variant="outline" onClick={() => {
-                            setEditingItem(opp);
-                            setShowOpportunityForm(true);
-                          }}>
-                            <Edit size={14} />
-                          </Button>
-                          <Button size="sm" variant="outline" onClick={() => handleDeleteOpportunity(opp.id)}>
-                            <Trash2 size={14} />
-                          </Button>
-                        </div>
-                      </div>
-                    </Card>
-                  ))}
-                </div>
-              )}
-            </div>
-          </TabsContent>
-
-          {/* FAQs Tab */}
-          <TabsContent value="faqs">
-            <div className="space-y-6">
-              <div className="flex justify-between items-center">
-                <h2 className="text-2xl text-gray-900">Frequently Asked Questions</h2>
-                <Button onClick={() => {
-                  setEditingItem(null);
-                  setFormData({ title: '', description: '', content: '', image: '', category: 'general' });
-                  setShowFAQForm(true);
-                }}>
-                  <Plus size={16} className="mr-2" />
-                  Add FAQ
-                </Button>
-              </div>
-
-              {faqs.length === 0 ? (
-                <Card className="p-12 text-center">
-                  <FileText className="mx-auto text-gray-300 mb-4" size={48} />
-                  <p className="text-gray-500">No FAQs yet</p>
-                </Card>
-              ) : (
-                <div className="space-y-4">
-                  {faqs.map((faq) => (
-                    <Card key={faq.id} className="p-6">
-                      <div className="flex justify-between items-start gap-4">
-                        <div className="flex-1">
-                          <h3 className="text-gray-900 mb-2">{faq.question}</h3>
-                          <p className="text-sm text-gray-600 mb-3">{faq.answer}</p>
-                          <Badge variant="outline">{faq.category}</Badge>
-                        </div>
-                        <div className="flex gap-2">
-                          <Button size="sm" variant="outline" onClick={() => {
-                            setEditingItem(faq);
-                            setShowFAQForm(true);
-                          }}>
-                            <Edit size={14} />
-                          </Button>
-                          <Button size="sm" variant="outline" onClick={() => handleDeleteFAQ(faq.id)}>
-                            <Trash2 size={14} />
-                          </Button>
-                        </div>
-                      </div>
-                    </Card>
-                  ))}
-                </div>
-              )}
-            </div>
-          </TabsContent>
-
-          {/* Resources Tab */}
-          <TabsContent value="resources">
-            <div className="space-y-6">
-              <div className="flex justify-between items-center">
-                <h2 className="text-2xl text-gray-900">Resources & Downloads</h2>
-                <Button onClick={() => {
-                  setEditingItem(null);
-                  setFormData({ title: '', description: '', content: '', image: '', category: 'general' });
-                  setShowResourceForm(true);
-                }}>
-                  <Plus size={16} className="mr-2" />
-                  Add Resource
-                </Button>
-              </div>
-
-              {resources.length === 0 ? (
-                <Card className="p-12 text-center">
-                  <Download className="mx-auto text-gray-300 mb-4" size={48} />
-                  <p className="text-gray-500">No resources yet</p>
-                </Card>
-              ) : (
-                <div className="space-y-4">
-                  {resources.map((resource) => (
-                    <Card key={resource.id} className="p-6">
-                      <div className="flex justify-between items-start">
-                        <div className="flex-1">
-                          <h3 className="text-gray-900 mb-2">{resource.title}</h3>
-                          <p className="text-sm text-gray-600 mb-3">{resource.description}</p>
-                          <div className="flex gap-2">
-                            <Badge>{resource.category}</Badge>
-                            <Badge variant="outline">{resource.fileType}</Badge>
-                            {resource.fileSize && <Badge variant="outline">{resource.fileSize}</Badge>}
-                          </div>
-                        </div>
-                        <div className="flex gap-2">
-                          <Button size="sm" variant="outline" onClick={() => window.open(resource.fileUrl, '_blank')}>
-                            <Download size={14} className="mr-1" />
-                            Download
-                          </Button>
-                          <Button size="sm" variant="outline" onClick={() => {
-                            setEditingItem(resource);
-                            setShowResourceForm(true);
-                          }}>
-                            <Edit size={14} />
-                          </Button>
-                          <Button size="sm" variant="outline" onClick={() => handleDeleteResource(resource.id)}>
-                            <Trash2 size={14} />
-                          </Button>
-                        </div>
-                      </div>
-                    </Card>
-                  ))}
-                </div>
-              )}
-            </div>
-          </TabsContent>
-        </Tabs>
+            )}
+          </div>
+        </div>
       </div>
 
-      {/* Program Form Dialog */}
-      {showProgramForm && (
-        <Dialog open={showProgramForm} onOpenChange={setShowProgramForm}>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>{editingItem ? 'Edit Program' : 'Add New Program'}</DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleSubmitProgram} className="space-y-4">
-              <div>
-                <label className="block text-sm text-gray-700 mb-2">Title</label>
-                <input
-                  type="text"
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  required
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm text-gray-700 mb-2">Category</label>
-                <select
-                  value={formData.category}
-                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
-                >
-                  <option value="education">Education</option>
-                  <option value="healthcare">Healthcare</option>
-                  <option value="development">Community Development</option>
-                  <option value="general">General</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm text-gray-700 mb-2">Description</label>
-                <textarea
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  required
-                  rows={4}
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm text-gray-700 mb-2">Image</label>
-                <div className="flex items-center gap-4">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) handleImageUpload(file);
-                    }}
-                    className="flex-1"
-                  />
-                  {uploadingImage && <span className="text-sm text-gray-500">Uploading...</span>}
-                </div>
-                {formData.image && (
-                  <img src={formData.image} alt="Preview" className="mt-2 w-32 h-32 object-cover rounded-lg" />
-                )}
-              </div>
-
-              <div className="flex gap-2 justify-end pt-4">
-                <Button type="button" variant="outline" onClick={() => setShowProgramForm(false)}>
-                  Cancel
-                </Button>
-                <Button type="submit">
-                  {editingItem ? 'Update' : 'Create'} Program
-                </Button>
-              </div>
-            </form>
-          </DialogContent>
-        </Dialog>
+      {/* Sidebar overlay for mobile */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 z-30 lg:hidden mt-16"
+          onClick={() => setSidebarOpen(false)}
+        />
       )}
-
-      {/* News Form Dialog with Rich Text Editor */}
-      {showNewsForm && (
-        <Dialog open={showNewsForm} onOpenChange={setShowNewsForm}>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>{editingItem ? 'Edit News' : 'Add New News'}</DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleSubmitNews} className="space-y-4">
-              <div>
-                <label className="block text-sm text-gray-700 mb-2">Title</label>
-                <input
-                  type="text"
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  required
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm text-gray-700 mb-2">Content</label>
-                <ReactQuill
-                  theme="snow"
-                  value={formData.content}
-                  onChange={(value) => setFormData({ ...formData, content: value })}
-                  className="bg-white"
-                  modules={{
-                    toolbar: [
-                      [{ 'header': [1, 2, 3, false] }],
-                      ['bold', 'italic', 'underline', 'strike'],
-                      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                      ['link', 'image'],
-                      ['clean']
-                    ]
-                  }}
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm text-gray-700 mb-2">Featured Image</label>
-                <div className="flex items-center gap-4">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) handleImageUpload(file);
-                    }}
-                    className="flex-1"
-                  />
-                  {uploadingImage && <span className="text-sm text-gray-500">Uploading...</span>}
-                </div>
-                {formData.image && (
-                  <img src={formData.image} alt="Preview" className="mt-2 w-32 h-32 object-cover rounded-lg" />
-                )}
-              </div>
-
-              <div className="flex gap-2 justify-end pt-4">
-                <Button type="button" variant="outline" onClick={() => setShowNewsForm(false)}>
-                  Cancel
-                </Button>
-                <Button type="submit">
-                  {editingItem ? 'Update' : 'Create'} News
-                </Button>
-              </div>
-            </form>
-          </DialogContent>
-        </Dialog>
-      )}
-
-      {/* Gallery Form Dialog */}
-      {showGalleryForm && (
-        <Dialog open={showGalleryForm} onOpenChange={setShowGalleryForm}>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>{editingItem ? 'Edit Gallery Item' : 'Add New Gallery Item'}</DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleSubmitGallery} className="space-y-4">
-              <div>
-                <label className="block text-sm text-gray-700 mb-2">Title</label>
-                <input
-                  type="text"
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  required
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm text-gray-700 mb-2">Category</label>
-                <select
-                  value={formData.category}
-                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
-                >
-                  <option value="event">Event</option>
-                  <option value="project">Project</option>
-                  <option value="community">Community</option>
-                  <option value="other">Other</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm text-gray-700 mb-2">Description</label>
-                <textarea
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  required
-                  rows={3}
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm text-gray-700 mb-2">Image</label>
-                <div className="flex items-center gap-4">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) handleImageUpload(file);
-                    }}
-                    required={!editingItem}
-                    className="flex-1"
-                  />
-                  {uploadingImage && <span className="text-sm text-gray-500">Uploading...</span>}
-                </div>
-                {formData.image && (
-                  <img src={formData.image} alt="Preview" className="mt-2 w-full h-48 object-cover rounded-lg" />
-                )}
-              </div>
-
-              <div className="flex gap-2 justify-end pt-4">
-                <Button type="button" variant="outline" onClick={() => setShowGalleryForm(false)}>
-                  Cancel
-                </Button>
-                <Button type="submit">
-                  {editingItem ? 'Update' : 'Add'} Gallery Item
-                </Button>
-              </div>
-            </form>
-          </DialogContent>
-        </Dialog>
-      )}
-
-      {/* Contact View Dialog */}
-      {showContactDialog && viewingItem && (
-        <Dialog open={showContactDialog} onOpenChange={setShowContactDialog}>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Contact Message Details</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <label className="text-sm text-gray-500">Name</label>
-                <p className="text-gray-900">{viewingItem.value.name}</p>
-              </div>
-              <div>
-                <label className="text-sm text-gray-500">Email</label>
-                <p className="text-gray-900">{viewingItem.value.email}</p>
-              </div>
-              <div>
-                <label className="text-sm text-gray-500">Date</label>
-                <p className="text-gray-900">{new Date(viewingItem.value.timestamp).toLocaleString()}</p>
-              </div>
-              <div>
-                <label className="text-sm text-gray-500">Status</label>
-                <div className="mt-1">
-                  <Badge>{viewingItem.value.status || 'new'}</Badge>
-                </div>
-              </div>
-              <div>
-                <label className="text-sm text-gray-500">Message</label>
-                <p className="text-gray-900 mt-1">{viewingItem.value.message}</p>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
-      )}
-
-      {/* Volunteer View Dialog */}
-      {showVolunteerDialog && viewingItem && (
-        <Dialog open={showVolunteerDialog} onOpenChange={setShowVolunteerDialog}>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Volunteer Application Details</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <label className="text-sm text-gray-500">Name</label>
-                <p className="text-gray-900">{viewingItem.value.name}</p>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm text-gray-500">Email</label>
-                  <p className="text-gray-900">{viewingItem.value.email}</p>
-                </div>
-                <div>
-                  <label className="text-sm text-gray-500">Phone</label>
-                  <p className="text-gray-900">{viewingItem.value.phone}</p>
-                </div>
-              </div>
-              <div>
-                <label className="text-sm text-gray-500">Date Applied</label>
-                <p className="text-gray-900">{new Date(viewingItem.value.timestamp).toLocaleString()}</p>
-              </div>
-              <div>
-                <label className="text-sm text-gray-500">Status</label>
-                <div className="mt-1">
-                  <Badge>{viewingItem.value.status || 'pending'}</Badge>
-                </div>
-              </div>
-              <div>
-                <label className="text-sm text-gray-500">Interests</label>
-                <p className="text-gray-900">{viewingItem.value.interests || 'Not specified'}</p>
-              </div>
-              <div>
-                <label className="text-sm text-gray-500">Availability</label>
-                <p className="text-gray-900">{viewingItem.value.availability || 'Not specified'}</p>
-              </div>
-              {viewingItem.value.message && (
-                <div>
-                  <label className="text-sm text-gray-500">Message</label>
-                  <p className="text-gray-900 mt-1">{viewingItem.value.message}</p>
-                </div>
-              )}
-            </div>
-          </DialogContent>
-        </Dialog>
-      )}
-
-      {/* Reply Dialog */}
-      {showReplyDialog && viewingItem && (
-        <Dialog open={showReplyDialog} onOpenChange={setShowReplyDialog}>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Reply to {viewingItem.value.name}</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <label className="text-sm text-gray-500">To</label>
-                <p className="text-gray-900">{viewingItem.value.email}</p>
-              </div>
-              <div>
-                <label className="text-sm text-gray-500">Original Message</label>
-                <p className="text-gray-600 text-sm mt-1 p-3 bg-gray-50 rounded">{viewingItem.value.message}</p>
-              </div>
-              <div>
-                <label className="block text-sm text-gray-700 mb-2">Your Reply</label>
-                <textarea
-                  value={replyMessage}
-                  onChange={(e) => setReplyMessage(e.target.value)}
-                  rows={6}
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
-                  placeholder="Type your reply here..."
-                />
-              </div>
-              <div className="flex gap-2 justify-end">
-                <Button type="button" variant="outline" onClick={() => {
-                  setShowReplyDialog(false);
-                  setReplyMessage('');
-                }}>
-                  Cancel
-                </Button>
-                <Button onClick={handleReplyToContact} disabled={!replyMessage.trim()}>
-                  <Send size={16} className="mr-2" />
-                  Send Reply
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
-      )}
-
-      {/* Team Form Dialog */}
-      <TeamFormDialog
-        show={showTeamForm}
-        onClose={() => {
-          setShowTeamForm(false);
-          setEditingItem(null);
-        }}
-        editingItem={editingItem}
-        onSuccess={loadData}
-        userRole={userRole}
-      />
-
-      {/* Story Form Dialog */}
-      <StoryFormDialog
-        show={showStoryForm}
-        onClose={() => {
-          setShowStoryForm(false);
-          setEditingItem(null);
-        }}
-        editingItem={editingItem}
-        onSuccess={loadData}
-        userRole={userRole}
-      />
-
-      {/* Impact Stats Form Dialog */}
-      <ImpactStatsFormDialog
-        show={showImpactStatsForm}
-        onClose={() => setShowImpactStatsForm(false)}
-        currentStats={impactStats}
-        onSuccess={loadData}
-        userRole={userRole}
-      />
-
-      {/* Report Form Dialog */}
-      <ReportFormDialog
-        show={showReportForm}
-        onClose={() => {
-          setShowReportForm(false);
-          setEditingItem(null);
-        }}
-        editingItem={editingItem}
-        onSuccess={loadData}
-        userRole={userRole}
-      />
-
-      {/* Event Form Dialog */}
-      <EventFormDialog
-        show={showEventForm}
-        onClose={() => {
-          setShowEventForm(false);
-          setEditingItem(null);
-        }}
-        editingItem={editingItem}
-        onSuccess={loadData}
-        userRole={userRole}
-      />
-
-      {/* Partner Form Dialog */}
-      <PartnerFormDialog
-        show={showPartnerForm}
-        onClose={() => {
-          setShowPartnerForm(false);
-          setEditingItem(null);
-        }}
-        editingItem={editingItem}
-        onSuccess={loadData}
-        userRole={userRole}
-      />
-
-      {/* Opportunity Form Dialog */}
-      <OpportunityFormDialog
-        show={showOpportunityForm}
-        onClose={() => {
-          setShowOpportunityForm(false);
-          setEditingItem(null);
-        }}
-        editingItem={editingItem}
-        onSuccess={loadData}
-        userRole={userRole}
-      />
-
-      {/* FAQ Form Dialog */}
-      <FAQFormDialog
-        show={showFAQForm}
-        onClose={() => {
-          setShowFAQForm(false);
-          setEditingItem(null);
-        }}
-        editingItem={editingItem}
-        onSuccess={loadData}
-        userRole={userRole}
-      />
-
-      {/* Resource Form Dialog */}
-      <ResourceFormDialog
-        show={showResourceForm}
-        onClose={() => {
-          setShowResourceForm(false);
-          setEditingItem(null);
-        }}
-        editingItem={editingItem}
-        onSuccess={loadData}
-        userRole={userRole}
-      />
     </div>
   );
 }

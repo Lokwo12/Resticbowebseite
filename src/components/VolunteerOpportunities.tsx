@@ -40,6 +40,7 @@ export function VolunteerOpportunities() {
 
   const fetchSettings = async () => {
     try {
+      console.log('🔄 Fetching Volunteer Opportunities section settings...');
       const response = await fetch(
         `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/site-settings`,
         {
@@ -49,19 +50,29 @@ export function VolunteerOpportunities() {
         }
       );
 
+      console.log('📡 Volunteer Opportunities settings response status:', response.status);
+
       if (response.ok) {
         const data = await response.json();
+        console.log('📦 Volunteer Opportunities raw API response:', data);
+        
         if (data.settings?.sections?.opportunities) {
+          console.log('✅ Volunteer Opportunities section settings updated:', data.settings.sections.opportunities);
           setSectionSettings(data.settings.sections.opportunities);
+        } else {
+          console.log('⚠️ No volunteer opportunities settings found in API, using defaults');
         }
+      } else {
+        console.error('❌ Failed to fetch volunteer opportunities settings, status:', response.status);
       }
     } catch (err) {
-      console.error('Error fetching section settings:', err);
+      console.error('❌ Error fetching volunteer opportunities section settings:', err);
     }
   };
 
   const fetchOpportunities = async () => {
     try {
+      console.log('🔄 Fetching Volunteer Opportunities list...');
       const response = await fetch(
         `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/opportunities`,
         {
@@ -71,13 +82,22 @@ export function VolunteerOpportunities() {
         }
       );
       
+      console.log('📡 Volunteer Opportunities list response status:', response.status);
+      
       if (response.ok) {
         const data = await response.json();
+        console.log('📦 Volunteer Opportunities raw response:', data);
+        console.log('✅ Volunteer Opportunities count:', data.opportunities?.length || 0);
         setOpportunities(data.opportunities || []);
+      } else {
+        console.error('❌ Failed to fetch opportunities, status:', response.status);
+        const errorText = await response.text();
+        console.error('❌ Error response:', errorText);
       }
     } catch (error) {
-      console.error('Error fetching opportunities:', error);
+      console.error('❌ Error fetching opportunities:', error);
     } finally {
+      console.log('🏁 Volunteer Opportunities fetch complete');
       setLoading(false);
     }
   };
@@ -131,6 +151,8 @@ export function VolunteerOpportunities() {
   const filteredOpportunities = selectedCategory === 'all' 
     ? opportunities 
     : opportunities.filter(o => o.category === selectedCategory);
+
+  console.log('🎨 Volunteer Opportunities component render - loading:', loading, 'opportunities count:', opportunities.length, 'filtered count:', filteredOpportunities.length);
 
   if (loading) {
     return (
@@ -282,8 +304,25 @@ export function VolunteerOpportunities() {
             ))}
           </div>
         ) : (
-          <div className="text-center py-12">
-            <p className="text-gray-500">No opportunities in this category currently.</p>
+          <div className="text-center py-16 bg-white rounded-2xl shadow-sm border border-gray-100">
+            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Heart className="text-gray-400" size={32} />
+            </div>
+            <h3 className="text-gray-900 mb-2">No Opportunities Available</h3>
+            <p className="text-gray-500 mb-6 max-w-md mx-auto">
+              {selectedCategory === 'all' 
+                ? 'No volunteer opportunities have been added yet. Check back soon or contact us to learn about upcoming opportunities!'
+                : `No opportunities in the "${selectedCategory}" category currently. Try selecting "All" to see other opportunities.`
+              }
+            </p>
+            {selectedCategory !== 'all' && (
+              <button
+                onClick={() => setSelectedCategory('all')}
+                className="px-6 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
+              >
+                View All Opportunities
+              </button>
+            )}
           </div>
         )}
 

@@ -19,7 +19,8 @@ export function Programs() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [sectionSettings, setSectionSettings] = useState({ title: 'Our Programs', description: 'We run comprehensive programs designed to address the most pressing needs in our community, creating pathways to opportunity and sustainable development.' });
-  const { ref, isVisible } = useScrollAnimation();
+  // Start visible since Programs is near top of page (after Hero & About)
+  const { ref, isVisible } = useScrollAnimation({ startVisible: true });
 
   useEffect(() => {
     fetchPrograms();
@@ -28,6 +29,7 @@ export function Programs() {
 
   const fetchSettings = async () => {
     try {
+      console.log('🔄 Fetching Programs section settings...');
       const response = await fetch(
         `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/site-settings`,
         {
@@ -37,19 +39,26 @@ export function Programs() {
         }
       );
 
+      console.log('📡 Programs settings response status:', response.status);
+
       if (response.ok) {
         const data = await response.json();
+        console.log('📦 Programs section settings from API:', data.settings?.sections?.programs);
         if (data.settings?.sections?.programs) {
           setSectionSettings(data.settings.sections.programs);
+          console.log('✅ Programs section settings updated');
+        } else {
+          console.log('⚠️ No programs section settings found, using defaults');
         }
       }
     } catch (err) {
-      console.error('Error fetching section settings:', err);
+      console.error('❌ Error fetching section settings:', err);
     }
   };
 
   const fetchPrograms = async () => {
     try {
+      console.log('🔄 Fetching Programs list...');
       const response = await fetch(
         `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/programs`,
         {
@@ -59,21 +68,30 @@ export function Programs() {
         }
       );
 
+      console.log('📡 Programs list response status:', response.status);
+
       if (!response.ok) {
         throw new Error('Failed to fetch programs');
       }
 
       const data = await response.json();
+      console.log('📦 Programs list from API:', data.programs);
       setPrograms(data.programs || []);
+      console.log('✅ Programs count:', (data.programs || []).length);
     } catch (err) {
-      console.error('Error fetching programs:', err);
+      console.error('❌ Error fetching programs:', err);
       setError('Failed to load programs. Please try again later.');
     } finally {
+      console.log('🏁 Programs fetch complete');
       setLoading(false);
     }
   };
 
+  console.log('🎨 Programs component render - loading:', loading, 'programs count:', programs.length);
+  console.log('📋 Section settings:', sectionSettings);
+
   if (loading) {
+    console.log('⏳ Showing loading spinner');
     return (
       <section id="programs" className="py-20 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -84,6 +102,8 @@ export function Programs() {
       </section>
     );
   }
+
+  console.log('🎯 Programs component rendering section');
 
   return (
     <section id="programs" className="py-20 bg-gray-50" ref={ref}>

@@ -2281,4 +2281,302 @@ app.post('/make-server-2a4be611/site-settings/initialize', async (c) => {
   }
 })
 
+// ============= USER MANAGEMENT ROUTES =============
+
+// Get all users
+app.get('/make-server-2a4be611/admin/users', async (c) => {
+  try {
+    const users = await kv.getByPrefix('admin_user:')
+    return c.json({ success: true, users: users || [] })
+  } catch (error) {
+    console.error('Error fetching users:', error)
+    return c.json({ error: 'Failed to fetch users', details: String(error) }, 500)
+  }
+})
+
+// Create new user
+app.post('/make-server-2a4be611/admin/users', async (c) => {
+  try {
+    const body = await c.req.json()
+    const { email, password, name, role, status } = body
+
+    if (!email || !password || !name) {
+      return c.json({ error: 'Email, password, and name are required' }, 400)
+    }
+
+    // Create user in Supabase Auth
+    const { data, error } = await supabase.auth.admin.createUser({
+      email,
+      password,
+      user_metadata: { name, role: role || 'viewer' },
+      email_confirm: true // Auto-confirm email
+    })
+
+    if (error) {
+      console.error('Supabase auth error:', error)
+      return c.json({ error: error.message }, 400)
+    }
+
+    // Store additional user info in KV
+    const userId = `admin_user:${data.user.id}`
+    await kv.set(userId, {
+      id: data.user.id,
+      email,
+      name,
+      role: role || 'viewer',
+      status: status || 'active',
+      createdAt: new Date().toISOString(),
+      lastLogin: null,
+      loginCount: 0
+    })
+
+    // Send welcome email
+    await sendEmail(
+      email,
+      'Welcome to Resti Kiryandongo CBO Admin',
+      `
+        <h2>Welcome ${name}!</h2>
+        <p>Your admin account has been created with the role: <strong>${role || 'viewer'}</strong></p>
+        <p>You can login at: <a href="${Deno.env.get('SUPABASE_URL')}/admin">Admin Dashboard</a></p>
+        <p>Email: ${email}</p>
+        <p>Please keep your password secure.</p>
+      `
+    )
+
+    return c.json({ success: true, user: data.user })
+  } catch (error) {
+    console.error('Error creating user:', error)
+    return c.json({ error: 'Failed to create user', details: String(error) }, 500)
+  }
+})
+
+// Update user
+app.put('/make-server-2a4be611/admin/users/:id', async (c) => {
+  try {
+    const id = c.req.param('id')
+    const body = await c.req.json()
+    const { name, role, status, email } = body
+
+    const userId = `admin_user:${id}`
+    const existingUser = await kv.get(userId)
+
+    if (!existingUser) {
+      return c.json({ error: 'User not found' }, 404)
+    }
+
+    // Update user metadata in Supabase Auth
+    const updateData: any = {
+      user_metadata: {
+        name: name || existingUser.name,
+        role: role || existingUser.role
+      }
+    }
+
+    if (email && email !== existingUser.email) {
+      updateData.email = email
+    }
+
+    const { error } = await supabase.auth.admin.updateUserById(id, updateData)
+
+    if (error) {
+      console.error('Supabase auth update error:', error)
+      return c.json({ error: error.message }, 400)
+    }
+
+    // Update KV store
+    await kv.set(userId, {
+      ...existingUser,
+      name: name || existingUser.name,
+      role: role || existingUser.role,
+      status: status || existingUser.status,
+      email: email || existingUser.email,
+      updatedAt: new Date().toISOString()
+    })
+
+    return c.json({ success: true })
+  } catch (error) {
+    console.error('Error updating user:', error)
+    return c.json({ error: 'Failed to update user', details: String(error) }, 500)
+  }
+})
+
+// Delete user
+app.delete('/make-server-2a4be611/admin/users/:id', async (c) => {
+  try {
+    const id = c.req.param('id')
+
+    // Delete from Supabase Auth
+    const { error } = await supabase.auth.admin.deleteUser(id)
+
+    if (error && !error.message.includes('not found')) {
+      console.error('Supabase auth delete error:', error)
+      return c.json({ error: error.message }, 400)
+    }
+
+    // Delete from KV store
+    await kv.del(`admin_user:${id}`)
+
+    return c.json({ success: true })
+  } catch (error) {
+    console.error('Error deleting user:', error)
+    return c.json({ error: 'Failed to delete user', details: String(error) }, 500)
+  }
+})
+
+// Bulk update user status
+app.post('/make-server-2a4be611/admin/users/bulk-status', async (c) => {
+  try {
+    const body = await c.req.json()
+    const { ids, status } = body
+
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      return c.json({ error: 'Valid ids array is required' }, 400)
+    }
+
+    for (const id of ids) {
+      const userId = `admin_user:${id}`
+      const user = await kv.get(userId)
+      if (user) {
+        await kv.set(userId, {
+          ...user,
+          status,
+          updatedAt: new Date().toISOString()
+        })
+      }
+    }
+
+    return c.json({ success: true })
+  } catch (error) {
+    console.error('Error bulk updating users:', error)
+    return c.json({ error: 'Failed to bulk update users', details: String(error) }, 500)
+  }
+})
+
+// Bulk update user roles
+app.post('/make-server-2a4be611/admin/users/bulk-role', async (c) => {
+  try {
+    const body = await c.req.json()
+    const { ids, role } = body
+
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      return c.json({ error: 'Valid ids array is required' }, 400)
+    }
+
+    for (const id of ids) {
+      const userId = `admin_user:${id}`
+      const user = await kv.get(userId)
+      if (user) {
+        // Update in Auth
+        await supabase.auth.admin.updateUserById(id, {
+          user_metadata: { ...user, role }
+        })
+
+        // Update in KV
+        await kv.set(userId, {
+          ...user,
+          role,
+          updatedAt: new Date().toISOString()
+        })
+      }
+    }
+
+    return c.json({ success: true })
+  } catch (error) {
+    console.error('Error bulk updating user roles:', error)
+    return c.json({ error: 'Failed to bulk update roles', details: String(error) }, 500)
+  }
+})
+
+// Bulk delete users
+app.post('/make-server-2a4be611/admin/users/bulk-delete', async (c) => {
+  try {
+    const body = await c.req.json()
+    const { ids } = body
+
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      return c.json({ error: 'Valid ids array is required' }, 400)
+    }
+
+    for (const id of ids) {
+      // Delete from Auth
+      await supabase.auth.admin.deleteUser(id).catch(err => {
+        console.log(`User ${id} may not exist in auth:`, err.message)
+      })
+
+      // Delete from KV
+      await kv.del(`admin_user:${id}`)
+    }
+
+    return c.json({ success: true })
+  } catch (error) {
+    console.error('Error bulk deleting users:', error)
+    return c.json({ error: 'Failed to bulk delete users', details: String(error) }, 500)
+  }
+})
+
+// Reset user password
+app.post('/make-server-2a4be611/admin/users/:id/reset-password', async (c) => {
+  try {
+    const id = c.req.param('id')
+    const body = await c.req.json()
+    const { password } = body
+
+    if (!password) {
+      return c.json({ error: 'Password is required' }, 400)
+    }
+
+    const { error } = await supabase.auth.admin.updateUserById(id, {
+      password
+    })
+
+    if (error) {
+      console.error('Password reset error:', error)
+      return c.json({ error: error.message }, 400)
+    }
+
+    // Get user info for email
+    const userId = `admin_user:${id}`
+    const user = await kv.get(userId)
+
+    if (user && user.email) {
+      await sendEmail(
+        user.email,
+        'Password Reset - Resti Kiryandongo CBO',
+        `
+          <h2>Password Reset</h2>
+          <p>Your password has been reset by an administrator.</p>
+          <p>You can now login with your new password.</p>
+        `
+      )
+    }
+
+    return c.json({ success: true })
+  } catch (error) {
+    console.error('Error resetting password:', error)
+    return c.json({ error: 'Failed to reset password', details: String(error) }, 500)
+  }
+})
+
+// Track user login
+app.post('/make-server-2a4be611/admin/users/:id/track-login', async (c) => {
+  try {
+    const id = c.req.param('id')
+    const userId = `admin_user:${id}`
+    const user = await kv.get(userId)
+
+    if (user) {
+      await kv.set(userId, {
+        ...user,
+        lastLogin: new Date().toISOString(),
+        loginCount: (user.loginCount || 0) + 1
+      })
+    }
+
+    return c.json({ success: true })
+  } catch (error) {
+    console.error('Error tracking login:', error)
+    return c.json({ error: 'Failed to track login', details: String(error) }, 500)
+  }
+})
+
 Deno.serve(app.fetch)
