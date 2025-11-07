@@ -35,6 +35,7 @@ import { Button } from './ui/button';
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
+import { SiteSettingsTab } from './SiteSettingsTab';
 
 const supabase = createClient(
   `https://${projectId}.supabase.co`,
@@ -76,6 +77,7 @@ export function EnhancedAdminDashboard() {
   const [donations, setDonations] = useState<any[]>([]);
   const [subscribers, setSubscribers] = useState<any[]>([]);
   const [adminUsers, setAdminUsers] = useState<any[]>([]);
+  const [siteSettings, setSiteSettings] = useState<any>(null);
 
   // Selection states for bulk actions
   const [selectedPrograms, setSelectedPrograms] = useState<string[]>([]);
@@ -269,6 +271,13 @@ export function EnhancedAdminDashboard() {
         );
         const data = await response.json();
         setAdminUsers(data.users || []);
+      } else if (activeTab === 'settings') {
+        const response = await fetch(
+          `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/site-settings`,
+          { headers: { Authorization: `Bearer ${publicAnonKey}` } }
+        );
+        const data = await response.json();
+        setSiteSettings(data.settings || null);
       }
     } catch (err) {
       console.error('Error loading data:', err);
@@ -624,6 +633,10 @@ export function EnhancedAdminDashboard() {
                 Users
               </TabsTrigger>
             )}
+            <TabsTrigger value="settings">
+              <Edit size={16} className="mr-2" />
+              Site Settings
+            </TabsTrigger>
           </TabsList>
 
           {/* Analytics Tab */}
@@ -1081,6 +1094,14 @@ export function EnhancedAdminDashboard() {
               {/* User management cards */}
             </TabsContent>
           )}
+
+          {/* Site Settings Tab */}
+          <TabsContent value="settings">
+            <SiteSettingsTab 
+              settings={siteSettings} 
+              onUpdate={() => loadData()} 
+            />
+          </TabsContent>
         </Tabs>
       </div>
 

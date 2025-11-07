@@ -1,9 +1,25 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { Mail, Phone, MapPin, Send, Loader2 } from 'lucide-react';
 import { toast } from 'sonner@2.0.3';
 
+interface ContactSettings {
+  title: string;
+  subtitle: string;
+  address: string;
+  email: string;
+  phone: string;
+  socialLinks: {
+    facebook: string;
+    twitter: string;
+    instagram: string;
+  };
+  supportItems: string[];
+}
+
 export function Contact() {
+  const [settings, setSettings] = useState<ContactSettings | null>(null);
+  const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -11,11 +27,58 @@ export function Contact() {
     message: '',
     type: 'contact', // contact or volunteer
   });
-  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    fetchSettings();
+  }, []);
+
+  const fetchSettings = async () => {
+    try {
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/site-settings`,
+        {
+          headers: {
+            Authorization: `Bearer ${publicAnonKey}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch settings');
+      }
+
+      const data = await response.json();
+      setSettings(data.settings.contact);
+    } catch (error) {
+      console.error('Error fetching contact settings:', error);
+      // Set default settings if fetch fails
+      setSettings({
+        title: 'Get Involved',
+        subtitle: 'Join us in making a difference! Whether you want to volunteer, donate, or simply learn more about our work, we\'d love to hear from you.',
+        address: 'Kiryandongo District, Uganda',
+        email: 'info@restikirya.org',
+        phone: '+256 XXX XXX XXX',
+        socialLinks: {
+          facebook: '#',
+          twitter: '#',
+          instagram: '#'
+        },
+        supportItems: [
+          'Volunteer your time and skills',
+          'Make a donation to support our programs',
+          'Partner with us on community initiatives',
+          'Spread the word about our work'
+        ]
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    setSubmitting(true);
 
     try {
       const endpoint = formData.type === 'volunteer' ? 'volunteer' : 'contact';
@@ -69,9 +132,22 @@ export function Contact() {
       console.error('Error submitting form:', err);
       toast.error(err instanceof Error ? err.message : 'Failed to submit form. Please try again.');
     } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
   };
+
+  if (loading || !settings) {
+    return (
+      <section id="contact" className="py-20 bg-gradient-to-br from-emerald-50 to-teal-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="animate-pulse">
+            <div className="h-12 bg-gray-200 rounded w-1/2 mx-auto mb-8"></div>
+            <div className="h-6 bg-gray-200 rounded w-full mb-4"></div>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section id="contact" className="py-20 bg-gradient-to-br from-emerald-50 to-teal-50">
@@ -79,10 +155,10 @@ export function Contact() {
         {/* Header */}
         <div className="max-w-3xl mx-auto text-center mb-16">
           <h2 className="text-3xl lg:text-5xl text-gray-900 mb-6">
-            Get Involved
+            {settings.title}
           </h2>
           <p className="text-lg text-gray-600">
-            Join us in making a difference! Whether you want to volunteer, donate, or simply learn more about our work, we'd love to hear from you.
+            {settings.subtitle}
           </p>
         </div>
 
@@ -98,7 +174,7 @@ export function Contact() {
                   </div>
                   <div>
                     <div className="text-gray-900">Location</div>
-                    <div className="text-gray-600">Kiryandongo District, Uganda</div>
+                    <div className="text-gray-600">{settings.address}</div>
                   </div>
                 </div>
                 <div className="flex items-start gap-4">
@@ -107,7 +183,7 @@ export function Contact() {
                   </div>
                   <div>
                     <div className="text-gray-900">Email</div>
-                    <div className="text-gray-600">info@restikirya.org</div>
+                    <div className="text-gray-600">{settings.email}</div>
                   </div>
                 </div>
                 <div className="flex items-start gap-4">
@@ -116,7 +192,7 @@ export function Contact() {
                   </div>
                   <div>
                     <div className="text-gray-900">Phone</div>
-                    <div className="text-gray-600">+256 XXX XXX XXX</div>
+                    <div className="text-gray-600">{settings.phone}</div>
                   </div>
                 </div>
               </div>
@@ -125,22 +201,12 @@ export function Contact() {
             <div className="bg-white p-6 rounded-xl">
               <h3 className="text-xl text-gray-900 mb-4">Ways to Support</h3>
               <ul className="space-y-3 text-gray-700">
-                <li className="flex items-start gap-2">
-                  <span className="text-emerald-600 mt-1">✓</span>
-                  <span>Volunteer your time and skills</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-emerald-600 mt-1">✓</span>
-                  <span>Make a donation to support our programs</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-emerald-600 mt-1">✓</span>
-                  <span>Partner with us on community initiatives</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-emerald-600 mt-1">✓</span>
-                  <span>Spread the word about our work</span>
-                </li>
+                {settings.supportItems.map((item, index) => (
+                  <li key={index} className="flex items-start gap-2">
+                    <span className="text-emerald-600 mt-1">✓</span>
+                    <span>{item}</span>
+                  </li>
+                ))}
               </ul>
             </div>
           </div>
@@ -218,7 +284,7 @@ export function Contact() {
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  placeholder="+256 XXX XXX XXX"
+                  placeholder={settings.phone}
                 />
               </div>
 
@@ -243,10 +309,10 @@ export function Contact() {
 
               <button
                 type="submit"
-                disabled={loading}
+                disabled={submitting}
                 className="w-full bg-emerald-600 text-white px-8 py-4 rounded-lg hover:bg-emerald-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {loading ? (
+                {submitting ? (
                   <>
                     <Loader2 className="animate-spin" size={20} />
                     Submitting...

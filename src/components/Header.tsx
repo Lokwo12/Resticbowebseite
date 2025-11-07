@@ -1,9 +1,52 @@
 import { Menu, X } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import logo from 'figma:asset/2b36c5cb8ddf5552ba2d3e612fd68401a7bb193e.png';
+import { projectId, publicAnonKey } from '../utils/supabase/info';
+
+interface GeneralSettings {
+  siteName: string;
+  tagline: string;
+  logoUrl: string;
+}
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [settings, setSettings] = useState<GeneralSettings | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchSettings();
+  }, []);
+
+  const fetchSettings = async () => {
+    try {
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/site-settings`,
+        {
+          headers: {
+            Authorization: `Bearer ${publicAnonKey}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch settings');
+      }
+
+      const data = await response.json();
+      setSettings(data.settings.general);
+    } catch (error) {
+      console.error('Error fetching header settings:', error);
+      // Set default settings if fetch fails
+      setSettings({
+        siteName: 'Resti Kiryandongo',
+        tagline: 'Community Based Organization',
+        logoUrl: logo
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const scrollToSection = (id: string) => {
     const element = document.getElementById(id);
@@ -13,6 +56,21 @@ export function Header() {
     }
   };
 
+  // Determine which logo to use - imported logo or custom URL
+  const getLogoUrl = () => {
+    if (!settings) return logo;
+    // If settings logo is the figma asset path or empty, use imported logo
+    if (!settings.logoUrl || settings.logoUrl.includes('figma:asset')) {
+      return logo;
+    }
+    // Otherwise use the custom logo URL
+    return settings.logoUrl;
+  };
+
+  if (loading || !settings) {
+    return <header className="fixed top-0 left-0 right-0 bg-white shadow-sm z-50 h-16"></header>;
+  }
+
   return (
     <header className="fixed top-0 left-0 right-0 bg-white shadow-sm z-50">
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -20,10 +78,10 @@ export function Header() {
           {/* Logo */}
           <div className="flex items-center">
             <button onClick={() => scrollToSection('home')} className="flex items-center gap-3 hover:opacity-90 transition-opacity">
-              <img src={logo} alt="Resti Kiryandongo CBO Logo" className="h-14 sm:h-16 w-auto" />
+              <img src={getLogoUrl()} alt={`${settings.siteName} Logo`} className="h-14 sm:h-16 w-auto" />
               <div className="hidden sm:block">
-                <h1 className="text-emerald-700 leading-tight">Resti Kiryandongo</h1>
-                <p className="text-xs text-gray-600">Community Based Organization</p>
+                <h1 className="text-emerald-700 leading-tight">{settings.siteName}</h1>
+                <p className="text-xs text-gray-600">{settings.tagline}</p>
               </div>
             </button>
           </div>
