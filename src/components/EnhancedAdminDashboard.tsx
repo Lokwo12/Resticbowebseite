@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { createClient } from '@supabase/supabase-js';
+import type { User as SupabaseUser } from '@supabase/supabase-js';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { toast } from 'sonner';
 import logo from 'figma:asset/2b36c5cb8ddf5552ba2d3e612fd68401a7bb193e.png';
@@ -203,15 +204,44 @@ export function EnhancedAdminDashboard() {
 
   const normalizeUserRole = (raw: unknown): UserRole => {
     if (typeof raw !== 'string') return 'viewer';
-    const cleaned = raw.trim().toLowerCase().replace(/\s+/g, '-');
-    if (cleaned === 'superadmin') return 'super-admin';
-    if (cleaned === 'administrator') return 'admin';
-    if (cleaned === 'admins') return 'admin';
-    if (['super-admin', 'admin', 'editor', 'viewer'].includes(cleaned)) {
-      return cleaned as UserRole;
+
+    const normalized = raw
+      .trim()
+      .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
+      .replace(/[_\s]+/g, '-')
+      .toLowerCase();
+
+    if (['super-admin', 'superadmin', 'super-administrator'].includes(normalized)) {
+      return 'super-admin';
     }
+
+    if (['admin', 'administrator', 'admins'].includes(normalized)) {
+      return 'admin';
+    }
+
+    if (['editor', 'content-editor'].includes(normalized)) {
+      return 'editor';
+    }
+
+    if (['viewer', 'read-only', 'readonly', 'guest'].includes(normalized)) {
+      return 'viewer';
+    }
+
     return 'viewer';
   };
+
+  const deriveUserRole = (user: SupabaseUser | null | undefined): UserRole => {
+    if (!user) return 'viewer';
+
+    const candidate = (user.user_metadata?.role as string | undefined)
+      ?? (user.app_metadata?.role as string | undefined)
+      ?? (Array.isArray(user.app_metadata?.roles) ? user.app_metadata?.roles[0] : undefined);
+
+    return normalizeUserRole(candidate ?? 'viewer');
+  };
+
+  const [userId, setUserId] = useState<string | null>(null);
+  const roleHydrationAttempted = useRef(false);
 
   const canManageUsers = userRole === 'super-admin' || userRole === 'admin';
 
@@ -378,22 +408,26 @@ export function EnhancedAdminDashboard() {
   const checkAuth = async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      
-      if (session?.access_token) {
+
+      if (session?.access_token && session.user) {
         setIsAuthenticated(true);
         setAccessToken(session.access_token);
-        
-        // Get user metadata
-        const { data: { user } } = await supabase.auth.getUser(session.access_token);
-        if (user?.user_metadata) {
-          setUserRole(normalizeUserRole(user.user_metadata.role));
-          setUserName(user.user_metadata.name || '');
-          setUserEmail(user.email || '');
-        } else {
-          setUserRole('viewer');
-          setUserName('');
-          setUserEmail(user?.email || '');
-        }
+
+        const currentUser = session.user;
+        setUserId(currentUser.id ?? null);
+
+        const resolvedRole = deriveUserRole(currentUser);
+        setUserRole(resolvedRole);
+        roleHydrationAttempted.current = resolvedRole !== 'viewer';
+
+        setUserName(currentUser.user_metadata?.name || currentUser.email || '');
+        setUserEmail(currentUser.email || '');
+      } else {
+        setUserId(null);
+        setUserRole('viewer');
+        roleHydrationAttempted.current = false;
+        setUserName('');
+        setUserEmail('');
       }
     } catch (err) {
       console.error('Auth check error:', err);
@@ -419,15 +453,19 @@ export function EnhancedAdminDashboard() {
         setAccessToken(data.session.access_token);
         
         // Get user metadata
-        if (data.user?.user_metadata) {
-          setUserRole(normalizeUserRole(data.user.user_metadata.role));
-          setUserName(data.user.user_metadata.name || '');
-          setUserEmail(data.user.email || '');
+        if (data.user?.id) {
+          setUserId(data.user.id);
         } else {
-          setUserRole('viewer');
-          setUserName('');
-          setUserEmail(data.user?.email || '');
+          setUserId(null);
         }
+
+        setUserId(data.user?.id ?? null);
+
+        const resolvedRole = deriveUserRole(data.user ?? null);
+        setUserRole(resolvedRole);
+        roleHydrationAttempted.current = resolvedRole !== 'viewer';
+        setUserName(data.user?.user_metadata?.name || data.user?.email || '');
+        setUserEmail(data.user?.email || '');
         
         toast.success('Welcome back!');
       }
@@ -480,6 +518,8 @@ export function EnhancedAdminDashboard() {
     setUserRole('viewer');
     setUserName('');
     setUserEmail('');
+    setUserId(null);
+    roleHydrationAttempted.current = false;
     toast.info('Logged out successfully');
   };
 
@@ -540,6 +580,61 @@ export function EnhancedAdminDashboard() {
       }
     };
   };
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    if (userRole !== 'viewer') return;
+    if (roleHydrationAttempted.current) return;
+    if (!userId && !userEmail) return;
+
+    roleHydrationAttempted.current = true;
+
+    const syncRoleFromServer = async () => {
+      try {
+        const response = await fetch(
+          `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/users`,
+          { headers: { Authorization: `Bearer ${publicAnonKey}` } }
+        );
+
+        if (!response.ok) {
+          return;
+        }
+
+        const data = await response.json();
+        const users = normalizeCollection(data.users, 'admin_user');
+        const targetEmail = typeof userEmail === 'string' ? userEmail.toLowerCase() : '';
+
+        const matchedUser = users.find((entry) => {
+          const value = entry?.value || {};
+          const entryId = value?.id || entry?.key;
+          const entryEmail = typeof value?.email === 'string' ? value.email.toLowerCase() : '';
+
+          if (userId && entryId === userId) {
+            return true;
+          }
+
+          if (targetEmail && entryEmail && entryEmail === targetEmail) {
+            return true;
+          }
+
+          return false;
+        });
+
+        if (matchedUser?.value) {
+          const resolvedRole = normalizeUserRole(matchedUser.value.role);
+          setUserRole(resolvedRole);
+          if (!userName && matchedUser.value.name) {
+            setUserName(matchedUser.value.name);
+          }
+        }
+      } catch (err) {
+        console.error('User role sync error:', err);
+        roleHydrationAttempted.current = false;
+      }
+    };
+
+    syncRoleFromServer();
+  }, [isAuthenticated, userRole, userId, userEmail, userName, publicAnonKey]);
 
   const loadData = async () => {
     try {
