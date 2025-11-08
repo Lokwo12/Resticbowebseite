@@ -74,6 +74,14 @@ const supabase = createClient(
   publicAnonKey
 );
 
+const resolveNewsDate = (value: any) => {
+  const raw = value?.timestamp ?? value?.created_at ?? value?.createdAt;
+  if (!raw) return null;
+
+  const parsed = new Date(raw);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+};
+
 // Simple Error Boundary to surface render errors in the admin UI
 class ErrorBoundary extends React.Component<any, { hasError: boolean; error?: Error | null }>{
   constructor(props: any) {
@@ -2193,59 +2201,63 @@ export function EnhancedAdminDashboard() {
                 )}
 
                 <div className="grid gap-4">
-                  {news.map((item) => (
-                    <Card key={item.key} className="p-6 hover:shadow-lg transition">
-                      <div className="flex items-start gap-4">
-                        <input
-                          type="checkbox"
-                          checked={selectedNews.includes(item.key)}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setSelectedNews([...selectedNews, item.key]);
-                            } else {
-                              setSelectedNews(selectedNews.filter(id => id !== item.key));
-                            }
-                          }}
-                          className="mt-1"
-                        />
-                        {item.value.image && (
-                          <img src={item.value.image} alt={item.value.title} className="w-24 h-24 object-cover rounded-lg" />
-                        )}
-                        <div className="flex-1">
-                          <h4 className="text-lg text-gray-900 mb-1">{item.value.title}</h4>
-                          <p className="text-sm text-gray-600 mb-2">{item.value.description}</p>
-                          <div className="flex items-center gap-2">
-                            <Badge>{item.value.category}</Badge>
-                            <span className="text-xs text-gray-400">
-                              {new Date(item.value.created_at).toLocaleDateString()}
-                            </span>
+                  {news.map((item) => {
+                    const publishedAt = resolveNewsDate(item.value);
+
+                    return (
+                      <Card key={item.key} className="p-6 hover:shadow-lg transition">
+                        <div className="flex items-start gap-4">
+                          <input
+                            type="checkbox"
+                            checked={selectedNews.includes(item.key)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedNews([...selectedNews, item.key]);
+                              } else {
+                                setSelectedNews(selectedNews.filter(id => id !== item.key));
+                              }
+                            }}
+                            className="mt-1"
+                          />
+                          {item.value.image && (
+                            <img src={item.value.image} alt={item.value.title} className="w-24 h-24 object-cover rounded-lg" />
+                          )}
+                          <div className="flex-1">
+                            <h4 className="text-lg text-gray-900 mb-1">{item.value.title}</h4>
+                            <p className="text-sm text-gray-600 mb-2">{item.value.description}</p>
+                            <div className="flex items-center gap-2">
+                              <Badge>{item.value.category}</Badge>
+                              <span className="text-xs text-gray-400">
+                                {publishedAt ? publishedAt.toLocaleDateString() : 'Date not set'}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button
+                              onClick={() => {
+                                setEditingItem(item);
+                                setFormData(item.value);
+                                setShowNewsForm(true);
+                              }}
+                              variant="outline"
+                              size="sm"
+                            >
+                              <Edit size={14} className="mr-1" />
+                              Edit
+                            </Button>
+                            <Button
+                              onClick={() => handleDeleteNews(item.key)}
+                              variant="outline"
+                              size="sm"
+                              className="text-red-600 hover:bg-red-50"
+                            >
+                              <Trash2 size={14} />
+                            </Button>
                           </div>
                         </div>
-                        <div className="flex gap-2">
-                          <Button
-                            onClick={() => {
-                              setEditingItem(item);
-                              setFormData(item.value);
-                              setShowNewsForm(true);
-                            }}
-                            variant="outline"
-                            size="sm"
-                          >
-                            <Edit size={14} className="mr-1" />
-                            Edit
-                          </Button>
-                          <Button
-                            onClick={() => handleDeleteNews(item.key)}
-                            variant="outline"
-                            size="sm"
-                            className="text-red-600 hover:bg-red-50"
-                          >
-                            <Trash2 size={14} />
-                          </Button>
-                        </div>
-                      </div>
-                    </Card>
-                  ))}
+                      </Card>
+                    );
+                  })}
                   {news.length === 0 && (
                     <div className="text-center py-12 text-gray-500">
                       <Newspaper size={48} className="mx-auto mb-4 text-gray-300" />
