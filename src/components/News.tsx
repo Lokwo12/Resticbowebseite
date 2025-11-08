@@ -34,6 +34,8 @@ export function News() {
   const [sectionSettings, setSectionSettings] = useState({ title: 'Latest News & Updates', description: 'Stay informed about our recent activities, success stories, and upcoming events.' });
   const [selectedArticle, setSelectedArticle] = useState<NewsArticle | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [showIntroOverlay, setShowIntroOverlay] = useState(true);
+  const [introVisible, setIntroVisible] = useState(true);
   const { ref, isVisible } = useScrollAnimation();
 
   useEffect(() => {
@@ -90,6 +92,20 @@ export function News() {
     }
   };
 
+  useEffect(() => {
+    if (loading || !showIntroOverlay) {
+      return;
+    }
+
+    const fadeTimer = window.setTimeout(() => setIntroVisible(false), 3500);
+    const hideTimer = window.setTimeout(() => setShowIntroOverlay(false), 5000);
+
+    return () => {
+      window.clearTimeout(fadeTimer);
+      window.clearTimeout(hideTimer);
+    };
+  }, [loading, showIntroOverlay]);
+
   const topArticles = useMemo(() => news.slice(0, 4), [news]);
   const featuredArticle = topArticles[0];
   const supportingArticles = topArticles.slice(1);
@@ -106,18 +122,44 @@ export function News() {
 
   if (loading) {
     return (
-      <section id="news" className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-center items-center py-20">
-            <Loader2 className="animate-spin text-emerald-600" size={48} />
+      <>
+        {showIntroOverlay && (
+          <NewsIntroOverlay
+            introVisible={introVisible}
+            sectionSettings={sectionSettings}
+            featuredArticle={featuredArticle}
+            onSkip={() => {
+              setIntroVisible(false);
+              setShowIntroOverlay(false);
+            }}
+            showFallbackSpinner
+          />
+        )}
+        <section id="news" className="py-20 bg-white">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex justify-center items-center py-20">
+              <Loader2 className="animate-spin text-emerald-600" size={48} />
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      </>
     );
   }
 
   return (
-    <section id="news" className="py-20 bg-gradient-to-b from-white via-emerald-50/30 to-white" ref={ref}>
+    <>
+      {showIntroOverlay && (
+        <NewsIntroOverlay
+          introVisible={introVisible}
+          sectionSettings={sectionSettings}
+          featuredArticle={featuredArticle}
+          onSkip={() => {
+            setIntroVisible(false);
+            setShowIntroOverlay(false);
+          }}
+        />
+      )}
+      <section id="news" className="py-20 bg-gradient-to-b from-white via-emerald-50/30 to-white" ref={ref}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className={`max-w-3xl mx-auto text-center mb-16 transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
@@ -280,9 +322,67 @@ export function News() {
           )}
         </DialogContent>
       </Dialog>
-    </section>
+      </section>
+    </>
   );
 }
+
+interface NewsIntroOverlayProps {
+  introVisible: boolean;
+  sectionSettings: { title: string; description: string };
+  featuredArticle?: NewsArticle;
+  onSkip: () => void;
+  showFallbackSpinner?: boolean;
+}
+
+const NewsIntroOverlay = ({ introVisible, sectionSettings, featuredArticle, onSkip, showFallbackSpinner = false }: NewsIntroOverlayProps) => {
+  return (
+    <div
+      className={`fixed inset-0 z-40 flex items-center justify-center bg-white/95 backdrop-blur transition-opacity duration-1000 ease-out ${introVisible ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
+    >
+      <div className="max-w-3xl mx-auto px-6 text-center space-y-6">
+        <div className="inline-flex items-center gap-2 bg-emerald-100 text-emerald-700 px-4 py-2 rounded-full text-sm font-medium">
+          <Sparkles size={16} />
+          Latest Highlights
+        </div>
+        <h2 className="text-3xl md:text-4xl text-gray-900">
+          {sectionSettings.title}
+        </h2>
+        <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+          {sectionSettings.description}
+        </p>
+        {showFallbackSpinner ? (
+          <div className="flex justify-center py-4">
+            <Loader2 className="animate-spin text-emerald-600" size={36} />
+          </div>
+        ) : featuredArticle ? (
+          <div className="space-y-4">
+            <p className="text-gray-700 text-lg leading-relaxed">
+              {featuredArticle.excerpt}
+            </p>
+            <div className="flex items-center justify-center gap-3 text-sm text-gray-500">
+              <Calendar size={16} className="text-emerald-600" />
+              <span>{featuredArticle.formattedDate}</span>
+              <span className="text-gray-300">•</span>
+              <span>{featuredArticle.relativeDate}</span>
+            </div>
+          </div>
+        ) : (
+          <p className="text-gray-500">Stay tuned for our latest updates.</p>
+        )}
+        <div className="flex justify-center">
+          <Button
+            onClick={onSkip}
+            variant="outline"
+            className="mt-4"
+          >
+            Continue to site
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const FALLBACK_IMAGES = [
   'https://images.unsplash.com/photo-1528873981-36c6afde7b85?auto=format&fit=crop&w=1600&q=80',
