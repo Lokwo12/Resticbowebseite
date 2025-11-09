@@ -238,6 +238,8 @@ export function EnhancedAdminDashboard() {
     return 'viewer';
   };
 
+  const getAuthHeader = () => ({ Authorization: `Bearer ${accessToken || publicAnonKey}` });
+
   const deriveUserRole = (user: SupabaseUser | null | undefined): UserRole => {
     if (!user) return 'viewer';
 
@@ -859,7 +861,7 @@ export function EnhancedAdminDashboard() {
   // Helper to perform DELETE requests and surface backend errors clearly
   const safeDelete = async (url: string) => {
     try {
-      const response = await fetch(url, { method: 'DELETE', headers: { Authorization: `Bearer ${publicAnonKey}` } });
+  const response = await fetch(url, { method: 'DELETE', headers: getAuthHeader() });
       let body: any = null;
 
       const contentType = response.headers.get('content-type') || '';
@@ -875,6 +877,33 @@ export function EnhancedAdminDashboard() {
       }
 
       if (!response.ok) {
+        // If 404, try a fallback by decoding common encoded characters (e.g. %3A -> :)
+        if (response.status === 404 && url.includes('%3A')) {
+          const altUrl = url.replace(/%3A/g, ':');
+          console.warn('safeDelete received 404, retrying with alternate URL:', altUrl);
+          try {
+            const altRes = await fetch(altUrl, { method: 'DELETE', headers: getAuthHeader() });
+            let altBody: any = null;
+            const altContentType = altRes.headers.get('content-type') || '';
+            try {
+              altBody = altContentType.includes('application/json') ? await altRes.json() : await altRes.text();
+            } catch { altBody = null; }
+
+            if (altRes.ok) {
+              return altBody;
+            }
+
+            const msg = (altBody && (altBody.error || altBody.message)) || (typeof altBody === 'string' ? altBody : null) || `Request failed: ${altRes.status} ${altRes.statusText}`;
+            const err: any = new Error(`${msg}`);
+            err.details = { attempted: [ { url, status: response.status }, { altUrl, status: altRes.status } ], body: altBody };
+            console.error('safeDelete fallback failed', err.details);
+            throw err;
+          } catch (altErr) {
+            console.error('safeDelete fallback exception for', altUrl, altErr);
+            throw altErr;
+          }
+        }
+
         const msg = (body && (body.error || body.message)) || (typeof body === 'string' ? body : null) || `Request failed: ${response.status} ${response.statusText}`;
         const err: any = new Error(`${msg}`);
         // attach some debug details for easier troubleshooting
@@ -1158,10 +1187,10 @@ export function EnhancedAdminDashboard() {
 
     try {
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/contacts/${id}`,
+        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/contacts/${encodeURIComponent(id)}`,
         {
           method: 'DELETE',
-          headers: { Authorization: `Bearer ${publicAnonKey}` },
+          headers: getAuthHeader(),
         }
       );
 
@@ -1182,10 +1211,10 @@ export function EnhancedAdminDashboard() {
       await Promise.all(
         ids.map(id =>
           fetch(
-            `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/contacts/${id}`,
+            `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/contacts/${encodeURIComponent(id)}`,
             {
               method: 'DELETE',
-              headers: { Authorization: `Bearer ${publicAnonKey}` },
+              headers: getAuthHeader(),
             }
           )
         )
@@ -1230,10 +1259,10 @@ export function EnhancedAdminDashboard() {
 
     try {
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/volunteers/${id}`,
+        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/volunteers/${encodeURIComponent(id)}`,
         {
           method: 'DELETE',
-          headers: { Authorization: `Bearer ${publicAnonKey}` },
+          headers: getAuthHeader(),
         }
       );
 
@@ -1405,10 +1434,10 @@ export function EnhancedAdminDashboard() {
 
     try {
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/users/${id}`,
+        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/users/${encodeURIComponent(id)}`,
         {
           method: 'DELETE',
-          headers: { Authorization: `Bearer ${publicAnonKey}` },
+          headers: getAuthHeader(),
         }
       );
 
