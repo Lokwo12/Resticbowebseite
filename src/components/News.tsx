@@ -80,7 +80,10 @@ export function News() {
 
       const data = await response.json();
       const formattedNews = formatNewsArticles((data.news || []) as RawNewsItem[]);
-      setNews(formattedNews.length > 0 ? formattedNews : getFallbackArticles());
+      const fallbackArticles = getFallbackArticles();
+      const mergedArticles = mergeWithFallbackArticles(formattedNews, fallbackArticles, 4);
+
+      setNews(mergedArticles);
     } catch (err) {
       console.error('Error fetching news:', err);
       setError('Failed to load news from the server. Showing recent highlights instead.');
@@ -318,20 +321,23 @@ const formatNewsArticles = (items: RawNewsItem[]): NewsArticle[] => {
         timestamp = new Date().toISOString(),
       } = item.value || {};
 
+      const normalizedTitle = title?.trim().length ? title.trim() : 'Untitled Update';
+      const normalizedContent = content ?? '';
+      const plainTextContent = asPlainText(normalizedContent);
       const safeImage = image && image.trim().length > 0 ? image : FALLBACK_IMAGES[index % FALLBACK_IMAGES.length];
       const publishedDate = parseDateOrNow(timestamp);
       const normalizedTimestamp = publishedDate.toISOString();
 
       return {
         id: item.key,
-        title,
-        content: asPlainText(content),
-        htmlContent: content,
+        title: normalizedTitle,
+        content: plainTextContent,
+        htmlContent: normalizedContent,
         image: safeImage,
         timestamp: normalizedTimestamp,
         formattedDate: formatDate(publishedDate),
         relativeDate: formatRelativeTime(publishedDate),
-        excerpt: createExcerpt(asPlainText(content)),
+        excerpt: createExcerpt(plainTextContent),
       } satisfies NewsArticle;
     })
     .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
@@ -354,6 +360,34 @@ const getFallbackArticles = (): NewsArticle[] => {
     } satisfies NewsArticle;
   });
 };
+
+    const mergeWithFallbackArticles = (
+      primary: NewsArticle[],
+      fallback: NewsArticle[],
+      minimumCount: number
+    ): NewsArticle[] => {
+      const seen = new Set<string>();
+      const merged: NewsArticle[] = [];
+
+      const addArticle = (article: NewsArticle) => {
+        if (seen.has(article.id)) return;
+        merged.push(article);
+        seen.add(article.id);
+      };
+
+      primary.forEach(addArticle);
+
+      for (const article of fallback) {
+        if (merged.length >= minimumCount) break;
+        addArticle(article);
+      }
+
+      if (merged.length === 0) {
+        fallback.forEach(addArticle);
+      }
+
+      return merged;
+    };
 
 const formatDate = (date: Date) =>
   date.toLocaleDateString('en-US', {
