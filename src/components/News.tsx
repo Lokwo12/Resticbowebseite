@@ -320,6 +320,7 @@ const formatNewsArticles = (items: RawNewsItem[]): NewsArticle[] => {
 
       const safeImage = image && image.trim().length > 0 ? image : FALLBACK_IMAGES[index % FALLBACK_IMAGES.length];
       const publishedDate = parseDateOrNow(timestamp);
+      const normalizedTimestamp = publishedDate.toISOString();
 
       return {
         id: item.key,
@@ -327,7 +328,7 @@ const formatNewsArticles = (items: RawNewsItem[]): NewsArticle[] => {
         content: asPlainText(content),
         htmlContent: content,
         image: safeImage,
-        timestamp,
+        timestamp: normalizedTimestamp,
         formattedDate: formatDate(publishedDate),
         relativeDate: formatRelativeTime(publishedDate),
         excerpt: createExcerpt(asPlainText(content)),
