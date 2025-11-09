@@ -242,7 +242,7 @@ export function EnhancedAdminDashboard() {
 
   const [pendingDelete, setPendingDelete] = useState<null | { message: string; action: () => Promise<void>; confirmLabel?: string }>(null);
 
-  const promptDelete = (message: string, action: () => Promise<void>, confirmLabel = 'Delete') => {
+  const promptDelete = (message: string, action: () => Promise<void>, confirmLabel = 'OK to continue') => {
     setPendingDelete({ message, action, confirmLabel });
   };
 
@@ -1796,7 +1796,7 @@ export function EnhancedAdminDashboard() {
                 } finally {
                   setPendingDelete(null);
                 }
-              }}>{pendingDelete.confirmLabel || 'Confirm'}</Button>
+              }}>{pendingDelete.confirmLabel || 'OK to continue'}</Button>
             </div>
           </DialogContent>
         </Dialog>
