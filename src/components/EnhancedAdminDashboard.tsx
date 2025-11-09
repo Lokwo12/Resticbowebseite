@@ -1678,77 +1678,93 @@ export function EnhancedAdminDashboard() {
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50 flex items-center justify-center p-4">
-        <Card className="w-full max-w-md p-8 shadow-2xl border-0">
-          <div className="text-center mb-8">
-            <div className="flex flex-col items-center mb-6">
-              <div className="bg-white rounded-full p-5 shadow-lg mb-4">
-                <img src={siteLogoUrl} alt={`${siteTitle} Logo`} className="h-24 md:h-28 w-auto object-contain" />
-              </div>
-              <div>
-                <h2 className="text-2xl text-emerald-700">{siteTitle}</h2>
-                <p className="text-sm text-gray-600">{siteTagline}</p>
+        <Card className="w-full max-w-5xl overflow-hidden shadow-2xl border-0">
+          <div className="flex flex-col md:flex-row">
+            <div className="w-full md:w-7/12 p-8 md:p-12">
+              <div className="max-w-md">
+                <div className="mb-8">
+                  <p className="inline-flex items-center gap-2 bg-emerald-100 text-emerald-700 px-4 py-1.5 rounded-full text-sm font-medium">
+                    Secure Admin Access
+                  </p>
+                  <h1 className="text-3xl md:text-4xl text-gray-900 mt-4 mb-3 leading-tight">
+                    {isSignup ? 'Create your admin account' : 'Welcome back, admin'}
+                  </h1>
+                  <p className="text-gray-600">
+                    {isSignup ? 'Set up your credentials to manage programs, stories, volunteers, and more.' : 'Sign in to manage your organization’s content and stay connected with your community.'}
+                  </p>
+                </div>
+
+                <form onSubmit={isSignup ? handleSignup : handleLogin} className="space-y-4">
+                  {isSignup && (
+                    <input
+                      type="text"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      placeholder="Full Name"
+                      required
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition"
+                    />
+                  )}
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Email"
+                    required
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition"
+                  />
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Password"
+                    required
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition"
+                  />
+                  <Button
+                    type="submit"
+                    className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white py-3 rounded-lg transition shadow-lg"
+                    disabled={loading}
+                  >
+                    {loading ? (
+                      <div className="flex items-center justify-center">
+                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                        Please wait...
+                      </div>
+                    ) : (
+                      isSignup ? 'Create Account' : 'Sign In'
+                    )}
+                  </Button>
+                </form>
+
+                <div className="mt-6">
+                  <button
+                    onClick={() => setIsSignup(!isSignup)}
+                    className="text-emerald-600 hover:text-emerald-700 text-sm font-medium transition"
+                  >
+                    {isSignup
+                      ? 'Already have an account? Sign in'
+                      : "Don't have an account? Sign up"}
+                  </button>
+                </div>
               </div>
             </div>
-            <h1 className="text-3xl text-gray-900 mb-2">
-              Admin Dashboard
-            </h1>
-            <p className="text-gray-600">
-              {isSignup ? 'Create your admin account' : 'Sign in to manage your website'}
-            </p>
-          </div>
 
-          <form onSubmit={isSignup ? handleSignup : handleLogin} className="space-y-4">
-            {isSignup && (
-              <input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Full Name"
-                required
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition"
-              />
-            )}
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Email"
-              required
-              className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition"
-            />
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Password"
-              required
-              className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition"
-            />
-            <Button
-              type="submit"
-              className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white py-3 rounded-lg transition shadow-lg"
-              disabled={loading}
-            >
-              {loading ? (
-                <div className="flex items-center justify-center">
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                  Please wait...
+            <div className="w-full md:w-5/12 bg-emerald-600/5 border-l border-emerald-100 flex items-center justify-center p-10">
+              <div className="text-center space-y-6">
+                <div className="bg-white rounded-3xl p-6 shadow-xl mx-auto w-full max-w-xs">
+                  <img
+                    src={siteLogoUrl}
+                    alt={`${siteTitle} Logo`}
+                    className="h-40 md:h-48 lg:h-56 w-auto mx-auto object-contain"
+                  />
                 </div>
-              ) : (
-                isSignup ? 'Create Account' : 'Sign In'
-              )}
-            </Button>
-          </form>
-
-          <div className="mt-6 text-center">
-            <button
-              onClick={() => setIsSignup(!isSignup)}
-              className="text-emerald-600 hover:text-emerald-700 text-sm transition"
-            >
-              {isSignup
-                ? 'Already have an account? Sign in'
-                : "Don't have an account? Sign up"}
-            </button>
+                <div className="space-y-2">
+                  <h2 className="text-2xl text-emerald-700">{siteTitle}</h2>
+                  <p className="text-sm text-gray-600 max-w-sm mx-auto">{siteTagline}</p>
+                </div>
+              </div>
+            </div>
           </div>
         </Card>
       </div>
