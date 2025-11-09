@@ -1788,7 +1788,7 @@ export function EnhancedAdminDashboard() {
             <div className="py-4 text-sm text-gray-700">{pendingDelete.message}</div>
             <div className="flex justify-end gap-2 mt-4">
               <Button variant="ghost" size="sm" onClick={() => setPendingDelete(null)}>Cancel</Button>
-              <Button size="sm" className="bg-red-600 text-white" onClick={async () => {
+              <Button variant="destructive" size="sm" onClick={async () => {
                 try {
                   await pendingDelete.action();
                 } catch (err) {
