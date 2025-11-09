@@ -1,6 +1,6 @@
 import { ArrowRight } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import logo from 'figma:asset/2b36c5cb8ddf5552ba2d3e612fd68401a7bb193e.png';
+import logo from '../assets/logo.png';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 
 interface HeroSettings {
