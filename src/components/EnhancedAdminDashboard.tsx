@@ -240,6 +240,12 @@ export function EnhancedAdminDashboard() {
 
   const getAuthHeader = () => ({ Authorization: `Bearer ${accessToken || publicAnonKey}` });
 
+  const [pendingDelete, setPendingDelete] = useState<null | { message: string; action: () => Promise<void>; confirmLabel?: string }>(null);
+
+  const promptDelete = (message: string, action: () => Promise<void>, confirmLabel = 'Delete') => {
+    setPendingDelete({ message, action, confirmLabel });
+  };
+
   const deriveUserRole = (user: SupabaseUser | null | undefined): UserRole => {
     if (!user) return 'viewer';
 
@@ -981,30 +987,32 @@ export function EnhancedAdminDashboard() {
   };
 
   const handleDeleteProgram = async (id: string) => {
-    if (!confirm('Delete this program?')) return;
-
-    try {
-      await safeDelete(`https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/programs/${encodeURIComponent(id)}`);
-      toast.success('Program deleted');
-      loadData();
-    } catch (err: any) {
-      console.error('Delete error:', err);
-      toast.error(err.message || 'Failed to delete program');
-    }
+    promptDelete('Delete this program?', async () => {
+      try {
+        await safeDelete(`https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/programs/${encodeURIComponent(id)}`);
+        toast.success('Program deleted');
+        loadData();
+      } catch (err: any) {
+        console.error('Delete error:', err);
+        toast.error(err.message || 'Failed to delete program');
+        throw err;
+      }
+    });
   };
 
   const handleBulkDeletePrograms = async (ids: string[]) => {
-    if (!confirm(`Delete ${ids.length} programs?`)) return;
-
-    try {
-      await safeBulkDelete(`https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/programs`, ids);
-      toast.success(`${ids.length} programs deleted`);
-      setSelectedPrograms([]);
-      loadData();
-    } catch (err: any) {
-      console.error('Bulk delete error:', err);
-      toast.error(err.message || 'Failed to delete programs');
-    }
+    promptDelete(`Delete ${ids.length} programs?`, async () => {
+      try {
+        await safeBulkDelete(`https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/programs`, ids);
+        toast.success(`${ids.length} programs deleted`);
+        setSelectedPrograms([]);
+        loadData();
+      } catch (err: any) {
+        console.error('Bulk delete error:', err);
+        toast.error(err.message || 'Failed to delete programs');
+        throw err;
+      }
+    });
   };
 
   // News handlers
@@ -1038,30 +1046,32 @@ export function EnhancedAdminDashboard() {
   };
 
   const handleDeleteNews = async (id: string) => {
-    if (!confirm('Delete this news item?')) return;
-
-    try {
-      await safeDelete(`https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/news/${encodeURIComponent(id)}`);
-      toast.success('News deleted');
-      loadData();
-    } catch (err: any) {
-      console.error('Delete error:', err);
-      toast.error(err.message || 'Failed to delete news');
-    }
+    promptDelete('Delete this news item?', async () => {
+      try {
+        await safeDelete(`https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/news/${encodeURIComponent(id)}`);
+        toast.success('News deleted');
+        loadData();
+      } catch (err: any) {
+        console.error('Delete error:', err);
+        toast.error(err.message || 'Failed to delete news');
+        throw err;
+      }
+    });
   };
 
   const handleBulkDeleteNews = async (ids: string[]) => {
-    if (!confirm(`Delete ${ids.length} news items?`)) return;
-
-    try {
-      await safeBulkDelete(`https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/news`, ids);
-      toast.success(`${ids.length} news items deleted`);
-      setSelectedNews([]);
-      loadData();
-    } catch (err: any) {
-      console.error('Bulk delete error:', err);
-      toast.error(err.message || 'Failed to delete news');
-    }
+    promptDelete(`Delete ${ids.length} news items?`, async () => {
+      try {
+        await safeBulkDelete(`https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/news`, ids);
+        toast.success(`${ids.length} news items deleted`);
+        setSelectedNews([]);
+        loadData();
+      } catch (err: any) {
+        console.error('Bulk delete error:', err);
+        toast.error(err.message || 'Failed to delete news');
+        throw err;
+      }
+    });
   };
 
   // Gallery handlers
@@ -1100,30 +1110,32 @@ export function EnhancedAdminDashboard() {
   };
 
   const handleDeleteGallery = async (id: string) => {
-    if (!confirm('Delete this gallery item?')) return;
-
-    try {
-      await safeDelete(`https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/gallery/${encodeURIComponent(id)}`);
-      toast.success('Gallery item deleted');
-      loadData();
-    } catch (err: any) {
-      console.error('Delete error:', err);
-      toast.error(err.message || 'Failed to delete gallery item');
-    }
+    promptDelete('Delete this gallery item?', async () => {
+      try {
+        await safeDelete(`https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/gallery/${encodeURIComponent(id)}`);
+        toast.success('Gallery item deleted');
+        loadData();
+      } catch (err: any) {
+        console.error('Delete error:', err);
+        toast.error(err.message || 'Failed to delete gallery item');
+        throw err;
+      }
+    });
   };
 
   const handleBulkDeleteGallery = async (ids: string[]) => {
-    if (!confirm(`Delete ${ids.length} gallery items?`)) return;
-
-    try {
-      await safeBulkDelete(`https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/gallery`, ids);
-      toast.success(`${ids.length} gallery items deleted`);
-      setSelectedGallery([]);
-      loadData();
-    } catch (err: any) {
-      console.error('Bulk delete error:', err);
-      toast.error(err.message || 'Failed to delete gallery items');
-    }
+    promptDelete(`Delete ${ids.length} gallery items?`, async () => {
+      try {
+        await safeBulkDelete(`https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/gallery`, ids);
+        toast.success(`${ids.length} gallery items deleted`);
+        setSelectedGallery([]);
+        loadData();
+      } catch (err: any) {
+        console.error('Bulk delete error:', err);
+        toast.error(err.message || 'Failed to delete gallery items');
+        throw err;
+      }
+    });
   };
 
   // Contact handlers
@@ -1183,50 +1195,52 @@ export function EnhancedAdminDashboard() {
   };
 
   const handleDeleteContact = async (id: string) => {
-    if (!confirm('Delete this contact message?')) return;
+    promptDelete('Delete this contact message?', async () => {
+      try {
+        const response = await fetch(
+          `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/contacts/${encodeURIComponent(id)}`,
+          {
+            method: 'DELETE',
+            headers: getAuthHeader(),
+          }
+        );
 
-    try {
-      const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/contacts/${encodeURIComponent(id)}`,
-        {
-          method: 'DELETE',
-          headers: getAuthHeader(),
-        }
-      );
+        if (!response.ok) throw new Error('Failed to delete contact');
 
-      if (!response.ok) throw new Error('Failed to delete contact');
-
-      toast.success('Contact deleted');
-      loadData();
-    } catch (err: any) {
-      console.error('Delete error:', err);
-      toast.error(err.message || 'Failed to delete contact');
-    }
+        toast.success('Contact deleted');
+        loadData();
+      } catch (err: any) {
+        console.error('Delete error:', err);
+        toast.error(err.message || 'Failed to delete contact');
+        throw err;
+      }
+    });
   };
 
   const handleBulkDeleteContacts = async (ids: string[]) => {
-    if (!confirm(`Delete ${ids.length} contact messages?`)) return;
-
-    try {
-      await Promise.all(
-        ids.map(id =>
-          fetch(
-            `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/contacts/${encodeURIComponent(id)}`,
-            {
-              method: 'DELETE',
-              headers: getAuthHeader(),
-            }
+    promptDelete(`Delete ${ids.length} contact messages?`, async () => {
+      try {
+        await Promise.all(
+          ids.map(id =>
+            fetch(
+              `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/contacts/${encodeURIComponent(id)}`,
+              {
+                method: 'DELETE',
+                headers: getAuthHeader(),
+              }
+            )
           )
-        )
-      );
+        );
 
-      toast.success(`${ids.length} contacts deleted`);
-      setSelectedContacts([]);
-      loadData();
-    } catch (err: any) {
-      console.error('Bulk delete error:', err);
-      toast.error(err.message || 'Failed to delete contacts');
-    }
+        toast.success(`${ids.length} contacts deleted`);
+        setSelectedContacts([]);
+        loadData();
+      } catch (err: any) {
+        console.error('Bulk delete error:', err);
+        toast.error(err.message || 'Failed to delete contacts');
+        throw err;
+      }
+    });
   };
 
   // Volunteer handlers
@@ -1255,136 +1269,154 @@ export function EnhancedAdminDashboard() {
   };
 
   const handleDeleteVolunteer = async (id: string) => {
-    if (!confirm('Delete this volunteer application?')) return;
+    promptDelete('Delete this volunteer application?', async () => {
+      try {
+        const response = await fetch(
+          `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/volunteers/${encodeURIComponent(id)}`,
+          {
+            method: 'DELETE',
+            headers: getAuthHeader(),
+          }
+        );
 
-    try {
-      const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/volunteers/${encodeURIComponent(id)}`,
-        {
-          method: 'DELETE',
-          headers: getAuthHeader(),
-        }
-      );
+        if (!response.ok) throw new Error('Failed to delete volunteer');
 
-      if (!response.ok) throw new Error('Failed to delete volunteer');
-
-      toast.success('Volunteer deleted');
-      loadData();
-    } catch (err: any) {
-      console.error('Delete error:', err);
-      toast.error(err.message || 'Failed to delete volunteer');
-    }
+        toast.success('Volunteer deleted');
+        loadData();
+      } catch (err: any) {
+        console.error('Delete error:', err);
+        toast.error(err.message || 'Failed to delete volunteer');
+        throw err;
+      }
+    });
   };
 
   const handleBulkDeleteVolunteers = async (ids: string[]) => {
-    if (!confirm(`Delete ${ids.length} volunteer applications?`)) return;
+    promptDelete(`Delete ${ids.length} volunteer applications?`, async () => {
+      try {
+        await safeBulkDelete(`https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/volunteers`, ids);
 
-    try {
-      await safeBulkDelete(`https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/volunteers`, ids);
-
-      toast.success(`${ids.length} volunteers deleted`);
-      setSelectedVolunteers([]);
-      loadData();
-    } catch (err: any) {
-      console.error('Bulk delete error:', err);
-      toast.error(err.message || 'Failed to delete volunteers');
-    }
+        toast.success(`${ids.length} volunteers deleted`);
+        setSelectedVolunteers([]);
+        loadData();
+      } catch (err: any) {
+        console.error('Bulk delete error:', err);
+        toast.error(err.message || 'Failed to delete volunteers');
+        throw err;
+      }
+    });
   };
 
   const handleDeleteTeam = async (id: string) => {
-    if (!confirm('Delete this team member?')) return;
-    try {
-      await safeDelete(`https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/team/${encodeURIComponent(id)}`);
-      toast.success('Team member deleted');
-      loadData();
-    } catch (err: any) {
-      console.error('Delete error:', err);
-      toast.error(err.message || 'Failed to delete team member');
-    }
+    promptDelete('Delete this team member?', async () => {
+      try {
+        await safeDelete(`https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/team/${encodeURIComponent(id)}`);
+        toast.success('Team member deleted');
+        loadData();
+      } catch (err: any) {
+        console.error('Delete error:', err);
+        toast.error(err.message || 'Failed to delete team member');
+        throw err;
+      }
+    });
   };
 
   const handleDeleteStory = async (id: string) => {
-    if (!confirm('Delete this story?')) return;
-    try {
-      await safeDelete(`https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/stories/${encodeURIComponent(id)}`);
-      toast.success('Story deleted');
-      loadData();
-    } catch (err: any) {
-      console.error('Delete error:', err);
-      toast.error(err.message || 'Failed to delete story');
-    }
+    promptDelete('Delete this story?', async () => {
+      try {
+        await safeDelete(`https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/stories/${encodeURIComponent(id)}`);
+        toast.success('Story deleted');
+        loadData();
+      } catch (err: any) {
+        console.error('Delete error:', err);
+        toast.error(err.message || 'Failed to delete story');
+        throw err;
+      }
+    });
   };
 
   const handleDeleteReport = async (id: string) => {
-    if (!confirm('Delete this report?')) return;
-    try {
-      await safeDelete(`https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/reports/${encodeURIComponent(id)}`);
-      toast.success('Report deleted');
-      loadData();
-    } catch (err: any) {
-      console.error('Delete error:', err);
-      toast.error(err.message || 'Failed to delete report');
-    }
+    promptDelete('Delete this report?', async () => {
+      try {
+        await safeDelete(`https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/reports/${encodeURIComponent(id)}`);
+        toast.success('Report deleted');
+        loadData();
+      } catch (err: any) {
+        console.error('Delete error:', err);
+        toast.error(err.message || 'Failed to delete report');
+        throw err;
+      }
+    });
   };
 
   const handleDeleteEvent = async (id: string) => {
-    if (!confirm('Delete this event?')) return;
-    try {
-      await safeDelete(`https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/events/${encodeURIComponent(id)}`);
-      toast.success('Event deleted');
-      loadData();
-    } catch (err: any) {
-      console.error('Delete error:', err);
-      toast.error(err.message || 'Failed to delete event');
-    }
+    promptDelete('Delete this event?', async () => {
+      try {
+        await safeDelete(`https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/events/${encodeURIComponent(id)}`);
+        toast.success('Event deleted');
+        loadData();
+      } catch (err: any) {
+        console.error('Delete error:', err);
+        toast.error(err.message || 'Failed to delete event');
+        throw err;
+      }
+    });
   };
 
   const handleDeletePartner = async (id: string) => {
-    if (!confirm('Delete this partner?')) return;
-    try {
-      await safeDelete(`https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/partners/${encodeURIComponent(id)}`);
-      toast.success('Partner deleted');
-      loadData();
-    } catch (err: any) {
-      console.error('Delete error:', err);
-      toast.error(err.message || 'Failed to delete partner');
-    }
+    promptDelete('Delete this partner?', async () => {
+      try {
+        await safeDelete(`https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/partners/${encodeURIComponent(id)}`);
+        toast.success('Partner deleted');
+        loadData();
+      } catch (err: any) {
+        console.error('Delete error:', err);
+        toast.error(err.message || 'Failed to delete partner');
+        throw err;
+      }
+    });
   };
 
   const handleDeleteOpportunity = async (id: string) => {
-    if (!confirm('Delete this opportunity?')) return;
-    try {
-      await safeDelete(`https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/opportunities/${encodeURIComponent(id)}`);
-      toast.success('Opportunity deleted');
-      loadData();
-    } catch (err: any) {
-      console.error('Delete error:', err);
-      toast.error(err.message || 'Failed to delete opportunity');
-    }
+    promptDelete('Delete this opportunity?', async () => {
+      try {
+        await safeDelete(`https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/opportunities/${encodeURIComponent(id)}`);
+        toast.success('Opportunity deleted');
+        loadData();
+      } catch (err: any) {
+        console.error('Delete error:', err);
+        toast.error(err.message || 'Failed to delete opportunity');
+        throw err;
+      }
+    });
   };
 
   const handleDeleteFAQ = async (id: string) => {
-    if (!confirm('Delete this FAQ?')) return;
-    try {
-      await safeDelete(`https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/faqs/${encodeURIComponent(id)}`);
-      toast.success('FAQ deleted');
-      loadData();
-    } catch (err: any) {
-      console.error('Delete error:', err);
-      toast.error(err.message || 'Failed to delete FAQ');
-    }
+    promptDelete('Delete this FAQ?', async () => {
+      try {
+        await safeDelete(`https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/faqs/${encodeURIComponent(id)}`);
+        toast.success('FAQ deleted');
+        loadData();
+      } catch (err: any) {
+        console.error('Delete error:', err);
+        toast.error(err.message || 'Failed to delete FAQ');
+        throw err;
+      }
+    });
   };
 
   const handleDeleteResource = async (id: string) => {
-    if (!confirm('Delete this resource?')) return;
-    try {
-      await safeDelete(`https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/resources/${encodeURIComponent(id)}`);
-      toast.success('Resource deleted');
-      loadData();
-    } catch (err: any) {
-      console.error('Delete error:', err);
-      toast.error(err.message || 'Failed to delete resource');
-    }
+    promptDelete('Delete this resource?', async () => {
+      try {
+        await safeDelete(`https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/resources/${encodeURIComponent(id)}`);
+        toast.success('Resource deleted');
+        loadData();
+      } catch (err: any) {
+        console.error('Delete error:', err);
+        toast.error(err.message || 'Failed to delete resource');
+        throw err;
+      }
+    });
   };
 
   // User Management Handlers
@@ -1430,25 +1462,27 @@ export function EnhancedAdminDashboard() {
       toast.error('You do not have permission to manage users');
       return;
     }
-    if (!confirm('Delete this user? This action cannot be undone.')) return;
 
-    try {
-      const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/users/${encodeURIComponent(id)}`,
-        {
-          method: 'DELETE',
-          headers: getAuthHeader(),
-        }
-      );
+    promptDelete('Delete this user? This action cannot be undone.', async () => {
+      try {
+        const response = await fetch(
+          `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/users/${encodeURIComponent(id)}`,
+          {
+            method: 'DELETE',
+            headers: getAuthHeader(),
+          }
+        );
 
-      if (!response.ok) throw new Error('Failed to delete user');
+        if (!response.ok) throw new Error('Failed to delete user');
 
-      toast.success('User deleted successfully');
-      loadData();
-    } catch (err: any) {
-      console.error('Delete user error:', err);
-      toast.error(err.message || 'Failed to delete user');
-    }
+        toast.success('User deleted successfully');
+        loadData();
+      } catch (err: any) {
+        console.error('Delete user error:', err);
+        toast.error(err.message || 'Failed to delete user');
+        throw err;
+      }
+    });
   };
 
   const handleBulkDeleteUsers = async (ids: string[]) => {
@@ -1456,30 +1490,32 @@ export function EnhancedAdminDashboard() {
       toast.error('You do not have permission to manage users');
       return;
     }
-    if (!confirm(`Delete ${ids.length} users? This action cannot be undone.`)) return;
 
-    try {
-      const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/users/bulk-delete`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${publicAnonKey}`,
-          },
-          body: JSON.stringify({ ids }),
-        }
-      );
+    promptDelete(`Delete ${ids.length} users? This action cannot be undone.`, async () => {
+      try {
+        const response = await fetch(
+          `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/users/bulk-delete`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${publicAnonKey}`,
+            },
+            body: JSON.stringify({ ids }),
+          }
+        );
 
-      if (!response.ok) throw new Error('Failed to delete users');
+        if (!response.ok) throw new Error('Failed to delete users');
 
-      toast.success(`${ids.length} users deleted`);
-      setSelectedUsers([]);
-      loadData();
-    } catch (err: any) {
-      console.error('Bulk delete error:', err);
-      toast.error(err.message || 'Failed to delete users');
-    }
+        toast.success(`${ids.length} users deleted`);
+        setSelectedUsers([]);
+        loadData();
+      } catch (err: any) {
+        console.error('Bulk delete error:', err);
+        toast.error(err.message || 'Failed to delete users');
+        throw err;
+      }
+    });
   };
 
   const handleBulkUpdateUserRole = async (ids: string[], role: string) => {
@@ -1742,6 +1778,29 @@ export function EnhancedAdminDashboard() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100">
+      {/* Confirmation dialog for deletes */}
+      {pendingDelete && (
+        <Dialog open={true} onOpenChange={(open) => { if (!open) setPendingDelete(null); }}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Confirm action</DialogTitle>
+            </DialogHeader>
+            <div className="py-4 text-sm text-gray-700">{pendingDelete.message}</div>
+            <div className="flex justify-end gap-2 mt-4">
+              <Button variant="ghost" size="sm" onClick={() => setPendingDelete(null)}>Cancel</Button>
+              <Button size="sm" className="bg-red-600 text-white" onClick={async () => {
+                try {
+                  await pendingDelete.action();
+                } catch (err) {
+                  // action already logs and toasts; swallow here
+                } finally {
+                  setPendingDelete(null);
+                }
+              }}>{pendingDelete.confirmLabel || 'Confirm'}</Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
       {/* Top Navigation Bar */}
       <div className="bg-white border-b border-gray-200 shadow-sm fixed top-0 left-0 right-0 z-50">
         <div className="flex items-center justify-between px-4 py-3">
