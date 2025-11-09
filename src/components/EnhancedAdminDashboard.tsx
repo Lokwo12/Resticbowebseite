@@ -867,7 +867,8 @@ export function EnhancedAdminDashboard() {
   // Helper to perform DELETE requests and surface backend errors clearly
   const safeDelete = async (url: string) => {
     try {
-  const response = await fetch(url, { method: 'DELETE', headers: getAuthHeader() });
+      console.debug('safeDelete request', { url, usingAccessToken: !!accessToken });
+      const response = await fetch(url, { method: 'DELETE', headers: getAuthHeader() });
       let body: any = null;
 
       const contentType = response.headers.get('content-type') || '';
@@ -903,6 +904,8 @@ export function EnhancedAdminDashboard() {
             const err: any = new Error(`${msg}`);
             err.details = { attempted: [ { url, status: response.status }, { altUrl, status: altRes.status } ], body: altBody };
             console.error('safeDelete fallback failed', err.details);
+            // show user-facing message
+            try { toast.error(msg); } catch {}
             throw err;
           } catch (altErr) {
             console.error('safeDelete fallback exception for', altUrl, altErr);
@@ -915,6 +918,7 @@ export function EnhancedAdminDashboard() {
         // attach some debug details for easier troubleshooting
         err.details = { url, status: response.status, statusText: response.statusText, body };
         console.error('safeDelete failed', err.details);
+        try { toast.error(msg); } catch {}
         throw err;
       }
 
