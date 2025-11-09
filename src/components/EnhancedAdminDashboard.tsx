@@ -858,20 +858,36 @@ export function EnhancedAdminDashboard() {
 
   // Helper to perform DELETE requests and surface backend errors clearly
   const safeDelete = async (url: string) => {
-    const response = await fetch(url, { method: 'DELETE', headers: { Authorization: `Bearer ${publicAnonKey}` } });
-    let body: any = null;
     try {
-      body = await response.json();
-    } catch (e) {
-      try { body = await response.text(); } catch { body = null; }
-    }
+      const response = await fetch(url, { method: 'DELETE', headers: { Authorization: `Bearer ${publicAnonKey}` } });
+      let body: any = null;
 
-    if (!response.ok) {
-      const msg = (body && (body.error || body.message)) || body || `Request failed: ${response.status}`;
-      throw new Error(msg);
-    }
+      const contentType = response.headers.get('content-type') || '';
+      try {
+        if (contentType.includes('application/json')) {
+          body = await response.json();
+        } else {
+          body = await response.text();
+        }
+      } catch (e) {
+        // best-effort parsing
+        body = null;
+      }
 
-    return body;
+      if (!response.ok) {
+        const msg = (body && (body.error || body.message)) || (typeof body === 'string' ? body : null) || `Request failed: ${response.status} ${response.statusText}`;
+        const err: any = new Error(`${msg}`);
+        // attach some debug details for easier troubleshooting
+        err.details = { url, status: response.status, statusText: response.statusText, body };
+        console.error('safeDelete failed', err.details);
+        throw err;
+      }
+
+      return body;
+    } catch (err: any) {
+      console.error('safeDelete error for', url, err);
+      throw err;
+    }
   };
 
   const safeBulkDelete = async (baseUrl: string, ids: string[]) => {
