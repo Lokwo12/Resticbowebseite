@@ -319,6 +319,13 @@ export function EnhancedAdminDashboard() {
       );
 
       if (!response.ok) {
+        // If unauthorized, show a helpful message; otherwise surface a generic failure
+        if (response.status === 401) {
+          const msg = 'Unauthorized — please sign in as an admin to perform this action.';
+          try { toast.error(msg); } catch {}
+          console.error('Site settings load unauthorized', { status: response.status, statusText: response.statusText });
+          throw new Error(msg);
+        }
         throw new Error('Failed to load site settings');
       }
 
@@ -1873,6 +1880,24 @@ export function EnhancedAdminDashboard() {
               <LogOut size={20} />
             </button>
           </div>
+        </div>
+      </div>
+      
+      {/* Quick debug banner to show auth state for troubleshooting delete 401/404 issues */}
+      <div className="w-full bg-yellow-50 border-b border-yellow-200 text-yellow-800 p-2 text-sm flex items-center justify-between px-4" title="Shows whether an access token is present (masked)">
+        <div>
+          <strong className="mr-2">Admin auth:</strong>
+          {isAuthenticated ? (
+            <span className="text-yellow-900">Signed in as <span className="font-medium">{userEmail || userName || 'admin'}</span></span>
+          ) : (
+            <span className="text-yellow-900">Not signed in — please sign in to perform mutating actions</span>
+          )}
+        </div>
+        <div className="opacity-80">
+          <span className="mr-2 text-xs">Token:</span>
+          <span className="font-mono text-xs">
+            {accessToken ? `${accessToken.slice(0,6)}...${accessToken.slice(-4)}` : '—'}
+          </span>
         </div>
       </div>
 
