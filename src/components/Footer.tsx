@@ -1,5 +1,5 @@
 import { Heart, Facebook, Twitter, Instagram, Mail } from 'lucide-react';
-import logo from '../assets/logo.png';
+import logo from 'figma:asset/2b36c5cb8ddf5552ba2d3e612fd68401a7bb193e.png';
 import { useState, useEffect } from 'react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 
@@ -112,7 +112,7 @@ export function Footer() {
           {/* About */}
           <div>
             <div className="mb-4">
-              <img src={getLogoUrl()} alt={`${generalSettings.siteName} Logo`} className="h-24 w-auto mb-3 drop-shadow-md" />
+              <img src={getLogoUrl()} alt={`${generalSettings.siteName} Logo`} className="h-20 w-auto mb-2" />
               <h3 className="text-white mb-1">{generalSettings.siteName}</h3>
               <p className="text-sm text-gray-400 mb-3">{generalSettings.tagline}</p>
             </div>

@@ -1,9 +1,8 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { createClient } from '@supabase/supabase-js';
-import type { User as SupabaseUser } from '@supabase/supabase-js';
+import { useState, useEffect } from 'react';
+import { createClient } from '@supabase/supabase-js@2';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
-import { toast } from 'sonner';
-import logo from '../assets/logo.png';
+import { toast } from 'sonner@2.0.3';
+import logo from 'figma:asset/2b36c5cb8ddf5552ba2d3e612fd68401a7bb193e.png';
 import {
   LayoutDashboard,
   FileText,
@@ -74,48 +73,7 @@ const supabase = createClient(
   publicAnonKey
 );
 
-const resolveNewsDate = (value: any) => {
-  const raw = value?.timestamp ?? value?.created_at ?? value?.createdAt;
-  if (!raw) return null;
-
-  const parsed = new Date(raw);
-  return Number.isNaN(parsed.getTime()) ? null : parsed;
-};
-
-// Simple Error Boundary to surface render errors in the admin UI
-class ErrorBoundary extends React.Component<any, { hasError: boolean; error?: Error | null }>{
-  constructor(props: any) {
-    super(props);
-    this.state = { hasError: false, error: null };
-  }
-
-  static getDerivedStateFromError(error: Error) {
-    return { hasError: true, error };
-  }
-
-  componentDidCatch(error: Error, info: any) {
-    // Log to console for now
-    console.error('ErrorBoundary caught:', error, info);
-  }
-
-  render() {
-    if (this.state.hasError) {
-      return (
-        <div className="p-6 bg-white rounded shadow max-w-4xl mx-auto mt-8">
-          <h2 className="text-lg font-semibold text-red-600 mb-2">An error occurred while rendering the admin UI</h2>
-          <pre className="whitespace-pre-wrap text-sm text-gray-700">{this.state.error?.message}</pre>
-          <button className="mt-4 px-3 py-2 bg-emerald-600 text-white rounded" onClick={() => window.location.reload()}>Reload</button>
-        </div>
-      );
-    }
-
-    return this.props.children;
-  }
-}
-
 const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
-
-type UserRole = 'super-admin' | 'admin' | 'editor' | 'viewer';
 
 const USER_ROLES = [
   { value: 'super-admin', label: 'Super Admin', description: 'Full access to everything' },
@@ -152,14 +110,13 @@ const NAVIGATION_ITEMS = [
   { id: 'donations', label: 'Donations', icon: Heart, color: 'text-emerald-600' },
   { id: 'subscribers', label: 'Subscribers', icon: Send, color: 'text-blue-600' },
   { id: 'settings', label: 'Settings', icon: Settings, color: 'text-gray-600' },
-  { id: 'users', label: 'Users', icon: Shield, color: 'text-red-600', requiresUserManagement: true },
 ];
 
 export function EnhancedAdminDashboard() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
   const [accessToken, setAccessToken] = useState('');
-  const [userRole, setUserRole] = useState<UserRole>('viewer');
+  const [userRole, setUserRole] = useState('');
   const [userName, setUserName] = useState('');
   const [userEmail, setUserEmail] = useState('');
   const [stats, setStats] = useState<any>(null);
@@ -177,13 +134,6 @@ export function EnhancedAdminDashboard() {
   const [subscribers, setSubscribers] = useState<any[]>([]);
   const [adminUsers, setAdminUsers] = useState<any[]>([]);
   const [siteSettings, setSiteSettings] = useState<any>(null);
-  const dashboardStats = useMemo(() => ({
-    totalPrograms: stats?.totalPrograms ?? 0,
-    totalNews: stats?.totalNews ?? 0,
-    totalVolunteers: stats?.totalVolunteers ?? 0,
-    totalDonationAmount: stats?.totalDonationAmount ?? 0,
-    totalDonationsCount: stats?.totalDonations ?? 0,
-  }), [stats]);
   
   // New data states for additional sections
   const [team, setTeam] = useState<any[]>([]);
@@ -209,57 +159,6 @@ export function EnhancedAdminDashboard() {
   const [selectedFAQs, setSelectedFAQs] = useState<string[]>([]);
   const [selectedResources, setSelectedResources] = useState<string[]>([]);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
-
-  const normalizeUserRole = (raw: unknown): UserRole => {
-    if (typeof raw !== 'string') return 'viewer';
-
-    const normalized = raw
-      .trim()
-      .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
-      .replace(/[_\s]+/g, '-')
-      .toLowerCase();
-
-    if (['super-admin', 'superadmin', 'super-administrator'].includes(normalized)) {
-      return 'super-admin';
-    }
-
-    if (['admin', 'administrator', 'admins'].includes(normalized)) {
-      return 'admin';
-    }
-
-    if (['editor', 'content-editor'].includes(normalized)) {
-      return 'editor';
-    }
-
-    if (['viewer', 'read-only', 'readonly', 'guest'].includes(normalized)) {
-      return 'viewer';
-    }
-
-    return 'viewer';
-  };
-
-  const getAuthHeader = () => ({ Authorization: `Bearer ${accessToken || publicAnonKey}` });
-
-  const [pendingDelete, setPendingDelete] = useState<null | { message: string; action: () => Promise<void>; confirmLabel?: string }>(null);
-
-  const promptDelete = (message: string, action: () => Promise<void>, confirmLabel = 'OK to continue') => {
-    setPendingDelete({ message, action, confirmLabel });
-  };
-
-  const deriveUserRole = (user: SupabaseUser | null | undefined): UserRole => {
-    if (!user) return 'viewer';
-
-    const candidate = (user.user_metadata?.role as string | undefined)
-      ?? (user.app_metadata?.role as string | undefined)
-      ?? (Array.isArray(user.app_metadata?.roles) ? user.app_metadata?.roles[0] : undefined);
-
-    return normalizeUserRole(candidate ?? 'viewer');
-  };
-
-  const [userId, setUserId] = useState<string | null>(null);
-  const roleHydrationAttempted = useRef(false);
-
-  const canManageUsers = userRole === 'super-admin' || userRole === 'admin';
 
   // Filter states
   const [contactFilter, setContactFilter] = useState('all');
@@ -311,31 +210,6 @@ export function EnhancedAdminDashboard() {
 
   const [uploadingImage, setUploadingImage] = useState(false);
 
-  const fetchSiteSettings = async () => {
-    try {
-      const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/site-settings`,
-        { headers: { Authorization: `Bearer ${publicAnonKey}` } }
-      );
-
-      if (!response.ok) {
-        // If unauthorized, show a helpful message; otherwise surface a generic failure
-        if (response.status === 401) {
-          const msg = 'Unauthorized — please sign in as an admin to perform this action.';
-          try { toast.error(msg); } catch {}
-          console.error('Site settings load unauthorized', { status: response.status, statusText: response.statusText });
-          throw new Error(msg);
-        }
-        throw new Error('Failed to load site settings');
-      }
-
-      const data = await response.json();
-      setSiteSettings(data.settings || null);
-    } catch (err) {
-      console.error('Site settings load error:', err);
-    }
-  };
-
   useEffect(() => {
     checkAuth();
   }, []);
@@ -346,42 +220,6 @@ export function EnhancedAdminDashboard() {
       initializeDefaults(); // Initialize default data if needed
     }
   }, [activeTab, isAuthenticated]);
-
-  useEffect(() => {
-    if (isAuthenticated) {
-      fetchSiteSettings();
-    }
-  }, [isAuthenticated]);
-
-  useEffect(() => {
-    if (!canManageUsers && activeTab === 'users') {
-      setActiveTab('overview');
-    }
-  }, [canManageUsers, activeTab]);
-
-  const siteTitle = useMemo(() => {
-    const name = siteSettings?.general?.siteName;
-    return typeof name === 'string' && name.trim().length > 0 ? name.trim() : 'Resti Kiryandongo CBO';
-  }, [siteSettings]);
-
-  const siteLogoUrl = useMemo(() => {
-    const customLogo = siteSettings?.general?.logoUrl;
-    if (typeof customLogo !== 'string') {
-      return logo;
-    }
-
-    const trimmed = customLogo.trim();
-    if (!trimmed || trimmed.includes('figma:asset')) {
-      return logo;
-    }
-
-    return trimmed;
-  }, [siteSettings]);
-
-  const siteTagline = useMemo(() => {
-    const tagline = siteSettings?.general?.tagline;
-    return typeof tagline === 'string' && tagline.trim().length > 0 ? tagline.trim() : 'Admin Dashboard';
-  }, [siteSettings]);
 
   const initializeDefaults = async () => {
     try {
@@ -421,8 +259,6 @@ export function EnhancedAdminDashboard() {
         );
         console.log('Default site settings initialized');
       }
-
-      setSiteSettings(settingsData.settings || null);
     } catch (err) {
       console.error('Initialization error:', err);
     }
@@ -431,26 +267,18 @@ export function EnhancedAdminDashboard() {
   const checkAuth = async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
-
-      if (session?.access_token && session.user) {
+      
+      if (session?.access_token) {
         setIsAuthenticated(true);
         setAccessToken(session.access_token);
-
-        const currentUser = session.user;
-        setUserId(currentUser.id ?? null);
-
-        const resolvedRole = deriveUserRole(currentUser);
-        setUserRole(resolvedRole);
-        roleHydrationAttempted.current = resolvedRole !== 'viewer';
-
-        setUserName(currentUser.user_metadata?.name || currentUser.email || '');
-        setUserEmail(currentUser.email || '');
-      } else {
-        setUserId(null);
-        setUserRole('viewer');
-        roleHydrationAttempted.current = false;
-        setUserName('');
-        setUserEmail('');
+        
+        // Get user metadata
+        const { data: { user } } = await supabase.auth.getUser(session.access_token);
+        if (user?.user_metadata) {
+          setUserRole(user.user_metadata.role || 'viewer');
+          setUserName(user.user_metadata.name || '');
+          setUserEmail(user.email || '');
+        }
       }
     } catch (err) {
       console.error('Auth check error:', err);
@@ -476,19 +304,11 @@ export function EnhancedAdminDashboard() {
         setAccessToken(data.session.access_token);
         
         // Get user metadata
-        if (data.user?.id) {
-          setUserId(data.user.id);
-        } else {
-          setUserId(null);
+        if (data.user?.user_metadata) {
+          setUserRole(data.user.user_metadata.role || 'viewer');
+          setUserName(data.user.user_metadata.name || '');
+          setUserEmail(data.user.email || '');
         }
-
-        setUserId(data.user?.id ?? null);
-
-        const resolvedRole = deriveUserRole(data.user ?? null);
-        setUserRole(resolvedRole);
-        roleHydrationAttempted.current = resolvedRole !== 'viewer';
-        setUserName(data.user?.user_metadata?.name || data.user?.email || '');
-        setUserEmail(data.user?.email || '');
         
         toast.success('Welcome back!');
       }
@@ -538,186 +358,8 @@ export function EnhancedAdminDashboard() {
     await supabase.auth.signOut();
     setIsAuthenticated(false);
     setAccessToken('');
-    setUserRole('viewer');
-    setUserName('');
-    setUserEmail('');
-    setUserId(null);
-    roleHydrationAttempted.current = false;
     toast.info('Logged out successfully');
   };
-
-  const normalizeCollection = (items: any, prefix: string) => {
-    if (!Array.isArray(items)) {
-      return [];
-    }
-
-    return items.map((item, index) => {
-      const fallbackKey = `${prefix}-${index}`;
-
-      if (!item || typeof item !== 'object') {
-        return { key: fallbackKey, value: item };
-      }
-
-      if ('key' in item && 'value' in item) {
-        const key = (item as any).key ?? fallbackKey;
-        const rawValue = (item as any).value;
-        const value =
-          rawValue && typeof rawValue === 'object' && !Array.isArray(rawValue)
-            ? { ...rawValue, id: rawValue.id ?? key }
-            : rawValue;
-
-        return { key, value };
-      }
-
-      const { id, key: embeddedKey, value: embeddedValue, ...rest } = item as any;
-      const key = (typeof id === 'string' && id) || (typeof embeddedKey === 'string' && embeddedKey) || fallbackKey;
-
-      if (embeddedValue !== undefined) {
-        const value =
-          embeddedValue && typeof embeddedValue === 'object' && !Array.isArray(embeddedValue)
-            ? { ...embeddedValue, id: embeddedValue.id ?? key }
-            : embeddedValue;
-
-        return { key, value };
-      }
-
-      const value =
-        rest && typeof rest === 'object' && !Array.isArray(rest)
-          ? { ...rest, id: rest.id ?? key }
-          : rest;
-
-      return { key, value };
-    });
-  };
-
-  const normalizeSingle = (payload: any, key: string) => {
-    if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
-      return payload;
-    }
-
-    return {
-      key,
-      value: {
-        ...payload,
-        id: payload.id ?? key
-      }
-    };
-  };
-
-  useEffect(() => {
-    if (!isAuthenticated) return;
-    if (userRole !== 'viewer') return;
-    if (roleHydrationAttempted.current) return;
-    if (!userId && !userEmail) return;
-
-    roleHydrationAttempted.current = true;
-
-    const syncRoleFromServer = async () => {
-      try {
-        const response = await fetch(
-          `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/users`,
-          { headers: { Authorization: `Bearer ${publicAnonKey}` } }
-        );
-
-        if (!response.ok) {
-          return;
-        }
-
-        const data = await response.json();
-        const users = normalizeCollection(data.users, 'admin_user');
-
-        if ((users?.length ?? 0) === 0 && userId && userEmail) {
-          try {
-            const bootstrapResponse = await fetch(
-              `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/users/bootstrap`,
-              {
-                method: 'POST',
-                headers: {
-                  Authorization: `Bearer ${publicAnonKey}`,
-                  'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                  userId,
-                  email: userEmail,
-                  name: userName || userEmail.split('@')[0] || 'Super Admin'
-                })
-              }
-            );
-
-            if (bootstrapResponse.ok) {
-              setUserRole('super-admin');
-              toast.success('User management unlocked for this account.');
-              if (!userName) {
-                setUserName(userEmail.split('@')[0] || 'Super Admin');
-              }
-              return;
-            }
-
-            if (bootstrapResponse.status >= 500) {
-              roleHydrationAttempted.current = false;
-            }
-          } catch (bootstrapError) {
-            console.error('Admin bootstrap error:', bootstrapError);
-            roleHydrationAttempted.current = false;
-          }
-        }
-
-        const targetEmail = typeof userEmail === 'string' ? userEmail.toLowerCase() : '';
-
-        const matchedUser = users.find((entry) => {
-          const value = entry?.value || {};
-          const entryId = value?.id || entry?.key;
-          const entryEmail = typeof value?.email === 'string' ? value.email.toLowerCase() : '';
-
-          if (userId && entryId === userId) {
-            return true;
-          }
-
-          if (targetEmail && entryEmail && entryEmail === targetEmail) {
-            return true;
-          }
-
-          return false;
-        });
-
-        if (matchedUser?.value) {
-          const matchedUserData = matchedUser.value as any;
-          const roleSource =
-            matchedUserData?.user_metadata?.role ??
-            matchedUserData?.app_metadata?.role ??
-            (Array.isArray(matchedUserData?.app_metadata?.roles)
-              ? matchedUserData.app_metadata.roles[0]
-              : undefined) ??
-            matchedUserData?.role;
-
-          const resolvedRole = normalizeUserRole(roleSource ?? 'viewer');
-          setUserRole(resolvedRole);
-
-          if (!userName) {
-            const derivedName =
-              matchedUserData?.user_metadata?.name ??
-              matchedUserData?.name ??
-              matchedUserData?.email ??
-              (typeof userEmail === 'string' ? userEmail : '');
-
-            if (derivedName) {
-              setUserName(derivedName);
-            }
-          }
-          return;
-        }
-
-        if (users.length > 0) {
-          roleHydrationAttempted.current = false;
-        }
-      } catch (err) {
-        console.error('User role sync error:', err);
-        roleHydrationAttempted.current = false;
-      }
-    };
-
-    syncRoleFromServer();
-  }, [isAuthenticated, userRole, userId, userEmail, userName, publicAnonKey]);
 
   const loadData = async () => {
     try {
@@ -744,56 +386,56 @@ export function EnhancedAdminDashboard() {
           { headers: { Authorization: `Bearer ${publicAnonKey}` } }
         );
         const data = await response.json();
-        setPrograms(normalizeCollection(data.programs, 'program'));
+        setPrograms(data.programs || []);
       } else if (activeTab === 'news') {
         const response = await fetch(
           `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/news`,
           { headers: { Authorization: `Bearer ${publicAnonKey}` } }
         );
         const data = await response.json();
-        setNews(normalizeCollection(data.news, 'news'));
+        setNews(data.news || []);
       } else if (activeTab === 'gallery') {
         const response = await fetch(
           `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/gallery`,
           { headers: { Authorization: `Bearer ${publicAnonKey}` } }
         );
         const data = await response.json();
-        setGallery(normalizeCollection(data.images, 'gallery'));
+        setGallery(data.images || []);
       } else if (activeTab === 'contacts') {
         const response = await fetch(
           `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/contacts`,
           { headers: { Authorization: `Bearer ${publicAnonKey}` } }
         );
         const data = await response.json();
-        setContacts(normalizeCollection(data.contacts, 'contact'));
+        setContacts(data.contacts || []);
       } else if (activeTab === 'volunteers') {
         const response = await fetch(
           `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/volunteers`,
           { headers: { Authorization: `Bearer ${publicAnonKey}` } }
         );
         const data = await response.json();
-        setVolunteers(normalizeCollection(data.volunteers, 'volunteer'));
+        setVolunteers(data.volunteers || []);
       } else if (activeTab === 'donations') {
         const response = await fetch(
           `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/donations`,
           { headers: { Authorization: `Bearer ${publicAnonKey}` } }
         );
         const data = await response.json();
-        setDonations(normalizeCollection(data.donations, 'donation'));
+        setDonations(data.donations || []);
       } else if (activeTab === 'subscribers') {
         const response = await fetch(
           `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/newsletter`,
           { headers: { Authorization: `Bearer ${publicAnonKey}` } }
         );
         const data = await response.json();
-        setSubscribers(normalizeCollection(data.subscribers, 'subscriber'));
-      } else if (activeTab === 'users' && canManageUsers) {
+        setSubscribers(data.subscribers || []);
+      } else if (activeTab === 'users' && userRole === 'super-admin') {
         const response = await fetch(
           `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/users`,
           { headers: { Authorization: `Bearer ${publicAnonKey}` } }
         );
         const data = await response.json();
-        setAdminUsers(normalizeCollection(data.users, 'admin_user'));
+        setAdminUsers(data.users || []);
       } else if (activeTab === 'settings') {
         const response = await fetch(
           `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/site-settings`,
@@ -807,63 +449,63 @@ export function EnhancedAdminDashboard() {
           { headers: { Authorization: `Bearer ${publicAnonKey}` } }
         );
         const data = await response.json();
-        setTeam(normalizeCollection(data.team, 'team'));
+        setTeam(data.team || []);
       } else if (activeTab === 'stories') {
         const response = await fetch(
           `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/stories`,
           { headers: { Authorization: `Bearer ${publicAnonKey}` } }
         );
         const data = await response.json();
-        setStories(normalizeCollection(data.stories, 'story'));
+        setStories(data.stories || []);
       } else if (activeTab === 'impact') {
         const response = await fetch(
           `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/impact-stats`,
           { headers: { Authorization: `Bearer ${publicAnonKey}` } }
         );
         const data = await response.json();
-        setImpactStats(data.stats ? normalizeSingle(data.stats, 'impact-stats') : null);
+        setImpactStats(data.stats || null);
       } else if (activeTab === 'reports') {
         const response = await fetch(
           `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/reports`,
           { headers: { Authorization: `Bearer ${publicAnonKey}` } }
         );
         const data = await response.json();
-        setReports(normalizeCollection(data.reports, 'report'));
+        setReports(data.reports || []);
       } else if (activeTab === 'events') {
         const response = await fetch(
           `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/events`,
           { headers: { Authorization: `Bearer ${publicAnonKey}` } }
         );
         const data = await response.json();
-        setEvents(normalizeCollection(data.events, 'event'));
+        setEvents(data.events || []);
       } else if (activeTab === 'partners') {
         const response = await fetch(
           `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/partners`,
           { headers: { Authorization: `Bearer ${publicAnonKey}` } }
         );
         const data = await response.json();
-        setPartners(normalizeCollection(data.partners, 'partner'));
+        setPartners(data.partners || []);
       } else if (activeTab === 'opportunities') {
         const response = await fetch(
           `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/opportunities`,
           { headers: { Authorization: `Bearer ${publicAnonKey}` } }
         );
         const data = await response.json();
-        setOpportunities(normalizeCollection(data.opportunities, 'opportunity'));
+        setOpportunities(data.opportunities || []);
       } else if (activeTab === 'faqs') {
         const response = await fetch(
           `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/faqs`,
           { headers: { Authorization: `Bearer ${publicAnonKey}` } }
         );
         const data = await response.json();
-        setFAQs(normalizeCollection(data.faqs, 'faq'));
+        setFAQs(data.faqs || []);
       } else if (activeTab === 'resources') {
         const response = await fetch(
           `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/resources`,
           { headers: { Authorization: `Bearer ${publicAnonKey}` } }
         );
         const data = await response.json();
-        setResources(normalizeCollection(data.resources, 'resource'));
+        setResources(data.resources || []);
       }
     } catch (err) {
       console.error('Error loading data:', err);
@@ -871,93 +513,23 @@ export function EnhancedAdminDashboard() {
     }
   };
 
-  // Helper to perform DELETE requests and surface backend errors clearly
-  const safeDelete = async (url: string) => {
-    try {
-      console.debug('safeDelete request', { url, usingAccessToken: !!accessToken });
-      const response = await fetch(url, { method: 'DELETE', headers: getAuthHeader() });
-      let body: any = null;
-
-      const contentType = response.headers.get('content-type') || '';
-      try {
-        if (contentType.includes('application/json')) {
-          body = await response.json();
-        } else {
-          body = await response.text();
-        }
-      } catch (e) {
-        // best-effort parsing
-        body = null;
-      }
-
-      if (!response.ok) {
-        // If 404, try a fallback by decoding common encoded characters (e.g. %3A -> :)
-        if (response.status === 404 && url.includes('%3A')) {
-          const altUrl = url.replace(/%3A/g, ':');
-          console.warn('safeDelete received 404, retrying with alternate URL:', altUrl);
-          try {
-            const altRes = await fetch(altUrl, { method: 'DELETE', headers: getAuthHeader() });
-            let altBody: any = null;
-            const altContentType = altRes.headers.get('content-type') || '';
-            try {
-              altBody = altContentType.includes('application/json') ? await altRes.json() : await altRes.text();
-            } catch { altBody = null; }
-
-            if (altRes.ok) {
-              return altBody;
-            }
-
-            const msg = (altBody && (altBody.error || altBody.message)) || (typeof altBody === 'string' ? altBody : null) || `Request failed: ${altRes.status} ${altRes.statusText}`;
-            const err: any = new Error(`${msg}`);
-            err.details = { attempted: [ { url, status: response.status }, { altUrl, status: altRes.status } ], body: altBody };
-            console.error('safeDelete fallback failed', err.details);
-            // show user-facing message
-            try { toast.error(msg); } catch {}
-            throw err;
-          } catch (altErr) {
-            console.error('safeDelete fallback exception for', altUrl, altErr);
-            throw altErr;
-          }
-        }
-
-        const msg = (body && (body.error || body.message)) || (typeof body === 'string' ? body : null) || `Request failed: ${response.status} ${response.statusText}`;
-        const err: any = new Error(`${msg}`);
-        // attach some debug details for easier troubleshooting
-        err.details = { url, status: response.status, statusText: response.statusText, body };
-        console.error('safeDelete failed', err.details);
-        try { toast.error(msg); } catch {}
-        throw err;
-      }
-
-      return body;
-    } catch (err: any) {
-      console.error('safeDelete error for', url, err);
-      throw err;
-    }
-  };
-
-  const safeBulkDelete = async (baseUrl: string, ids: string[]) => {
-    return Promise.all(ids.map(id => safeDelete(`${baseUrl}/${encodeURIComponent(id)}`)));
-  };
-
   const handleImageUpload = async (file: File) => {
     setUploadingImage(true);
     try {
-      // Use server-side upload endpoint to avoid client-side storage permission issues
-      // (this mirrors the approach used in AdminFormDialogs and ensures the same bucket
-      // and upload behavior is used across the dashboard).
-      const formDataObj = new FormData();
-      formDataObj.append('file', file);
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+      
+      const { data, error } = await supabase.storage
+        .from('make-2a4be611-images')
+        .upload(fileName, file);
 
-      const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/upload-image`,
-        { method: 'POST', headers: { Authorization: `Bearer ${publicAnonKey}` }, body: formDataObj }
-      );
+      if (error) throw error;
 
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Upload failed');
-      // server returns { url }
-      return data.url;
+      const { data: { signedUrl } } = await supabase.storage
+        .from('make-2a4be611-images')
+        .createSignedUrl(fileName, 31536000);
+
+      return signedUrl;
     } catch (err: any) {
       console.error('Upload error:', err);
       toast.error('Failed to upload image');
@@ -998,32 +570,50 @@ export function EnhancedAdminDashboard() {
   };
 
   const handleDeleteProgram = async (id: string) => {
-    promptDelete('Delete this program?', async () => {
-      try {
-        await safeDelete(`https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/programs/${encodeURIComponent(id)}`);
-        toast.success('Program deleted');
-        loadData();
-      } catch (err: any) {
-        console.error('Delete error:', err);
-        toast.error(err.message || 'Failed to delete program');
-        throw err;
-      }
-    });
+    if (!confirm('Delete this program?')) return;
+
+    try {
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/programs/${id}`,
+        {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${publicAnonKey}` },
+        }
+      );
+
+      if (!response.ok) throw new Error('Failed to delete program');
+
+      toast.success('Program deleted');
+      loadData();
+    } catch (err: any) {
+      console.error('Delete error:', err);
+      toast.error(err.message || 'Failed to delete program');
+    }
   };
 
   const handleBulkDeletePrograms = async (ids: string[]) => {
-    promptDelete(`Delete ${ids.length} programs?`, async () => {
-      try {
-        await safeBulkDelete(`https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/programs`, ids);
-        toast.success(`${ids.length} programs deleted`);
-        setSelectedPrograms([]);
-        loadData();
-      } catch (err: any) {
-        console.error('Bulk delete error:', err);
-        toast.error(err.message || 'Failed to delete programs');
-        throw err;
-      }
-    });
+    if (!confirm(`Delete ${ids.length} programs?`)) return;
+
+    try {
+      await Promise.all(
+        ids.map(id =>
+          fetch(
+            `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/programs/${id}`,
+            {
+              method: 'DELETE',
+              headers: { Authorization: `Bearer ${publicAnonKey}` },
+            }
+          )
+        )
+      );
+
+      toast.success(`${ids.length} programs deleted`);
+      setSelectedPrograms([]);
+      loadData();
+    } catch (err: any) {
+      console.error('Bulk delete error:', err);
+      toast.error(err.message || 'Failed to delete programs');
+    }
   };
 
   // News handlers
@@ -1057,32 +647,50 @@ export function EnhancedAdminDashboard() {
   };
 
   const handleDeleteNews = async (id: string) => {
-    promptDelete('Delete this news item?', async () => {
-      try {
-        await safeDelete(`https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/news/${encodeURIComponent(id)}`);
-        toast.success('News deleted');
-        loadData();
-      } catch (err: any) {
-        console.error('Delete error:', err);
-        toast.error(err.message || 'Failed to delete news');
-        throw err;
-      }
-    });
+    if (!confirm('Delete this news item?')) return;
+
+    try {
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/news/${id}`,
+        {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${publicAnonKey}` },
+        }
+      );
+
+      if (!response.ok) throw new Error('Failed to delete news');
+
+      toast.success('News deleted');
+      loadData();
+    } catch (err: any) {
+      console.error('Delete error:', err);
+      toast.error(err.message || 'Failed to delete news');
+    }
   };
 
   const handleBulkDeleteNews = async (ids: string[]) => {
-    promptDelete(`Delete ${ids.length} news items?`, async () => {
-      try {
-        await safeBulkDelete(`https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/news`, ids);
-        toast.success(`${ids.length} news items deleted`);
-        setSelectedNews([]);
-        loadData();
-      } catch (err: any) {
-        console.error('Bulk delete error:', err);
-        toast.error(err.message || 'Failed to delete news');
-        throw err;
-      }
-    });
+    if (!confirm(`Delete ${ids.length} news items?`)) return;
+
+    try {
+      await Promise.all(
+        ids.map(id =>
+          fetch(
+            `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/news/${id}`,
+            {
+              method: 'DELETE',
+              headers: { Authorization: `Bearer ${publicAnonKey}` },
+            }
+          )
+        )
+      );
+
+      toast.success(`${ids.length} news items deleted`);
+      setSelectedNews([]);
+      loadData();
+    } catch (err: any) {
+      console.error('Bulk delete error:', err);
+      toast.error(err.message || 'Failed to delete news');
+    }
   };
 
   // Gallery handlers
@@ -1121,32 +729,50 @@ export function EnhancedAdminDashboard() {
   };
 
   const handleDeleteGallery = async (id: string) => {
-    promptDelete('Delete this gallery item?', async () => {
-      try {
-        await safeDelete(`https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/gallery/${encodeURIComponent(id)}`);
-        toast.success('Gallery item deleted');
-        loadData();
-      } catch (err: any) {
-        console.error('Delete error:', err);
-        toast.error(err.message || 'Failed to delete gallery item');
-        throw err;
-      }
-    });
+    if (!confirm('Delete this gallery item?')) return;
+
+    try {
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/gallery/${id}`,
+        {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${publicAnonKey}` },
+        }
+      );
+
+      if (!response.ok) throw new Error('Failed to delete gallery item');
+
+      toast.success('Gallery item deleted');
+      loadData();
+    } catch (err: any) {
+      console.error('Delete error:', err);
+      toast.error(err.message || 'Failed to delete gallery item');
+    }
   };
 
   const handleBulkDeleteGallery = async (ids: string[]) => {
-    promptDelete(`Delete ${ids.length} gallery items?`, async () => {
-      try {
-        await safeBulkDelete(`https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/gallery`, ids);
-        toast.success(`${ids.length} gallery items deleted`);
-        setSelectedGallery([]);
-        loadData();
-      } catch (err: any) {
-        console.error('Bulk delete error:', err);
-        toast.error(err.message || 'Failed to delete gallery items');
-        throw err;
-      }
-    });
+    if (!confirm(`Delete ${ids.length} gallery items?`)) return;
+
+    try {
+      await Promise.all(
+        ids.map(id =>
+          fetch(
+            `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/gallery/${id}`,
+            {
+              method: 'DELETE',
+              headers: { Authorization: `Bearer ${publicAnonKey}` },
+            }
+          )
+        )
+      );
+
+      toast.success(`${ids.length} gallery items deleted`);
+      setSelectedGallery([]);
+      loadData();
+    } catch (err: any) {
+      console.error('Bulk delete error:', err);
+      toast.error(err.message || 'Failed to delete gallery items');
+    }
   };
 
   // Contact handlers
@@ -1206,52 +832,50 @@ export function EnhancedAdminDashboard() {
   };
 
   const handleDeleteContact = async (id: string) => {
-    promptDelete('Delete this contact message?', async () => {
-      try {
-        const response = await fetch(
-          `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/contacts/${encodeURIComponent(id)}`,
-          {
-            method: 'DELETE',
-            headers: getAuthHeader(),
-          }
-        );
+    if (!confirm('Delete this contact message?')) return;
 
-        if (!response.ok) throw new Error('Failed to delete contact');
+    try {
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/contacts/${id}`,
+        {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${publicAnonKey}` },
+        }
+      );
 
-        toast.success('Contact deleted');
-        loadData();
-      } catch (err: any) {
-        console.error('Delete error:', err);
-        toast.error(err.message || 'Failed to delete contact');
-        throw err;
-      }
-    });
+      if (!response.ok) throw new Error('Failed to delete contact');
+
+      toast.success('Contact deleted');
+      loadData();
+    } catch (err: any) {
+      console.error('Delete error:', err);
+      toast.error(err.message || 'Failed to delete contact');
+    }
   };
 
   const handleBulkDeleteContacts = async (ids: string[]) => {
-    promptDelete(`Delete ${ids.length} contact messages?`, async () => {
-      try {
-        await Promise.all(
-          ids.map(id =>
-            fetch(
-              `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/contacts/${encodeURIComponent(id)}`,
-              {
-                method: 'DELETE',
-                headers: getAuthHeader(),
-              }
-            )
-          )
-        );
+    if (!confirm(`Delete ${ids.length} contact messages?`)) return;
 
-        toast.success(`${ids.length} contacts deleted`);
-        setSelectedContacts([]);
-        loadData();
-      } catch (err: any) {
-        console.error('Bulk delete error:', err);
-        toast.error(err.message || 'Failed to delete contacts');
-        throw err;
-      }
-    });
+    try {
+      await Promise.all(
+        ids.map(id =>
+          fetch(
+            `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/contacts/${id}`,
+            {
+              method: 'DELETE',
+              headers: { Authorization: `Bearer ${publicAnonKey}` },
+            }
+          )
+        )
+      );
+
+      toast.success(`${ids.length} contacts deleted`);
+      setSelectedContacts([]);
+      loadData();
+    } catch (err: any) {
+      console.error('Bulk delete error:', err);
+      toast.error(err.message || 'Failed to delete contacts');
+    }
   };
 
   // Volunteer handlers
@@ -1280,161 +904,185 @@ export function EnhancedAdminDashboard() {
   };
 
   const handleDeleteVolunteer = async (id: string) => {
-    promptDelete('Delete this volunteer application?', async () => {
-      try {
-        const response = await fetch(
-          `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/volunteers/${encodeURIComponent(id)}`,
-          {
-            method: 'DELETE',
-            headers: getAuthHeader(),
-          }
-        );
+    if (!confirm('Delete this volunteer application?')) return;
 
-        if (!response.ok) throw new Error('Failed to delete volunteer');
+    try {
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/volunteers/${id}`,
+        {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${publicAnonKey}` },
+        }
+      );
 
-        toast.success('Volunteer deleted');
-        loadData();
-      } catch (err: any) {
-        console.error('Delete error:', err);
-        toast.error(err.message || 'Failed to delete volunteer');
-        throw err;
-      }
-    });
+      if (!response.ok) throw new Error('Failed to delete volunteer');
+
+      toast.success('Volunteer deleted');
+      loadData();
+    } catch (err: any) {
+      console.error('Delete error:', err);
+      toast.error(err.message || 'Failed to delete volunteer');
+    }
   };
 
   const handleBulkDeleteVolunteers = async (ids: string[]) => {
-    promptDelete(`Delete ${ids.length} volunteer applications?`, async () => {
-      try {
-        await safeBulkDelete(`https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/volunteers`, ids);
+    if (!confirm(`Delete ${ids.length} volunteer applications?`)) return;
 
-        toast.success(`${ids.length} volunteers deleted`);
-        setSelectedVolunteers([]);
-        loadData();
-      } catch (err: any) {
-        console.error('Bulk delete error:', err);
-        toast.error(err.message || 'Failed to delete volunteers');
-        throw err;
-      }
-    });
+    try {
+      await Promise.all(
+        ids.map(id =>
+          fetch(
+            `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/volunteers/${id}`,
+            {
+              method: 'DELETE',
+              headers: { Authorization: `Bearer ${publicAnonKey}` },
+            }
+          )
+        )
+      );
+
+      toast.success(`${ids.length} volunteers deleted`);
+      setSelectedVolunteers([]);
+      loadData();
+    } catch (err: any) {
+      console.error('Bulk delete error:', err);
+      toast.error(err.message || 'Failed to delete volunteers');
+    }
   };
 
   const handleDeleteTeam = async (id: string) => {
-    promptDelete('Delete this team member?', async () => {
-      try {
-        await safeDelete(`https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/team/${encodeURIComponent(id)}`);
-        toast.success('Team member deleted');
-        loadData();
-      } catch (err: any) {
-        console.error('Delete error:', err);
-        toast.error(err.message || 'Failed to delete team member');
-        throw err;
-      }
-    });
+    if (!confirm('Delete this team member?')) return;
+    try {
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/team/${id}`,
+        { method: 'DELETE', headers: { Authorization: `Bearer ${publicAnonKey}` } }
+      );
+      if (!response.ok) throw new Error('Failed to delete team member');
+      toast.success('Team member deleted');
+      loadData();
+    } catch (err: any) {
+      console.error('Delete error:', err);
+      toast.error(err.message || 'Failed to delete team member');
+    }
   };
 
   const handleDeleteStory = async (id: string) => {
-    promptDelete('Delete this story?', async () => {
-      try {
-        await safeDelete(`https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/stories/${encodeURIComponent(id)}`);
-        toast.success('Story deleted');
-        loadData();
-      } catch (err: any) {
-        console.error('Delete error:', err);
-        toast.error(err.message || 'Failed to delete story');
-        throw err;
-      }
-    });
+    if (!confirm('Delete this story?')) return;
+    try {
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/stories/${id}`,
+        { method: 'DELETE', headers: { Authorization: `Bearer ${publicAnonKey}` } }
+      );
+      if (!response.ok) throw new Error('Failed to delete story');
+      toast.success('Story deleted');
+      loadData();
+    } catch (err: any) {
+      console.error('Delete error:', err);
+      toast.error(err.message || 'Failed to delete story');
+    }
   };
 
   const handleDeleteReport = async (id: string) => {
-    promptDelete('Delete this report?', async () => {
-      try {
-        await safeDelete(`https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/reports/${encodeURIComponent(id)}`);
-        toast.success('Report deleted');
-        loadData();
-      } catch (err: any) {
-        console.error('Delete error:', err);
-        toast.error(err.message || 'Failed to delete report');
-        throw err;
-      }
-    });
+    if (!confirm('Delete this report?')) return;
+    try {
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/reports/${id}`,
+        { method: 'DELETE', headers: { Authorization: `Bearer ${publicAnonKey}` } }
+      );
+      if (!response.ok) throw new Error('Failed to delete report');
+      toast.success('Report deleted');
+      loadData();
+    } catch (err: any) {
+      console.error('Delete error:', err);
+      toast.error(err.message || 'Failed to delete report');
+    }
   };
 
   const handleDeleteEvent = async (id: string) => {
-    promptDelete('Delete this event?', async () => {
-      try {
-        await safeDelete(`https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/events/${encodeURIComponent(id)}`);
-        toast.success('Event deleted');
-        loadData();
-      } catch (err: any) {
-        console.error('Delete error:', err);
-        toast.error(err.message || 'Failed to delete event');
-        throw err;
-      }
-    });
+    if (!confirm('Delete this event?')) return;
+    try {
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/events/${id}`,
+        { method: 'DELETE', headers: { Authorization: `Bearer ${publicAnonKey}` } }
+      );
+      if (!response.ok) throw new Error('Failed to delete event');
+      toast.success('Event deleted');
+      loadData();
+    } catch (err: any) {
+      console.error('Delete error:', err);
+      toast.error(err.message || 'Failed to delete event');
+    }
   };
 
   const handleDeletePartner = async (id: string) => {
-    promptDelete('Delete this partner?', async () => {
-      try {
-        await safeDelete(`https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/partners/${encodeURIComponent(id)}`);
-        toast.success('Partner deleted');
-        loadData();
-      } catch (err: any) {
-        console.error('Delete error:', err);
-        toast.error(err.message || 'Failed to delete partner');
-        throw err;
-      }
-    });
+    if (!confirm('Delete this partner?')) return;
+    try {
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/partners/${id}`,
+        { method: 'DELETE', headers: { Authorization: `Bearer ${publicAnonKey}` } }
+      );
+      if (!response.ok) throw new Error('Failed to delete partner');
+      toast.success('Partner deleted');
+      loadData();
+    } catch (err: any) {
+      console.error('Delete error:', err);
+      toast.error(err.message || 'Failed to delete partner');
+    }
   };
 
   const handleDeleteOpportunity = async (id: string) => {
-    promptDelete('Delete this opportunity?', async () => {
-      try {
-        await safeDelete(`https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/opportunities/${encodeURIComponent(id)}`);
-        toast.success('Opportunity deleted');
-        loadData();
-      } catch (err: any) {
-        console.error('Delete error:', err);
-        toast.error(err.message || 'Failed to delete opportunity');
-        throw err;
-      }
-    });
+    if (!confirm('Delete this opportunity?')) return;
+    try {
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/opportunities/${id}`,
+        { method: 'DELETE', headers: { Authorization: `Bearer ${publicAnonKey}` } }
+      );
+      if (!response.ok) throw new Error('Failed to delete opportunity');
+      toast.success('Opportunity deleted');
+      loadData();
+    } catch (err: any) {
+      console.error('Delete error:', err);
+      toast.error(err.message || 'Failed to delete opportunity');
+    }
   };
 
   const handleDeleteFAQ = async (id: string) => {
-    promptDelete('Delete this FAQ?', async () => {
-      try {
-        await safeDelete(`https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/faqs/${encodeURIComponent(id)}`);
-        toast.success('FAQ deleted');
-        loadData();
-      } catch (err: any) {
-        console.error('Delete error:', err);
-        toast.error(err.message || 'Failed to delete FAQ');
-        throw err;
-      }
-    });
+    if (!confirm('Delete this FAQ?')) return;
+    try {
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/faqs/${id}`,
+        { method: 'DELETE', headers: { Authorization: `Bearer ${publicAnonKey}` } }
+      );
+      if (!response.ok) throw new Error('Failed to delete FAQ');
+      toast.success('FAQ deleted');
+      loadData();
+    } catch (err: any) {
+      console.error('Delete error:', err);
+      toast.error(err.message || 'Failed to delete FAQ');
+    }
   };
 
   const handleDeleteResource = async (id: string) => {
-    promptDelete('Delete this resource?', async () => {
-      try {
-        await safeDelete(`https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/resources/${encodeURIComponent(id)}`);
-        toast.success('Resource deleted');
-        loadData();
-      } catch (err: any) {
-        console.error('Delete error:', err);
-        toast.error(err.message || 'Failed to delete resource');
-        throw err;
-      }
-    });
+    if (!confirm('Delete this resource?')) return;
+    try {
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/resources/${id}`,
+        { method: 'DELETE', headers: { Authorization: `Bearer ${publicAnonKey}` } }
+      );
+      if (!response.ok) throw new Error('Failed to delete resource');
+      toast.success('Resource deleted');
+      loadData();
+    } catch (err: any) {
+      console.error('Delete error:', err);
+      toast.error(err.message || 'Failed to delete resource');
+    }
   };
 
   // User Management Handlers
   const handleSubmitUser = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!canManageUsers) {
-      toast.error('You do not have permission to manage users');
+    if (userRole !== 'super-admin') {
+      toast.error('Only super admins can manage users');
       return;
     }
 
@@ -1469,69 +1117,65 @@ export function EnhancedAdminDashboard() {
   };
 
   const handleDeleteUser = async (id: string) => {
-    if (!canManageUsers) {
-      toast.error('You do not have permission to manage users');
+    if (userRole !== 'super-admin') {
+      toast.error('Only super admins can delete users');
       return;
     }
+    if (!confirm('Delete this user? This action cannot be undone.')) return;
 
-    promptDelete('Delete this user? This action cannot be undone.', async () => {
-      try {
-        const response = await fetch(
-          `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/users/${encodeURIComponent(id)}`,
-          {
-            method: 'DELETE',
-            headers: getAuthHeader(),
-          }
-        );
+    try {
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/users/${id}`,
+        {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${publicAnonKey}` },
+        }
+      );
 
-        if (!response.ok) throw new Error('Failed to delete user');
+      if (!response.ok) throw new Error('Failed to delete user');
 
-        toast.success('User deleted successfully');
-        loadData();
-      } catch (err: any) {
-        console.error('Delete user error:', err);
-        toast.error(err.message || 'Failed to delete user');
-        throw err;
-      }
-    });
+      toast.success('User deleted successfully');
+      loadData();
+    } catch (err: any) {
+      console.error('Delete user error:', err);
+      toast.error(err.message || 'Failed to delete user');
+    }
   };
 
   const handleBulkDeleteUsers = async (ids: string[]) => {
-    if (!canManageUsers) {
-      toast.error('You do not have permission to manage users');
+    if (userRole !== 'super-admin') {
+      toast.error('Only super admins can delete users');
       return;
     }
+    if (!confirm(`Delete ${ids.length} users? This action cannot be undone.`)) return;
 
-    promptDelete(`Delete ${ids.length} users? This action cannot be undone.`, async () => {
-      try {
-        const response = await fetch(
-          `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/users/bulk-delete`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${publicAnonKey}`,
-            },
-            body: JSON.stringify({ ids }),
-          }
-        );
+    try {
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/users/bulk-delete`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${publicAnonKey}`,
+          },
+          body: JSON.stringify({ ids }),
+        }
+      );
 
-        if (!response.ok) throw new Error('Failed to delete users');
+      if (!response.ok) throw new Error('Failed to delete users');
 
-        toast.success(`${ids.length} users deleted`);
-        setSelectedUsers([]);
-        loadData();
-      } catch (err: any) {
-        console.error('Bulk delete error:', err);
-        toast.error(err.message || 'Failed to delete users');
-        throw err;
-      }
-    });
+      toast.success(`${ids.length} users deleted`);
+      setSelectedUsers([]);
+      loadData();
+    } catch (err: any) {
+      console.error('Bulk delete error:', err);
+      toast.error(err.message || 'Failed to delete users');
+    }
   };
 
   const handleBulkUpdateUserRole = async (ids: string[], role: string) => {
-    if (!canManageUsers) {
-      toast.error('You do not have permission to manage users');
+    if (userRole !== 'super-admin') {
+      toast.error('Only super admins can change roles');
       return;
     }
 
@@ -1560,8 +1204,8 @@ export function EnhancedAdminDashboard() {
   };
 
   const handleBulkUpdateUserStatus = async (ids: string[], status: string) => {
-    if (!canManageUsers) {
-      toast.error('You do not have permission to manage users');
+    if (userRole !== 'super-admin') {
+      toast.error('Only super admins can change status');
       return;
     }
 
@@ -1590,8 +1234,8 @@ export function EnhancedAdminDashboard() {
   };
 
   const handleResetPassword = async (userId: string) => {
-    if (!canManageUsers) {
-      toast.error('You do not have permission to manage users');
+    if (userRole !== 'super-admin') {
+      toast.error('Only super admins can reset passwords');
       return;
     }
     if (!newPassword) {
@@ -1690,93 +1334,77 @@ export function EnhancedAdminDashboard() {
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50 flex items-center justify-center p-4">
-        <Card className="w-full max-w-5xl overflow-hidden shadow-2xl border-0">
-          <div className="flex flex-col md:flex-row">
-            <div className="w-full md:w-7/12 p-8 md:p-12">
-              <div className="max-w-md">
-                <div className="mb-8">
-                  <p className="inline-flex items-center gap-2 bg-emerald-100 text-emerald-700 px-4 py-1.5 rounded-full text-sm font-medium">
-                    Secure Admin Access
-                  </p>
-                  <h1 className="text-3xl md:text-4xl text-gray-900 mt-4 mb-3 leading-tight">
-                    {isSignup ? 'Create your admin account' : 'Welcome back, admin'}
-                  </h1>
-                  <p className="text-gray-600">
-                    {isSignup ? 'Set up your credentials to manage programs, stories, volunteers, and more.' : 'Sign in to manage your organization’s content and stay connected with your community.'}
-                  </p>
-                </div>
-
-                <form onSubmit={isSignup ? handleSignup : handleLogin} className="space-y-4">
-                  {isSignup && (
-                    <input
-                      type="text"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      placeholder="Full Name"
-                      required
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition"
-                    />
-                  )}
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="Email"
-                    required
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition"
-                  />
-                  <input
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Password"
-                    required
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition"
-                  />
-                  <Button
-                    type="submit"
-                    className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white py-3 rounded-lg transition shadow-lg"
-                    disabled={loading}
-                  >
-                    {loading ? (
-                      <div className="flex items-center justify-center">
-                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                        Please wait...
-                      </div>
-                    ) : (
-                      isSignup ? 'Create Account' : 'Sign In'
-                    )}
-                  </Button>
-                </form>
-
-                <div className="mt-6">
-                  <button
-                    onClick={() => setIsSignup(!isSignup)}
-                    className="text-emerald-600 hover:text-emerald-700 text-sm font-medium transition"
-                  >
-                    {isSignup
-                      ? 'Already have an account? Sign in'
-                      : "Don't have an account? Sign up"}
-                  </button>
-                </div>
+        <Card className="w-full max-w-md p-8 shadow-2xl border-0">
+          <div className="text-center mb-8">
+            <div className="flex flex-col items-center mb-6">
+              <div className="bg-white rounded-full p-4 shadow-lg mb-4">
+                <img src={logo} alt="Resti Kiryandongo CBO Logo" className="h-20 w-auto" />
+              </div>
+              <div>
+                <h2 className="text-2xl text-emerald-700">Resti Kiryandongo CBO</h2>
+                <p className="text-sm text-gray-600">Community Based Organization</p>
               </div>
             </div>
+            <h1 className="text-3xl text-gray-900 mb-2">
+              Admin Dashboard
+            </h1>
+            <p className="text-gray-600">
+              {isSignup ? 'Create your admin account' : 'Sign in to manage your website'}
+            </p>
+          </div>
 
-            <div className="w-full md:w-5/12 bg-emerald-600/5 border-l border-emerald-100 flex items-center justify-center p-10">
-              <div className="text-center space-y-6">
-                <div className="bg-white rounded-3xl p-6 shadow-xl mx-auto w-full max-w-xs">
-                  <img
-                    src={siteLogoUrl}
-                    alt={`${siteTitle} Logo`}
-                    className="h-40 md:h-48 lg:h-56 w-auto mx-auto object-contain"
-                  />
+          <form onSubmit={isSignup ? handleSignup : handleLogin} className="space-y-4">
+            {isSignup && (
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Full Name"
+                required
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition"
+              />
+            )}
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Email"
+              required
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition"
+            />
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Password"
+              required
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition"
+            />
+            <Button
+              type="submit"
+              className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white py-3 rounded-lg transition shadow-lg"
+              disabled={loading}
+            >
+              {loading ? (
+                <div className="flex items-center justify-center">
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                  Please wait...
                 </div>
-                <div className="space-y-2">
-                  <h2 className="text-2xl text-emerald-700">{siteTitle}</h2>
-                  <p className="text-sm text-gray-600 max-w-sm mx-auto">{siteTagline}</p>
-                </div>
-              </div>
-            </div>
+              ) : (
+                isSignup ? 'Create Account' : 'Sign In'
+              )}
+            </Button>
+          </form>
+
+          <div className="mt-6 text-center">
+            <button
+              onClick={() => setIsSignup(!isSignup)}
+              className="text-emerald-600 hover:text-emerald-700 text-sm transition"
+            >
+              {isSignup
+                ? 'Already have an account? Sign in'
+                : "Don't have an account? Sign up"}
+            </button>
           </div>
         </Card>
       </div>
@@ -1789,29 +1417,6 @@ export function EnhancedAdminDashboard() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100">
-      {/* Confirmation dialog for deletes */}
-      {pendingDelete && (
-        <Dialog open={true} onOpenChange={(open) => { if (!open) setPendingDelete(null); }}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Confirm action</DialogTitle>
-            </DialogHeader>
-            <div className="py-4 text-sm text-gray-700">{pendingDelete.message}</div>
-            <div className="flex justify-end gap-2 mt-4">
-              <Button variant="ghost" size="sm" onClick={() => setPendingDelete(null)}>Cancel</Button>
-              <Button variant="destructive" size="sm" onClick={async () => {
-                try {
-                  await pendingDelete.action();
-                } catch (err) {
-                  // action already logs and toasts; swallow here
-                } finally {
-                  setPendingDelete(null);
-                }
-              }}>{pendingDelete.confirmLabel || 'OK to continue'}</Button>
-            </div>
-          </DialogContent>
-        </Dialog>
-      )}
       {/* Top Navigation Bar */}
       <div className="bg-white border-b border-gray-200 shadow-sm fixed top-0 left-0 right-0 z-50">
         <div className="flex items-center justify-between px-4 py-3">
@@ -1822,11 +1427,11 @@ export function EnhancedAdminDashboard() {
             >
               {sidebarOpen ? <XIcon size={24} /> : <Menu size={24} />}
             </button>
-            <div className="flex items-center gap-4">
-              <img src={siteLogoUrl} alt={`${siteTitle} Logo`} className="h-16 md:h-20 w-auto object-contain drop-shadow-sm" />
+            <div className="flex items-center gap-3">
+              <img src={logo} alt="Logo" className="h-10 w-auto" />
               <div className="hidden md:block">
-                <h1 className="text-lg text-gray-900">{siteTitle}</h1>
-                <p className="text-xs text-gray-500">{siteTagline}</p>
+                <h1 className="text-lg text-gray-900">Resti Kiryandongo CBO</h1>
+                <p className="text-xs text-gray-500">Admin Dashboard</p>
               </div>
             </div>
           </div>
@@ -1840,20 +1445,6 @@ export function EnhancedAdminDashboard() {
                 className="bg-transparent border-none outline-none text-sm w-48"
               />
             </div>
-
-            {canManageUsers && (
-              <Button
-                onClick={() => {
-                  setActiveTab('users');
-                  if (window.innerWidth < 1024) setSidebarOpen(false);
-                }}
-                size="sm"
-                className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
-              >
-                <Shield size={16} />
-                Manage Users
-              </Button>
-            )}
 
             <button className="relative p-2 hover:bg-gray-100 rounded-lg transition">
               <Bell size={20} />
@@ -1882,24 +1473,6 @@ export function EnhancedAdminDashboard() {
           </div>
         </div>
       </div>
-      
-      {/* Quick debug banner to show auth state for troubleshooting delete 401/404 issues */}
-      <div className="w-full bg-yellow-50 border-b border-yellow-200 text-yellow-800 p-2 text-sm flex items-center justify-between px-4" title="Shows whether an access token is present (masked)">
-        <div>
-          <strong className="mr-2">Admin auth:</strong>
-          {isAuthenticated ? (
-            <span className="text-yellow-900">Signed in as <span className="font-medium">{userEmail || userName || 'admin'}</span></span>
-          ) : (
-            <span className="text-yellow-900">Not signed in — please sign in to perform mutating actions</span>
-          )}
-        </div>
-        <div className="opacity-80">
-          <span className="mr-2 text-xs">Token:</span>
-          <span className="font-mono text-xs">
-            {accessToken ? `${accessToken.slice(0,6)}...${accessToken.slice(-4)}` : '—'}
-          </span>
-        </div>
-      </div>
 
       <div className="flex pt-16">
         {/* Sidebar */}
@@ -1908,9 +1481,7 @@ export function EnhancedAdminDashboard() {
             <div className="mb-6">
               <h3 className="text-xs uppercase text-gray-500 mb-3 px-3">Navigation</h3>
               <nav className="space-y-1">
-                {NAVIGATION_ITEMS
-                  .filter((item) => !item.requiresUserManagement || canManageUsers)
-                  .map((item) => {
+                {NAVIGATION_ITEMS.map((item) => {
                   const Icon = item.icon;
                   const isActive = activeTab === item.id;
                   
@@ -1933,6 +1504,23 @@ export function EnhancedAdminDashboard() {
                     </button>
                   );
                 })}
+                {userRole === 'super-admin' && (
+                  <button
+                    onClick={() => {
+                      setActiveTab('users');
+                      if (window.innerWidth < 1024) setSidebarOpen(false);
+                    }}
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${
+                      activeTab === 'users'
+                        ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-md'
+                        : 'text-gray-700 hover:bg-gray-100'
+                    }`}
+                  >
+                    <Shield size={18} className={activeTab === 'users' ? 'text-white' : 'text-red-600'} />
+                    <span className="text-sm">Users</span>
+                    {activeTab === 'users' && <ChevronRight size={16} className="ml-auto" />}
+                  </button>
+                )}
               </nav>
             </div>
 
@@ -1973,38 +1561,36 @@ export function EnhancedAdminDashboard() {
                   <Card className="p-6 border-l-4 border-l-blue-500 hover:shadow-lg transition">
                     <div className="flex items-center justify-between mb-4">
                       <FileText className="text-blue-600" size={24} />
-                      <Badge variant="secondary">{dashboardStats.totalPrograms}</Badge>
+                      <Badge variant="secondary">{stats.programs}</Badge>
                     </div>
-                    <h3 className="text-2xl text-gray-900 mb-1">{dashboardStats.totalPrograms.toLocaleString()}</h3>
+                    <h3 className="text-2xl text-gray-900 mb-1">{stats.programs}</h3>
                     <p className="text-sm text-gray-600">Total Programs</p>
                   </Card>
 
                   <Card className="p-6 border-l-4 border-l-purple-500 hover:shadow-lg transition">
                     <div className="flex items-center justify-between mb-4">
                       <Newspaper className="text-purple-600" size={24} />
-                      <Badge variant="secondary">{dashboardStats.totalNews}</Badge>
+                      <Badge variant="secondary">{stats.news}</Badge>
                     </div>
-                    <h3 className="text-2xl text-gray-900 mb-1">{dashboardStats.totalNews.toLocaleString()}</h3>
+                    <h3 className="text-2xl text-gray-900 mb-1">{stats.news}</h3>
                     <p className="text-sm text-gray-600">News Articles</p>
                   </Card>
 
                   <Card className="p-6 border-l-4 border-l-rose-500 hover:shadow-lg transition">
                     <div className="flex items-center justify-between mb-4">
                       <Heart className="text-rose-600" size={24} />
-                      <Badge variant="secondary">{dashboardStats.totalVolunteers}</Badge>
+                      <Badge variant="secondary">{stats.volunteers}</Badge>
                     </div>
-                    <h3 className="text-2xl text-gray-900 mb-1">{dashboardStats.totalVolunteers.toLocaleString()}</h3>
+                    <h3 className="text-2xl text-gray-900 mb-1">{stats.volunteers}</h3>
                     <p className="text-sm text-gray-600">Volunteers</p>
                   </Card>
 
                   <Card className="p-6 border-l-4 border-l-emerald-500 hover:shadow-lg transition">
                     <div className="flex items-center justify-between mb-4">
                       <TrendingUp className="text-emerald-600" size={24} />
-                      <Badge variant="secondary">{dashboardStats.totalDonationsCount}</Badge>
+                      <Badge variant="secondary">${stats.totalDonations}</Badge>
                     </div>
-                    <h3 className="text-2xl text-gray-900 mb-1">
-                      ${dashboardStats.totalDonationAmount.toLocaleString()}
-                    </h3>
+                    <h3 className="text-2xl text-gray-900 mb-1">${stats.totalDonations}</h3>
                     <p className="text-sm text-gray-600">Total Donations</p>
                   </Card>
                 </div>
@@ -2117,12 +1703,6 @@ export function EnhancedAdminDashboard() {
                       <Users size={16} className="mr-2" />
                       Add Team Member
                     </Button>
-                    {canManageUsers && (
-                      <Button onClick={() => setActiveTab('users')} variant="outline" className="justify-start">
-                        <Shield size={16} className="mr-2" />
-                        Manage Users
-                      </Button>
-                    )}
                   </div>
                 </Card>
               </div>
@@ -2270,63 +1850,59 @@ export function EnhancedAdminDashboard() {
                 )}
 
                 <div className="grid gap-4">
-                  {news.map((item) => {
-                    const publishedAt = resolveNewsDate(item.value);
-
-                    return (
-                      <Card key={item.key} className="p-6 hover:shadow-lg transition">
-                        <div className="flex items-start gap-4">
-                          <input
-                            type="checkbox"
-                            checked={selectedNews.includes(item.key)}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setSelectedNews([...selectedNews, item.key]);
-                              } else {
-                                setSelectedNews(selectedNews.filter(id => id !== item.key));
-                              }
-                            }}
-                            className="mt-1"
-                          />
-                          {item.value.image && (
-                            <img src={item.value.image} alt={item.value.title} className="w-24 h-24 object-cover rounded-lg" />
-                          )}
-                          <div className="flex-1">
-                            <h4 className="text-lg text-gray-900 mb-1">{item.value.title}</h4>
-                            <p className="text-sm text-gray-600 mb-2">{item.value.description}</p>
-                            <div className="flex items-center gap-2">
-                              <Badge>{item.value.category}</Badge>
-                              <span className="text-xs text-gray-400">
-                                {publishedAt ? publishedAt.toLocaleDateString() : 'Date not set'}
-                              </span>
-                            </div>
-                          </div>
-                          <div className="flex gap-2">
-                            <Button
-                              onClick={() => {
-                                setEditingItem(item);
-                                setFormData(item.value);
-                                setShowNewsForm(true);
-                              }}
-                              variant="outline"
-                              size="sm"
-                            >
-                              <Edit size={14} className="mr-1" />
-                              Edit
-                            </Button>
-                            <Button
-                              onClick={() => handleDeleteNews(item.key)}
-                              variant="outline"
-                              size="sm"
-                              className="text-red-600 hover:bg-red-50"
-                            >
-                              <Trash2 size={14} />
-                            </Button>
+                  {news.map((item) => (
+                    <Card key={item.key} className="p-6 hover:shadow-lg transition">
+                      <div className="flex items-start gap-4">
+                        <input
+                          type="checkbox"
+                          checked={selectedNews.includes(item.key)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedNews([...selectedNews, item.key]);
+                            } else {
+                              setSelectedNews(selectedNews.filter(id => id !== item.key));
+                            }
+                          }}
+                          className="mt-1"
+                        />
+                        {item.value.image && (
+                          <img src={item.value.image} alt={item.value.title} className="w-24 h-24 object-cover rounded-lg" />
+                        )}
+                        <div className="flex-1">
+                          <h4 className="text-lg text-gray-900 mb-1">{item.value.title}</h4>
+                          <p className="text-sm text-gray-600 mb-2">{item.value.description}</p>
+                          <div className="flex items-center gap-2">
+                            <Badge>{item.value.category}</Badge>
+                            <span className="text-xs text-gray-400">
+                              {new Date(item.value.created_at).toLocaleDateString()}
+                            </span>
                           </div>
                         </div>
-                      </Card>
-                    );
-                  })}
+                        <div className="flex gap-2">
+                          <Button
+                            onClick={() => {
+                              setEditingItem(item);
+                              setFormData(item.value);
+                              setShowNewsForm(true);
+                            }}
+                            variant="outline"
+                            size="sm"
+                          >
+                            <Edit size={14} className="mr-1" />
+                            Edit
+                          </Button>
+                          <Button
+                            onClick={() => handleDeleteNews(item.key)}
+                            variant="outline"
+                            size="sm"
+                            className="text-red-600 hover:bg-red-50"
+                          >
+                            <Trash2 size={14} />
+                          </Button>
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
                   {news.length === 0 && (
                     <div className="text-center py-12 text-gray-500">
                       <Newspaper size={48} className="mx-auto mb-4 text-gray-300" />
@@ -2453,23 +2029,24 @@ export function EnhancedAdminDashboard() {
 
                 <div className="grid gap-4">
                   {team.map((member) => (
-                    <Card key={member.key} className="p-6 hover:shadow-lg transition">
+                    <Card key={member.id} className="p-6 hover:shadow-lg transition">
                       <div className="flex items-start gap-4">
-                        {member.value.image && (
+                        {member.image && (
                           <Avatar className="h-16 w-16">
-                            <AvatarImage src={member.value.image} alt={member.value.name} />
-                            <AvatarFallback>{member.value.name?.charAt(0)}</AvatarFallback>
+                            <AvatarImage src={member.image} alt={member.name} />
+                            <AvatarFallback>{member.name?.charAt(0)}</AvatarFallback>
                           </Avatar>
                         )}
                         <div className="flex-1">
-                          <h4 className="text-lg text-gray-900 mb-1">{member.value.name}</h4>
-                          <p className="text-sm text-emerald-600 mb-2">{member.value.role}</p>
-                          <p className="text-sm text-gray-600">{member.value.bio}</p>
+                          <h4 className="text-lg text-gray-900 mb-1">{member.name}</h4>
+                          <p className="text-sm text-emerald-600 mb-2">{member.role}</p>
+                          <p className="text-sm text-gray-500 mb-1">Department: {member.department}</p>
+                          <p className="text-sm text-gray-600">{member.bio}</p>
                         </div>
                         <div className="flex gap-2">
                           <Button
                             onClick={() => {
-                              setEditingItem(member.value);
+                              setEditingItem(member);
                               setShowTeamForm(true);
                             }}
                             variant="outline"
@@ -2479,7 +2056,7 @@ export function EnhancedAdminDashboard() {
                             Edit
                           </Button>
                           <Button
-                            onClick={() => handleDeleteTeam(member.key)}
+                            onClick={() => handleDeleteTeam(member.id)}
                             variant="outline"
                             size="sm"
                             className="text-red-600 hover:bg-red-50"
@@ -2813,8 +2390,8 @@ export function EnhancedAdminDashboard() {
               </div>
             )}
 
-            {/* User Management */}
-            {activeTab === 'users' && canManageUsers && (
+            {/* User Management - Super Admin Only */}
+            {activeTab === 'users' && userRole === 'super-admin' && (
               <div className="space-y-6">
                 <div className="flex items-center justify-between">
                   <div>
@@ -3013,11 +2590,8 @@ export function EnhancedAdminDashboard() {
 
             {/* Settings Tab */}
             {activeTab === 'settings' && (
-                    <SiteSettingsTab settings={siteSettings} onUpdate={() => {
-                      loadData();
-                      fetchSiteSettings();
-                    }} />
-                  )}
+              <SiteSettingsTab onUpdate={loadData} />
+            )}
 
             {/* Stories Management */}
             {activeTab === 'stories' && (
@@ -3367,7 +2941,7 @@ export function EnhancedAdminDashboard() {
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
                             <h4 className="text-lg text-gray-900">{opp.value.title}</h4>
-                            <Badge>{opp.value.category || opp.value.type || 'General'}</Badge>
+                            <Badge>{opp.value.type}</Badge>
                             {opp.value.urgent && <Badge className="bg-red-100 text-red-700">Urgent</Badge>}
                           </div>
                           <p className="text-sm text-gray-600 mb-2">{opp.value.description}</p>
@@ -4059,7 +3633,6 @@ export function EnhancedAdminDashboard() {
           editingItem={editingItem}
           onSuccess={loadData}
           userRole={userRole}
-          categoryOptions={siteSettings?.categories?.opportunities}
         />
       )}
 

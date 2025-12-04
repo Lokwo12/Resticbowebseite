@@ -1,26 +1,15 @@
-// @ts-nocheck
-import { Hono } from 'https://deno.land/x/hono@v3.1.4/mod.ts'
-import { logger } from 'https://deno.land/x/hono@v3.1.4/middleware/logger.ts'
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import Stripe from 'https://esm.sh/stripe@17.5.0'
+import { Hono } from 'npm:hono'
+import { cors } from 'npm:hono/cors'
+import { logger } from 'npm:hono/logger'
+import { createClient } from 'npm:@supabase/supabase-js@2'
+import Stripe from 'npm:stripe@17.5.0'
 import * as kv from './kv_store.tsx'
 
 const app = new Hono()
 
-app.use('*', async (c, next) => {
-  // Basic CORS headers
-  c.header('Access-Control-Allow-Origin', '*')
-  c.header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS')
-  c.header('Access-Control-Allow-Headers', 'Content-Type, Authorization')
-
-  // Handle preflight requests
-  if (c.req.method === 'OPTIONS') {
-    return c.text('', 204)
-  }
-
-  await next()
-})
+app.use('*', cors())
 app.use('*', logger(console.log))
+
 const supabase = createClient(
   Deno.env.get('SUPABASE_URL')!,
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
@@ -544,20 +533,13 @@ app.post('/make-server-2a4be611/admin/signup', async (c) => {
       return c.json({ error: 'Email and password are required' }, 400)
     }
 
-    const existingAdmins = await kv.getByPrefix('admin_user:')
-    const isFirstAdmin = !existingAdmins || existingAdmins.length === 0
-
-    const assignedRole = role
-      ? String(role)
-      : isFirstAdmin
-        ? 'super-admin'
-        : 'editor'
+    // Default role is 'editor', first user can be 'super-admin'
+    const userRole = role || 'editor'
 
     const { data, error } = await supabase.auth.admin.createUser({
       email,
       password,
-      user_metadata: { name: name || '', role: assignedRole },
-      app_metadata: { role: assignedRole },
+      user_metadata: { name: name || '', role: userRole },
       email_confirm: true // Auto-confirm since email server not configured
     })
 
@@ -566,34 +548,7 @@ app.post('/make-server-2a4be611/admin/signup', async (c) => {
       return c.json({ error: error.message }, 400)
     }
 
-    const userId = data.user.id
-
-    if (userId) {
-      await kv.set(`admin_user:${userId}`, {
-        id: userId,
-        email,
-        name: name || '',
-        role: assignedRole,
-        status: 'active',
-        createdAt: new Date().toISOString(),
-        lastLogin: null,
-        loginCount: 0
-      })
-    }
-
-    await sendEmail(
-      email,
-      'Welcome to Resti Kiryandongo CBO Admin',
-      `
-        <h2>Welcome ${name || 'Admin'}!</h2>
-        <p>Your admin account has been created with the role: <strong>${assignedRole}</strong></p>
-        <p>You can login at: <a href="${Deno.env.get('SUPABASE_URL')}/admin">Admin Dashboard</a></p>
-        <p>Email: ${email}</p>
-        <p>Please keep your password secure.</p>
-      `
-    )
-
-    console.log(`Admin user created: ${userId} with role: ${assignedRole}`)
+    console.log(`Admin user created: ${data.user.id} with role: ${userRole}`)
     return c.json({ success: true, message: 'Admin account created successfully', user: data.user })
   } catch (error) {
     console.error('Error creating admin account:', error)
@@ -1653,6 +1608,20 @@ app.post('/make-server-2a4be611/admin/reports', async (c) => {
   }
 })
 
+app.put('/make-server-2a4be611/admin/reports/:id', async (c) => {
+  try {
+    const id = c.req.param('id')
+    const body = await c.req.json()
+    const existing = await kv.get(id)
+    if (!existing) return c.json({ error: 'Report not found' }, 404)
+    await kv.set(id, { ...existing, ...body, updatedAt: new Date().toISOString() })
+    return c.json({ success: true, message: 'Report updated successfully' })
+  } catch (error) {
+    console.error('Error updating report:', error)
+    return c.json({ error: 'Failed to update report', details: String(error) }, 500)
+  }
+})
+
 app.delete('/make-server-2a4be611/admin/reports/:id', async (c) => {
   try {
     const id = c.req.param('id')
@@ -2169,13 +2138,6 @@ app.get('/make-server-2a4be611/site-settings', async (c) => {
             title: 'Impact Dashboard',
             description: 'See the measurable impact of our work through data, statistics, and comprehensive reports.'
           }
-        },
-        categories: {
-          programs: ['General', 'Education', 'Healthcare', 'Development'],
-          opportunities: ['General', 'Education', 'Healthcare', 'Community', 'Fundraising'],
-          events: ['General', 'Workshop', 'Fundraiser', 'Community', 'Awareness'],
-          resources: ['General', 'Training', 'Reports', 'Guides'],
-          partners: ['General', 'Corporate', 'NGO', 'Government']
         }
       }
       
@@ -2320,13 +2282,6 @@ app.post('/make-server-2a4be611/site-settings/initialize', async (c) => {
           title: 'Impact Dashboard',
           description: 'See the measurable impact of our work through data, statistics, and comprehensive reports.'
         }
-      },
-      categories: {
-        programs: ['General', 'Education', 'Healthcare', 'Development'],
-        opportunities: ['General', 'Education', 'Healthcare', 'Community', 'Fundraising'],
-        events: ['General', 'Workshop', 'Fundraiser', 'Community', 'Awareness'],
-        resources: ['General', 'Training', 'Reports', 'Guides'],
-        partners: ['General', 'Corporate', 'NGO', 'Government']
       },
       createdAt: new Date().toISOString()
     }
@@ -2570,61 +2525,6 @@ app.post('/make-server-2a4be611/admin/users/bulk-delete', async (c) => {
   } catch (error) {
     console.error('Error bulk deleting users:', error)
     return c.json({ error: 'Failed to bulk delete users', details: String(error) }, 500)
-  }
-})
-
-app.post('/make-server-2a4be611/admin/users/bootstrap', async (c) => {
-  try {
-    const body = await c.req.json()
-    const { userId, email, name } = body
-
-    if (!userId || !email) {
-      return c.json({ error: 'userId and email are required' }, 400)
-    }
-
-    const existingAdmins = await kv.getByPrefix('admin_user:')
-    if (existingAdmins && existingAdmins.length > 0) {
-      return c.json({ error: 'Admin users already initialized' }, 400)
-    }
-
-    const fallbackName = name || (typeof email === 'string' ? email.split('@')[0] : 'Super Admin')
-
-    const { error } = await supabase.auth.admin.updateUserById(userId, {
-      user_metadata: { role: 'super-admin', name: fallbackName },
-      app_metadata: { role: 'super-admin' }
-    })
-
-    if (error) {
-      console.error('Bootstrap role update error:', error)
-      return c.json({ error: error.message }, 400)
-    }
-
-    await kv.set(`admin_user:${userId}`, {
-      id: userId,
-      email,
-      name: fallbackName,
-      role: 'super-admin',
-      status: 'active',
-      createdAt: new Date().toISOString(),
-      lastLogin: null,
-      loginCount: 0
-    })
-
-    await sendEmail(
-      email,
-      'Admin Access Granted',
-      `
-        <h2>Admin Access Activated</h2>
-        <p>Your account has been granted <strong>super-admin</strong> access.</p>
-        <p>You can now manage users and site settings directly from the dashboard.</p>
-      `
-    )
-
-    console.log(`Bootstrap promoted user ${userId} to super-admin`)
-    return c.json({ success: true, role: 'super-admin' })
-  } catch (error) {
-    console.error('Error bootstrapping admin user:', error)
-    return c.json({ error: 'Failed to bootstrap admin user', details: String(error) }, 500)
   }
 })
 
