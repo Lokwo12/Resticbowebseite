@@ -50,6 +50,11 @@ export function Team() {
       }
     } catch (error) {
       console.error('Error loading section settings:', error);
+      // Use default settings if fetch fails
+      setSectionSettings({
+        title: 'Meet Our Team',
+        description: 'Get to know the dedicated individuals working tirelessly to make a difference in our community.'
+      });
     }
   };
 
