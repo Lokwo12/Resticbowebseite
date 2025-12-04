@@ -49,6 +49,11 @@ export function News() {
       }
     } catch (error) {
       console.error('Error loading section settings:', error);
+      // Use default settings if fetch fails
+      setSectionSettings({
+        title: 'Latest News & Updates',
+        description: 'Stay informed about our latest activities, success stories, and community impact.'
+      });
     }
   };
 
