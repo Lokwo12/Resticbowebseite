@@ -88,6 +88,8 @@
     --color-yellow-50: oklch(.987 .026 102.212);
     --color-yellow-100: oklch(.973 .071 103.193);
     --color-yellow-200: oklch(.945 .129 101.54);
+    --color-yellow-500: oklch(.795 .184 86.047);
+    --color-yellow-600: oklch(.681 .162 75.834);
     --color-yellow-700: oklch(.554 .135 66.442);
     --color-yellow-800: oklch(.476 .114 61.907);
     --color-lime-600: oklch(.648 .2 131.684);
@@ -755,6 +757,13 @@
     overflow: hidden;
   }
 
+  .line-clamp-3 {
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    display: -webkit-box;
+    overflow: hidden;
+  }
+
   .block {
     display: block;
   }
@@ -865,6 +874,10 @@
 
   .h-48 {
     height: calc(var(--spacing) * 48);
+  }
+
+  .h-56 {
+    height: calc(var(--spacing) * 56);
   }
 
   .h-64 {
@@ -1013,10 +1026,6 @@
 
   .max-w-md {
     max-width: var(--container-md);
-  }
-
-  .max-w-none {
-    max-width: none;
   }
 
   .max-w-xl {
@@ -1649,6 +1658,10 @@
     background-color: var(--color-yellow-100);
   }
 
+  .bg-yellow-500 {
+    background-color: var(--color-yellow-500);
+  }
+
   .bg-gradient-to-br {
     --tw-gradient-position: to bottom right in oklab;
     background-image: linear-gradient(var(--tw-gradient-stops));
@@ -2273,6 +2286,10 @@
     --tw-ring-color: var(--color-emerald-500);
   }
 
+  .ring-emerald-600 {
+    --tw-ring-color: var(--color-emerald-600);
+  }
+
   .ring-offset-2 {
     --tw-ring-offset-width: 2px;
     --tw-ring-offset-shadow: var(--tw-ring-inset, ) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color);
@@ -2428,6 +2445,13 @@
   @media (hover: hover) {
     .group-hover\:opacity-100:is(:where(.group):hover *) {
       opacity: 1;
+    }
+  }
+
+  @media (hover: hover) {
+    .group-hover\/btn\:translate-x-1:is(:where(.group\/btn):hover *) {
+      --tw-translate-x: calc(var(--spacing) * 1);
+      translate: var(--tw-translate-x) var(--tw-translate-y);
     }
   }
 
@@ -2616,8 +2640,8 @@
   }
 
   @media (hover: hover) {
-    .hover\:bg-white:hover {
-      background-color: var(--color-white);
+    .hover\:bg-yellow-600:hover {
+      background-color: var(--color-yellow-600);
     }
   }
 
