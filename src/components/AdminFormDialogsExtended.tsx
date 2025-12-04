@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
 import { Button } from './ui/button';
 import { Upload, X } from 'lucide-react';
-import { toast } from 'sonner';
+import { toast } from 'sonner@2.0.3';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
@@ -19,12 +19,33 @@ interface FormDialogProps {
 export function ReportFormDialog({ show, onClose, editingItem, onSuccess, userRole }: FormDialogProps) {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
-    title: editingItem?.title || '',
-    year: editingItem?.year || new Date().getFullYear().toString(),
-    fileUrl: editingItem?.fileUrl || '',
-    description: editingItem?.description || '',
-    fileSize: editingItem?.fileSize || ''
+    title: '',
+    year: new Date().getFullYear().toString(),
+    fileUrl: '',
+    description: '',
+    fileSize: ''
   });
+
+  // Update form data when editingItem changes
+  useEffect(() => {
+    if (editingItem) {
+      setFormData({
+        title: editingItem.title || '',
+        year: editingItem.year || new Date().getFullYear().toString(),
+        fileUrl: editingItem.fileUrl || '',
+        description: editingItem.description || '',
+        fileSize: editingItem.fileSize || ''
+      });
+    } else {
+      setFormData({
+        title: '',
+        year: new Date().getFullYear().toString(),
+        fileUrl: '',
+        description: '',
+        fileSize: ''
+      });
+    }
+  }, [editingItem, show]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,16 +55,16 @@ export function ReportFormDialog({ show, onClose, editingItem, onSuccess, userRo
     }
     setLoading(true);
     try {
-      const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/reports`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${publicAnonKey}` },
-          body: JSON.stringify(formData)
-        }
-      );
+      const url = editingItem
+        ? `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/reports/${editingItem.id}`
+        : `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/reports`;
+      const response = await fetch(url, {
+        method: editingItem ? 'PUT' : 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${publicAnonKey}` },
+        body: JSON.stringify(formData)
+      });
       if (!response.ok) throw new Error('Failed to save');
-      toast.success('Report added');
+      toast.success(editingItem ? 'Report updated' : 'Report added');
       onSuccess();
       onClose();
     } catch (err: any) {
@@ -57,7 +78,7 @@ export function ReportFormDialog({ show, onClose, editingItem, onSuccess, userRo
     <Dialog open={show} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Add Annual Report</DialogTitle>
+          <DialogTitle>{editingItem ? 'Edit Annual Report' : 'Add Annual Report'}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -130,16 +151,45 @@ export function EventFormDialog({ show, onClose, editingItem, onSuccess, userRol
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [formData, setFormData] = useState({
-    title: editingItem?.title || '',
-    description: editingItem?.description || '',
-    date: editingItem?.date || '',
-    time: editingItem?.time || '',
-    location: editingItem?.location || '',
-    image: editingItem?.image || '',
-    category: editingItem?.category || 'general',
-    capacity: editingItem?.capacity || 50,
-    status: editingItem?.status || 'upcoming'
+    title: '',
+    description: '',
+    date: '',
+    time: '',
+    location: '',
+    image: '',
+    category: 'general',
+    capacity: 50,
+    status: 'upcoming'
   });
+
+  // Update form data when editingItem changes
+  useEffect(() => {
+    if (editingItem) {
+      setFormData({
+        title: editingItem.title || '',
+        description: editingItem.description || '',
+        date: editingItem.date || '',
+        time: editingItem.time || '',
+        location: editingItem.location || '',
+        image: editingItem.image || '',
+        category: editingItem.category || 'general',
+        capacity: editingItem.capacity || 50,
+        status: editingItem.status || 'upcoming'
+      });
+    } else {
+      setFormData({
+        title: '',
+        description: '',
+        date: '',
+        time: '',
+        location: '',
+        image: '',
+        category: 'general',
+        capacity: 50,
+        status: 'upcoming'
+      });
+    }
+  }, [editingItem, show]);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -330,13 +380,36 @@ export function PartnerFormDialog({ show, onClose, editingItem, onSuccess, userR
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [formData, setFormData] = useState({
-    name: editingItem?.name || '',
-    description: editingItem?.description || '',
-    logo: editingItem?.logo || '',
-    website: editingItem?.website || '',
-    category: editingItem?.category || 'general',
-    since: editingItem?.since || new Date().getFullYear().toString()
+    name: '',
+    description: '',
+    logo: '',
+    website: '',
+    category: 'general',
+    since: new Date().getFullYear().toString()
   });
+
+  // Update form data when editingItem changes
+  useEffect(() => {
+    if (editingItem) {
+      setFormData({
+        name: editingItem.name || '',
+        description: editingItem.description || '',
+        logo: editingItem.logo || '',
+        website: editingItem.website || '',
+        category: editingItem.category || 'general',
+        since: editingItem.since || new Date().getFullYear().toString()
+      });
+    } else {
+      setFormData({
+        name: '',
+        description: '',
+        logo: '',
+        website: '',
+        category: 'general',
+        since: new Date().getFullYear().toString()
+      });
+    }
+  }, [editingItem, show]);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

@@ -1,8 +1,7 @@
-import { useState, useEffect, useRef } from 'react';
-import type { ChangeEvent } from 'react';
+import { useState, useEffect } from 'react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
-import { toast } from 'sonner';
-import { Save, RefreshCw } from 'lucide-react';
+import { toast } from 'sonner@2.0.3';
+import { Save, RefreshCw, Plus, Trash2 } from 'lucide-react';
 import { Card } from './ui/card';
 import { Button } from './ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
@@ -16,11 +15,6 @@ export function SiteSettingsTab({ settings: initialSettings, onUpdate }: SiteSet
   const [settings, setSettings] = useState(initialSettings || {});
   const [saving, setSaving] = useState(false);
   const [activeSection, setActiveSection] = useState('general');
-  const [logoUploading, setLogoUploading] = useState(false);
-  const [heroImageUploading, setHeroImageUploading] = useState(false);
-  const [newOpportunityCategory, setNewOpportunityCategory] = useState('');
-  const logoFileInputRef = useRef<HTMLInputElement | null>(null);
-  const heroImageFileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     if (initialSettings) {
@@ -83,139 +77,6 @@ export function SiteSettingsTab({ settings: initialSettings, onUpdate }: SiteSet
     } finally {
       setSaving(false);
     }
-  };
-
-  const handleLogoFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) {
-      return;
-    }
-
-    setLogoUploading(true);
-
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
-
-      const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/upload-image`,
-        {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${publicAnonKey}` },
-          body: formData,
-        }
-      );
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to upload logo');
-      }
-
-      setSettings((prev: any) => ({
-        ...prev,
-        general: {
-          ...(prev?.general || {}),
-          logoUrl: data.url,
-        },
-      }));
-
-      toast.success('Logo uploaded successfully');
-    } catch (error) {
-      console.error('Logo upload error:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to upload logo');
-    } finally {
-      if (logoFileInputRef.current) {
-        logoFileInputRef.current.value = '';
-      }
-      setLogoUploading(false);
-    }
-  };
-
-  const handleHeroImageFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) {
-      return;
-    }
-
-    setHeroImageUploading(true);
-
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
-
-      const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/upload-image`,
-        {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${publicAnonKey}` },
-          body: formData,
-        }
-      );
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to upload hero image');
-      }
-
-      setSettings((prev: any) => ({
-        ...prev,
-        hero: {
-          ...(prev?.hero || {}),
-          imageUrl: data.url,
-        },
-      }));
-
-      toast.success('Hero image uploaded successfully');
-    } catch (error) {
-      console.error('Hero image upload error:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to upload hero image');
-    } finally {
-      if (heroImageFileInputRef.current) {
-        heroImageFileInputRef.current.value = '';
-      }
-      setHeroImageUploading(false);
-    }
-  };
-
-  const opportunityCategories: string[] = settings?.categories?.opportunities || [];
-
-  const handleAddOpportunityCategory = () => {
-    const value = newOpportunityCategory.trim();
-    if (!value) {
-      toast.error('Enter a category name before adding');
-      return;
-    }
-
-    const normalized = opportunityCategories.map((item) => item.toLowerCase());
-    if (normalized.includes(value.toLowerCase())) {
-      toast.error('Category already exists');
-      return;
-    }
-
-    setSettings((prev: any) => ({
-      ...prev,
-      categories: {
-        ...(prev?.categories || {}),
-        opportunities: [...opportunityCategories, value],
-      },
-    }));
-
-    setNewOpportunityCategory('');
-    toast.success('Category added');
-  };
-
-  const handleRemoveOpportunityCategory = (index: number) => {
-    const next = opportunityCategories.filter((_, idx) => idx !== index);
-
-    setSettings((prev: any) => ({
-      ...prev,
-      categories: {
-        ...(prev?.categories || {}),
-        opportunities: next,
-      },
-    }));
   };
 
   if (!settings || Object.keys(settings).length === 0) {
@@ -327,30 +188,6 @@ export function SiteSettingsTab({ settings: initialSettings, onUpdate }: SiteSet
                 <p className="text-xs text-gray-500 mt-1">
                   Keep the default value to use the imported logo, or provide a custom URL
                 </p>
-                <div className="flex items-center gap-3 mt-3">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => logoFileInputRef.current?.click()}
-                    disabled={logoUploading}
-                  >
-                    {logoUploading ? 'Uploading...' : 'Upload Logo'}
-                  </Button>
-                  <input
-                    ref={logoFileInputRef}
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={handleLogoFileChange}
-                  />
-                  {settings.general?.logoUrl && (
-                    <img
-                      src={settings.general.logoUrl}
-                      alt="Site logo preview"
-                      className="h-12 w-auto object-contain border rounded px-2 py-1 bg-white"
-                    />
-                  )}
-                </div>
               </div>
 
               <div>
@@ -383,50 +220,6 @@ export function SiteSettingsTab({ settings: initialSettings, onUpdate }: SiteSet
               </div>
             </div>
           </Card>
-                <div className="mt-6 pt-6 border-t border-gray-100">
-                  <label className="block text-sm text-gray-700 mb-2">Volunteer Opportunity Categories</label>
-                  <p className="text-xs text-gray-500 mb-3">
-                    Customize the categories volunteers can choose from when you add opportunities.
-                  </p>
-                  <div className="space-y-2">
-                    {opportunityCategories.length === 0 && (
-                      <p className="text-sm text-gray-500">No categories added yet.</p>
-                    )}
-                    {opportunityCategories.map((category, index) => (
-                      <div
-                        key={`${category}-${index}`}
-                        className="flex items-center justify-between bg-gray-50 px-3 py-2 rounded-lg"
-                      >
-                        <span className="text-sm text-gray-700">{category}</span>
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveOpportunityCategory(index)}
-                          className="text-xs text-red-600 hover:text-red-700"
-                        >
-                          Remove
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="mt-3 flex gap-2">
-                    <input
-                      type="text"
-                      value={newOpportunityCategory}
-                      onChange={(e) => setNewOpportunityCategory(e.target.value)}
-                      placeholder="Add a new category"
-                      className="flex-1 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
-                      onKeyDown={(event) => {
-                        if (event.key === 'Enter') {
-                          event.preventDefault();
-                          handleAddOpportunityCategory();
-                        }
-                      }}
-                    />
-                    <Button type="button" onClick={handleAddOpportunityCategory}>
-                      Add
-                    </Button>
-                  </div>
-                </div>
         </TabsContent>
 
         {/* Hero Section */}
@@ -523,30 +316,6 @@ export function SiteSettingsTab({ settings: initialSettings, onUpdate }: SiteSet
                   }
                   className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
                 />
-                <div className="flex items-center gap-3 mt-3">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => heroImageFileInputRef.current?.click()}
-                    disabled={heroImageUploading}
-                  >
-                    {heroImageUploading ? 'Uploading...' : 'Upload Hero Image'}
-                  </Button>
-                  <input
-                    ref={heroImageFileInputRef}
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={handleHeroImageFileChange}
-                  />
-                  {settings.hero?.imageUrl && (
-                    <img
-                      src={settings.hero.imageUrl}
-                      alt="Hero preview"
-                      className="h-16 w-16 rounded object-cover border"
-                    />
-                  )}
-                </div>
               </div>
 
               <div>

@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Upload, X } from 'lucide-react';
-import { toast } from 'sonner';
+import { toast } from 'sonner@2.0.3';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
@@ -21,16 +21,45 @@ export function TeamFormDialog({ show, onClose, editingItem, onSuccess, userRole
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [formData, setFormData] = useState({
-    name: editingItem?.name || '',
-    role: editingItem?.role || '',
-    department: editingItem?.department || 'general',
-    bio: editingItem?.bio || '',
-    image: editingItem?.image || '',
-    email: editingItem?.email || '',
-    linkedin: editingItem?.linkedin || '',
-    twitter: editingItem?.twitter || '',
-    order: editingItem?.order || 999
+    name: '',
+    role: '',
+    department: 'general',
+    bio: '',
+    image: '',
+    email: '',
+    linkedin: '',
+    twitter: '',
+    order: 999
   });
+
+  // Update form data when editingItem changes
+  useEffect(() => {
+    if (editingItem) {
+      setFormData({
+        name: editingItem.name || '',
+        role: editingItem.role || '',
+        department: editingItem.department || 'general',
+        bio: editingItem.bio || '',
+        image: editingItem.image || '',
+        email: editingItem.email || '',
+        linkedin: editingItem.linkedin || '',
+        twitter: editingItem.twitter || '',
+        order: editingItem.order || 999
+      });
+    } else {
+      setFormData({
+        name: '',
+        role: '',
+        department: 'general',
+        bio: '',
+        image: '',
+        email: '',
+        linkedin: '',
+        twitter: '',
+        order: 999
+      });
+    }
+  }, [editingItem, show]);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -212,13 +241,36 @@ export function StoryFormDialog({ show, onClose, editingItem, onSuccess, userRol
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [formData, setFormData] = useState({
-    name: editingItem?.name || '',
-    title: editingItem?.title || '',
-    story: editingItem?.story || '',
-    image: editingItem?.image || '',
-    category: editingItem?.category || 'general',
-    impact: editingItem?.impact || ''
+    name: '',
+    title: '',
+    story: '',
+    image: '',
+    category: 'general',
+    impact: ''
   });
+
+  // Update form data when editingItem changes
+  useEffect(() => {
+    if (editingItem) {
+      setFormData({
+        name: editingItem.name || '',
+        title: editingItem.title || '',
+        story: editingItem.story || '',
+        image: editingItem.image || '',
+        category: editingItem.category || 'general',
+        impact: editingItem.impact || ''
+      });
+    } else {
+      setFormData({
+        name: '',
+        title: '',
+        story: '',
+        image: '',
+        category: 'general',
+        impact: ''
+      });
+    }
+  }, [editingItem, show]);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

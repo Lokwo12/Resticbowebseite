@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
 import { Button } from './ui/button';
-import { toast } from 'sonner';
+import { toast } from 'sonner@2.0.3';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
@@ -12,50 +12,50 @@ interface FormDialogProps {
   editingItem: any;
   onSuccess: () => void;
   userRole: string;
-  categoryOptions?: string[];
 }
 
 // Volunteer Opportunity Form Dialog
-export function OpportunityFormDialog({ show, onClose, editingItem, onSuccess, userRole, categoryOptions }: FormDialogProps) {
+export function OpportunityFormDialog({ show, onClose, editingItem, onSuccess, userRole }: FormDialogProps) {
   const [loading, setLoading] = useState(false);
-
-  const defaultCategories = ['General', 'Education', 'Healthcare', 'Community', 'Fundraising'];
-  const baseCategories = (categoryOptions && categoryOptions.length > 0 ? categoryOptions : defaultCategories)
-    .map((item) => item.trim())
-    .filter((item) => item.length > 0);
-  const editingCategory = (editingItem?.category || editingItem?.type || '').trim();
-  const availableCategories = [...baseCategories];
-
-  if (editingCategory && !availableCategories.some((item) => item.toLowerCase() === editingCategory.toLowerCase())) {
-    availableCategories.push(editingCategory);
-  }
-
-  const uniqueCategories = availableCategories.filter((item, index, arr) => arr.findIndex((value) => value.toLowerCase() === item.toLowerCase()) === index);
-  const categoryFallback = uniqueCategories[0] || 'General';
-
-  type OpportunityFormData = {
-    title: string;
-    description: string;
-    requirements: string[];
-    timeCommitment: string;
-    location: string;
-    category: string;
-    openPositions: number;
-    benefits: string[];
-  };
-
-  const [formData, setFormData] = useState<OpportunityFormData>({
-    title: editingItem?.title || '',
-    description: editingItem?.description || '',
-    requirements: Array.isArray(editingItem?.requirements) ? editingItem.requirements : [],
-    timeCommitment: editingItem?.timeCommitment || '',
-    location: editingItem?.location || '',
-  category: editingItem?.category || editingItem?.type || categoryFallback,
-    openPositions: typeof editingItem?.openPositions === 'number' ? editingItem.openPositions : 1,
-    benefits: Array.isArray(editingItem?.benefits) ? editingItem.benefits : []
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    requirements: [],
+    timeCommitment: '',
+    location: '',
+    category: 'general',
+    openPositions: 1,
+    benefits: []
   });
   const [requirementInput, setRequirementInput] = useState('');
   const [benefitInput, setBenefitInput] = useState('');
+
+  // Update form data when editingItem changes
+  useEffect(() => {
+    if (editingItem) {
+      setFormData({
+        title: editingItem.title || '',
+        description: editingItem.description || '',
+        requirements: editingItem.requirements || [],
+        timeCommitment: editingItem.timeCommitment || '',
+        location: editingItem.location || '',
+        category: editingItem.category || 'general',
+        openPositions: editingItem.openPositions || 1,
+        benefits: editingItem.benefits || []
+      });
+    } else {
+      setFormData({
+        title: '',
+        description: '',
+        requirements: [],
+        timeCommitment: '',
+        location: '',
+        category: 'general',
+        openPositions: 1,
+        benefits: []
+      });
+    }
+  }, [editingItem, show]);
 
   const addRequirement = () => {
     if (requirementInput.trim()) {
@@ -186,11 +186,11 @@ export function OpportunityFormDialog({ show, onClose, editingItem, onSuccess, u
                 onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                 className="w-full px-4 py-2 border rounded-lg"
               >
-                {uniqueCategories.map((category) => (
-                  <option key={category} value={category}>
-                    {category}
-                  </option>
-                ))}
+                <option value="general">General</option>
+                <option value="education">Education</option>
+                <option value="healthcare">Healthcare</option>
+                <option value="community">Community</option>
+                <option value="fundraising">Fundraising</option>
               </select>
             </div>
             <div>
@@ -242,11 +242,30 @@ export function OpportunityFormDialog({ show, onClose, editingItem, onSuccess, u
 export function FAQFormDialog({ show, onClose, editingItem, onSuccess, userRole }: FormDialogProps) {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
-    question: editingItem?.question || '',
-    answer: editingItem?.answer || '',
-    category: editingItem?.category || 'general',
-    order: editingItem?.order || 999
+    question: '',
+    answer: '',
+    category: 'general',
+    order: 999
   });
+
+  // Update form data when editingItem changes
+  useEffect(() => {
+    if (editingItem) {
+      setFormData({
+        question: editingItem.question || '',
+        answer: editingItem.answer || '',
+        category: editingItem.category || 'general',
+        order: editingItem.order || 999
+      });
+    } else {
+      setFormData({
+        question: '',
+        answer: '',
+        category: 'general',
+        order: 999
+      });
+    }
+  }, [editingItem, show]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -349,13 +368,36 @@ export function FAQFormDialog({ show, onClose, editingItem, onSuccess, userRole 
 export function ResourceFormDialog({ show, onClose, editingItem, onSuccess, userRole }: FormDialogProps) {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
-    title: editingItem?.title || '',
-    description: editingItem?.description || '',
-    fileUrl: editingItem?.fileUrl || '',
-    fileType: editingItem?.fileType || 'PDF',
-    fileSize: editingItem?.fileSize || '',
-    category: editingItem?.category || 'general'
+    title: '',
+    description: '',
+    fileUrl: '',
+    fileType: 'PDF',
+    fileSize: '',
+    category: 'general'
   });
+
+  // Update form data when editingItem changes
+  useEffect(() => {
+    if (editingItem) {
+      setFormData({
+        title: editingItem.title || '',
+        description: editingItem.description || '',
+        fileUrl: editingItem.fileUrl || '',
+        fileType: editingItem.fileType || 'PDF',
+        fileSize: editingItem.fileSize || '',
+        category: editingItem.category || 'general'
+      });
+    } else {
+      setFormData({
+        title: '',
+        description: '',
+        fileUrl: '',
+        fileType: 'PDF',
+        fileSize: '',
+        category: 'general'
+      });
+    }
+  }, [editingItem, show]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
