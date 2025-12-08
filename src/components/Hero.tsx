@@ -1,4 +1,4 @@
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, ChevronDown } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 
@@ -12,9 +12,49 @@ interface HeroSettings {
   stats: Array<{ value: string; label: string }>;
 }
 
+// Professional background images for the carousel
+const backgroundImages = [
+  'https://images.unsplash.com/photo-1761039808159-f02b58f07032?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxhZnJpY2FuJTIwY29tbXVuaXR5JTIwZGV2ZWxvcG1lbnR8ZW58MXx8fHwxNzY1MjMyNzc0fDA&ixlib=rb-4.1.0&q=80&w=1080',
+  'https://images.unsplash.com/photo-1641569707854-c80945fb4719?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx2b2x1bnRlZXIlMjBoZWxwaW5nJTIwY2hpbGRyZW58ZW58MXx8fHwxNzY1MTk3NzkwfDA&ixlib=rb-4.1.0&q=80&w=1080',
+  'https://images.unsplash.com/photo-1666281269793-da06484657e8?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxlZHVjYXRpb24lMjBjbGFzc3Jvb20lMjBhZnJpY2F8ZW58MXx8fHwxNzY1MjMyNzc1fDA&ixlib=rb-4.1.0&q=80&w=1080',
+  'https://images.unsplash.com/photo-1706806595136-5afefb45da1a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjb21tdW5pdHklMjBoZWFsdGhjYXJlfGVufDF8fHx8MTc2NTIzMjc3NXww&ixlib=rb-4.1.0&q=80&w=1080',
+  'https://images.unsplash.com/photo-1761466977752-de51b3ecce84?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxhZ3JpY3VsdHVyYWwlMjBkZXZlbG9wbWVudHxlbnwxfHx8fDE3NjUyMzI3NzV8MA&ixlib=rb-4.1.0&q=80&w=1080',
+];
+
 export function Hero() {
   const [settings, setSettings] = useState<HeroSettings | null>(null);
   const [loading, setLoading] = useState(true);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
+  const [imagesLoaded, setImagesLoaded] = useState<boolean[]>(new Array(backgroundImages.length).fill(false));
+
+  // Preload all background images for smooth transitions
+  useEffect(() => {
+    backgroundImages.forEach((src, index) => {
+      const img = new Image();
+      img.src = src;
+      img.onload = () => {
+        setImagesLoaded(prev => {
+          const newState = [...prev];
+          newState[index] = true;
+          return newState;
+        });
+      };
+    });
+  }, []);
+
+  // Automatic background image carousel with pause functionality
+  useEffect(() => {
+    if (isPaused) return;
+    
+    const interval = setInterval(() => {
+      setCurrentImageIndex((prevIndex) => 
+        (prevIndex + 1) % backgroundImages.length
+      );
+    }, 6000); // Change image every 6 seconds
+
+    return () => clearInterval(interval);
+  }, [isPaused]);
 
   useEffect(() => {
     fetchSettings();
@@ -74,12 +114,34 @@ export function Hero() {
 
   if (loading || !settings) {
     return (
-      <section id="home" className="pt-16 bg-gradient-to-br from-emerald-50 to-teal-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-32">
+      <section id="home" className="relative pt-16 min-h-screen">
+        {/* Background Image Carousel */}
+        <div className="absolute inset-0 z-0">
+          {backgroundImages.map((image, index) => (
+            <div
+              key={index}
+              className={`absolute inset-0 transition-opacity duration-2000 ${
+                index === currentImageIndex ? 'opacity-100' : 'opacity-0'
+              }`}
+              style={{
+                backgroundImage: `url(${image})`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                backgroundRepeat: 'no-repeat',
+              }}
+            >
+              {/* Dark overlay for better text readability */}
+              <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/50 to-black/30"></div>
+            </div>
+          ))}
+        </div>
+
+        {/* Loading skeleton */}
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-32">
           <div className="animate-pulse">
-            <div className="h-8 bg-gray-200 rounded w-1/2 mb-4"></div>
-            <div className="h-12 bg-gray-200 rounded w-3/4 mb-4"></div>
-            <div className="h-6 bg-gray-200 rounded w-full mb-4"></div>
+            <div className="h-8 bg-white/20 rounded w-1/2 mb-4"></div>
+            <div className="h-12 bg-white/20 rounded w-3/4 mb-4"></div>
+            <div className="h-6 bg-white/20 rounded w-full mb-4"></div>
           </div>
         </div>
       </section>
@@ -87,31 +149,87 @@ export function Hero() {
   }
 
   return (
-    <section id="home" className="pt-16 bg-gradient-to-br from-emerald-50 to-teal-50 overflow-hidden">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-32">
+    <section id="home" className="relative pt-16 min-h-screen overflow-hidden">
+      {/* Background Image Carousel */}
+      <div className="absolute inset-0 z-0">
+        {backgroundImages.map((image, index) => (
+          <div
+            key={index}
+            className={`absolute inset-0 transition-opacity duration-2000 ${
+              index === currentImageIndex ? 'opacity-100' : 'opacity-0'
+            }`}
+            style={{
+              backgroundImage: `url(${image})`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              backgroundRepeat: 'no-repeat',
+            }}
+          >
+            {/* Dark overlay for better text readability */}
+            <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/50 to-black/30"></div>
+          </div>
+        ))}
+      </div>
+
+      {/* Carousel Indicators */}
+      <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-20 flex gap-2">
+        {backgroundImages.map((_, index) => (
+          <button
+            key={index}
+            onClick={() => setCurrentImageIndex(index)}
+            onMouseEnter={() => setIsPaused(true)}
+            onMouseLeave={() => setIsPaused(false)}
+            className={`h-2 rounded-full transition-all duration-300 ${
+              index === currentImageIndex 
+                ? 'w-8 bg-white' 
+                : 'w-2 bg-white/50 hover:bg-white/75'
+            }`}
+            aria-label={`Go to slide ${index + 1}`}
+          />
+        ))}
+      </div>
+
+      {/* Scroll Down Indicator */}
+      <div className="absolute bottom-20 left-1/2 transform -translate-x-1/2 z-20 hidden lg:block">
+        <button
+          onClick={scrollToAbout}
+          className="flex flex-col items-center gap-2 text-white/80 hover:text-white transition-colors group animate-bounce"
+          aria-label="Scroll to learn more"
+        >
+          <span className="text-sm tracking-wider">Scroll Down</span>
+          <ChevronDown size={24} className="group-hover:translate-y-1 transition-transform" />
+        </button>
+      </div>
+
+      {/* Content */}
+      <div 
+        className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-32"
+        onMouseEnter={() => setIsPaused(true)}
+        onMouseLeave={() => setIsPaused(false)}
+      >
         <div className="grid lg:grid-cols-2 gap-12 items-center">
-          {/* Content */}
+          {/* Text Content */}
           <div className="space-y-6 animate-[fadeInUp_0.8s_ease-out]">
-            <div className="inline-block bg-emerald-100 text-emerald-700 px-4 py-2 rounded-full text-sm animate-[fadeIn_0.5s_ease-out] hover:scale-105 transition-transform duration-300">
+            <div className="inline-block bg-emerald-500/90 backdrop-blur-sm text-white px-4 py-2 rounded-full text-sm animate-[fadeIn_0.5s_ease-out] hover:scale-105 transition-transform duration-300 shadow-lg">
               {settings.badgeText}
             </div>
-            <h1 className="text-4xl lg:text-6xl text-gray-900 animate-[fadeInUp_0.8s_ease-out_0.2s_both]">
+            <h1 className="text-4xl lg:text-6xl text-white drop-shadow-2xl animate-[fadeInUp_0.8s_ease-out_0.2s_both]">
               {settings.title}
             </h1>
-            <p className="text-xl text-gray-600 animate-[fadeInUp_0.8s_ease-out_0.4s_both]">
+            <p className="text-xl text-white/95 drop-shadow-lg animate-[fadeInUp_0.8s_ease-out_0.4s_both]">
               {settings.subtitle}
             </p>
             <div className="flex flex-col sm:flex-row gap-4 animate-[fadeInUp_0.8s_ease-out_0.6s_both]">
               <button
                 onClick={scrollToDonate}
-                className="group bg-emerald-600 text-white px-8 py-4 rounded-lg hover:bg-emerald-700 transition-all duration-300 flex items-center justify-center gap-2 hover:shadow-lg hover:-translate-y-0.5"
+                className="group bg-emerald-600 text-white px-8 py-4 rounded-lg hover:bg-emerald-700 transition-all duration-300 flex items-center justify-center gap-2 hover:shadow-2xl hover:-translate-y-0.5 shadow-lg"
               >
                 {settings.primaryButtonText}
                 <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform duration-300" />
               </button>
               <button
                 onClick={scrollToAbout}
-                className="border-2 border-emerald-600 text-emerald-600 px-8 py-4 rounded-lg hover:bg-emerald-50 transition-all duration-300 hover:shadow-md hover:-translate-y-0.5"
+                className="border-2 border-white bg-white/10 backdrop-blur-sm text-white px-8 py-4 rounded-lg hover:bg-white/20 transition-all duration-300 hover:shadow-2xl hover:-translate-y-0.5 shadow-lg"
               >
                 {settings.secondaryButtonText}
               </button>
@@ -120,9 +238,9 @@ export function Hero() {
             {/* Stats */}
             <div className="grid grid-cols-3 gap-6 pt-8 animate-[fadeInUp_0.8s_ease-out_0.8s_both]">
               {settings.stats.map((stat, index) => (
-                <div key={index} className="group hover:scale-105 transition-transform duration-300">
-                  <div className="text-3xl text-emerald-600 group-hover:text-emerald-700 transition-colors">{stat.value}</div>
-                  <div className="text-sm text-gray-600">{stat.label}</div>
+                <div key={index} className="group hover:scale-105 transition-transform duration-300 bg-white/10 backdrop-blur-sm p-4 rounded-lg shadow-lg">
+                  <div className="text-3xl text-emerald-400 group-hover:text-emerald-300 transition-colors drop-shadow-lg">{stat.value}</div>
+                  <div className="text-sm text-white/90">{stat.label}</div>
                 </div>
               ))}
             </div>
@@ -130,14 +248,14 @@ export function Hero() {
 
           {/* Image */}
           <div className="relative animate-[fadeInRight_0.8s_ease-out_0.4s_both]">
-            <div className="aspect-square rounded-2xl overflow-hidden shadow-2xl hover:shadow-3xl transition-shadow duration-500">
+            <div className="aspect-square rounded-2xl overflow-hidden shadow-2xl hover:shadow-3xl transition-shadow duration-500 ring-4 ring-white/20">
               <img
                 src={settings.imageUrl}
                 alt="Community empowerment"
                 className="w-full h-full object-cover hover:scale-105 transition-transform duration-700"
               />
             </div>
-            <div className="absolute -bottom-6 -right-6 bg-white p-6 rounded-xl shadow-lg hidden lg:block animate-[fadeIn_0.8s_ease-out_1s_both] hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+            <div className="absolute -bottom-6 -right-6 bg-white p-6 rounded-xl shadow-2xl hidden lg:block animate-[fadeIn_0.8s_ease-out_1s_both] hover:shadow-3xl hover:-translate-y-1 transition-all duration-300">
               <div className="text-3xl">🤝</div>
               <div className="mt-2">
                 <div className="text-sm text-gray-600">Community Impact</div>
