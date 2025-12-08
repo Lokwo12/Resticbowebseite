@@ -14,11 +14,30 @@ export function Header() {
   const [settings, setSettings] = useState<GeneralSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [scrolled, setScrolled] = useState(false);
+  const [activeSection, setActiveSection] = useState('home');
 
   useEffect(() => {
     const handleScroll = () => {
       setScrolled(window.scrollY > 20);
+      
+      // Track active section
+      const sections = ['home', 'about', 'programs', 'impact', 'volunteer', 'contact'];
+      const scrollPosition = window.scrollY + 100;
+      
+      for (const section of sections) {
+        const element = document.getElementById(section);
+        if (element) {
+          const offsetTop = element.offsetTop;
+          const offsetBottom = offsetTop + element.offsetHeight;
+          
+          if (scrollPosition >= offsetTop && scrollPosition < offsetBottom) {
+            setActiveSection(section);
+            break;
+          }
+        }
+      }
     };
+    
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
@@ -81,7 +100,11 @@ export function Header() {
   }
 
   return (
-    <header className={`fixed top-0 left-0 right-0 bg-white z-50 transition-all duration-300 ${scrolled ? 'shadow-lg' : 'shadow-sm'}`}>
+    <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+      scrolled 
+        ? 'bg-white shadow-lg' 
+        : 'bg-white/10 backdrop-blur-md border-b border-white/20'
+    }`}>
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className={`flex justify-between items-center transition-all duration-300 ${scrolled ? 'h-14' : 'h-16'}`}>
           {/* Logo */}
@@ -93,8 +116,12 @@ export function Header() {
                 className={`w-auto transition-all duration-300 group-hover:scale-105 ${scrolled ? 'h-12 sm:h-14' : 'h-14 sm:h-16'}`} 
               />
               <div className="hidden sm:block">
-                <h1 className="text-emerald-700 leading-tight group-hover:text-emerald-600 transition-colors">{settings.siteName}</h1>
-                <p className="text-xs text-gray-600">{settings.tagline}</p>
+                <h1 className={`leading-tight group-hover:text-emerald-600 transition-colors ${
+                  scrolled ? 'text-emerald-700' : 'text-white drop-shadow-lg'
+                }`}>{settings.siteName}</h1>
+                <p className={`text-xs transition-colors ${
+                  scrolled ? 'text-gray-600' : 'text-white/90 drop-shadow'
+                }`}>{settings.tagline}</p>
               </div>
             </button>
           </div>
@@ -103,43 +130,71 @@ export function Header() {
           <div className="hidden lg:flex items-center space-x-6">
             <button
               onClick={() => scrollToSection('home')}
-              className="text-gray-700 hover:text-emerald-600 transition-all duration-300 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-emerald-600 hover:after:w-full after:transition-all"
+              className={`transition-all duration-300 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-emerald-600 hover:after:w-full after:transition-all ${
+                scrolled 
+                  ? 'text-gray-700 hover:text-emerald-600' 
+                  : 'text-white hover:text-emerald-300 drop-shadow'
+              }`}
             >
               Home
             </button>
             <button
               onClick={() => scrollToSection('about')}
-              className="text-gray-700 hover:text-emerald-600 transition-all duration-300 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-emerald-600 hover:after:w-full after:transition-all"
+              className={`transition-all duration-300 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-emerald-600 hover:after:w-full after:transition-all ${
+                scrolled 
+                  ? 'text-gray-700 hover:text-emerald-600' 
+                  : 'text-white hover:text-emerald-300 drop-shadow'
+              }`}
             >
               About
             </button>
             <button
               onClick={() => scrollToSection('programs')}
-              className="text-gray-700 hover:text-emerald-600 transition-all duration-300 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-emerald-600 hover:after:w-full after:transition-all"
+              className={`transition-all duration-300 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-emerald-600 hover:after:w-full after:transition-all ${
+                scrolled 
+                  ? 'text-gray-700 hover:text-emerald-600' 
+                  : 'text-white hover:text-emerald-300 drop-shadow'
+              }`}
             >
               Programs
             </button>
             <button
               onClick={() => scrollToSection('impact')}
-              className="text-gray-700 hover:text-emerald-600 transition-all duration-300 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-emerald-600 hover:after:w-full after:transition-all"
+              className={`transition-all duration-300 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-emerald-600 hover:after:w-full after:transition-all ${
+                scrolled 
+                  ? 'text-gray-700 hover:text-emerald-600' 
+                  : 'text-white hover:text-emerald-300 drop-shadow'
+              }`}
             >
               Impact
             </button>
             <button
               onClick={() => scrollToSection('volunteer')}
-              className="text-gray-700 hover:text-emerald-600 transition-all duration-300 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-emerald-600 hover:after:w-full after:transition-all"
+              className={`transition-all duration-300 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-emerald-600 hover:after:w-full after:transition-all ${
+                scrolled 
+                  ? 'text-gray-700 hover:text-emerald-600' 
+                  : 'text-white hover:text-emerald-300 drop-shadow'
+              }`}
             >
               Get Involved
             </button>
             <button
               onClick={() => scrollToSection('contact')}
-              className="text-gray-700 hover:text-emerald-600 transition-all duration-300 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-emerald-600 hover:after:w-full after:transition-all"
+              className={`transition-all duration-300 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-emerald-600 hover:after:w-full after:transition-all ${
+                scrolled 
+                  ? 'text-gray-700 hover:text-emerald-600' 
+                  : 'text-white hover:text-emerald-300 drop-shadow'
+              }`}
             >
               Contact
             </button>
             <button
               onClick={() => scrollToSection('donate')}
-              className="bg-emerald-600 text-white px-6 py-2 rounded-lg hover:bg-emerald-700 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300"
+              className={`px-6 py-2 rounded-lg transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 ${
+                scrolled
+                  ? 'bg-emerald-600 text-white hover:bg-emerald-700'
+                  : 'bg-white text-emerald-600 hover:bg-emerald-50 shadow-lg'
+              }`}
             >
               Donate
             </button>
@@ -148,7 +203,11 @@ export function Header() {
           {/* Mobile Menu Button */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="lg:hidden p-2 rounded-lg hover:bg-gray-100"
+            className={`lg:hidden p-2 rounded-lg transition-colors ${
+              scrolled 
+                ? 'hover:bg-gray-100 text-gray-700' 
+                : 'hover:bg-white/20 text-white'
+            }`}
           >
             {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
@@ -156,7 +215,11 @@ export function Header() {
 
         {/* Mobile Menu */}
         {mobileMenuOpen && (
-          <div className="lg:hidden py-4 border-t border-gray-200 max-h-[70vh] overflow-y-auto">
+          <div className={`lg:hidden py-4 border-t max-h-[70vh] overflow-y-auto ${
+            scrolled 
+              ? 'border-gray-200 bg-white' 
+              : 'border-white/20 bg-white/95 backdrop-blur-lg'
+          }`}>
             <div className="flex flex-col space-y-3">
               <button onClick={() => scrollToSection('home')} className="text-gray-700 hover:text-emerald-600 transition-colors text-left px-2 py-1">
                 Home
