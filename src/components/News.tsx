@@ -118,8 +118,8 @@ export function News() {
   };
 
   // Truncate content for preview
-  const truncateContent = (content: string, maxLength: number = 150) => {
-    const plainText = content.replace(/<[^>]*>/g, '');
+  const truncateContent = (content: string | undefined, maxLength: number = 150) => {
+    const plainText = (content ?? '').replace(/<[^>]*>/g, '');
     if (plainText.length <= maxLength) return plainText;
     return plainText.substring(0, maxLength) + '...';
   };
