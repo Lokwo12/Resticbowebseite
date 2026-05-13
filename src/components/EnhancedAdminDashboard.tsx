@@ -2623,21 +2623,21 @@ export function EnhancedAdminDashboard() {
                   {stories.map((story) => (
                     <Card key={story.id} className="p-6 hover:shadow-lg transition">
                       <div className="flex items-start gap-4">
-                        {story.value.image && (
-                          <img src={story.value.image} alt={story.value.name} className="w-24 h-24 object-cover rounded-lg" />
+                        {story.image && (
+                          <img src={story.image} alt={story.name} className="w-24 h-24 object-cover rounded-lg" />
                         )}
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
-                            <h4 className="text-lg text-gray-900">{story.value.title}</h4>
-                            <Badge>{story.value.category}</Badge>
+                            <h4 className="text-lg text-gray-900">{story.title}</h4>
+                            <Badge>{story.category}</Badge>
                           </div>
-                          <p className="text-sm text-emerald-600 mb-2">{story.value.name}</p>
-                          <div className="text-sm text-gray-600 prose prose-sm" dangerouslySetInnerHTML={{ __html: story.value.story?.substring(0, 150) + '...' }} />
+                          <p className="text-sm text-emerald-600 mb-2">{story.name}</p>
+                          <div className="text-sm text-gray-600 prose prose-sm" dangerouslySetInnerHTML={{ __html: story.story?.substring(0, 150) + '...' }} />
                         </div>
                         <div className="flex gap-2">
                           <Button
                             onClick={() => {
-                              setEditingItem({ ...story.value, id: story.id });
+                              setEditingItem(story);
                               setShowStoryForm(true);
                             }}
                             variant="outline"
@@ -2742,15 +2742,15 @@ export function EnhancedAdminDashboard() {
                       <div className="flex items-center justify-between">
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
-                            <h4 className="text-lg text-gray-900">{report.value.title}</h4>
-                            <Badge>{report.value.year}</Badge>
-                            {report.value.fileSize && <Badge variant="outline">{report.value.fileSize}</Badge>}
+                            <h4 className="text-lg text-gray-900">{report.title}</h4>
+                            <Badge>{report.year}</Badge>
+                            {report.fileSize && <Badge variant="outline">{report.fileSize}</Badge>}
                           </div>
-                          <p className="text-sm text-gray-600 mb-2">{report.value.description}</p>
+                          <p className="text-sm text-gray-600 mb-2">{report.description}</p>
                         </div>
                         <div className="flex gap-2">
                           <Button
-                            onClick={() => window.open(report.value.fileUrl, '_blank')}
+                            onClick={() => window.open(report.fileUrl, '_blank')}
                             variant="outline"
                             size="sm"
                           >
@@ -2803,33 +2803,33 @@ export function EnhancedAdminDashboard() {
                   {events.map((event) => (
                     <Card key={event.id} className="p-6 hover:shadow-lg transition">
                       <div className="flex items-start gap-4">
-                        {event.value.image && (
-                          <img src={event.value.image} alt={event.value.title} className="w-24 h-24 object-cover rounded-lg" />
+                        {event.image && (
+                          <img src={event.image} alt={event.title} className="w-24 h-24 object-cover rounded-lg" />
                         )}
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
-                            <h4 className="text-lg text-gray-900">{event.value.title}</h4>
+                            <h4 className="text-lg text-gray-900">{event.title}</h4>
                             <Badge className={
-                              event.value.status === 'upcoming' ? 'bg-blue-100 text-blue-700' :
-                              event.value.status === 'ongoing' ? 'bg-green-100 text-green-700' :
-                              event.value.status === 'completed' ? 'bg-gray-100 text-gray-700' :
+                              event.status === 'upcoming' ? 'bg-blue-100 text-blue-700' :
+                              event.status === 'ongoing' ? 'bg-green-100 text-green-700' :
+                              event.status === 'completed' ? 'bg-gray-100 text-gray-700' :
                               'bg-red-100 text-red-700'
                             }>
-                              {event.value.status}
+                              {event.status}
                             </Badge>
                           </div>
-                          <p className="text-sm text-gray-600 mb-2">{event.value.description}</p>
+                          <p className="text-sm text-gray-600 mb-2">{event.description}</p>
                           <div className="flex items-center gap-4 text-xs text-gray-500">
-                            <span>📅 {event.value.date}</span>
-                            <span>🕐 {event.value.time}</span>
-                            <span>📍 {event.value.location}</span>
-                            <span>👥 {event.value.capacity} capacity</span>
+                            <span>📅 {event.date}</span>
+                            <span>🕐 {event.time}</span>
+                            <span>📍 {event.location}</span>
+                            <span>👥 {event.capacity} capacity</span>
                           </div>
                         </div>
                         <div className="flex gap-2">
                           <Button
                             onClick={() => {
-                              setEditingItem({ ...event.value, id: event.id });
+                              setEditingItem(event);
                               setShowEventForm(true);
                             }}
                             variant="outline"
@@ -2946,21 +2946,21 @@ export function EnhancedAdminDashboard() {
                       <div className="flex items-start gap-4">
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
-                            <h4 className="text-lg text-gray-900">{opp.value.title}</h4>
-                            <Badge>{opp.value.type}</Badge>
-                            {opp.value.urgent && <Badge className="bg-red-100 text-red-700">Urgent</Badge>}
+                            <h4 className="text-lg text-gray-900">{opp.title}</h4>
+                            <Badge>{opp.type}</Badge>
+                            {opp.urgent && <Badge className="bg-red-100 text-red-700">Urgent</Badge>}
                           </div>
-                          <p className="text-sm text-gray-600 mb-2">{opp.value.description}</p>
+                          <p className="text-sm text-gray-600 mb-2">{opp.description}</p>
                           <div className="flex items-center gap-4 text-xs text-gray-500">
-                            <span>📍 {opp.value.location}</span>
-                            <span>🕐 {opp.value.commitment}</span>
-                            {opp.value.spotsAvailable && <span>👥 {opp.value.spotsAvailable} spots</span>}
+                            <span>📍 {opp.location}</span>
+                            <span>🕐 {opp.commitment}</span>
+                            {opp.spotsAvailable && <span>👥 {opp.spotsAvailable} spots</span>}
                           </div>
                         </div>
                         <div className="flex gap-2">
                           <Button
                             onClick={() => {
-                              setEditingItem({ ...opp.value, id: opp.id });
+                              setEditingItem(opp);
                               setShowOpportunityForm(true);
                             }}
                             variant="outline"
@@ -3082,15 +3082,15 @@ export function EnhancedAdminDashboard() {
                       <div className="flex items-center justify-between">
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
-                            <h4 className="text-lg text-gray-900">{resource.value.title}</h4>
-                            <Badge>{resource.value.type}</Badge>
-                            {resource.value.fileSize && <Badge variant="outline">{resource.value.fileSize}</Badge>}
+                            <h4 className="text-lg text-gray-900">{resource.title}</h4>
+                            <Badge>{resource.type}</Badge>
+                            {resource.fileSize && <Badge variant="outline">{resource.fileSize}</Badge>}
                           </div>
-                          <p className="text-sm text-gray-600 mb-2">{resource.value.description}</p>
+                          <p className="text-sm text-gray-600 mb-2">{resource.description}</p>
                         </div>
                         <div className="flex gap-2">
                           <Button
-                            onClick={() => window.open(resource.value.fileUrl, '_blank')}
+                            onClick={() => window.open(resource.fileUrl, '_blank')}
                             variant="outline"
                             size="sm"
                           >
@@ -3099,7 +3099,7 @@ export function EnhancedAdminDashboard() {
                           </Button>
                           <Button
                             onClick={() => {
-                              setEditingItem({ ...resource.value, id: resource.id });
+                              setEditingItem(resource);
                               setShowResourceForm(true);
                             }}
                             variant="outline"
