@@ -8,7 +8,7 @@ import * as kv from './kv_store.tsx'
 const app = new Hono()
 
 app.use('*', cors())
-app.use('*', logger(console.log))
+app.use('*', logger())
 
 const supabase = createClient(
   Deno.env.get('SUPABASE_URL')!,
@@ -585,28 +585,7 @@ app.patch('/make-server-2a4be611/admin/users/:userId/role', async (c) => {
   }
 })
 
-// Get all admin users (super-admin only)
-app.get('/make-server-2a4be611/admin/users', async (c) => {
-  try {
-    const { data: { users }, error } = await supabase.auth.admin.listUsers()
-
-    if (error) {
-      console.error('List users error:', error)
-      return c.json({ error: error.message }, 500)
-    }
-
-    // Filter to only return users with admin roles
-    const adminUsers = users.filter(user => 
-      user.user_metadata?.role && 
-      ['super-admin', 'admin', 'editor', 'viewer'].includes(user.user_metadata.role)
-    )
-
-    return c.json({ users: adminUsers })
-  } catch (error) {
-    console.error('Error fetching users:', error)
-    return c.json({ error: 'Failed to fetch users', details: String(error) }, 500)
-  }
-})
+// Note: GET /admin/users is defined further below using the KV store (admin_user: prefix)
 
 // Get all contact submissions (admin)
 app.get('/make-server-2a4be611/admin/contacts', async (c) => {
@@ -2593,52 +2572,6 @@ app.post('/make-server-2a4be611/admin/users/:id/track-login', async (c) => {
   }
 })
 
-// ============= IMAGE UPLOAD ROUTE =============
-
-// Upload image to Supabase Storage
-app.post('/make-server-2a4be611/upload-image', async (c) => {
-  try {
-    const bucketName = 'make-2a4be611-uploads'
-    const formData = await c.req.formData()
-    const file = formData.get('file') as File
-    
-    if (!file) {
-      return c.json({ error: 'No file provided' }, 400)
-    }
-
-    // Generate unique filename
-    const fileExt = file.name.split('.').pop()
-    const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`
-    const filePath = `uploads/${fileName}`
-
-    // Convert File to ArrayBuffer
-    const arrayBuffer = await file.arrayBuffer()
-    const uint8Array = new Uint8Array(arrayBuffer)
-
-    // Upload to Supabase Storage
-    const { data, error } = await supabase.storage
-      .from(bucketName)
-      .upload(filePath, uint8Array, {
-        contentType: file.type,
-        upsert: false
-      })
-
-    if (error) {
-      console.error('Storage upload error:', error)
-      return c.json({ error: 'Failed to upload image', details: error.message }, 500)
-    }
-
-    // Get public URL
-    const { data: urlData } = supabase.storage
-      .from(bucketName)
-      .getPublicUrl(filePath)
-
-    console.log('Image uploaded successfully:', urlData.publicUrl)
-    return c.json({ success: true, url: urlData.publicUrl })
-  } catch (error) {
-    console.error('Error uploading image:', error)
-    return c.json({ error: 'Failed to upload image', details: String(error) }, 500)
-  }
-})
+// Note: The primary image upload route is defined above at line ~449. This duplicate is removed.
 
 Deno.serve(app.fetch)

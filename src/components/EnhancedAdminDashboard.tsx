@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js@2';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { toast } from 'sonner@2.0.3';
-import logo from 'figma:asset/2b36c5cb8ddf5552ba2d3e612fd68401a7bb193e.png';
+const logo = '/logo.png';
 import {
   LayoutDashboard,
   FileText,
@@ -217,9 +217,15 @@ export function EnhancedAdminDashboard() {
   useEffect(() => {
     if (isAuthenticated) {
       loadData();
-      initializeDefaults(); // Initialize default data if needed
     }
   }, [activeTab, isAuthenticated]);
+
+  // Initialize defaults only once when user first authenticates
+  useEffect(() => {
+    if (isAuthenticated) {
+      initializeDefaults();
+    }
+  }, [isAuthenticated]);
 
   const initializeDefaults = async () => {
     try {
@@ -516,20 +522,20 @@ export function EnhancedAdminDashboard() {
   const handleImageUpload = async (file: File) => {
     setUploadingImage(true);
     try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-      
-      const { data, error } = await supabase.storage
-        .from('make-2a4be611-images')
-        .upload(fileName, file);
-
-      if (error) throw error;
-
-      const { data: { signedUrl } } = await supabase.storage
-        .from('make-2a4be611-images')
-        .createSignedUrl(fileName, 31536000);
-
-      return signedUrl;
+      // Use the server-side upload endpoint to get a public URL
+      const formDataObj = new FormData();
+      formDataObj.append('file', file);
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/upload-image`,
+        {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${publicAnonKey}` },
+          body: formDataObj,
+        }
+      );
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Upload failed');
+      return data.url;
     } catch (err: any) {
       console.error('Upload error:', err);
       toast.error('Failed to upload image');
@@ -1088,7 +1094,7 @@ export function EnhancedAdminDashboard() {
 
     try {
       const url = editingItem
-        ? `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/users/${editingItem.value.id}`
+        ? `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/users/${editingItem.id || editingItem.value?.id}`
         : `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/users`;
 
       const response = await fetch(url, {
