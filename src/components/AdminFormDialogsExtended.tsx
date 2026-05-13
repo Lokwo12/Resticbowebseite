@@ -76,11 +76,11 @@ export function ReportFormDialog({ show, onClose, editingItem, onSuccess, userRo
 
   return (
     <Dialog open={show} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
+      <DialogContent className="max-w-2xl bg-white/95 backdrop-blur-2xl rounded-[2rem] p-8 border-0 shadow-2xl overflow-hidden">
+        <DialogHeader className="mb-2">
           <DialogTitle>{editingItem ? 'Edit Annual Report' : 'Add Annual Report'}</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <label className="block text-sm mb-2">Report Title *</label>
             <input
@@ -89,7 +89,7 @@ export function ReportFormDialog({ show, onClose, editingItem, onSuccess, userRo
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
               required
               placeholder="e.g., Annual Report 2024"
-              className="w-full px-4 py-2 border rounded-lg"
+              className="w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none"
             />
           </div>
           <div>
@@ -100,7 +100,7 @@ export function ReportFormDialog({ show, onClose, editingItem, onSuccess, userRo
               onChange={(e) => setFormData({ ...formData, year: e.target.value })}
               required
               placeholder="2024"
-              className="w-full px-4 py-2 border rounded-lg"
+              className="w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none"
             />
           </div>
           <div>
@@ -111,7 +111,7 @@ export function ReportFormDialog({ show, onClose, editingItem, onSuccess, userRo
               onChange={(e) => setFormData({ ...formData, fileUrl: e.target.value })}
               required
               placeholder="https://example.com/report.pdf"
-              className="w-full px-4 py-2 border rounded-lg"
+              className="w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none"
             />
             <p className="text-xs text-gray-500 mt-1">Upload your PDF to a file hosting service and paste the URL here</p>
           </div>
@@ -121,7 +121,7 @@ export function ReportFormDialog({ show, onClose, editingItem, onSuccess, userRo
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               rows={3}
-              className="w-full px-4 py-2 border rounded-lg"
+              className="w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none"
             />
           </div>
           <div>
@@ -131,12 +131,12 @@ export function ReportFormDialog({ show, onClose, editingItem, onSuccess, userRo
               value={formData.fileSize}
               onChange={(e) => setFormData({ ...formData, fileSize: e.target.value })}
               placeholder="e.g., 2.5 MB"
-              className="w-full px-4 py-2 border rounded-lg"
+              className="w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none"
             />
           </div>
           <div className="flex gap-2 justify-end pt-4">
             <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-            <Button type="submit" disabled={loading}>
+            <Button type="submit" disabled={loading} className="rounded-xl px-6 bg-emerald-600 hover:bg-emerald-700 shadow-sm hover:shadow transition-all">
               {loading ? 'Saving...' : 'Save'}
             </Button>
           </div>
@@ -242,11 +242,11 @@ export function EventFormDialog({ show, onClose, editingItem, onSuccess, userRol
 
   return (
     <Dialog open={show} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white/95 backdrop-blur-2xl rounded-[2rem] p-8 border-0 shadow-2xl overflow-hidden">
+        <DialogHeader className="mb-2">
           <DialogTitle>{editingItem ? 'Edit Event' : 'Add Event'}</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <label className="block text-sm mb-2">Event Title *</label>
             <input
@@ -254,7 +254,7 @@ export function EventFormDialog({ show, onClose, editingItem, onSuccess, userRol
               value={formData.title}
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
               required
-              className="w-full px-4 py-2 border rounded-lg"
+              className="w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none"
             />
           </div>
           <div>
@@ -264,7 +264,7 @@ export function EventFormDialog({ show, onClose, editingItem, onSuccess, userRol
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               required
               rows={4}
-              className="w-full px-4 py-2 border rounded-lg"
+              className="w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none"
             />
           </div>
           <div className="grid grid-cols-2 gap-4">
@@ -275,7 +275,7 @@ export function EventFormDialog({ show, onClose, editingItem, onSuccess, userRol
                 value={formData.date}
                 onChange={(e) => setFormData({ ...formData, date: e.target.value })}
                 required
-                className="w-full px-4 py-2 border rounded-lg"
+                className="w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none"
               />
             </div>
             <div>
@@ -285,7 +285,7 @@ export function EventFormDialog({ show, onClose, editingItem, onSuccess, userRol
                 value={formData.time}
                 onChange={(e) => setFormData({ ...formData, time: e.target.value })}
                 required
-                className="w-full px-4 py-2 border rounded-lg"
+                className="w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none"
               />
             </div>
           </div>
@@ -296,7 +296,7 @@ export function EventFormDialog({ show, onClose, editingItem, onSuccess, userRol
               value={formData.location}
               onChange={(e) => setFormData({ ...formData, location: e.target.value })}
               required
-              className="w-full px-4 py-2 border rounded-lg"
+              className="w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none"
             />
           </div>
           <div className="grid grid-cols-2 gap-4">
@@ -305,7 +305,7 @@ export function EventFormDialog({ show, onClose, editingItem, onSuccess, userRol
               <select
                 value={formData.category}
                 onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                className="w-full px-4 py-2 border rounded-lg"
+                className="w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none"
               >
                 <option value="general">General</option>
                 <option value="workshop">Workshop</option>
@@ -320,7 +320,7 @@ export function EventFormDialog({ show, onClose, editingItem, onSuccess, userRol
                 type="number"
                 value={formData.capacity}
                 onChange={(e) => setFormData({ ...formData, capacity: parseInt(e.target.value) })}
-                className="w-full px-4 py-2 border rounded-lg"
+                className="w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none"
               />
             </div>
           </div>
@@ -329,7 +329,7 @@ export function EventFormDialog({ show, onClose, editingItem, onSuccess, userRol
             <select
               value={formData.status}
               onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-              className="w-full px-4 py-2 border rounded-lg"
+              className="w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none"
             >
               <option value="upcoming">Upcoming</option>
               <option value="ongoing">Ongoing</option>
@@ -365,7 +365,7 @@ export function EventFormDialog({ show, onClose, editingItem, onSuccess, userRol
           </div>
           <div className="flex gap-2 justify-end pt-4">
             <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-            <Button type="submit" disabled={loading}>
+            <Button type="submit" disabled={loading} className="rounded-xl px-6 bg-emerald-600 hover:bg-emerald-700 shadow-sm hover:shadow transition-all">
               {loading ? 'Saving...' : 'Save'}
             </Button>
           </div>
@@ -462,11 +462,11 @@ export function PartnerFormDialog({ show, onClose, editingItem, onSuccess, userR
 
   return (
     <Dialog open={show} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white/95 backdrop-blur-2xl rounded-[2rem] p-8 border-0 shadow-2xl overflow-hidden">
+        <DialogHeader className="mb-2">
           <DialogTitle>{editingItem ? 'Edit Partner' : 'Add Partner'}</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <label className="block text-sm mb-2">Partner Name *</label>
             <input
@@ -474,7 +474,7 @@ export function PartnerFormDialog({ show, onClose, editingItem, onSuccess, userR
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               required
-              className="w-full px-4 py-2 border rounded-lg"
+              className="w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none"
             />
           </div>
           <div>
@@ -483,7 +483,7 @@ export function PartnerFormDialog({ show, onClose, editingItem, onSuccess, userR
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               rows={3}
-              className="w-full px-4 py-2 border rounded-lg"
+              className="w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none"
             />
           </div>
           <div>
@@ -493,7 +493,7 @@ export function PartnerFormDialog({ show, onClose, editingItem, onSuccess, userR
               value={formData.website}
               onChange={(e) => setFormData({ ...formData, website: e.target.value })}
               placeholder="https://example.com"
-              className="w-full px-4 py-2 border rounded-lg"
+              className="w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none"
             />
           </div>
           <div className="grid grid-cols-2 gap-4">
@@ -502,7 +502,7 @@ export function PartnerFormDialog({ show, onClose, editingItem, onSuccess, userR
               <select
                 value={formData.category}
                 onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                className="w-full px-4 py-2 border rounded-lg"
+                className="w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none"
               >
                 <option value="general">General</option>
                 <option value="corporate">Corporate</option>
@@ -518,7 +518,7 @@ export function PartnerFormDialog({ show, onClose, editingItem, onSuccess, userR
                 value={formData.since}
                 onChange={(e) => setFormData({ ...formData, since: e.target.value })}
                 placeholder="2024"
-                className="w-full px-4 py-2 border rounded-lg"
+                className="w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none"
               />
             </div>
           </div>
@@ -550,7 +550,7 @@ export function PartnerFormDialog({ show, onClose, editingItem, onSuccess, userR
           </div>
           <div className="flex gap-2 justify-end pt-4">
             <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-            <Button type="submit" disabled={loading}>
+            <Button type="submit" disabled={loading} className="rounded-xl px-6 bg-emerald-600 hover:bg-emerald-700 shadow-sm hover:shadow transition-all">
               {loading ? 'Saving...' : 'Save'}
             </Button>
           </div>

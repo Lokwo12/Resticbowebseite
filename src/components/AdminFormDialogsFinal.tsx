@@ -108,11 +108,11 @@ export function OpportunityFormDialog({ show, onClose, editingItem, onSuccess, u
 
   return (
     <Dialog open={show} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white/95 backdrop-blur-2xl rounded-[2rem] p-8 border-0 shadow-2xl overflow-hidden">
+        <DialogHeader className="mb-2">
           <DialogTitle>{editingItem ? 'Edit Opportunity' : 'Add Opportunity'}</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <label className="block text-sm mb-2">Opportunity Title *</label>
             <input
@@ -120,7 +120,7 @@ export function OpportunityFormDialog({ show, onClose, editingItem, onSuccess, u
               value={formData.title}
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
               required
-              className="w-full px-4 py-2 border rounded-lg"
+              className="w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none"
             />
           </div>
           <div>
@@ -130,7 +130,7 @@ export function OpportunityFormDialog({ show, onClose, editingItem, onSuccess, u
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               required
               rows={4}
-              className="w-full px-4 py-2 border rounded-lg"
+              className="w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none"
             />
           </div>
           <div>
@@ -164,7 +164,7 @@ export function OpportunityFormDialog({ show, onClose, editingItem, onSuccess, u
                 onChange={(e) => setFormData({ ...formData, timeCommitment: e.target.value })}
                 required
                 placeholder="e.g., 5 hours/week"
-                className="w-full px-4 py-2 border rounded-lg"
+                className="w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none"
               />
             </div>
             <div>
@@ -174,7 +174,7 @@ export function OpportunityFormDialog({ show, onClose, editingItem, onSuccess, u
                 value={formData.location}
                 onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                 required
-                className="w-full px-4 py-2 border rounded-lg"
+                className="w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none"
               />
             </div>
           </div>
@@ -184,7 +184,7 @@ export function OpportunityFormDialog({ show, onClose, editingItem, onSuccess, u
               <select
                 value={formData.category}
                 onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                className="w-full px-4 py-2 border rounded-lg"
+                className="w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none"
               >
                 <option value="general">General</option>
                 <option value="education">Education</option>
@@ -200,7 +200,7 @@ export function OpportunityFormDialog({ show, onClose, editingItem, onSuccess, u
                 value={formData.openPositions}
                 onChange={(e) => setFormData({ ...formData, openPositions: parseInt(e.target.value) })}
                 min={1}
-                className="w-full px-4 py-2 border rounded-lg"
+                className="w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none"
               />
             </div>
           </div>
@@ -228,7 +228,7 @@ export function OpportunityFormDialog({ show, onClose, editingItem, onSuccess, u
           </div>
           <div className="flex gap-2 justify-end pt-4">
             <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-            <Button type="submit" disabled={loading}>
+            <Button type="submit" disabled={loading} className="rounded-xl px-6 bg-emerald-600 hover:bg-emerald-700 shadow-sm hover:shadow transition-all">
               {loading ? 'Saving...' : 'Save'}
             </Button>
           </div>
@@ -296,11 +296,11 @@ export function FAQFormDialog({ show, onClose, editingItem, onSuccess, userRole 
 
   return (
     <Dialog open={show} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white/95 backdrop-blur-2xl rounded-[2rem] p-8 border-0 shadow-2xl overflow-hidden">
+        <DialogHeader className="mb-2">
           <DialogTitle>{editingItem ? 'Edit FAQ' : 'Add FAQ'}</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <label className="block text-sm mb-2">Question *</label>
             <input
@@ -308,7 +308,7 @@ export function FAQFormDialog({ show, onClose, editingItem, onSuccess, userRole 
               value={formData.question}
               onChange={(e) => setFormData({ ...formData, question: e.target.value })}
               required
-              className="w-full px-4 py-2 border rounded-lg"
+              className="w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none"
             />
           </div>
           <div>
@@ -333,7 +333,7 @@ export function FAQFormDialog({ show, onClose, editingItem, onSuccess, userRole 
               <select
                 value={formData.category}
                 onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                className="w-full px-4 py-2 border rounded-lg"
+                className="w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none"
               >
                 <option value="general">General</option>
                 <option value="donations">Donations</option>
@@ -348,13 +348,13 @@ export function FAQFormDialog({ show, onClose, editingItem, onSuccess, userRole 
                 type="number"
                 value={formData.order}
                 onChange={(e) => setFormData({ ...formData, order: parseInt(e.target.value) })}
-                className="w-full px-4 py-2 border rounded-lg"
+                className="w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none"
               />
             </div>
           </div>
           <div className="flex gap-2 justify-end pt-4">
             <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-            <Button type="submit" disabled={loading}>
+            <Button type="submit" disabled={loading} className="rounded-xl px-6 bg-emerald-600 hover:bg-emerald-700 shadow-sm hover:shadow transition-all">
               {loading ? 'Saving...' : 'Save'}
             </Button>
           </div>
@@ -428,11 +428,11 @@ export function ResourceFormDialog({ show, onClose, editingItem, onSuccess, user
 
   return (
     <Dialog open={show} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white/95 backdrop-blur-2xl rounded-[2rem] p-8 border-0 shadow-2xl overflow-hidden">
+        <DialogHeader className="mb-2">
           <DialogTitle>{editingItem ? 'Edit Resource' : 'Add Resource'}</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <label className="block text-sm mb-2">Resource Title *</label>
             <input
@@ -440,7 +440,7 @@ export function ResourceFormDialog({ show, onClose, editingItem, onSuccess, user
               value={formData.title}
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
               required
-              className="w-full px-4 py-2 border rounded-lg"
+              className="w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none"
             />
           </div>
           <div>
@@ -449,7 +449,7 @@ export function ResourceFormDialog({ show, onClose, editingItem, onSuccess, user
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               rows={3}
-              className="w-full px-4 py-2 border rounded-lg"
+              className="w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none"
             />
           </div>
           <div>
@@ -460,7 +460,7 @@ export function ResourceFormDialog({ show, onClose, editingItem, onSuccess, user
               onChange={(e) => setFormData({ ...formData, fileUrl: e.target.value })}
               required
               placeholder="https://example.com/document.pdf"
-              className="w-full px-4 py-2 border rounded-lg"
+              className="w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none"
             />
             <p className="text-xs text-gray-500 mt-1">Upload your file to a hosting service and paste the URL here</p>
           </div>
@@ -470,7 +470,7 @@ export function ResourceFormDialog({ show, onClose, editingItem, onSuccess, user
               <select
                 value={formData.fileType}
                 onChange={(e) => setFormData({ ...formData, fileType: e.target.value })}
-                className="w-full px-4 py-2 border rounded-lg"
+                className="w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none"
               >
                 <option value="PDF">PDF</option>
                 <option value="DOC">DOC</option>
@@ -487,7 +487,7 @@ export function ResourceFormDialog({ show, onClose, editingItem, onSuccess, user
                 value={formData.fileSize}
                 onChange={(e) => setFormData({ ...formData, fileSize: e.target.value })}
                 placeholder="e.g., 1.5 MB"
-                className="w-full px-4 py-2 border rounded-lg"
+                className="w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none"
               />
             </div>
           </div>
@@ -496,7 +496,7 @@ export function ResourceFormDialog({ show, onClose, editingItem, onSuccess, user
             <select
               value={formData.category}
               onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-              className="w-full px-4 py-2 border rounded-lg"
+              className="w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none"
             >
               <option value="general">General</option>
               <option value="reports">Reports</option>
@@ -507,7 +507,7 @@ export function ResourceFormDialog({ show, onClose, editingItem, onSuccess, user
           </div>
           <div className="flex gap-2 justify-end pt-4">
             <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-            <Button type="submit" disabled={loading}>
+            <Button type="submit" disabled={loading} className="rounded-xl px-6 bg-emerald-600 hover:bg-emerald-700 shadow-sm hover:shadow transition-all">
               {loading ? 'Saving...' : 'Save'}
             </Button>
           </div>
