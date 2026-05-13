@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
-import { Mail, Phone, MapPin, Send, Loader2 } from 'lucide-react';
+import { Mail, Phone, MapPin, Send, Loader2, MessageCircle } from 'lucide-react';
 import { toast } from 'sonner@2.0.3';
 import { useScrollAnimation, getStaggerDelay } from '../utils/animations';
 
@@ -10,6 +10,7 @@ interface ContactSettings {
   address: string;
   email: string;
   phone: string;
+  whatsappNumber?: string;
   socialLinks: {
     facebook: string;
     twitter: string;
@@ -198,6 +199,17 @@ export function Contact() {
                 </div>
               </div>
             </div>
+
+            {/* WhatsApp quick connect */}
+            <a
+              href={`https://wa.me/${(settings.whatsappNumber || settings.phone).replace(/\D/g, '')}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="whatsapp-btn"
+            >
+              <MessageCircle size={18} />
+              Chat with us on WhatsApp
+            </a>
 
             <div className="bg-white p-6 rounded-xl">
               <h3 className="text-xl text-gray-900 mb-4">Ways to Support</h3>

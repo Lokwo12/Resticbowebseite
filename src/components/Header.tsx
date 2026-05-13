@@ -1,20 +1,18 @@
-import { Menu, X } from 'lucide-react';
+import { Menu, X, Heart, ChevronRight } from 'lucide-react';
 import { useState, useEffect } from 'react';
 const logo = '/logo.png';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 
-interface GeneralSettings {
-  siteName: string;
-  tagline: string;
-  logoUrl: string;
+interface SiteSettings {
+  general: { siteName: string; tagline: string; logoUrl: string; };
+  header?: { announcementText?: string; announcementLink?: string; showAnnouncement?: boolean; };
 }
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [settings, setSettings] = useState<GeneralSettings>({
-    siteName: 'Resti Kiryandongo',
-    tagline: 'Community Based Organization',
-    logoUrl: logo
+  const [settings, setSettings] = useState<SiteSettings>({
+    general: { siteName: 'Resti Kiryandongo', tagline: 'Community Based Organization', logoUrl: logo },
+    header: { announcementText: 'We are looking for volunteers in Kiryandongo', announcementLink: 'contact', showAnnouncement: true }
   });
   const [scrolled, setScrolled] = useState(false);
   const [activeSection, setActiveSection] = useState('home');
@@ -65,8 +63,12 @@ export function Header() {
       }
 
       const data = await response.json();
-      if (data.settings?.general) {
-        setSettings(data.settings.general);
+      if (data.settings) {
+        setSettings(prev => ({
+          ...prev,
+          general: data.settings.general || prev.general,
+          header: data.settings.header || prev.header,
+        }));
       }
     } catch (error) {
       console.error('Error fetching header settings:', error);
@@ -82,27 +84,34 @@ export function Header() {
     }
   };
 
-  // Determine which logo to use - imported logo or custom URL
   const getLogoUrl = () => {
-    if (!settings) return logo;
-    // If settings logo is the figma asset path or empty, use imported logo
-    if (!settings.logoUrl || settings.logoUrl.includes('figma:asset')) {
-      return logo;
-    }
-    // Otherwise use the custom logo URL
-    return settings.logoUrl;
+    const logoUrl = settings.general?.logoUrl;
+    if (!logoUrl || logoUrl.includes('figma:asset')) return logo;
+    return logoUrl;
   };
 
-  if (!settings) {
-    return <header className="fixed top-0 left-0 right-0 bg-white shadow-sm z-50 h-16"></header>;
-  }
+  const announcementText = settings.header?.announcementText || 'We are looking for volunteers in Kiryandongo';
+  const announcementLink = settings.header?.announcementLink || 'contact';
+  const showAnnouncement = settings.header?.showAnnouncement !== false;
 
   return (
-    <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-      scrolled 
-        ? 'bg-white shadow-lg' 
-        : 'bg-white/10 backdrop-blur-md border-b border-white/20'
-    }`}>
+    <header className="fixed top-0 left-0 right-0 z-50">
+      {/* Announcement Bar */}
+      {showAnnouncement && (
+      <div className="announcement-bar text-white text-xs font-medium py-1.5 text-center flex items-center justify-center gap-2">
+        <span>🌍 {announcementText}</span>
+        <button
+          onClick={() => scrollToSection(announcementLink)}
+          className="inline-flex items-center gap-1 bg-white/20 hover:bg-white/30 px-3 py-0.5 rounded-full transition-colors font-semibold"
+        >
+          Apply now <ChevronRight size={12} />
+        </button>
+      </div>
+      )}
+      {/* Main nav */}
+      <div className={`transition-all duration-300 ${
+        scrolled ? 'bg-white shadow-md' : 'bg-white/10 backdrop-blur-md border-b border-white/20'
+      }`}>
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className={`flex justify-between items-center transition-all duration-300 ${scrolled ? 'h-14' : 'h-16'}`}>
           {/* Logo */}
@@ -116,10 +125,10 @@ export function Header() {
               <div className="hidden sm:block">
                 <h1 className={`leading-tight group-hover:text-emerald-600 transition-colors ${
                   scrolled ? 'text-emerald-700' : 'text-white drop-shadow-lg'
-                }`}>{settings.siteName}</h1>
+                }`}>{settings.general?.siteName || 'Resti Kiryandongo'}</h1>
                 <p className={`text-xs transition-colors ${
                   scrolled ? 'text-gray-600' : 'text-white/90 drop-shadow'
-                }`}>{settings.tagline}</p>
+                }`}>{settings.general?.tagline || 'Community Based Organization'}</p>
               </div>
             </button>
           </div>
@@ -268,6 +277,7 @@ export function Header() {
           </div>
         )}
       </nav>
+      </div>
     </header>
   );
 }

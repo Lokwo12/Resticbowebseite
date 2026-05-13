@@ -1,6 +1,46 @@
 import { ArrowRight, ChevronDown } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
+
+// Animated counter hook
+function useCountUp(target: number, duration = 1800, start = false) {
+  const [count, setCount] = useState(0);
+  useEffect(() => {
+    if (!start || target === 0) return;
+    let startTime: number | null = null;
+    const step = (timestamp: number) => {
+      if (!startTime) startTime = timestamp;
+      const progress = Math.min((timestamp - startTime) / duration, 1);
+      setCount(Math.floor(progress * target));
+      if (progress < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  }, [target, duration, start]);
+  return count;
+}
+
+// Parse numeric value from stat string like "500+", "10+"
+function parseStatValue(val: string): { num: number; suffix: string } {
+  const match = val.match(/(\d+)(.*)/);
+  if (!match) return { num: 0, suffix: val };
+  return { num: parseInt(match[1]), suffix: match[2] || '' };
+}
+
+// Animated stat counter tile
+function StatCounter({ num, suffix, label, visible, delay }: { num: number; suffix: string; label: string; visible: boolean; delay: number }) {
+  const count = useCountUp(num, 1800, visible);
+  return (
+    <div
+      className="group hover:scale-105 transition-transform duration-300 bg-white/10 backdrop-blur-sm p-4 rounded-xl shadow-lg"
+      style={{ animationDelay: `${delay}ms` }}
+    >
+      <div className={`text-3xl font-extrabold text-emerald-400 group-hover:text-emerald-300 transition-colors drop-shadow-lg ${visible ? 'counter-animated' : ''}`}>
+        {visible ? count : 0}{suffix}
+      </div>
+      <div className="text-sm text-white/90 mt-1">{label}</div>
+    </div>
+  );
+}
 
 interface HeroSettings {
   badgeText: string;
@@ -27,6 +67,17 @@ export function Hero() {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const [imagesLoaded, setImagesLoaded] = useState<boolean[]>(new Array(backgroundImages.length).fill(false));
+  const [statsVisible, setStatsVisible] = useState(false);
+  const statsRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) setStatsVisible(true); },
+      { threshold: 0.3 }
+    );
+    if (statsRef.current) observer.observe(statsRef.current);
+    return () => observer.disconnect();
+  }, []);
 
   // Preload all background images for smooth transitions
   useEffect(() => {
@@ -235,14 +286,14 @@ export function Hero() {
               </button>
             </div>
 
-            {/* Stats */}
-            <div className="grid grid-cols-3 gap-6 pt-8 animate-[fadeInUp_0.8s_ease-out_0.8s_both]">
-              {settings.stats.map((stat, index) => (
-                <div key={index} className="group hover:scale-105 transition-transform duration-300 bg-white/10 backdrop-blur-sm p-4 rounded-lg shadow-lg">
-                  <div className="text-3xl text-emerald-400 group-hover:text-emerald-300 transition-colors drop-shadow-lg">{stat.value}</div>
-                  <div className="text-sm text-white/90">{stat.label}</div>
-                </div>
-              ))}
+            {/* Stats with animated counters */}
+            <div ref={statsRef} className="grid grid-cols-3 gap-6 pt-8 animate-[fadeInUp_0.8s_ease-out_0.8s_both]">
+              {settings.stats.map((stat, index) => {
+                const { num, suffix } = parseStatValue(stat.value);
+                return (
+                  <StatCounter key={index} num={num} suffix={suffix} label={stat.label} visible={statsVisible} delay={index * 200} />
+                );
+              })}
             </div>
           </div>
 

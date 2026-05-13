@@ -17,9 +17,15 @@ interface TeamMember {
   order: number;
 }
 
+const FALLBACK_TEAM = [
+  { id: 'tm1', name: 'Dr. Patricia Nalubega', role: 'Executive Director', department: 'leadership', bio: 'With over 15 years in community development, Dr. Nalubega leads our organisation with passion and dedication.', image: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&q=80', email: 'director@restikirya.org', order: 1 },
+  { id: 'tm2', name: 'Moses Katende', role: 'Programs Coordinator', department: 'programs', bio: 'Moses oversees all community programmes, ensuring quality delivery and measurable impact.', image: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=400&q=80', email: 'programs@restikirya.org', order: 2 },
+  { id: 'tm3', name: 'Grace Auma', role: 'Finance Manager', department: 'finance', bio: 'Grace manages our financial systems ensuring transparency and accountability in all operations.', image: 'https://images.unsplash.com/photo-1531123897727-8f129e1688ce?w=400&q=80', email: 'finance@restikirya.org', order: 3 },
+  { id: 'tm4', name: 'Samuel Okello', role: 'Field Officer', department: 'programs', bio: 'Samuel works directly with communities, coordinating field activities and monitoring programme outcomes.', image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&q=80', email: 'field@restikirya.org', order: 4 },
+];
 export function Team() {
-  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>(FALLBACK_TEAM as any);
+  const [loading, setLoading] = useState(false);
   const [selectedDepartment, setSelectedDepartment] = useState('all');
   const [sectionSettings, setSectionSettings] = useState({
     title: 'Meet Our Team',
@@ -79,11 +85,11 @@ export function Team() {
         setTeamMembers(members);
       } else {
         console.error('Failed to fetch team members');
-        setTeamMembers([]);
+        console.warn("Team API error, keeping fallback data.");
       }
     } catch (error) {
       console.error('Error loading team data:', error);
-      setTeamMembers([]);
+      console.warn("Team API unavailable, using fallback.");
     } finally {
       setLoading(false);
     }

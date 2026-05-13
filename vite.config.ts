@@ -5,6 +5,11 @@
 
   export default defineConfig({
     plugins: [react()],
+    css: {
+      // Disable CSS source maps to prevent PostCSS from choking on the
+      // malformed embedded Quill source map in index.css
+      devSourcemap: false,
+    },
     resolve: {
       extensions: ['.js', '.jsx', '.ts', '.tsx', '.json'],
       alias: {
@@ -61,4 +66,4 @@
       port: 3000,
       open: true,
     },
-  });
+  });

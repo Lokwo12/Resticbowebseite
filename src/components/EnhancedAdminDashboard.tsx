@@ -1277,12 +1277,12 @@ export function EnhancedAdminDashboard() {
   // Filter functions
   const getFilteredContacts = () => {
     if (contactFilter === 'all') return contacts;
-    return contacts.filter(c => c.value.status === contactFilter);
+    return contacts.filter(c => c.value?.status === contactFilter);
   };
 
   const getFilteredVolunteers = () => {
     if (volunteerFilter === 'all') return volunteers;
-    return volunteers.filter(v => v.value.status === volunteerFilter);
+    return volunteers.filter(v => v.value?.status === volunteerFilter);
   };
 
   const getFilteredUsers = () => {
@@ -1290,20 +1290,20 @@ export function EnhancedAdminDashboard() {
 
     // Filter by status
     if (userFilter !== 'all') {
-      filtered = filtered.filter(u => u.value.status === userFilter);
+      filtered = filtered.filter(u => u.value?.status === userFilter);
     }
 
     // Filter by role
     if (userRoleFilter !== 'all') {
-      filtered = filtered.filter(u => u.value.role === userRoleFilter);
+      filtered = filtered.filter(u => u.value?.role === userRoleFilter);
     }
 
     // Search by name or email
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(u =>
-        u.value.name?.toLowerCase().includes(query) ||
-        u.value.email?.toLowerCase().includes(query)
+        u.value?.name?.toLowerCase().includes(query) ||
+        u.value?.email?.toLowerCase().includes(query)
       );
     }
 
@@ -2596,7 +2596,7 @@ export function EnhancedAdminDashboard() {
 
             {/* Settings Tab */}
             {activeTab === 'settings' && (
-              <SiteSettingsTab onUpdate={loadData} />
+              <SiteSettingsTab settings={siteSettings} onUpdate={loadData} />
             )}
 
             {/* Stories Management */}
@@ -2621,7 +2621,7 @@ export function EnhancedAdminDashboard() {
 
                 <div className="grid gap-4">
                   {stories.map((story) => (
-                    <Card key={story.key} className="p-6 hover:shadow-lg transition">
+                    <Card key={story.id} className="p-6 hover:shadow-lg transition">
                       <div className="flex items-start gap-4">
                         {story.value.image && (
                           <img src={story.value.image} alt={story.value.name} className="w-24 h-24 object-cover rounded-lg" />
@@ -2647,7 +2647,7 @@ export function EnhancedAdminDashboard() {
                             Edit
                           </Button>
                           <Button
-                            onClick={() => handleDeleteStory(story.key)}
+                            onClick={() => handleDeleteStory(story.id)}
                             variant="outline"
                             size="sm"
                             className="text-red-600 hover:bg-red-50"
@@ -2688,27 +2688,27 @@ export function EnhancedAdminDashboard() {
                 {impactStats && (
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                     <Card className="p-6 text-center">
-                      <h4 className="text-3xl text-emerald-600 mb-2">{impactStats.value?.peopleServed?.toLocaleString() || 0}</h4>
+                      <h4 className="text-3xl text-emerald-600 mb-2">{impactStats?.peopleServed?.toLocaleString() || 0}</h4>
                       <p className="text-sm text-gray-600">People Served</p>
                     </Card>
                     <Card className="p-6 text-center">
-                      <h4 className="text-3xl text-blue-600 mb-2">{impactStats.value?.programsActive || 0}</h4>
+                      <h4 className="text-3xl text-blue-600 mb-2">{impactStats?.programsActive || 0}</h4>
                       <p className="text-sm text-gray-600">Active Programs</p>
                     </Card>
                     <Card className="p-6 text-center">
-                      <h4 className="text-3xl text-purple-600 mb-2">{impactStats.value?.volunteersActive || 0}</h4>
+                      <h4 className="text-3xl text-purple-600 mb-2">{impactStats?.volunteersActive || 0}</h4>
                       <p className="text-sm text-gray-600">Active Volunteers</p>
                     </Card>
                     <Card className="p-6 text-center">
-                      <h4 className="text-3xl text-green-600 mb-2">${impactStats.value?.fundsRaised?.toLocaleString() || 0}</h4>
+                      <h4 className="text-3xl text-green-600 mb-2">${impactStats?.fundsRaised?.toLocaleString() || 0}</h4>
                       <p className="text-sm text-gray-600">Funds Raised</p>
                     </Card>
                     <Card className="p-6 text-center">
-                      <h4 className="text-3xl text-orange-600 mb-2">{impactStats.value?.communitiesReached || 0}</h4>
+                      <h4 className="text-3xl text-orange-600 mb-2">{impactStats?.communitiesReached || 0}</h4>
                       <p className="text-sm text-gray-600">Communities Reached</p>
                     </Card>
                     <Card className="p-6 text-center">
-                      <h4 className="text-3xl text-teal-600 mb-2">{impactStats.value?.successRate || 0}%</h4>
+                      <h4 className="text-3xl text-teal-600 mb-2">{impactStats?.successRate || 0}%</h4>
                       <p className="text-sm text-gray-600">Success Rate</p>
                     </Card>
                   </div>
@@ -2738,7 +2738,7 @@ export function EnhancedAdminDashboard() {
 
                 <div className="grid gap-4">
                   {reports.map((report) => (
-                    <Card key={report.key} className="p-6 hover:shadow-lg transition">
+                    <Card key={report.id} className="p-6 hover:shadow-lg transition">
                       <div className="flex items-center justify-between">
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
@@ -2758,7 +2758,7 @@ export function EnhancedAdminDashboard() {
                             Download
                           </Button>
                           <Button
-                            onClick={() => handleDeleteReport(report.key)}
+                            onClick={() => handleDeleteReport(report.id)}
                             variant="outline"
                             size="sm"
                             className="text-red-600 hover:bg-red-50"
@@ -2801,7 +2801,7 @@ export function EnhancedAdminDashboard() {
 
                 <div className="grid gap-4">
                   {events.map((event) => (
-                    <Card key={event.key} className="p-6 hover:shadow-lg transition">
+                    <Card key={event.id} className="p-6 hover:shadow-lg transition">
                       <div className="flex items-start gap-4">
                         {event.value.image && (
                           <img src={event.value.image} alt={event.value.title} className="w-24 h-24 object-cover rounded-lg" />
@@ -2839,7 +2839,7 @@ export function EnhancedAdminDashboard() {
                             Edit
                           </Button>
                           <Button
-                            onClick={() => handleDeleteEvent(event.key)}
+                            onClick={() => handleDeleteEvent(event.id)}
                             variant="outline"
                             size="sm"
                             className="text-red-600 hover:bg-red-50"
@@ -2882,16 +2882,16 @@ export function EnhancedAdminDashboard() {
 
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                   {partners.map((partner) => (
-                    <Card key={partner.key} className="p-6 hover:shadow-lg transition text-center">
-                      {partner.value.logo && (
-                        <img src={partner.value.logo} alt={partner.value.name} className="h-16 w-auto mx-auto mb-3 object-contain" />
+                    <Card key={partner.id} className="p-6 hover:shadow-lg transition text-center">
+                      {partner.logo && (
+                        <img src={partner.logo} alt={partner.name} className="h-16 w-auto mx-auto mb-3 object-contain" />
                       )}
-                      <h4 className="text-sm text-gray-900 mb-1">{partner.value.name}</h4>
-                      <p className="text-xs text-gray-600 mb-3 line-clamp-2">{partner.value.description}</p>
+                      <h4 className="text-sm text-gray-900 mb-1">{partner.name}</h4>
+                      <p className="text-xs text-gray-600 mb-3 line-clamp-2">{partner.description}</p>
                       <div className="flex gap-2 justify-center">
                         <Button
                           onClick={() => {
-                            setEditingItem(partner.value);
+                            setEditingItem(partner);
                             setShowPartnerForm(true);
                           }}
                           variant="outline"
@@ -2900,7 +2900,7 @@ export function EnhancedAdminDashboard() {
                           <Edit size={12} />
                         </Button>
                         <Button
-                          onClick={() => handleDeletePartner(partner.key)}
+                          onClick={() => handleDeletePartner(partner.id)}
                           variant="outline"
                           size="sm"
                           className="text-red-600"
@@ -2942,7 +2942,7 @@ export function EnhancedAdminDashboard() {
 
                 <div className="grid gap-4">
                   {opportunities.map((opp) => (
-                    <Card key={opp.key} className="p-6 hover:shadow-lg transition">
+                    <Card key={opp.id} className="p-6 hover:shadow-lg transition">
                       <div className="flex items-start gap-4">
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
@@ -2970,7 +2970,7 @@ export function EnhancedAdminDashboard() {
                             Edit
                           </Button>
                           <Button
-                            onClick={() => handleDeleteOpportunity(opp.key)}
+                            onClick={() => handleDeleteOpportunity(opp.id)}
                             variant="outline"
                             size="sm"
                             className="text-red-600 hover:bg-red-50"
@@ -3013,19 +3013,19 @@ export function EnhancedAdminDashboard() {
 
                 <div className="grid gap-4">
                   {faqs.map((faq) => (
-                    <Card key={faq.key} className="p-6 hover:shadow-lg transition">
+                    <Card key={faq.id} className="p-6 hover:shadow-lg transition">
                       <div className="flex items-start gap-4">
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-2">
-                            <h4 className="text-lg text-gray-900">{faq.value.question}</h4>
-                            <Badge>{faq.value.category}</Badge>
+                            <h4 className="text-lg text-gray-900">{faq.question}</h4>
+                            <Badge>{faq.category}</Badge>
                           </div>
-                          <p className="text-sm text-gray-600">{faq.value.answer}</p>
+                          <p className="text-sm text-gray-600">{faq.answer}</p>
                         </div>
                         <div className="flex gap-2">
                           <Button
                             onClick={() => {
-                              setEditingItem(faq.value);
+                              setEditingItem(faq);
                               setShowFAQForm(true);
                             }}
                             variant="outline"
@@ -3035,7 +3035,7 @@ export function EnhancedAdminDashboard() {
                             Edit
                           </Button>
                           <Button
-                            onClick={() => handleDeleteFAQ(faq.key)}
+                            onClick={() => handleDeleteFAQ(faq.id)}
                             variant="outline"
                             size="sm"
                             className="text-red-600 hover:bg-red-50"
@@ -3078,7 +3078,7 @@ export function EnhancedAdminDashboard() {
 
                 <div className="grid gap-4">
                   {resources.map((resource) => (
-                    <Card key={resource.key} className="p-6 hover:shadow-lg transition">
+                    <Card key={resource.id} className="p-6 hover:shadow-lg transition">
                       <div className="flex items-center justify-between">
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
@@ -3108,7 +3108,7 @@ export function EnhancedAdminDashboard() {
                             <Edit size={14} />
                           </Button>
                           <Button
-                            onClick={() => handleDeleteResource(resource.key)}
+                            onClick={() => handleDeleteResource(resource.id)}
                             variant="outline"
                             size="sm"
                             className="text-red-600 hover:bg-red-50"

@@ -14,9 +14,14 @@ interface Partner {
   since: string;
 }
 
+const FALLBACK_PARTNERS = [
+  { id: 'p1', name: 'Uganda Development Foundation', description: 'Strategic partner providing funding and technical support for our education programmes', logo: '', website: '#', category: 'funding', since: '2020' },
+  { id: 'p2', name: 'Global Health Initiative', description: 'Supporting our healthcare outreach programmes with medical supplies and expertise', logo: '', website: '#', category: 'healthcare', since: '2021' },
+  { id: 'p3', name: 'Community Water Alliance', description: 'Partnering on WASH programmes to bring clean water to rural communities', logo: '', website: '#', category: 'development', since: '2022' },
+];
 export function Partners() {
-  const [partners, setPartners] = useState<Partner[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [partners, setPartners] = useState<Partner[]>(FALLBACK_PARTNERS as any);
+  const [loading, setLoading] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [sectionSettings, setSectionSettings] = useState({ title: 'Our Partners & Sponsors', description: 'We work with amazing organizations and individuals who share our vision for community development.' });
 

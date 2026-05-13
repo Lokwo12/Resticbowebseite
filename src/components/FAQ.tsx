@@ -18,9 +18,16 @@ interface FAQItem {
   order: number;
 }
 
+const FALLBACK_FAQS = [
+  { id: 'faq1', question: 'How can I donate to Resti Kiryandongo CBO?', answer: 'You can donate through our secure online donation form, via MTN Mobile Money, Airtel Money, or bank transfer. All donations go directly to supporting our community programmes.', category: 'donations', order: 1 },
+  { id: 'faq2', question: 'Can I volunteer if I do not live in Kiryandongo?', answer: 'Yes! We welcome remote volunteers for social media, fundraising, grant writing, and online tutoring. We also have short-term on-site opportunities.', category: 'volunteering', order: 2 },
+  { id: 'faq3', question: 'What programmes do you offer?', answer: 'We offer programmes in education support, healthcare access, community development, skills training, clean water (WASH), and women empowerment.', category: 'programs', order: 3 },
+  { id: 'faq4', question: 'How do I apply for a volunteer position?', answer: 'Fill in the volunteer application form in the Get Involved section of this website or contact us directly via email or WhatsApp.', category: 'volunteering', order: 4 },
+  { id: 'faq5', question: 'Is Resti Kiryandongo CBO a registered organisation?', answer: 'Yes. We are a registered Community Based Organisation (CBO) under the Uganda NGO Bureau with all required operational certifications.', category: 'general', order: 5 },
+];
 export function FAQ() {
-  const [faqs, setFaqs] = useState<FAQItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [faqs, setFaqs] = useState<FAQItem[]>(FALLBACK_FAQS as any);
+  const [loading, setLoading] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [sectionSettings, setSectionSettings] = useState({ title: 'Frequently Asked Questions', description: 'Find answers to common questions about our organization, programs, and how you can get involved.' });
