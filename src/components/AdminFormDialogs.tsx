@@ -112,11 +112,11 @@ export function TeamFormDialog({ show, onClose, editingItem, onSuccess, userRole
 
   return (
     <Dialog open={show} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white/95 backdrop-blur-2xl rounded-[2rem] p-8 border-0 shadow-2xl overflow-hidden">
+        <DialogHeader className="mb-2">
           <DialogTitle>{editingItem ? 'Edit Team Member' : 'Add Team Member'}</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <label className="block text-sm mb-2">Name *</label>
             <input
@@ -124,7 +124,7 @@ export function TeamFormDialog({ show, onClose, editingItem, onSuccess, userRole
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               required
-              className="w-full px-4 py-2 border rounded-lg"
+              className="w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none"
             />
           </div>
           <div>
@@ -135,7 +135,7 @@ export function TeamFormDialog({ show, onClose, editingItem, onSuccess, userRole
               onChange={(e) => setFormData({ ...formData, role: e.target.value })}
               required
               placeholder="e.g., Executive Director, Program Manager"
-              className="w-full px-4 py-2 border rounded-lg"
+              className="w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none"
             />
           </div>
           <div>
@@ -143,7 +143,7 @@ export function TeamFormDialog({ show, onClose, editingItem, onSuccess, userRole
             <select
               value={formData.department}
               onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-              className="w-full px-4 py-2 border rounded-lg"
+              className="w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none"
             >
               <option value="general">General</option>
               <option value="leadership">Leadership</option>
@@ -158,7 +158,7 @@ export function TeamFormDialog({ show, onClose, editingItem, onSuccess, userRole
               value={formData.bio}
               onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
               rows={3}
-              className="w-full px-4 py-2 border rounded-lg"
+              className="w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none"
               placeholder="Brief description about the team member"
             />
           </div>
@@ -168,7 +168,7 @@ export function TeamFormDialog({ show, onClose, editingItem, onSuccess, userRole
               type="email"
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              className="w-full px-4 py-2 border rounded-lg"
+              className="w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none"
             />
           </div>
           <div>
@@ -177,7 +177,7 @@ export function TeamFormDialog({ show, onClose, editingItem, onSuccess, userRole
               type="url"
               value={formData.linkedin}
               onChange={(e) => setFormData({ ...formData, linkedin: e.target.value })}
-              className="w-full px-4 py-2 border rounded-lg"
+              className="w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none"
             />
           </div>
           <div>
@@ -186,7 +186,7 @@ export function TeamFormDialog({ show, onClose, editingItem, onSuccess, userRole
               type="url"
               value={formData.twitter}
               onChange={(e) => setFormData({ ...formData, twitter: e.target.value })}
-              className="w-full px-4 py-2 border rounded-lg"
+              className="w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none"
             />
           </div>
           <div>
@@ -195,7 +195,7 @@ export function TeamFormDialog({ show, onClose, editingItem, onSuccess, userRole
               type="number"
               value={formData.order}
               onChange={(e) => setFormData({ ...formData, order: parseInt(e.target.value) })}
-              className="w-full px-4 py-2 border rounded-lg"
+              className="w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none"
             />
           </div>
           <div>
@@ -226,7 +226,7 @@ export function TeamFormDialog({ show, onClose, editingItem, onSuccess, userRole
           </div>
           <div className="flex gap-2 justify-end pt-4">
             <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-            <Button type="submit" disabled={loading}>
+            <Button type="submit" disabled={loading} className="rounded-xl px-6 bg-emerald-600 hover:bg-emerald-700 shadow-sm hover:shadow transition-all">
               {loading ? 'Saving...' : 'Save'}
             </Button>
           </div>
@@ -323,11 +323,11 @@ export function StoryFormDialog({ show, onClose, editingItem, onSuccess, userRol
 
   return (
     <Dialog open={show} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto bg-white/95 backdrop-blur-2xl rounded-[2rem] p-8 border-0 shadow-2xl overflow-hidden">
+        <DialogHeader className="mb-2">
           <DialogTitle>{editingItem ? 'Edit Impact Story' : 'Add Impact Story'}</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <label className="block text-sm mb-2">Person's Name *</label>
             <input
@@ -335,7 +335,7 @@ export function StoryFormDialog({ show, onClose, editingItem, onSuccess, userRol
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               required
-              className="w-full px-4 py-2 border rounded-lg"
+              className="w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none"
             />
           </div>
           <div>
@@ -345,7 +345,7 @@ export function StoryFormDialog({ show, onClose, editingItem, onSuccess, userRol
               value={formData.title}
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
               required
-              className="w-full px-4 py-2 border rounded-lg"
+              className="w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none"
             />
           </div>
           <div>
@@ -353,7 +353,7 @@ export function StoryFormDialog({ show, onClose, editingItem, onSuccess, userRol
             <select
               value={formData.category}
               onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-              className="w-full px-4 py-2 border rounded-lg"
+              className="w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none"
             >
               <option value="general">General</option>
               <option value="education">Education</option>
@@ -385,7 +385,7 @@ export function StoryFormDialog({ show, onClose, editingItem, onSuccess, userRol
               onChange={(e) => setFormData({ ...formData, impact: e.target.value })}
               rows={2}
               placeholder="Brief summary of the impact achieved"
-              className="w-full px-4 py-2 border rounded-lg"
+              className="w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none"
             />
           </div>
           <div>
@@ -416,7 +416,7 @@ export function StoryFormDialog({ show, onClose, editingItem, onSuccess, userRol
           </div>
           <div className="flex gap-2 justify-end pt-4">
             <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-            <Button type="submit" disabled={loading}>
+            <Button type="submit" disabled={loading} className="rounded-xl px-6 bg-emerald-600 hover:bg-emerald-700 shadow-sm hover:shadow transition-all">
               {loading ? 'Saving...' : 'Save'}
             </Button>
           </div>
@@ -467,11 +467,11 @@ export function ImpactStatsFormDialog({ show, onClose, currentStats, onSuccess, 
 
   return (
     <Dialog open={show} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
+      <DialogContent className="max-w-2xl bg-white/95 backdrop-blur-2xl rounded-[2rem] p-8 border-0 shadow-2xl overflow-hidden">
+        <DialogHeader className="mb-2">
           <DialogTitle>Update Impact Statistics</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm mb-2">People Served</label>
@@ -479,7 +479,7 @@ export function ImpactStatsFormDialog({ show, onClose, currentStats, onSuccess, 
                 type="number"
                 value={formData.peopleServed}
                 onChange={(e) => setFormData({ ...formData, peopleServed: parseInt(e.target.value) })}
-                className="w-full px-4 py-2 border rounded-lg"
+                className="w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none"
               />
             </div>
             <div>
@@ -488,7 +488,7 @@ export function ImpactStatsFormDialog({ show, onClose, currentStats, onSuccess, 
                 type="number"
                 value={formData.programsActive}
                 onChange={(e) => setFormData({ ...formData, programsActive: parseInt(e.target.value) })}
-                className="w-full px-4 py-2 border rounded-lg"
+                className="w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none"
               />
             </div>
             <div>
@@ -497,7 +497,7 @@ export function ImpactStatsFormDialog({ show, onClose, currentStats, onSuccess, 
                 type="number"
                 value={formData.volunteersActive}
                 onChange={(e) => setFormData({ ...formData, volunteersActive: parseInt(e.target.value) })}
-                className="w-full px-4 py-2 border rounded-lg"
+                className="w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none"
               />
             </div>
             <div>
@@ -506,7 +506,7 @@ export function ImpactStatsFormDialog({ show, onClose, currentStats, onSuccess, 
                 type="number"
                 value={formData.fundsRaised}
                 onChange={(e) => setFormData({ ...formData, fundsRaised: parseInt(e.target.value) })}
-                className="w-full px-4 py-2 border rounded-lg"
+                className="w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none"
               />
             </div>
             <div>
@@ -515,7 +515,7 @@ export function ImpactStatsFormDialog({ show, onClose, currentStats, onSuccess, 
                 type="number"
                 value={formData.communitiesReached}
                 onChange={(e) => setFormData({ ...formData, communitiesReached: parseInt(e.target.value) })}
-                className="w-full px-4 py-2 border rounded-lg"
+                className="w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none"
               />
             </div>
             <div>
@@ -526,13 +526,13 @@ export function ImpactStatsFormDialog({ show, onClose, currentStats, onSuccess, 
                 min={0}
                 max={100}
                 onChange={(e) => setFormData({ ...formData, successRate: parseInt(e.target.value) })}
-                className="w-full px-4 py-2 border rounded-lg"
+                className="w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none"
               />
             </div>
           </div>
           <div className="flex gap-2 justify-end pt-4">
             <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-            <Button type="submit" disabled={loading}>
+            <Button type="submit" disabled={loading} className="rounded-xl px-6 bg-emerald-600 hover:bg-emerald-700 shadow-sm hover:shadow transition-all">
               {loading ? 'Saving...' : 'Save'}
             </Button>
           </div>
