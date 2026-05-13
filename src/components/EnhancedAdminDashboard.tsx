@@ -2637,7 +2637,7 @@ export function EnhancedAdminDashboard() {
                         <div className="flex gap-2">
                           <Button
                             onClick={() => {
-                              setEditingItem(story.value);
+                              setEditingItem({ ...story.value, id: story.id });
                               setShowStoryForm(true);
                             }}
                             variant="outline"
@@ -2829,7 +2829,7 @@ export function EnhancedAdminDashboard() {
                         <div className="flex gap-2">
                           <Button
                             onClick={() => {
-                              setEditingItem(event.value);
+                              setEditingItem({ ...event.value, id: event.id });
                               setShowEventForm(true);
                             }}
                             variant="outline"
@@ -2960,7 +2960,7 @@ export function EnhancedAdminDashboard() {
                         <div className="flex gap-2">
                           <Button
                             onClick={() => {
-                              setEditingItem(opp.value);
+                              setEditingItem({ ...opp.value, id: opp.id });
                               setShowOpportunityForm(true);
                             }}
                             variant="outline"
@@ -3099,7 +3099,7 @@ export function EnhancedAdminDashboard() {
                           </Button>
                           <Button
                             onClick={() => {
-                              setEditingItem(resource.value);
+                              setEditingItem({ ...resource.value, id: resource.id });
                               setShowResourceForm(true);
                             }}
                             variant="outline"
