@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js@2';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { toast } from 'sonner@2.0.3';
@@ -1339,80 +1339,110 @@ export function EnhancedAdminDashboard() {
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50 flex items-center justify-center p-4">
-        <Card className="w-full max-w-md p-8 shadow-2xl border-0">
-          <div className="text-center mb-8">
-            <div className="flex flex-col items-center mb-6">
-              <div className="bg-white rounded-full p-4 shadow-lg mb-4">
-                <img src={logo} alt="Resti Kiryandongo CBO Logo" className="h-20 w-auto" />
+      <div className="min-h-screen flex">
+        {/* Left brand panel */}
+        <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-emerald-800 via-emerald-700 to-teal-600 flex-col items-center justify-center p-12 relative overflow-hidden">
+          {/* Decorative circles */}
+          <div className="absolute top-0 right-0 w-96 h-96 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2" />
+          <div className="absolute bottom-0 left-0 w-72 h-72 bg-white/5 rounded-full translate-y-1/2 -translate-x-1/2" />
+          <div className="absolute top-1/2 left-1/4 w-32 h-32 bg-white/5 rounded-full" />
+          <div className="relative z-10 text-center">
+            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 mb-8 inline-block border border-white/20">
+              <img src={logo} alt="Resti Kiryandongo CBO" className="h-24 w-auto mx-auto" />
+            </div>
+            <h1 className="text-4xl font-bold text-white mb-3">Resti Kiryandongo CBO</h1>
+            <p className="text-emerald-100 text-lg mb-8">Community Based Organization</p>
+            <div className="grid grid-cols-3 gap-4 mt-8">
+              {[{label:'Programs',val:'12+'},{label:'Volunteers',val:'150+'},{label:'Lives Impacted',val:'5K+'}].map(s => (
+                <div key={s.label} className="bg-white/10 rounded-xl p-4 border border-white/20">
+                  <p className="text-2xl font-bold text-white">{s.val}</p>
+                  <p className="text-emerald-200 text-xs mt-1">{s.label}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+        {/* Right form panel */}
+        <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-gray-50">
+          <div className="w-full max-w-md">
+            {/* Mobile logo */}
+            <div className="lg:hidden text-center mb-8">
+              <img src={logo} alt="Logo" className="h-16 w-auto mx-auto mb-3" />
+              <h2 className="text-xl font-semibold text-emerald-700">Resti Kiryandongo CBO</h2>
+            </div>
+            <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
+              <div className="mb-8">
+                <h1 className="text-2xl font-bold text-gray-900 mb-1">
+                  {isSignup ? 'Create Account' : 'Welcome back'}
+                </h1>
+                <p className="text-gray-500 text-sm">
+                  {isSignup ? 'Fill in your details to get started' : 'Sign in to your admin dashboard'}
+                </p>
               </div>
-              <div>
-                <h2 className="text-2xl text-emerald-700">Resti Kiryandongo CBO</h2>
-                <p className="text-sm text-gray-600">Community Based Organization</p>
+
+              <form onSubmit={isSignup ? handleSignup : handleLogin} className="space-y-4">
+                {isSignup && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                    <input
+                      type="text"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      placeholder="John Doe"
+                      required
+                      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition text-sm"
+                    />
+                  </div>
+                )}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="admin@example.com"
+                    required
+                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    required
+                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition text-sm"
+                  />
+                </div>
+                <Button
+                  type="submit"
+                  className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white py-3 rounded-xl transition shadow-lg font-medium mt-2"
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <div className="flex items-center justify-center gap-2">
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      Please wait...
+                    </div>
+                  ) : (
+                    isSignup ? 'Create Account' : 'Sign In'
+                  )}
+                </Button>
+              </form>
+
+              <div className="mt-6 text-center">
+                <button
+                  onClick={() => setIsSignup(!isSignup)}
+                  className="text-emerald-600 hover:text-emerald-700 text-sm font-medium transition"
+                >
+                  {isSignup ? 'Already have an account? Sign in' : "Don't have an account? Sign up"}
+                </button>
               </div>
             </div>
-            <h1 className="text-3xl text-gray-900 mb-2">
-              Admin Dashboard
-            </h1>
-            <p className="text-gray-600">
-              {isSignup ? 'Create your admin account' : 'Sign in to manage your website'}
-            </p>
           </div>
-
-          <form onSubmit={isSignup ? handleSignup : handleLogin} className="space-y-4">
-            {isSignup && (
-              <input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Full Name"
-                required
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition"
-              />
-            )}
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Email"
-              required
-              className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition"
-            />
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Password"
-              required
-              className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition"
-            />
-            <Button
-              type="submit"
-              className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white py-3 rounded-lg transition shadow-lg"
-              disabled={loading}
-            >
-              {loading ? (
-                <div className="flex items-center justify-center">
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                  Please wait...
-                </div>
-              ) : (
-                isSignup ? 'Create Account' : 'Sign In'
-              )}
-            </Button>
-          </form>
-
-          <div className="mt-6 text-center">
-            <button
-              onClick={() => setIsSignup(!isSignup)}
-              className="text-emerald-600 hover:text-emerald-700 text-sm transition"
-            >
-              {isSignup
-                ? 'Already have an account? Sign in'
-                : "Don't have an account? Sign up"}
-            </button>
-          </div>
-        </Card>
+        </div>
       </div>
     );
   }
@@ -1422,48 +1452,50 @@ export function EnhancedAdminDashboard() {
   const CurrentIcon = currentMenuItem?.icon || LayoutDashboard;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100">
+    <div className="min-h-screen bg-slate-100">
       {/* Top Navigation Bar */}
-      <div className="bg-white border-b border-gray-200 shadow-sm fixed top-0 left-0 right-0 z-50">
-        <div className="flex items-center justify-between px-4 py-3">
+      <div className="bg-slate-900 border-b border-slate-700 shadow-lg fixed top-0 left-0 right-0 z-50">
+        <div className="flex items-center justify-between px-4 h-16">
           <div className="flex items-center gap-4">
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="lg:hidden p-2 hover:bg-gray-100 rounded-lg transition"
+              className="lg:hidden p-2 hover:bg-slate-700 text-slate-300 rounded-lg transition"
             >
-              {sidebarOpen ? <XIcon size={24} /> : <Menu size={24} />}
+              {sidebarOpen ? <XIcon size={20} /> : <Menu size={20} />}
             </button>
             <div className="flex items-center gap-3">
-              <img src={logo} alt="Logo" className="h-10 w-auto" />
+              <div className="bg-emerald-500/20 rounded-xl p-1.5">
+                <img src={logo} alt="Logo" className="h-8 w-auto" />
+              </div>
               <div className="hidden md:block">
-                <h1 className="text-lg text-gray-900">Resti Kiryandongo CBO</h1>
-                <p className="text-xs text-gray-500">Admin Dashboard</p>
+                <h1 className="text-sm font-semibold text-white leading-tight">Resti Kiryandongo CBO</h1>
+                <p className="text-xs text-slate-400">Admin Dashboard</p>
               </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            <div className="hidden md:flex items-center gap-2 bg-gray-100 px-3 py-2 rounded-lg">
-              <Search size={16} className="text-gray-400" />
+          <div className="flex items-center gap-2">
+            <div className="hidden md:flex items-center gap-2 bg-slate-800 border border-slate-700 px-3 py-2 rounded-xl">
+              <Search size={14} className="text-slate-400" />
               <input
                 type="text"
-                placeholder="Search..."
-                className="bg-transparent border-none outline-none text-sm w-48"
+                placeholder="Quick search..."
+                className="bg-transparent border-none outline-none text-sm w-44 text-slate-200 placeholder-slate-500"
               />
             </div>
 
-            <button className="relative p-2 hover:bg-gray-100 rounded-lg transition">
-              <Bell size={20} />
-              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+            <button className="relative p-2 hover:bg-slate-700 text-slate-400 hover:text-white rounded-xl transition">
+              <Bell size={18} />
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-emerald-400 rounded-full ring-2 ring-slate-900"></span>
             </button>
 
-            <div className="flex items-center gap-3 border-l pl-3">
+            <div className="flex items-center gap-3 border-l border-slate-700 pl-3 ml-1">
               <div className="text-right hidden md:block">
-                <p className="text-sm text-gray-900">{userName || 'Admin User'}</p>
-                <p className="text-xs text-gray-500 capitalize">{userRole.replace('-', ' ')}</p>
+                <p className="text-sm font-medium text-white leading-tight">{userName || 'Admin User'}</p>
+                <p className="text-xs text-slate-400 capitalize">{userRole.replace('-', ' ')}</p>
               </div>
-              <Avatar className="h-10 w-10 ring-2 ring-emerald-500 ring-offset-2">
-                <AvatarFallback className="bg-gradient-to-br from-emerald-500 to-teal-600 text-white">
+              <Avatar className="h-9 w-9 ring-2 ring-emerald-500 ring-offset-2 ring-offset-slate-900">
+                <AvatarFallback className="bg-gradient-to-br from-emerald-500 to-teal-600 text-white text-sm font-semibold">
                   {getUserInitials(userName)}
                 </AvatarFallback>
               </Avatar>
@@ -1471,10 +1503,10 @@ export function EnhancedAdminDashboard() {
 
             <button
               onClick={handleLogout}
-              className="p-2 hover:bg-red-50 text-red-600 rounded-lg transition"
+              className="p-2 hover:bg-red-500/20 text-slate-400 hover:text-red-400 rounded-xl transition ml-1"
               title="Logout"
             >
-              <LogOut size={20} />
+              <LogOut size={18} />
             </button>
           </div>
         </div>
@@ -1482,15 +1514,14 @@ export function EnhancedAdminDashboard() {
 
       <div className="flex pt-16">
         {/* Sidebar */}
-        <div className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 fixed lg:static inset-y-0 left-0 z-40 w-64 bg-white border-r border-gray-200 transition-transform duration-300 overflow-y-auto mt-16`}>
-          <div className="p-4">
-            <div className="mb-6">
-              <h3 className="text-xs uppercase text-gray-500 mb-3 px-3">Navigation</h3>
-              <nav className="space-y-1">
+        <div className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 fixed lg:static inset-y-0 left-0 z-40 w-64 bg-slate-900 border-r border-slate-700 transition-transform duration-300 overflow-y-auto mt-16 lg:mt-0`}>
+          <div className="p-4 pt-6">
+            <div className="mb-2">
+              <p className="text-xs font-semibold uppercase tracking-widest text-slate-500 mb-3 px-2">Main Menu</p>
+              <nav className="space-y-0.5">
                 {NAVIGATION_ITEMS.map((item) => {
                   const Icon = item.icon;
                   const isActive = activeTab === item.id;
-                  
                   return (
                     <button
                       key={item.id}
@@ -1498,15 +1529,15 @@ export function EnhancedAdminDashboard() {
                         setActiveTab(item.id);
                         if (window.innerWidth < 1024) setSidebarOpen(false);
                       }}
-                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${
+                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-150 group ${
                         isActive
-                          ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-md'
-                          : 'text-gray-700 hover:bg-gray-100'
+                          ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/30'
+                          : 'text-slate-400 hover:bg-slate-800 hover:text-white'
                       }`}
                     >
-                      <Icon size={18} className={isActive ? 'text-white' : item.color} />
-                      <span className="text-sm">{item.label}</span>
-                      {isActive && <ChevronRight size={16} className="ml-auto" />}
+                      <Icon size={17} className={isActive ? 'text-white' : 'text-slate-500 group-hover:text-emerald-400'} />
+                      <span className="text-sm font-medium">{item.label}</span>
+                      {isActive && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-white/70" />}
                     </button>
                   );
                 })}
@@ -1516,122 +1547,173 @@ export function EnhancedAdminDashboard() {
                       setActiveTab('users');
                       if (window.innerWidth < 1024) setSidebarOpen(false);
                     }}
-                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-150 group ${
                       activeTab === 'users'
-                        ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-md'
-                        : 'text-gray-700 hover:bg-gray-100'
+                        ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/30'
+                        : 'text-slate-400 hover:bg-slate-800 hover:text-white'
                     }`}
                   >
-                    <Shield size={18} className={activeTab === 'users' ? 'text-white' : 'text-red-600'} />
-                    <span className="text-sm">Users</span>
-                    {activeTab === 'users' && <ChevronRight size={16} className="ml-auto" />}
+                    <Shield size={17} className={activeTab === 'users' ? 'text-white' : 'text-slate-500 group-hover:text-emerald-400'} />
+                    <span className="text-sm font-medium">Users</span>
+                    {activeTab === 'users' && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-white/70" />}
                   </button>
                 )}
               </nav>
             </div>
 
-            {/* User Role Info */}
-            <div className="mt-6 p-4 bg-gradient-to-br from-emerald-50 to-teal-50 rounded-lg border border-emerald-200">
-              <div className="flex items-center gap-2 mb-2">
-                <Shield size={16} className="text-emerald-600" />
-                <span className="text-sm text-gray-900">Access Level</span>
+            {/* User badge at bottom */}
+            <div className="mt-6 p-3 bg-slate-800 rounded-xl border border-slate-700">
+              <div className="flex items-center gap-3">
+                <Avatar className="h-9 w-9 shrink-0">
+                  <AvatarFallback className="bg-gradient-to-br from-emerald-500 to-teal-600 text-white text-xs font-bold">
+                    {getUserInitials(userName)}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-white truncate">{userName || 'Admin User'}</p>
+                  <Badge className={`${getRoleBadgeColor(userRole)} border text-xs mt-0.5`}>
+                    {USER_ROLES.find(r => r.value === userRole)?.label || userRole}
+                  </Badge>
+                </div>
               </div>
-              <Badge className={`${getRoleBadgeColor(userRole)} border text-xs`}>
-                {USER_ROLES.find(r => r.value === userRole)?.label || userRole}
-              </Badge>
             </div>
           </div>
         </div>
 
         {/* Main Content Area */}
-        <div className="flex-1 p-6 lg:p-8 overflow-auto">
+        <div className="flex-1 min-w-0 overflow-auto bg-slate-50">
           {/* Page Header */}
-          <div className="mb-8">
-            <div className="flex items-center gap-3 mb-2">
-              <div className={`p-3 rounded-xl bg-gradient-to-br from-emerald-100 to-teal-100`}>
-                <CurrentIcon size={24} className="text-emerald-600" />
+          <div className="bg-gradient-to-r from-slate-900 to-slate-800 px-6 lg:px-8 py-4 shadow-md">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="p-2.5 rounded-xl bg-white/10 border border-white/20 shadow-lg">
+                  <CurrentIcon size={20} className="text-white" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-white leading-tight">{currentMenuItem?.label || 'Dashboard'}</h2>
+                  <div className="flex items-center gap-1.5 text-sm text-slate-400">
+                    <span>Admin</span>
+                    <ChevronRight size={13} />
+                    <span className="text-slate-300">{currentMenuItem?.label || 'Dashboard'}</span>
+                  </div>
+                </div>
               </div>
-              <div>
-                <h2 className="text-3xl text-gray-900">{currentMenuItem?.label}</h2>
-                <p className="text-gray-500 text-sm">Manage and monitor your {currentMenuItem?.label.toLowerCase()}</p>
+              <div className="hidden sm:flex items-center gap-2 text-sm text-slate-400 bg-white/10 border border-white/20 rounded-xl px-3 py-2">
+                <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                <span className="text-slate-300 text-xs font-medium">Live</span>
               </div>
             </div>
           </div>
 
           {/* Content */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <div className="p-6 lg:p-8">
+          <div className="space-y-6">
             {activeTab === 'overview' && stats && (
-              <div className="space-y-8">
+              <div className="space-y-6">
                 {/* Stats Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                  <Card className="p-6 border-l-4 border-l-blue-500 hover:shadow-lg transition">
-                    <div className="flex items-center justify-between mb-4">
-                      <FileText className="text-blue-600" size={24} />
-                      <Badge variant="secondary">{stats.programs}</Badge>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+                  <div className="bg-gradient-to-br from-blue-500 to-blue-700 rounded-2xl p-6 hover:shadow-xl hover:shadow-blue-300/50 hover:-translate-y-1 transition-all duration-200 group">
+                    <div className="flex items-center justify-between mb-5">
+                      <div className="p-3 rounded-xl bg-white/20 group-hover:scale-105 transition-transform duration-200">
+                        <FileText size={20} className="text-white" />
+                      </div>
+                      <span className="text-xs font-semibold text-white bg-white/20 border border-white/30 rounded-lg px-2.5 py-1">Active</span>
                     </div>
-                    <h3 className="text-2xl text-gray-900 mb-1">{stats.programs}</h3>
-                    <p className="text-sm text-gray-600">Total Programs</p>
-                  </Card>
+                    <p className="text-3xl font-bold text-white mb-1">{stats.programs}</p>
+                    <p className="text-sm font-medium text-blue-100">Total Programs</p>
+                    <div className="mt-4 pt-4 border-t border-white/20 flex items-center gap-1.5 text-xs text-blue-200 font-medium">
+                      <TrendingUp size={12} />
+                      <span>All time</span>
+                    </div>
+                  </div>
 
-                  <Card className="p-6 border-l-4 border-l-purple-500 hover:shadow-lg transition">
-                    <div className="flex items-center justify-between mb-4">
-                      <Newspaper className="text-purple-600" size={24} />
-                      <Badge variant="secondary">{stats.news}</Badge>
+                  <div className="bg-gradient-to-br from-violet-500 to-purple-700 rounded-2xl p-6 hover:shadow-xl hover:shadow-violet-300/50 hover:-translate-y-1 transition-all duration-200 group">
+                    <div className="flex items-center justify-between mb-5">
+                      <div className="p-3 rounded-xl bg-white/20 group-hover:scale-105 transition-transform duration-200">
+                        <Newspaper size={20} className="text-white" />
+                      </div>
+                      <span className="text-xs font-semibold text-white bg-white/20 border border-white/30 rounded-lg px-2.5 py-1">Published</span>
                     </div>
-                    <h3 className="text-2xl text-gray-900 mb-1">{stats.news}</h3>
-                    <p className="text-sm text-gray-600">News Articles</p>
-                  </Card>
+                    <p className="text-3xl font-bold text-white mb-1">{stats.news}</p>
+                    <p className="text-sm font-medium text-violet-100">News Articles</p>
+                    <div className="mt-4 pt-4 border-t border-white/20 flex items-center gap-1.5 text-xs text-violet-200 font-medium">
+                      <TrendingUp size={12} />
+                      <span>All time</span>
+                    </div>
+                  </div>
 
-                  <Card className="p-6 border-l-4 border-l-rose-500 hover:shadow-lg transition">
-                    <div className="flex items-center justify-between mb-4">
-                      <Heart className="text-rose-600" size={24} />
-                      <Badge variant="secondary">{stats.volunteers}</Badge>
+                  <div className="bg-gradient-to-br from-rose-500 to-pink-700 rounded-2xl p-6 hover:shadow-xl hover:shadow-rose-300/50 hover:-translate-y-1 transition-all duration-200 group">
+                    <div className="flex items-center justify-between mb-5">
+                      <div className="p-3 rounded-xl bg-white/20 group-hover:scale-105 transition-transform duration-200">
+                        <Heart size={20} className="text-white" />
+                      </div>
+                      <span className="text-xs font-semibold text-white bg-white/20 border border-white/30 rounded-lg px-2.5 py-1">Registered</span>
                     </div>
-                    <h3 className="text-2xl text-gray-900 mb-1">{stats.volunteers}</h3>
-                    <p className="text-sm text-gray-600">Volunteers</p>
-                  </Card>
+                    <p className="text-3xl font-bold text-white mb-1">{stats.volunteers}</p>
+                    <p className="text-sm font-medium text-rose-100">Volunteers</p>
+                    <div className="mt-4 pt-4 border-t border-white/20 flex items-center gap-1.5 text-xs text-rose-200 font-medium">
+                      <TrendingUp size={12} />
+                      <span>All time</span>
+                    </div>
+                  </div>
 
-                  <Card className="p-6 border-l-4 border-l-emerald-500 hover:shadow-lg transition">
-                    <div className="flex items-center justify-between mb-4">
-                      <TrendingUp className="text-emerald-600" size={24} />
-                      <Badge variant="secondary">${stats.totalDonations}</Badge>
+                  <div className="bg-gradient-to-br from-emerald-500 to-teal-700 rounded-2xl p-6 hover:shadow-xl hover:shadow-emerald-300/50 hover:-translate-y-1 transition-all duration-200 group">
+                    <div className="flex items-center justify-between mb-5">
+                      <div className="p-3 rounded-xl bg-white/20 group-hover:scale-105 transition-transform duration-200">
+                        <TrendingUp size={20} className="text-white" />
+                      </div>
+                      <span className="text-xs font-semibold text-white bg-white/20 border border-white/30 rounded-lg px-2.5 py-1">Raised</span>
                     </div>
-                    <h3 className="text-2xl text-gray-900 mb-1">${stats.totalDonations}</h3>
-                    <p className="text-sm text-gray-600">Total Donations</p>
-                  </Card>
+                    <p className="text-3xl font-bold text-white mb-1">${stats.totalDonations}</p>
+                    <p className="text-sm font-medium text-emerald-100">Total Donations</p>
+                    <div className="mt-4 pt-4 border-t border-white/20 flex items-center gap-1.5 text-xs text-emerald-200 font-medium">
+                      <TrendingUp size={12} />
+                      <span>All time</span>
+                    </div>
+                  </div>
                 </div>
 
                 {/* Charts */}
                 {analytics && (
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
-                    <Card className="p-6">
-                      <h3 className="text-lg text-gray-900 mb-6 flex items-center gap-2">
-                        <BarChart3 size={20} className="text-emerald-600" />
-                        Monthly Donations
-                      </h3>
-                      <ResponsiveContainer width="100%" height={300}>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mt-2">
+                    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 hover:shadow-md transition-shadow duration-200 border-t-4 border-t-emerald-500">
+                      <div className="flex items-center gap-3 mb-6">
+                        <div className="p-2 rounded-lg bg-emerald-100">
+                          <BarChart3 size={18} className="text-emerald-600" />
+                        </div>
+                        <div>
+                          <h3 className="text-sm font-semibold text-gray-900">Monthly Donations</h3>
+                          <p className="text-xs text-gray-400">Revenue over time</p>
+                        </div>
+                      </div>
+                      <ResponsiveContainer width="100%" height={260}>
                         <AreaChart data={analytics.monthlyDonations}>
                           <defs>
                             <linearGradient id="colorDonations" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="5%" stopColor="#10b981" stopOpacity={0.8}/>
+                              <stop offset="5%" stopColor="#10b981" stopOpacity={0.15}/>
                               <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
                             </linearGradient>
                           </defs>
-                          <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                          <XAxis dataKey="month" stroke="#888" />
-                          <YAxis stroke="#888" />
-                          <Tooltip />
-                          <Area type="monotone" dataKey="amount" stroke="#10b981" fillOpacity={1} fill="url(#colorDonations)" />
+                          <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                          <XAxis dataKey="month" stroke="#94a3b8" tick={{ fontSize: 12 }} />
+                          <YAxis stroke="#94a3b8" tick={{ fontSize: 12 }} />
+                          <Tooltip contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }} />
+                          <Area type="monotone" dataKey="amount" stroke="#10b981" strokeWidth={2} fillOpacity={1} fill="url(#colorDonations)" />
                         </AreaChart>
                       </ResponsiveContainer>
-                    </Card>
+                    </div>
 
-                    <Card className="p-6">
-                      <h3 className="text-lg text-gray-900 mb-6 flex items-center gap-2">
-                        <TrendingUp size={20} className="text-blue-600" />
-                        Contact Status Distribution
-                      </h3>
-                      <ResponsiveContainer width="100%" height={300}>
+                    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 hover:shadow-md transition-shadow duration-200 border-t-4 border-t-blue-500">
+                      <div className="flex items-center gap-3 mb-6">
+                        <div className="p-2 rounded-lg bg-blue-100">
+                          <TrendingUp size={18} className="text-blue-600" />
+                        </div>
+                        <div>
+                          <h3 className="text-sm font-semibold text-gray-900">Contact Status</h3>
+                          <p className="text-xs text-gray-400">Distribution overview</p>
+                        </div>
+                      </div>
+                      <ResponsiveContainer width="100%" height={260}>
                         <PieChart>
                           <Pie
                             data={analytics.contactStatusData}
@@ -1639,7 +1721,7 @@ export function EnhancedAdminDashboard() {
                             cy="50%"
                             labelLine={false}
                             label={(entry) => entry.name}
-                            outerRadius={100}
+                            outerRadius={90}
                             fill="#8884d8"
                             dataKey="value"
                           >
@@ -1647,80 +1729,108 @@ export function EnhancedAdminDashboard() {
                               <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                             ))}
                           </Pie>
-                          <Tooltip />
+                          <Tooltip contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }} />
                           <Legend />
                         </PieChart>
                       </ResponsiveContainer>
-                    </Card>
+                    </div>
 
-                    <Card className="p-6">
-                      <h3 className="text-lg text-gray-900 mb-6 flex items-center gap-2">
-                        <Heart size={20} className="text-rose-600" />
-                        Volunteer Applications
-                      </h3>
-                      <ResponsiveContainer width="100%" height={300}>
+                    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 hover:shadow-md transition-shadow duration-200 border-t-4 border-t-rose-500">
+                      <div className="flex items-center gap-3 mb-6">
+                        <div className="p-2 rounded-lg bg-rose-100">
+                          <Heart size={18} className="text-rose-600" />
+                        </div>
+                        <div>
+                          <h3 className="text-sm font-semibold text-gray-900">Volunteer Applications</h3>
+                          <p className="text-xs text-gray-400">By status</p>
+                        </div>
+                      </div>
+                      <ResponsiveContainer width="100%" height={260}>
                         <BarChart data={analytics.volunteerStatusData}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                          <XAxis dataKey="name" stroke="#888" />
-                          <YAxis stroke="#888" />
-                          <Tooltip />
-                          <Bar dataKey="value" fill="#10b981" radius={[8, 8, 0, 0]} />
+                          <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                          <XAxis dataKey="name" stroke="#94a3b8" tick={{ fontSize: 12 }} />
+                          <YAxis stroke="#94a3b8" tick={{ fontSize: 12 }} />
+                          <Tooltip contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }} />
+                          <Bar dataKey="value" fill="#10b981" radius={[6, 6, 0, 0]} />
                         </BarChart>
                       </ResponsiveContainer>
-                    </Card>
+                    </div>
 
-                    <Card className="p-6">
-                      <h3 className="text-lg text-gray-900 mb-6 flex items-center gap-2">
-                        <TrendingUp size={20} className="text-purple-600" />
-                        Growth Trends
-                      </h3>
-                      <ResponsiveContainer width="100%" height={300}>
+                    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 hover:shadow-md transition-shadow duration-200 border-t-4 border-t-purple-500">
+                      <div className="flex items-center gap-3 mb-6">
+                        <div className="p-2 rounded-lg bg-purple-100">
+                          <TrendingUp size={18} className="text-purple-600" />
+                        </div>
+                        <div>
+                          <h3 className="text-sm font-semibold text-gray-900">Growth Trends</h3>
+                          <p className="text-xs text-gray-400">Users & donations over time</p>
+                        </div>
+                      </div>
+                      <ResponsiveContainer width="100%" height={260}>
                         <LineChart data={analytics.growthTrends}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                          <XAxis dataKey="month" stroke="#888" />
-                          <YAxis stroke="#888" />
-                          <Tooltip />
+                          <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                          <XAxis dataKey="month" stroke="#94a3b8" tick={{ fontSize: 12 }} />
+                          <YAxis stroke="#94a3b8" tick={{ fontSize: 12 }} />
+                          <Tooltip contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }} />
                           <Legend />
-                          <Line type="monotone" dataKey="users" stroke="#3b82f6" strokeWidth={2} dot={{ r: 4 }} />
-                          <Line type="monotone" dataKey="donations" stroke="#10b981" strokeWidth={2} dot={{ r: 4 }} />
+                          <Line type="monotone" dataKey="users" stroke="#3b82f6" strokeWidth={2.5} dot={{ r: 4, fill: '#3b82f6' }} />
+                          <Line type="monotone" dataKey="donations" stroke="#10b981" strokeWidth={2.5} dot={{ r: 4, fill: '#10b981' }} />
                         </LineChart>
                       </ResponsiveContainer>
-                    </Card>
+                    </div>
                   </div>
                 )}
 
                 {/* Quick Actions */}
-                <Card className="p-6 bg-gradient-to-r from-emerald-50 to-teal-50 border-emerald-200">
-                  <h3 className="text-lg text-gray-900 mb-4">Quick Actions</h3>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                    <Button onClick={() => setActiveTab('programs')} variant="outline" className="justify-start">
-                      <FileText size={16} className="mr-2" />
-                      Add Program
-                    </Button>
-                    <Button onClick={() => setActiveTab('news')} variant="outline" className="justify-start">
-                      <Newspaper size={16} className="mr-2" />
-                      Add News
-                    </Button>
-                    <Button onClick={() => setActiveTab('gallery')} variant="outline" className="justify-start">
-                      <ImageIcon size={16} className="mr-2" />
-                      Add Image
-                    </Button>
-                    <Button onClick={() => setActiveTab('team')} variant="outline" className="justify-start">
-                      <Users size={16} className="mr-2" />
-                      Add Team Member
-                    </Button>
+                <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-6">
+                  <div className="flex items-center justify-between mb-5">
+                    <div>
+                      <h3 className="text-base font-semibold text-white">Quick Actions</h3>
+                      <p className="text-xs text-slate-400 mt-0.5">Jump to common tasks</p>
+                    </div>
                   </div>
-                </Card>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <button onClick={() => setActiveTab('programs')} className="flex items-center gap-2.5 bg-white/10 hover:bg-white/20 border border-white/10 rounded-xl px-4 py-3 text-sm font-medium text-white transition-colors duration-150">
+                      <div className="p-1.5 rounded-lg bg-blue-500/30">
+                        <FileText size={14} className="text-blue-300" />
+                      </div>
+                      Add Program
+                    </button>
+                    <button onClick={() => setActiveTab('news')} className="flex items-center gap-2.5 bg-white/10 hover:bg-white/20 border border-white/10 rounded-xl px-4 py-3 text-sm font-medium text-white transition-colors duration-150">
+                      <div className="p-1.5 rounded-lg bg-purple-500/30">
+                        <Newspaper size={14} className="text-purple-300" />
+                      </div>
+                      Add News
+                    </button>
+                    <button onClick={() => setActiveTab('gallery')} className="flex items-center gap-2.5 bg-white/10 hover:bg-white/20 border border-white/10 rounded-xl px-4 py-3 text-sm font-medium text-white transition-colors duration-150">
+                      <div className="p-1.5 rounded-lg bg-amber-500/30">
+                        <ImageIcon size={14} className="text-amber-300" />
+                      </div>
+                      Add Image
+                    </button>
+                    <button onClick={() => setActiveTab('team')} className="flex items-center gap-2.5 bg-white/10 hover:bg-white/20 border border-white/10 rounded-xl px-4 py-3 text-sm font-medium text-white transition-colors duration-150">
+                      <div className="p-1.5 rounded-lg bg-emerald-500/30">
+                        <Users size={14} className="text-emerald-300" />
+                      </div>
+                      Add Team Member
+                    </button>
+                  </div>
+                </div>
               </div>
             )}
 
             {/* Programs Management */}
             {activeTab === 'programs' && (
-              <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-xl text-gray-900">Programs ({programs.length})</h3>
-                    <p className="text-sm text-gray-500">Manage your community programs</p>
+              <div className="bg-white rounded-2xl shadow border border-gray-100 p-6 space-y-6">
+                <div className="flex items-center justify-between bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl px-5 py-5">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 rounded-xl bg-white/20 border border-white/30">
+                      <FileText size={18} className="text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-base font-semibold text-white">Programs <span className="text-sm font-normal text-blue-200">({programs.length})</span></h3>
+                      <p className="text-xs text-blue-100 mt-0.5">Manage your community programs</p>
+                    </div>
                   </div>
                   <Button
                     onClick={() => {
@@ -1728,7 +1838,7 @@ export function EnhancedAdminDashboard() {
                       setFormData({ title: '', description: '', content: '', image: '', category: 'general' });
                       setShowProgramForm(true);
                     }}
-                    className="bg-emerald-600 hover:bg-emerald-700"
+                    className="bg-white text-blue-700 hover:bg-blue-50 shadow-sm font-medium"
                   >
                     <Plus size={16} className="mr-2" />
                     Add Program
@@ -1757,9 +1867,9 @@ export function EnhancedAdminDashboard() {
                   </div>
                 )}
 
-                <div className="grid gap-4">
+                <div className="grid gap-5">
                   {programs.map((program) => (
-                    <Card key={program.key} className="p-6 hover:shadow-lg transition">
+                    <div key={program.key} className="bg-white border border-gray-200 border-l-4 border-l-blue-500 rounded-xl p-5 hover:shadow-md hover:border-blue-300 transition-all duration-200 shadow-sm">
                       <div className="flex items-start gap-4">
                         <input
                           type="checkbox"
@@ -1777,39 +1887,39 @@ export function EnhancedAdminDashboard() {
                           <img src={program.value.image} alt={program.value.title} className="w-24 h-24 object-cover rounded-lg" />
                         )}
                         <div className="flex-1">
-                          <h4 className="text-lg text-gray-900 mb-1">{program.value.title}</h4>
+                          <h4 className="text-lg font-semibold text-gray-900 mb-1">{program.value.title}</h4>
                           <p className="text-sm text-gray-600 mb-2">{program.value.description}</p>
-                          <Badge>{program.value.category}</Badge>
+                          <Badge className="bg-blue-50 text-blue-700 border-blue-100">{program.value.category}</Badge>
                         </div>
                         <div className="flex gap-2">
-                          <Button
+                          <button
                             onClick={() => {
                               setEditingItem(program);
                               setFormData(program.value);
                               setShowProgramForm(true);
                             }}
-                            variant="outline"
-                            size="sm"
+                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors"
                           >
-                            <Edit size={14} className="mr-1" />
+                            <Edit size={13} />
                             Edit
-                          </Button>
-                          <Button
+                          </button>
+                          <button
                             onClick={() => handleDeleteProgram(program.key)}
-                            variant="outline"
-                            size="sm"
-                            className="text-red-600 hover:bg-red-50"
+                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-colors"
                           >
-                            <Trash2 size={14} />
-                          </Button>
+                            <Trash2 size={13} />
+                          </button>
                         </div>
                       </div>
-                    </Card>
+                    </div>
                   ))}
                   {programs.length === 0 && (
-                    <div className="text-center py-12 text-gray-500">
-                      <FileText size={48} className="mx-auto mb-4 text-gray-300" />
-                      <p>No programs yet. Create your first program!</p>
+                    <div className="text-center py-16">
+                      <div className="w-14 h-14 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center mx-auto mb-4">
+                        <FileText size={26} className="text-blue-400" />
+                      </div>
+                      <p className="text-sm font-semibold text-gray-600 mb-1">No programs yet</p>
+                      <p className="text-xs text-gray-400">Create your first program to get started!</p>
                     </div>
                   )}
                 </div>
@@ -1818,11 +1928,16 @@ export function EnhancedAdminDashboard() {
 
             {/* News Management */}
             {activeTab === 'news' && (
-              <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-xl text-gray-900">News Articles ({news.length})</h3>
-                    <p className="text-sm text-gray-500">Manage news and updates</p>
+              <div className="bg-white rounded-2xl shadow border border-gray-100 p-6 space-y-6">
+                <div className="flex items-center justify-between bg-gradient-to-r from-violet-600 to-purple-700 rounded-xl px-5 py-5">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 rounded-xl bg-white/20 border border-white/30">
+                      <Newspaper size={18} className="text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-base font-semibold text-white">News Articles <span className="text-sm font-normal text-violet-200">({news.length})</span></h3>
+                      <p className="text-xs text-violet-100 mt-0.5">Manage news and updates</p>
+                    </div>
                   </div>
                   <Button
                     onClick={() => {
@@ -1830,7 +1945,7 @@ export function EnhancedAdminDashboard() {
                       setFormData({ title: '', description: '', content: '', image: '', category: 'general' });
                       setShowNewsForm(true);
                     }}
-                    className="bg-emerald-600 hover:bg-emerald-700"
+                    className="bg-white text-violet-700 hover:bg-violet-50 shadow-sm font-medium"
                   >
                     <Plus size={16} className="mr-2" />
                     Add News
@@ -1855,9 +1970,9 @@ export function EnhancedAdminDashboard() {
                   </div>
                 )}
 
-                <div className="grid gap-4">
+                <div className="grid gap-5">
                   {news.map((item) => (
-                    <Card key={item.key} className="p-6 hover:shadow-lg transition">
+                    <div key={item.key} className="bg-white border border-gray-200 border-l-4 border-l-violet-500 rounded-xl p-5 hover:shadow-md hover:border-violet-300 transition-all duration-200 shadow-sm">
                       <div className="flex items-start gap-4">
                         <input
                           type="checkbox"
@@ -1875,44 +1990,44 @@ export function EnhancedAdminDashboard() {
                           <img src={item.value.image} alt={item.value.title} className="w-24 h-24 object-cover rounded-lg" />
                         )}
                         <div className="flex-1">
-                          <h4 className="text-lg text-gray-900 mb-1">{item.value.title}</h4>
+                          <h4 className="text-lg font-semibold text-gray-900 mb-1">{item.value.title}</h4>
                           <p className="text-sm text-gray-600 mb-2">{item.value.description}</p>
                           <div className="flex items-center gap-2">
-                            <Badge>{item.value.category}</Badge>
+                            <Badge className="bg-violet-50 text-violet-700 border-violet-100">{item.value.category}</Badge>
                             <span className="text-xs text-gray-400">
                               {new Date(item.value.created_at).toLocaleDateString()}
                             </span>
                           </div>
                         </div>
                         <div className="flex gap-2">
-                          <Button
+                          <button
                             onClick={() => {
                               setEditingItem(item);
                               setFormData(item.value);
                               setShowNewsForm(true);
                             }}
-                            variant="outline"
-                            size="sm"
+                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors"
                           >
-                            <Edit size={14} className="mr-1" />
+                            <Edit size={13} />
                             Edit
-                          </Button>
-                          <Button
+                          </button>
+                          <button
                             onClick={() => handleDeleteNews(item.key)}
-                            variant="outline"
-                            size="sm"
-                            className="text-red-600 hover:bg-red-50"
+                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-colors"
                           >
-                            <Trash2 size={14} />
-                          </Button>
+                            <Trash2 size={13} />
+                          </button>
                         </div>
                       </div>
-                    </Card>
+                    </div>
                   ))}
                   {news.length === 0 && (
-                    <div className="text-center py-12 text-gray-500">
-                      <Newspaper size={48} className="mx-auto mb-4 text-gray-300" />
-                      <p>No news articles yet. Create your first article!</p>
+                    <div className="text-center py-16">
+                      <div className="w-14 h-14 rounded-2xl bg-violet-50 border border-violet-100 flex items-center justify-center mx-auto mb-4">
+                        <Newspaper size={26} className="text-violet-400" />
+                      </div>
+                      <p className="text-sm font-semibold text-gray-600 mb-1">No news articles yet</p>
+                      <p className="text-xs text-gray-400">Create your first article to get started!</p>
                     </div>
                   )}
                 </div>
@@ -1921,11 +2036,16 @@ export function EnhancedAdminDashboard() {
 
             {/* Gallery Management */}
             {activeTab === 'gallery' && (
-              <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-xl text-gray-900">Gallery ({gallery.length})</h3>
-                    <p className="text-sm text-gray-500">Manage images and media</p>
+              <div className="bg-white rounded-2xl shadow border border-gray-100 p-6 space-y-6">
+                <div className="flex items-center justify-between bg-gradient-to-r from-amber-500 to-amber-600 rounded-xl px-5 py-5">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 rounded-xl bg-white/20 border border-white/30">
+                      <ImageIcon size={18} className="text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-base font-semibold text-white">Gallery <span className="text-sm font-normal text-amber-100">({gallery.length})</span></h3>
+                      <p className="text-xs text-amber-100 mt-0.5">Manage images and media</p>
+                    </div>
                   </div>
                   <Button
                     onClick={() => {
@@ -1933,7 +2053,7 @@ export function EnhancedAdminDashboard() {
                       setFormData({ title: '', description: '', content: '', image: '', category: 'general' });
                       setShowGalleryForm(true);
                     }}
-                    className="bg-emerald-600 hover:bg-emerald-700"
+                    className="bg-white text-amber-700 hover:bg-amber-50 shadow-sm font-medium"
                   >
                     <Plus size={16} className="mr-2" />
                     Add Image
@@ -1960,7 +2080,7 @@ export function EnhancedAdminDashboard() {
 
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                   {gallery.map((item) => (
-                    <Card key={item.key} className="p-4 hover:shadow-lg transition">
+                    <div key={item.key} className="bg-white border border-gray-200 border-t-4 border-t-amber-500 rounded-xl p-4 hover:shadow-md hover:border-amber-300 transition-all duration-200 shadow-sm">
                       <div className="relative">
                         <input
                           type="checkbox"
@@ -1979,34 +2099,33 @@ export function EnhancedAdminDashboard() {
                       <h4 className="text-sm text-gray-900 mb-1 truncate">{item.value.title}</h4>
                       <p className="text-xs text-gray-600 mb-2 line-clamp-2">{item.value.description}</p>
                       <div className="flex gap-2">
-                        <Button
+                        <button
                           onClick={() => {
                             setEditingItem(item);
                             setFormData({ ...item.value, image: item.value.imageUrl || item.value.image });
                             setShowGalleryForm(true);
                           }}
-                          variant="outline"
-                          size="sm"
-                          className="flex-1"
+                          className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors"
                         >
-                          <Edit size={12} className="mr-1" />
+                          <Edit size={12} />
                           Edit
-                        </Button>
-                        <Button
+                        </button>
+                        <button
                           onClick={() => handleDeleteGallery(item.key)}
-                          variant="outline"
-                          size="sm"
-                          className="text-red-600"
+                          className="flex items-center justify-center px-2 py-1.5 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-colors"
                         >
                           <Trash2 size={12} />
-                        </Button>
+                        </button>
                       </div>
-                    </Card>
+                    </div>
                   ))}
                   {gallery.length === 0 && (
-                    <div className="col-span-full text-center py-12 text-gray-500">
-                      <ImageIcon size={48} className="mx-auto mb-4 text-gray-300" />
-                      <p>No images yet. Upload your first image!</p>
+                    <div className="col-span-full text-center py-16">
+                      <div className="w-14 h-14 rounded-2xl bg-amber-50 border border-amber-100 flex items-center justify-center mx-auto mb-4">
+                        <ImageIcon size={26} className="text-amber-400" />
+                      </div>
+                      <p className="text-sm font-semibold text-gray-600 mb-1">No images yet</p>
+                      <p className="text-xs text-gray-400">Upload your first image to get started!</p>
                     </div>
                   )}
                 </div>
@@ -2015,27 +2134,32 @@ export function EnhancedAdminDashboard() {
 
             {/* Team Management */}
             {activeTab === 'team' && (
-              <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-xl text-gray-900">Team Members ({team.length})</h3>
-                    <p className="text-sm text-gray-500">Manage your team</p>
+              <div className="bg-white rounded-2xl shadow border border-gray-100 p-6 space-y-6">
+                <div className="flex items-center justify-between bg-gradient-to-r from-teal-600 to-teal-700 rounded-xl px-5 py-5">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 rounded-xl bg-white/20 border border-white/30">
+                      <Users size={18} className="text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-base font-semibold text-white">Team Members <span className="text-sm font-normal text-teal-200">({team.length})</span></h3>
+                      <p className="text-xs text-teal-100 mt-0.5">Manage your team</p>
+                    </div>
                   </div>
                   <Button
                     onClick={() => {
                       setEditingItem(null);
                       setShowTeamForm(true);
                     }}
-                    className="bg-emerald-600 hover:bg-emerald-700"
+                    className="bg-white text-teal-700 hover:bg-teal-50 shadow-sm font-medium"
                   >
                     <Plus size={16} className="mr-2" />
                     Add Team Member
                   </Button>
                 </div>
 
-                <div className="grid gap-4">
+                <div className="grid gap-5">
                   {team.map((member) => (
-                    <Card key={member.id} className="p-6 hover:shadow-lg transition">
+                    <div key={member.id} className="bg-white border border-gray-200 border-l-4 border-l-teal-500 rounded-xl p-5 hover:shadow-md hover:border-teal-300 transition-all duration-200 shadow-sm">
                       <div className="flex items-start gap-4">
                         {member.image && (
                           <Avatar className="h-16 w-16">
@@ -2044,39 +2168,39 @@ export function EnhancedAdminDashboard() {
                           </Avatar>
                         )}
                         <div className="flex-1">
-                          <h4 className="text-lg text-gray-900 mb-1">{member.name}</h4>
+                          <h4 className="text-lg font-semibold text-gray-900 mb-1">{member.name}</h4>
                           <p className="text-sm text-emerald-600 mb-2">{member.role}</p>
                           <p className="text-sm text-gray-500 mb-1">Department: {member.department}</p>
                           <p className="text-sm text-gray-600">{member.bio}</p>
                         </div>
                         <div className="flex gap-2">
-                          <Button
+                          <button
                             onClick={() => {
                               setEditingItem(member);
                               setShowTeamForm(true);
                             }}
-                            variant="outline"
-                            size="sm"
+                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors"
                           >
-                            <Edit size={14} className="mr-1" />
+                            <Edit size={13} />
                             Edit
-                          </Button>
-                          <Button
+                          </button>
+                          <button
                             onClick={() => handleDeleteTeam(member.id)}
-                            variant="outline"
-                            size="sm"
-                            className="text-red-600 hover:bg-red-50"
+                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-colors"
                           >
-                            <Trash2 size={14} />
-                          </Button>
+                            <Trash2 size={13} />
+                          </button>
                         </div>
                       </div>
-                    </Card>
+                    </div>
                   ))}
                   {team.length === 0 && (
-                    <div className="text-center py-12 text-gray-500">
-                      <Users size={48} className="mx-auto mb-4 text-gray-300" />
-                      <p>No team members yet. Add your first team member!</p>
+                    <div className="text-center py-16">
+                      <div className="w-14 h-14 rounded-2xl bg-teal-50 border border-teal-100 flex items-center justify-center mx-auto mb-4">
+                        <Users size={26} className="text-teal-400" />
+                      </div>
+                      <p className="text-sm font-semibold text-gray-600 mb-1">No team members yet</p>
+                      <p className="text-xs text-gray-400">Add your first team member to get started!</p>
                     </div>
                   )}
                 </div>
@@ -2085,22 +2209,27 @@ export function EnhancedAdminDashboard() {
 
             {/* Contacts Management */}
             {activeTab === 'contacts' && (
-              <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-xl text-gray-900">Contact Messages ({getFilteredContacts().length})</h3>
-                    <p className="text-sm text-gray-500">Manage incoming messages</p>
+              <div className="bg-white rounded-2xl shadow border border-gray-100 p-6 space-y-6">
+                <div className="flex items-center justify-between bg-gradient-to-r from-sky-600 to-sky-700 rounded-xl px-5 py-5">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 rounded-xl bg-white/20 border border-white/30">
+                      <Mail size={18} className="text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-base font-semibold text-white">Contact Messages <span className="text-sm font-normal text-sky-200">({getFilteredContacts().length})</span></h3>
+                      <p className="text-xs text-sky-100 mt-0.5">Manage incoming messages</p>
+                    </div>
                   </div>
                   <div className="flex items-center gap-2">
                     <select
                       value={contactFilter}
                       onChange={(e) => setContactFilter(e.target.value)}
-                      className="px-3 py-2 border rounded-lg text-sm"
+                      className="px-3 py-2 bg-white/20 border border-white/30 rounded-lg text-sm text-white"
                     >
-                      <option value="all">All Status</option>
-                      <option value="new">New</option>
-                      <option value="read">Read</option>
-                      <option value="responded">Responded</option>
+                      <option value="all" className="text-gray-900">All Status</option>
+                      <option value="new" className="text-gray-900">New</option>
+                      <option value="read" className="text-gray-900">Read</option>
+                      <option value="responded" className="text-gray-900">Responded</option>
                     </select>
                   </div>
                 </div>
@@ -2123,9 +2252,9 @@ export function EnhancedAdminDashboard() {
                   </div>
                 )}
 
-                <div className="grid gap-4">
+                <div className="grid gap-5">
                   {getFilteredContacts().map((contact) => (
-                    <Card key={contact.key} className="p-6 hover:shadow-lg transition">
+                    <div key={contact.key} className="bg-white border border-gray-200 border-l-4 border-l-sky-500 rounded-xl p-5 hover:shadow-md hover:border-sky-300 transition-all duration-200 shadow-sm">
                       <div className="flex items-start gap-4">
                         <input
                           type="checkbox"
@@ -2157,41 +2286,40 @@ export function EnhancedAdminDashboard() {
                           </span>
                         </div>
                         <div className="flex gap-2">
-                          <Button
+                          <button
                             onClick={() => setViewingItem(contact)}
-                            variant="outline"
-                            size="sm"
+                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-sky-700 bg-sky-50 hover:bg-sky-100 border border-sky-200 rounded-lg transition-colors"
                           >
-                            <Eye size={14} className="mr-1" />
+                            <Eye size={13} />
                             View
-                          </Button>
-                          <Button
+                          </button>
+                          <button
                             onClick={() => {
                               setViewingItem(contact);
                               handleUpdateContactStatus(contact.key, 'read');
                             }}
-                            variant="outline"
-                            size="sm"
+                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-lg transition-colors"
                           >
-                            <Reply size={14} className="mr-1" />
+                            <Reply size={13} />
                             Reply
-                          </Button>
-                          <Button
+                          </button>
+                          <button
                             onClick={() => handleDeleteContact(contact.key)}
-                            variant="outline"
-                            size="sm"
-                            className="text-red-600"
+                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-colors"
                           >
-                            <Trash2 size={14} />
-                          </Button>
+                            <Trash2 size={13} />
+                          </button>
                         </div>
                       </div>
-                    </Card>
+                    </div>
                   ))}
                   {getFilteredContacts().length === 0 && (
-                    <div className="text-center py-12 text-gray-500">
-                      <Mail size={48} className="mx-auto mb-4 text-gray-300" />
-                      <p>No contact messages</p>
+                    <div className="text-center py-16">
+                      <div className="w-14 h-14 rounded-2xl bg-sky-50 border border-sky-100 flex items-center justify-center mx-auto mb-4">
+                        <Mail size={26} className="text-sky-400" />
+                      </div>
+                      <p className="text-sm font-semibold text-gray-600 mb-1">No contact messages</p>
+                      <p className="text-xs text-gray-400">Messages will appear here when received</p>
                     </div>
                   )}
                 </div>
@@ -2200,22 +2328,27 @@ export function EnhancedAdminDashboard() {
 
             {/* Volunteers Management */}
             {activeTab === 'volunteers' && (
-              <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-xl text-gray-900">Volunteer Applications ({getFilteredVolunteers().length})</h3>
-                    <p className="text-sm text-gray-500">Manage volunteer registrations</p>
+              <div className="bg-white rounded-2xl shadow border border-gray-100 p-6 space-y-6">
+                <div className="flex items-center justify-between bg-gradient-to-r from-rose-600 to-pink-700 rounded-xl px-5 py-5">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 rounded-xl bg-white/20 border border-white/30">
+                      <Heart size={18} className="text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-base font-semibold text-white">Volunteer Applications <span className="text-sm font-normal text-rose-200">({getFilteredVolunteers().length})</span></h3>
+                      <p className="text-xs text-rose-100 mt-0.5">Manage volunteer registrations</p>
+                    </div>
                   </div>
                   <div className="flex items-center gap-2">
                     <select
                       value={volunteerFilter}
                       onChange={(e) => setVolunteerFilter(e.target.value)}
-                      className="px-3 py-2 border rounded-lg text-sm"
+                      className="px-3 py-2 bg-white/20 border border-white/30 rounded-lg text-sm text-white"
                     >
-                      <option value="all">All Status</option>
-                      <option value="pending">Pending</option>
-                      <option value="approved">Approved</option>
-                      <option value="rejected">Rejected</option>
+                      <option value="all" className="text-gray-900">All Status</option>
+                      <option value="pending" className="text-gray-900">Pending</option>
+                      <option value="approved" className="text-gray-900">Approved</option>
+                      <option value="rejected" className="text-gray-900">Rejected</option>
                     </select>
                   </div>
                 </div>
@@ -2238,9 +2371,9 @@ export function EnhancedAdminDashboard() {
                   </div>
                 )}
 
-                <div className="grid gap-4">
+                <div className="grid gap-5">
                   {getFilteredVolunteers().map((volunteer) => (
-                    <Card key={volunteer.key} className="p-6 hover:shadow-lg transition">
+                    <div key={volunteer.key} className="bg-white border border-gray-200 border-l-4 border-l-rose-500 rounded-xl p-5 hover:shadow-md hover:border-rose-300 transition-all duration-200 shadow-sm">
                       <div className="flex items-start gap-4">
                         <input
                           type="checkbox"
@@ -2272,40 +2405,37 @@ export function EnhancedAdminDashboard() {
                           </span>
                         </div>
                         <div className="flex flex-col gap-2">
-                          <Button
+                          <button
                             onClick={() => handleUpdateVolunteerStatus(volunteer.key, 'approved')}
-                            variant="outline"
-                            size="sm"
-                            className="text-green-600"
+                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-lg transition-colors"
                           >
-                            <Check size={14} className="mr-1" />
+                            <Check size={13} />
                             Approve
-                          </Button>
-                          <Button
+                          </button>
+                          <button
                             onClick={() => handleUpdateVolunteerStatus(volunteer.key, 'rejected')}
-                            variant="outline"
-                            size="sm"
-                            className="text-red-600"
+                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-orange-600 bg-orange-50 hover:bg-orange-100 border border-orange-200 rounded-lg transition-colors"
                           >
-                            <X size={14} className="mr-1" />
+                            <X size={13} />
                             Reject
-                          </Button>
-                          <Button
+                          </button>
+                          <button
                             onClick={() => handleDeleteVolunteer(volunteer.key)}
-                            variant="outline"
-                            size="sm"
-                            className="text-red-600"
+                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-colors"
                           >
-                            <Trash2 size={14} />
-                          </Button>
+                            <Trash2 size={13} />
+                          </button>
                         </div>
                       </div>
-                    </Card>
+                    </div>
                   ))}
                   {getFilteredVolunteers().length === 0 && (
-                    <div className="text-center py-12 text-gray-500">
-                      <Heart size={48} className="mx-auto mb-4 text-gray-300" />
-                      <p>No volunteer applications</p>
+                    <div className="text-center py-16">
+                      <div className="w-14 h-14 rounded-2xl bg-rose-50 border border-rose-100 flex items-center justify-center mx-auto mb-4">
+                        <Heart size={26} className="text-rose-400" />
+                      </div>
+                      <p className="text-sm font-semibold text-gray-600 mb-1">No volunteer applications</p>
+                      <p className="text-xs text-gray-400">Applications will appear here when submitted</p>
                     </div>
                   )}
                 </div>
@@ -2314,30 +2444,35 @@ export function EnhancedAdminDashboard() {
 
             {/* Donations Management */}
             {activeTab === 'donations' && (
-              <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-xl text-gray-900">Donations ({donations.length})</h3>
-                    <p className="text-sm text-gray-500">View donation records</p>
+              <div className="bg-white rounded-2xl shadow border border-gray-100 p-6 space-y-6">
+                <div className="flex items-center justify-between bg-gradient-to-r from-emerald-600 to-teal-700 rounded-xl px-5 py-5">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 rounded-xl bg-white/20 border border-white/30">
+                      <TrendingUp size={18} className="text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-base font-semibold text-white">Donations <span className="text-sm font-normal text-emerald-200">({donations.length})</span></h3>
+                      <p className="text-xs text-emerald-100 mt-0.5">View donation records</p>
+                    </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm text-gray-600">Total Donations</p>
-                    <p className="text-2xl text-emerald-600">
+                    <p className="text-sm text-emerald-100">Total Donations</p>
+                    <p className="text-2xl font-bold text-white">
                       ${donations.reduce((sum, d) => sum + (d.value.amount || 0), 0).toFixed(2)}
                     </p>
                   </div>
                 </div>
 
-                <div className="grid gap-4">
+                <div className="grid gap-5">
                   {donations.map((donation) => (
-                    <Card key={donation.key} className="p-6 hover:shadow-lg transition">
+                    <div key={donation.key} className="bg-white border border-gray-200 border-l-4 border-l-emerald-500 rounded-xl p-5 hover:shadow-md hover:border-emerald-300 transition-all duration-200 shadow-sm">
                       <div className="flex items-center justify-between">
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-2">
-                            <h4 className="text-lg text-gray-900">{donation.value.name}</h4>
-                            <Badge className="bg-emerald-100 text-emerald-700">
+                            <h4 className="text-base font-semibold text-gray-900">{donation.value.name}</h4>
+                            <span className="px-2.5 py-0.5 text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full">
                               ${donation.value.amount}
-                            </Badge>
+                            </span>
                           </div>
                           <p className="text-sm text-gray-600 mb-1">{donation.value.email}</p>
                           <p className="text-sm text-gray-700">Payment: {donation.value.payment_method}</p>
@@ -2346,12 +2481,15 @@ export function EnhancedAdminDashboard() {
                           </span>
                         </div>
                       </div>
-                    </Card>
+                    </div>
                   ))}
                   {donations.length === 0 && (
-                    <div className="text-center py-12 text-gray-500">
-                      <Heart size={48} className="mx-auto mb-4 text-gray-300" />
-                      <p>No donations yet</p>
+                    <div className="text-center py-16">
+                      <div className="w-14 h-14 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center mx-auto mb-4">
+                        <TrendingUp size={26} className="text-emerald-400" />
+                      </div>
+                      <p className="text-sm font-semibold text-gray-600 mb-1">No donations yet</p>
+                      <p className="text-xs text-gray-400">Donation records will appear here</p>
                     </div>
                   )}
                 </div>
@@ -2360,36 +2498,44 @@ export function EnhancedAdminDashboard() {
 
             {/* Subscribers Management */}
             {activeTab === 'subscribers' && (
-              <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-xl text-gray-900">Newsletter Subscribers ({subscribers.length})</h3>
-                    <p className="text-sm text-gray-500">Manage newsletter subscribers</p>
+              <div className="bg-white rounded-2xl shadow border border-gray-100 p-6 space-y-6">
+                <div className="flex items-center justify-between bg-gradient-to-r from-indigo-600 to-indigo-700 rounded-xl px-5 py-5">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 rounded-xl bg-white/20 border border-white/30">
+                      <Send size={18} className="text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-base font-semibold text-white">Newsletter Subscribers <span className="text-sm font-normal text-indigo-200">({subscribers.length})</span></h3>
+                      <p className="text-xs text-indigo-100 mt-0.5">Manage newsletter subscribers</p>
+                    </div>
                   </div>
-                  <Button variant="outline">
+                  <Button variant="outline" className="bg-white/20 border-white/30 text-white hover:bg-white/30 font-medium">
                     <Download size={16} className="mr-2" />
                     Export List
                   </Button>
                 </div>
 
-                <div className="grid gap-4">
+                <div className="grid gap-5">
                   {subscribers.map((subscriber) => (
-                    <Card key={subscriber.key} className="p-6 hover:shadow-lg transition">
+                    <div key={subscriber.key} className="bg-white border border-gray-200 border-l-4 border-l-indigo-500 rounded-xl px-5 py-4 hover:shadow-md hover:border-indigo-300 transition-all duration-200 shadow-sm">
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-lg text-gray-900">{subscriber.value.email}</p>
+                          <p className="text-sm font-semibold text-gray-900">{subscriber.value.email}</p>
                           <span className="text-xs text-gray-400">
                             Subscribed: {new Date(subscriber.value.created_at).toLocaleDateString()}
                           </span>
                         </div>
-                        <Badge className="bg-green-100 text-green-700">Active</Badge>
+                        <span className="px-2.5 py-0.5 text-xs font-semibold text-indigo-700 bg-indigo-50 border border-indigo-200 rounded-full">Active</span>
                       </div>
-                    </Card>
+                    </div>
                   ))}
                   {subscribers.length === 0 && (
-                    <div className="text-center py-12 text-gray-500">
-                      <Send size={48} className="mx-auto mb-4 text-gray-300" />
-                      <p>No subscribers yet</p>
+                    <div className="text-center py-16">
+                      <div className="w-14 h-14 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center mx-auto mb-4">
+                        <Send size={26} className="text-indigo-400" />
+                      </div>
+                      <p className="text-sm font-semibold text-gray-600 mb-1">No subscribers yet</p>
+                      <p className="text-xs text-gray-400">Subscribers will appear here when they sign up</p>
                     </div>
                   )}
                 </div>
@@ -2398,11 +2544,16 @@ export function EnhancedAdminDashboard() {
 
             {/* User Management - Super Admin Only */}
             {activeTab === 'users' && userRole === 'super-admin' && (
-              <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-xl text-gray-900">User Management ({getFilteredUsers().length})</h3>
-                    <p className="text-sm text-gray-500">Manage admin users and permissions</p>
+              <div className="bg-white rounded-2xl shadow border border-gray-100 p-6 space-y-6">
+                <div className="flex items-center justify-between bg-gradient-to-r from-slate-700 to-slate-800 rounded-xl px-5 py-5">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 rounded-xl bg-white/20 border border-white/30">
+                      <Shield size={18} className="text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-base font-semibold text-white">User Management <span className="text-sm font-normal text-slate-300">({getFilteredUsers().length})</span></h3>
+                      <p className="text-xs text-slate-300 mt-0.5">Manage admin users and permissions</p>
+                    </div>
                   </div>
                   <Button
                     onClick={() => {
@@ -2410,7 +2561,7 @@ export function EnhancedAdminDashboard() {
                       setUserFormData({ name: '', email: '', password: '', role: 'viewer', status: 'active' });
                       setShowUserForm(true);
                     }}
-                    className="bg-emerald-600 hover:bg-emerald-700"
+                    className="bg-white text-slate-800 hover:bg-slate-50 shadow-sm font-medium"
                   >
                     <Plus size={16} className="mr-2" />
                     Add User
@@ -2501,10 +2652,9 @@ export function EnhancedAdminDashboard() {
                   </div>
                 )}
 
-                {/* Users Table */}
-                <div className="grid gap-4">
+                <div className="grid gap-5">
                   {getFilteredUsers().map((user) => (
-                    <Card key={user.key} className="p-6 hover:shadow-lg transition">
+                    <div key={user.key} className="bg-white border border-gray-200 border-l-4 border-l-slate-400 rounded-2xl p-5 hover:shadow-lg transition-all duration-200">
                       <div className="flex items-start gap-4">
                         <input
                           type="checkbox"
@@ -2543,7 +2693,7 @@ export function EnhancedAdminDashboard() {
                           </p>
                         </div>
                         <div className="flex flex-col gap-2">
-                          <Button
+                          <button
                             onClick={() => {
                               setEditingItem(user);
                               setUserFormData({
@@ -2555,39 +2705,38 @@ export function EnhancedAdminDashboard() {
                               });
                               setShowUserForm(true);
                             }}
-                            variant="outline"
-                            size="sm"
+                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors"
                           >
-                            <Edit size={14} className="mr-1" />
+                            <Edit size={13} />
                             Edit
-                          </Button>
-                          <Button
+                          </button>
+                          <button
                             onClick={() => {
                               setViewingItem(user);
                               setShowPasswordResetDialog(true);
                             }}
-                            variant="outline"
-                            size="sm"
+                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-lg transition-colors"
                           >
-                            <Shield size={14} className="mr-1" />
-                            Reset Password
-                          </Button>
-                          <Button
+                            <Shield size={13} />
+                            Reset PW
+                          </button>
+                          <button
                             onClick={() => handleDeleteUser(user.value.id)}
-                            variant="outline"
-                            size="sm"
-                            className="text-red-600 hover:bg-red-50"
+                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-colors"
                           >
-                            <Trash2 size={14} />
-                          </Button>
+                            <Trash2 size={13} />
+                          </button>
                         </div>
                       </div>
-                    </Card>
+                    </div>
                   ))}
                   {getFilteredUsers().length === 0 && (
-                    <div className="text-center py-12 text-gray-500">
-                      <Users size={48} className="mx-auto mb-4 text-gray-300" />
-                      <p>No users found</p>
+                    <div className="text-center py-16">
+                      <div className="w-14 h-14 rounded-2xl bg-slate-100 border border-slate-200 flex items-center justify-center mx-auto mb-4">
+                        <Shield size={26} className="text-slate-400" />
+                      </div>
+                      <p className="text-sm font-semibold text-gray-600 mb-1">No users found</p>
+                      <p className="text-xs text-gray-400">Add your first admin user to get started</p>
                     </div>
                   )}
                 </div>
@@ -2601,67 +2750,72 @@ export function EnhancedAdminDashboard() {
 
             {/* Stories Management */}
             {activeTab === 'stories' && (
-              <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-xl text-gray-900">Impact Stories ({stories.length})</h3>
-                    <p className="text-sm text-gray-500">Share success stories and testimonials</p>
+              <div className="bg-white rounded-2xl shadow border border-gray-100 p-6 space-y-6">
+                <div className="flex items-center justify-between bg-gradient-to-r from-orange-500 to-orange-600 rounded-xl px-5 py-5">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 rounded-xl bg-white/20 border border-white/30">
+                      <MessageSquare size={18} className="text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-base font-semibold text-white">Impact Stories <span className="text-sm font-normal text-orange-100">({stories.length})</span></h3>
+                      <p className="text-xs text-orange-100 mt-0.5">Share success stories and testimonials</p>
+                    </div>
                   </div>
                   <Button
                     onClick={() => {
                       setEditingItem(null);
                       setShowStoryForm(true);
                     }}
-                    className="bg-emerald-600 hover:bg-emerald-700"
+                    className="bg-white text-orange-700 hover:bg-orange-50 shadow-sm font-medium"
                   >
                     <Plus size={16} className="mr-2" />
                     Add Story
                   </Button>
                 </div>
 
-                <div className="grid gap-4">
+                <div className="grid gap-5">
                   {stories.map((story) => (
-                    <Card key={story.id} className="p-6 hover:shadow-lg transition">
+                    <div key={story.id} className="bg-white border border-gray-200 border-l-4 border-l-orange-500 rounded-xl p-5 hover:shadow-md hover:border-orange-300 transition-all duration-200 shadow-sm">
                       <div className="flex items-start gap-4">
                         {story.image && (
                           <img src={story.image} alt={story.name} className="w-24 h-24 object-cover rounded-lg" />
                         )}
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
-                            <h4 className="text-lg text-gray-900">{story.title}</h4>
-                            <Badge>{story.category}</Badge>
+                            <h4 className="text-base font-semibold text-gray-900">{story.title}</h4>
+                            <Badge className="bg-orange-50 text-orange-700 border-orange-100">{story.category}</Badge>
                           </div>
                           <p className="text-sm text-emerald-600 mb-2">{story.name}</p>
                           <div className="text-sm text-gray-600 prose prose-sm" dangerouslySetInnerHTML={{ __html: story.story?.substring(0, 150) + '...' }} />
                         </div>
                         <div className="flex gap-2">
-                          <Button
+                          <button
                             onClick={() => {
                               setEditingItem(story);
                               setShowStoryForm(true);
                             }}
-                            variant="outline"
-                            size="sm"
+                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors"
                           >
-                            <Edit size={14} className="mr-1" />
+                            <Edit size={13} />
                             Edit
-                          </Button>
-                          <Button
+                          </button>
+                          <button
                             onClick={() => handleDeleteStory(story.id)}
-                            variant="outline"
-                            size="sm"
-                            className="text-red-600 hover:bg-red-50"
+                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-colors"
                           >
-                            <Trash2 size={14} />
-                          </Button>
+                            <Trash2 size={13} />
+                          </button>
                         </div>
                       </div>
-                    </Card>
+                    </div>
                   ))}
                   {stories.length === 0 && (
-                    <div className="text-center py-12 text-gray-500">
-                      <MessageSquare size={48} className="mx-auto mb-4 text-gray-300" />
-                      <p>No impact stories yet. Share your first success story!</p>
+                    <div className="text-center py-16">
+                      <div className="w-14 h-14 rounded-2xl bg-orange-50 border border-orange-100 flex items-center justify-center mx-auto mb-4">
+                        <MessageSquare size={26} className="text-orange-400" />
+                      </div>
+                      <p className="text-sm font-semibold text-gray-600 mb-1">No impact stories yet</p>
+                      <p className="text-xs text-gray-400">Share your first success story!</p>
                     </div>
                   )}
                 </div>
@@ -2670,15 +2824,20 @@ export function EnhancedAdminDashboard() {
 
             {/* Impact Stats Management */}
             {activeTab === 'impact' && (
-              <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-xl text-gray-900">Impact Statistics</h3>
-                    <p className="text-sm text-gray-500">Update your organization's impact numbers</p>
+              <div className="bg-white rounded-2xl shadow border border-gray-100 p-6 space-y-6">
+                <div className="flex items-center justify-between bg-gradient-to-r from-emerald-600 to-green-700 rounded-xl px-5 py-5">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 rounded-xl bg-white/20 border border-white/30">
+                      <BarChart3 size={18} className="text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-base font-semibold text-white">Impact Statistics</h3>
+                      <p className="text-xs text-emerald-100 mt-0.5">Update your organization's impact numbers</p>
+                    </div>
                   </div>
                   <Button
                     onClick={() => setShowImpactForm(true)}
-                    className="bg-emerald-600 hover:bg-emerald-700"
+                    className="bg-white text-emerald-700 hover:bg-emerald-50 shadow-sm font-medium"
                   >
                     <Edit size={16} className="mr-2" />
                     Update Stats
@@ -2687,30 +2846,48 @@ export function EnhancedAdminDashboard() {
 
                 {impactStats && (
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    <Card className="p-6 text-center">
-                      <h4 className="text-3xl text-emerald-600 mb-2">{impactStats?.peopleServed?.toLocaleString() || 0}</h4>
-                      <p className="text-sm text-gray-600">People Served</p>
-                    </Card>
-                    <Card className="p-6 text-center">
-                      <h4 className="text-3xl text-blue-600 mb-2">{impactStats?.programsActive || 0}</h4>
-                      <p className="text-sm text-gray-600">Active Programs</p>
-                    </Card>
-                    <Card className="p-6 text-center">
-                      <h4 className="text-3xl text-purple-600 mb-2">{impactStats?.volunteersActive || 0}</h4>
-                      <p className="text-sm text-gray-600">Active Volunteers</p>
-                    </Card>
-                    <Card className="p-6 text-center">
-                      <h4 className="text-3xl text-green-600 mb-2">${impactStats?.fundsRaised?.toLocaleString() || 0}</h4>
-                      <p className="text-sm text-gray-600">Funds Raised</p>
-                    </Card>
-                    <Card className="p-6 text-center">
-                      <h4 className="text-3xl text-orange-600 mb-2">{impactStats?.communitiesReached || 0}</h4>
-                      <p className="text-sm text-gray-600">Communities Reached</p>
-                    </Card>
-                    <Card className="p-6 text-center">
-                      <h4 className="text-3xl text-teal-600 mb-2">{impactStats?.successRate || 0}%</h4>
-                      <p className="text-sm text-gray-600">Success Rate</p>
-                    </Card>
+                    <div className="bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-100 rounded-2xl p-6 text-center hover:shadow-md transition-shadow">
+                      <div className="w-10 h-10 rounded-xl bg-emerald-500 flex items-center justify-center mx-auto mb-3">
+                        <Users size={18} className="text-white" />
+                      </div>
+                      <p className="text-3xl font-bold text-emerald-700 mb-1">{impactStats?.peopleServed?.toLocaleString() || 0}</p>
+                      <p className="text-xs font-medium text-gray-500">People Served</p>
+                    </div>
+                    <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100 rounded-2xl p-6 text-center hover:shadow-md transition-shadow">
+                      <div className="w-10 h-10 rounded-xl bg-blue-500 flex items-center justify-center mx-auto mb-3">
+                        <FileText size={18} className="text-white" />
+                      </div>
+                      <p className="text-3xl font-bold text-blue-700 mb-1">{impactStats?.programsActive || 0}</p>
+                      <p className="text-xs font-medium text-gray-500">Active Programs</p>
+                    </div>
+                    <div className="bg-gradient-to-br from-purple-50 to-violet-50 border border-purple-100 rounded-2xl p-6 text-center hover:shadow-md transition-shadow">
+                      <div className="w-10 h-10 rounded-xl bg-purple-500 flex items-center justify-center mx-auto mb-3">
+                        <Heart size={18} className="text-white" />
+                      </div>
+                      <p className="text-3xl font-bold text-purple-700 mb-1">{impactStats?.volunteersActive || 0}</p>
+                      <p className="text-xs font-medium text-gray-500">Active Volunteers</p>
+                    </div>
+                    <div className="bg-gradient-to-br from-green-50 to-emerald-50 border border-green-100 rounded-2xl p-6 text-center hover:shadow-md transition-shadow">
+                      <div className="w-10 h-10 rounded-xl bg-green-500 flex items-center justify-center mx-auto mb-3">
+                        <TrendingUp size={18} className="text-white" />
+                      </div>
+                      <p className="text-3xl font-bold text-green-700 mb-1">${impactStats?.fundsRaised?.toLocaleString() || 0}</p>
+                      <p className="text-xs font-medium text-gray-500">Funds Raised</p>
+                    </div>
+                    <div className="bg-gradient-to-br from-orange-50 to-amber-50 border border-orange-100 rounded-2xl p-6 text-center hover:shadow-md transition-shadow">
+                      <div className="w-10 h-10 rounded-xl bg-orange-500 flex items-center justify-center mx-auto mb-3">
+                        <Target size={18} className="text-white" />
+                      </div>
+                      <p className="text-3xl font-bold text-orange-600 mb-1">{impactStats?.communitiesReached || 0}</p>
+                      <p className="text-xs font-medium text-gray-500">Communities Reached</p>
+                    </div>
+                    <div className="bg-gradient-to-br from-teal-50 to-cyan-50 border border-teal-100 rounded-2xl p-6 text-center hover:shadow-md transition-shadow">
+                      <div className="w-10 h-10 rounded-xl bg-teal-500 flex items-center justify-center mx-auto mb-3">
+                        <Award size={18} className="text-white" />
+                      </div>
+                      <p className="text-3xl font-bold text-teal-700 mb-1">{impactStats?.successRate || 0}%</p>
+                      <p className="text-xs font-medium text-gray-500">Success Rate</p>
+                    </div>
                   </div>
                 )}
               </div>
@@ -2718,61 +2895,66 @@ export function EnhancedAdminDashboard() {
 
             {/* Reports Management */}
             {activeTab === 'reports' && (
-              <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-xl text-gray-900">Annual Reports ({reports.length})</h3>
-                    <p className="text-sm text-gray-500">Manage annual and financial reports</p>
+              <div className="bg-white rounded-2xl shadow border border-gray-100 p-6 space-y-6">
+                <div className="flex items-center justify-between bg-gradient-to-r from-slate-600 to-slate-700 rounded-xl px-5 py-5">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 rounded-xl bg-white/20 border border-white/30">
+                      <Download size={18} className="text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-base font-semibold text-white">Annual Reports <span className="text-sm font-normal text-slate-300">({reports.length})</span></h3>
+                      <p className="text-xs text-slate-300 mt-0.5">Manage annual and financial reports</p>
+                    </div>
                   </div>
                   <Button
                     onClick={() => {
                       setEditingItem(null);
                       setShowReportForm(true);
                     }}
-                    className="bg-emerald-600 hover:bg-emerald-700"
+                    className="bg-white text-slate-700 hover:bg-slate-50 shadow-sm font-medium"
                   >
                     <Plus size={16} className="mr-2" />
                     Add Report
                   </Button>
                 </div>
 
-                <div className="grid gap-4">
+                <div className="grid gap-5">
                   {reports.map((report) => (
-                    <Card key={report.id} className="p-6 hover:shadow-lg transition">
+                    <div key={report.id} className="bg-white border border-gray-200 border-l-4 border-l-slate-500 rounded-xl p-5 hover:shadow-md hover:border-slate-400 transition-all duration-200 shadow-sm">
                       <div className="flex items-center justify-between">
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
-                            <h4 className="text-lg text-gray-900">{report.title}</h4>
-                            <Badge>{report.year}</Badge>
-                            {report.fileSize && <Badge variant="outline">{report.fileSize}</Badge>}
+                            <h4 className="text-base font-semibold text-gray-900">{report.title}</h4>
+                            <span className="px-2 py-0.5 text-xs font-semibold text-gray-600 bg-gray-100 border border-gray-200 rounded-lg">{report.year}</span>
+                            {report.fileSize && <span className="px-2 py-0.5 text-xs text-gray-500 bg-gray-50 border border-gray-200 rounded-lg">{report.fileSize}</span>}
                           </div>
                           <p className="text-sm text-gray-600 mb-2">{report.description}</p>
                         </div>
                         <div className="flex gap-2">
-                          <Button
+                          <button
                             onClick={() => window.open(report.fileUrl, '_blank')}
-                            variant="outline"
-                            size="sm"
+                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg transition-colors"
                           >
-                            <Download size={14} className="mr-1" />
+                            <Download size={13} />
                             Download
-                          </Button>
-                          <Button
+                          </button>
+                          <button
                             onClick={() => handleDeleteReport(report.id)}
-                            variant="outline"
-                            size="sm"
-                            className="text-red-600 hover:bg-red-50"
+                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-colors"
                           >
-                            <Trash2 size={14} />
-                          </Button>
+                            <Trash2 size={13} />
+                          </button>
                         </div>
                       </div>
-                    </Card>
+                    </div>
                   ))}
                   {reports.length === 0 && (
-                    <div className="text-center py-12 text-gray-500">
-                      <Download size={48} className="mx-auto mb-4 text-gray-300" />
-                      <p>No reports yet. Add your first annual report!</p>
+                    <div className="text-center py-16">
+                      <div className="w-14 h-14 rounded-2xl bg-gray-100 border border-gray-200 flex items-center justify-center mx-auto mb-4">
+                        <Download size={26} className="text-gray-400" />
+                      </div>
+                      <p className="text-sm font-semibold text-gray-600 mb-1">No reports yet</p>
+                      <p className="text-xs text-gray-400">Add your first annual report to get started!</p>
                     </div>
                   )}
                 </div>
@@ -2781,79 +2963,84 @@ export function EnhancedAdminDashboard() {
 
             {/* Events Management */}
             {activeTab === 'events' && (
-              <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-xl text-gray-900">Events ({events.length})</h3>
-                    <p className="text-sm text-gray-500">Manage upcoming and past events</p>
+              <div className="bg-white rounded-2xl shadow border border-gray-100 p-6 space-y-6">
+                <div className="flex items-center justify-between bg-gradient-to-r from-indigo-500 to-violet-600 rounded-xl px-5 py-5">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 rounded-xl bg-white/20 border border-white/30">
+                      <Calendar size={18} className="text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-base font-semibold text-white">Events <span className="text-sm font-normal text-indigo-200">({events.length})</span></h3>
+                      <p className="text-xs text-indigo-100 mt-0.5">Manage upcoming and past events</p>
+                    </div>
                   </div>
                   <Button
                     onClick={() => {
                       setEditingItem(null);
                       setShowEventForm(true);
                     }}
-                    className="bg-emerald-600 hover:bg-emerald-700"
+                    className="bg-white text-indigo-700 hover:bg-indigo-50 shadow-sm font-medium"
                   >
                     <Plus size={16} className="mr-2" />
                     Add Event
                   </Button>
                 </div>
 
-                <div className="grid gap-4">
+                <div className="grid gap-5">
                   {events.map((event) => (
-                    <Card key={event.id} className="p-6 hover:shadow-lg transition">
+                    <div key={event.id} className="bg-white border border-gray-200 border-l-4 border-l-indigo-500 rounded-xl p-5 hover:shadow-md hover:border-indigo-300 transition-all duration-200 shadow-sm">
                       <div className="flex items-start gap-4">
                         {event.image && (
                           <img src={event.image} alt={event.title} className="w-24 h-24 object-cover rounded-lg" />
                         )}
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
-                            <h4 className="text-lg text-gray-900">{event.title}</h4>
-                            <Badge className={
-                              event.status === 'upcoming' ? 'bg-blue-100 text-blue-700' :
-                              event.status === 'ongoing' ? 'bg-green-100 text-green-700' :
-                              event.status === 'completed' ? 'bg-gray-100 text-gray-700' :
-                              'bg-red-100 text-red-700'
-                            }>
+                            <h4 className="text-base font-semibold text-gray-900">{event.title}</h4>
+                            <span className={`px-2 py-0.5 text-xs font-semibold rounded-full border ${
+                              event.status === 'upcoming' ? 'text-blue-700 bg-blue-50 border-blue-200' :
+                              event.status === 'ongoing' ? 'text-emerald-700 bg-emerald-50 border-emerald-200' :
+                              event.status === 'completed' ? 'text-gray-600 bg-gray-50 border-gray-200' :
+                              'text-red-600 bg-red-50 border-red-200'
+                            }`}>
                               {event.status}
-                            </Badge>
+                            </span>
                           </div>
                           <p className="text-sm text-gray-600 mb-2">{event.description}</p>
-                          <div className="flex items-center gap-4 text-xs text-gray-500">
-                            <span>📅 {event.date}</span>
-                            <span>🕐 {event.time}</span>
-                            <span>📍 {event.location}</span>
-                            <span>👥 {event.capacity} capacity</span>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="flex items-center gap-1 text-xs text-gray-500 bg-gray-50 border border-gray-200 rounded-lg px-2 py-1"><Calendar size={11} /> {event.date}</span>
+                            <span className="text-xs text-gray-500 bg-gray-50 border border-gray-200 rounded-lg px-2 py-1">🕐 {event.time}</span>
+                            <span className="text-xs text-gray-500 bg-gray-50 border border-gray-200 rounded-lg px-2 py-1">📍 {event.location}</span>
+                            <span className="flex items-center gap-1 text-xs text-gray-500 bg-gray-50 border border-gray-200 rounded-lg px-2 py-1"><Users size={11} /> {event.capacity}</span>
                           </div>
                         </div>
                         <div className="flex gap-2">
-                          <Button
+                          <button
                             onClick={() => {
                               setEditingItem(event);
                               setShowEventForm(true);
                             }}
-                            variant="outline"
-                            size="sm"
+                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors"
                           >
-                            <Edit size={14} className="mr-1" />
+                            <Edit size={13} />
                             Edit
-                          </Button>
-                          <Button
+                          </button>
+                          <button
                             onClick={() => handleDeleteEvent(event.id)}
-                            variant="outline"
-                            size="sm"
-                            className="text-red-600 hover:bg-red-50"
+                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-colors"
                           >
-                            <Trash2 size={14} />
-                          </Button>
+                            <Trash2 size={13} />
+                          </button>
                         </div>
                       </div>
-                    </Card>
+                    </div>
                   ))}
                   {events.length === 0 && (
-                    <div className="text-center py-12 text-gray-500">
-                      <Calendar size={48} className="mx-auto mb-4 text-gray-300" />
-                      <p>No events yet. Create your first event!</p>
+                    <div className="text-center py-16">
+                      <div className="w-14 h-14 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center mx-auto mb-4">
+                        <Calendar size={26} className="text-indigo-400" />
+                      </div>
+                      <p className="text-sm font-semibold text-gray-600 mb-1">No events yet</p>
+                      <p className="text-xs text-gray-400">Create your first event to get started!</p>
                     </div>
                   )}
                 </div>
@@ -2862,18 +3049,23 @@ export function EnhancedAdminDashboard() {
 
             {/* Partners Management */}
             {activeTab === 'partners' && (
-              <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-xl text-gray-900">Partners ({partners.length})</h3>
-                    <p className="text-sm text-gray-500">Manage partner organizations</p>
+              <div className="bg-white rounded-2xl shadow border border-gray-100 p-6 space-y-6">
+                <div className="flex items-center justify-between bg-gradient-to-r from-amber-500 to-yellow-600 rounded-xl px-5 py-5">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 rounded-xl bg-white/20 border border-white/30">
+                      <Handshake size={18} className="text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-base font-semibold text-white">Partners <span className="text-sm font-normal text-amber-100">({partners.length})</span></h3>
+                      <p className="text-xs text-amber-100 mt-0.5">Manage partner organizations</p>
+                    </div>
                   </div>
                   <Button
                     onClick={() => {
                       setEditingItem(null);
                       setShowPartnerForm(true);
                     }}
-                    className="bg-emerald-600 hover:bg-emerald-700"
+                    className="bg-white text-amber-700 hover:bg-amber-50 shadow-sm font-medium"
                   >
                     <Plus size={16} className="mr-2" />
                     Add Partner
@@ -2882,38 +3074,38 @@ export function EnhancedAdminDashboard() {
 
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                   {partners.map((partner) => (
-                    <Card key={partner.id} className="p-6 hover:shadow-lg transition text-center">
+                    <div key={partner.id} className="bg-white border border-gray-200 border-t-4 border-t-amber-500 rounded-xl p-5 hover:shadow-md hover:border-amber-300 transition-all duration-200 text-center shadow-sm">
                       {partner.logo && (
                         <img src={partner.logo} alt={partner.name} className="h-16 w-auto mx-auto mb-3 object-contain" />
                       )}
                       <h4 className="text-sm text-gray-900 mb-1">{partner.name}</h4>
                       <p className="text-xs text-gray-600 mb-3 line-clamp-2">{partner.description}</p>
                       <div className="flex gap-2 justify-center">
-                        <Button
+                        <button
                           onClick={() => {
                             setEditingItem(partner);
                             setShowPartnerForm(true);
                           }}
-                          variant="outline"
-                          size="sm"
+                          className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors"
                         >
                           <Edit size={12} />
-                        </Button>
-                        <Button
+                        </button>
+                        <button
                           onClick={() => handleDeletePartner(partner.id)}
-                          variant="outline"
-                          size="sm"
-                          className="text-red-600"
+                          className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-colors"
                         >
                           <Trash2 size={12} />
-                        </Button>
+                        </button>
                       </div>
-                    </Card>
+                    </div>
                   ))}
                   {partners.length === 0 && (
-                    <div className="col-span-full text-center py-12 text-gray-500">
-                      <Handshake size={48} className="mx-auto mb-4 text-gray-300" />
-                      <p>No partners yet. Add your first partner organization!</p>
+                    <div className="col-span-full text-center py-16">
+                      <div className="w-14 h-14 rounded-2xl bg-amber-50 border border-amber-100 flex items-center justify-center mx-auto mb-4">
+                        <Handshake size={26} className="text-amber-400" />
+                      </div>
+                      <p className="text-sm font-semibold text-gray-600 mb-1">No partners yet</p>
+                      <p className="text-xs text-gray-400">Add your first partner organization!</p>
                     </div>
                   )}
                 </div>
@@ -2922,69 +3114,74 @@ export function EnhancedAdminDashboard() {
 
             {/* Opportunities Management */}
             {activeTab === 'opportunities' && (
-              <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-xl text-gray-900">Opportunities ({opportunities.length})</h3>
-                    <p className="text-sm text-gray-500">Manage volunteer opportunities</p>
+              <div className="bg-white rounded-2xl shadow border border-gray-100 p-6 space-y-6">
+                <div className="flex items-center justify-between bg-gradient-to-r from-purple-600 to-purple-700 rounded-xl px-5 py-5">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 rounded-xl bg-white/20 border border-white/30">
+                      <Target size={18} className="text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-base font-semibold text-white">Opportunities <span className="text-sm font-normal text-purple-200">({opportunities.length})</span></h3>
+                      <p className="text-xs text-purple-100 mt-0.5">Manage volunteer opportunities</p>
+                    </div>
                   </div>
                   <Button
                     onClick={() => {
                       setEditingItem(null);
                       setShowOpportunityForm(true);
                     }}
-                    className="bg-emerald-600 hover:bg-emerald-700"
+                    className="bg-white text-purple-700 hover:bg-purple-50 shadow-sm font-medium"
                   >
                     <Plus size={16} className="mr-2" />
                     Add Opportunity
                   </Button>
                 </div>
 
-                <div className="grid gap-4">
+                <div className="grid gap-5">
                   {opportunities.map((opp) => (
-                    <Card key={opp.id} className="p-6 hover:shadow-lg transition">
+                    <div key={opp.id} className="bg-white border border-gray-200 border-l-4 border-l-purple-500 rounded-xl p-5 hover:shadow-md hover:border-purple-300 transition-all duration-200 shadow-sm">
                       <div className="flex items-start gap-4">
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
-                            <h4 className="text-lg text-gray-900">{opp.title}</h4>
-                            <Badge>{opp.type}</Badge>
-                            {opp.urgent && <Badge className="bg-red-100 text-red-700">Urgent</Badge>}
+                            <h4 className="text-base font-semibold text-gray-900">{opp.title}</h4>
+                            <Badge className="bg-purple-50 text-purple-700 border-purple-100">{opp.type}</Badge>
+                            {opp.urgent && <span className="px-2 py-0.5 text-xs font-semibold text-red-700 bg-red-50 border border-red-200 rounded-full">Urgent</span>}
                           </div>
                           <p className="text-sm text-gray-600 mb-2">{opp.description}</p>
-                          <div className="flex items-center gap-4 text-xs text-gray-500">
-                            <span>📍 {opp.location}</span>
-                            <span>🕐 {opp.commitment}</span>
-                            {opp.spotsAvailable && <span>👥 {opp.spotsAvailable} spots</span>}
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="text-xs text-gray-500 bg-gray-50 border border-gray-200 rounded-lg px-2 py-1">📍 {opp.location}</span>
+                            <span className="text-xs text-gray-500 bg-gray-50 border border-gray-200 rounded-lg px-2 py-1">🕐 {opp.commitment}</span>
+                            {opp.spotsAvailable && <span className="flex items-center gap-1 text-xs text-gray-500 bg-gray-50 border border-gray-200 rounded-lg px-2 py-1"><Users size={11} /> {opp.spotsAvailable} spots</span>}
                           </div>
                         </div>
                         <div className="flex gap-2">
-                          <Button
+                          <button
                             onClick={() => {
                               setEditingItem(opp);
                               setShowOpportunityForm(true);
                             }}
-                            variant="outline"
-                            size="sm"
+                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors"
                           >
-                            <Edit size={14} className="mr-1" />
+                            <Edit size={13} />
                             Edit
-                          </Button>
-                          <Button
+                          </button>
+                          <button
                             onClick={() => handleDeleteOpportunity(opp.id)}
-                            variant="outline"
-                            size="sm"
-                            className="text-red-600 hover:bg-red-50"
+                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-colors"
                           >
-                            <Trash2 size={14} />
-                          </Button>
+                            <Trash2 size={13} />
+                          </button>
                         </div>
                       </div>
-                    </Card>
+                    </div>
                   ))}
                   {opportunities.length === 0 && (
-                    <div className="text-center py-12 text-gray-500">
-                      <Target size={48} className="mx-auto mb-4 text-gray-300" />
-                      <p>No opportunities yet. Create your first volunteer opportunity!</p>
+                    <div className="text-center py-16">
+                      <div className="w-14 h-14 rounded-2xl bg-purple-50 border border-purple-100 flex items-center justify-center mx-auto mb-4">
+                        <Target size={26} className="text-purple-400" />
+                      </div>
+                      <p className="text-sm font-semibold text-gray-600 mb-1">No opportunities yet</p>
+                      <p className="text-xs text-gray-400">Create your first volunteer opportunity!</p>
                     </div>
                   )}
                 </div>
@@ -2993,63 +3190,68 @@ export function EnhancedAdminDashboard() {
 
             {/* FAQs Management */}
             {activeTab === 'faqs' && (
-              <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-xl text-gray-900">FAQs ({faqs.length})</h3>
-                    <p className="text-sm text-gray-500">Manage frequently asked questions</p>
+              <div className="bg-white rounded-2xl shadow border border-gray-100 p-6 space-y-6">
+                <div className="flex items-center justify-between bg-gradient-to-r from-cyan-600 to-cyan-700 rounded-xl px-5 py-5">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 rounded-xl bg-white/20 border border-white/30">
+                      <HelpCircle size={18} className="text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-base font-semibold text-white">FAQs <span className="text-sm font-normal text-cyan-200">({faqs.length})</span></h3>
+                      <p className="text-xs text-cyan-100 mt-0.5">Manage frequently asked questions</p>
+                    </div>
                   </div>
                   <Button
                     onClick={() => {
                       setEditingItem(null);
                       setShowFAQForm(true);
                     }}
-                    className="bg-emerald-600 hover:bg-emerald-700"
+                    className="bg-white text-cyan-700 hover:bg-cyan-50 shadow-sm font-medium"
                   >
                     <Plus size={16} className="mr-2" />
                     Add FAQ
                   </Button>
                 </div>
 
-                <div className="grid gap-4">
+                <div className="grid gap-5">
                   {faqs.map((faq) => (
-                    <Card key={faq.id} className="p-6 hover:shadow-lg transition">
+                    <div key={faq.id} className="bg-white border border-gray-200 border-l-4 border-l-cyan-500 rounded-xl p-5 hover:shadow-md hover:border-cyan-300 transition-all duration-200 shadow-sm">
                       <div className="flex items-start gap-4">
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-2">
-                            <h4 className="text-lg text-gray-900">{faq.question}</h4>
-                            <Badge>{faq.category}</Badge>
+                            <h4 className="text-base font-semibold text-gray-900">{faq.question}</h4>
+                            <Badge className="bg-cyan-50 text-cyan-700 border-cyan-100">{faq.category}</Badge>
                           </div>
                           <p className="text-sm text-gray-600">{faq.answer}</p>
                         </div>
                         <div className="flex gap-2">
-                          <Button
+                          <button
                             onClick={() => {
                               setEditingItem(faq);
                               setShowFAQForm(true);
                             }}
-                            variant="outline"
-                            size="sm"
+                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors"
                           >
-                            <Edit size={14} className="mr-1" />
+                            <Edit size={13} />
                             Edit
-                          </Button>
-                          <Button
+                          </button>
+                          <button
                             onClick={() => handleDeleteFAQ(faq.id)}
-                            variant="outline"
-                            size="sm"
-                            className="text-red-600 hover:bg-red-50"
+                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-colors"
                           >
-                            <Trash2 size={14} />
-                          </Button>
+                            <Trash2 size={13} />
+                          </button>
                         </div>
                       </div>
-                    </Card>
+                    </div>
                   ))}
                   {faqs.length === 0 && (
-                    <div className="text-center py-12 text-gray-500">
-                      <HelpCircle size={48} className="mx-auto mb-4 text-gray-300" />
-                      <p>No FAQs yet. Add your first question and answer!</p>
+                    <div className="text-center py-16">
+                      <div className="w-14 h-14 rounded-2xl bg-cyan-50 border border-cyan-100 flex items-center justify-center mx-auto mb-4">
+                        <HelpCircle size={26} className="text-cyan-400" />
+                      </div>
+                      <p className="text-sm font-semibold text-gray-600 mb-1">No FAQs yet</p>
+                      <p className="text-xs text-gray-400">Add your first question and answer!</p>
                     </div>
                   )}
                 </div>
@@ -3058,76 +3260,82 @@ export function EnhancedAdminDashboard() {
 
             {/* Resources Management */}
             {activeTab === 'resources' && (
-              <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-xl text-gray-900">Resources ({resources.length})</h3>
-                    <p className="text-sm text-gray-500">Manage downloadable resources</p>
+              <div className="bg-white rounded-2xl shadow border border-gray-100 p-6 space-y-6">
+                <div className="flex items-center justify-between bg-gradient-to-r from-green-600 to-green-700 rounded-xl px-5 py-5">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 rounded-xl bg-white/20 border border-white/30">
+                      <BookOpen size={18} className="text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-base font-semibold text-white">Resources <span className="text-sm font-normal text-green-200">({resources.length})</span></h3>
+                      <p className="text-xs text-green-100 mt-0.5">Manage downloadable resources</p>
+                    </div>
                   </div>
                   <Button
                     onClick={() => {
                       setEditingItem(null);
                       setShowResourceForm(true);
                     }}
-                    className="bg-emerald-600 hover:bg-emerald-700"
+                    className="bg-white text-green-700 hover:bg-green-50 shadow-sm font-medium"
                   >
                     <Plus size={16} className="mr-2" />
                     Add Resource
                   </Button>
                 </div>
 
-                <div className="grid gap-4">
+                <div className="grid gap-5">
                   {resources.map((resource) => (
-                    <Card key={resource.id} className="p-6 hover:shadow-lg transition">
+                    <div key={resource.id} className="bg-white border border-gray-200 border-l-4 border-l-green-500 rounded-xl p-5 hover:shadow-md hover:border-green-300 transition-all duration-200 shadow-sm">
                       <div className="flex items-center justify-between">
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
-                            <h4 className="text-lg text-gray-900">{resource.title}</h4>
-                            <Badge>{resource.type}</Badge>
-                            {resource.fileSize && <Badge variant="outline">{resource.fileSize}</Badge>}
+                            <h4 className="text-base font-semibold text-gray-900">{resource.title}</h4>
+                            <Badge className="bg-green-50 text-green-700 border-green-100">{resource.type}</Badge>
+                            {resource.fileSize && <span className="px-2 py-0.5 text-xs text-gray-500 bg-gray-50 border border-gray-200 rounded-lg">{resource.fileSize}</span>}
                           </div>
                           <p className="text-sm text-gray-600 mb-2">{resource.description}</p>
                         </div>
                         <div className="flex gap-2">
-                          <Button
+                          <button
                             onClick={() => window.open(resource.fileUrl, '_blank')}
-                            variant="outline"
-                            size="sm"
+                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg transition-colors"
                           >
-                            <Download size={14} className="mr-1" />
+                            <Download size={13} />
                             Download
-                          </Button>
-                          <Button
+                          </button>
+                          <button
                             onClick={() => {
                               setEditingItem(resource);
                               setShowResourceForm(true);
                             }}
-                            variant="outline"
-                            size="sm"
+                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors"
                           >
-                            <Edit size={14} />
-                          </Button>
-                          <Button
+                            <Edit size={13} />
+                            Edit
+                          </button>
+                          <button
                             onClick={() => handleDeleteResource(resource.id)}
-                            variant="outline"
-                            size="sm"
-                            className="text-red-600 hover:bg-red-50"
+                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-colors"
                           >
-                            <Trash2 size={14} />
-                          </Button>
+                            <Trash2 size={13} />
+                          </button>
                         </div>
                       </div>
-                    </Card>
+                    </div>
                   ))}
                   {resources.length === 0 && (
-                    <div className="text-center py-12 text-gray-500">
-                      <BookOpen size={48} className="mx-auto mb-4 text-gray-300" />
-                      <p>No resources yet. Add your first downloadable resource!</p>
+                    <div className="text-center py-16">
+                      <div className="w-14 h-14 rounded-2xl bg-green-50 border border-green-100 flex items-center justify-center mx-auto mb-4">
+                        <BookOpen size={26} className="text-green-400" />
+                      </div>
+                      <p className="text-sm font-semibold text-gray-600 mb-1">No resources yet</p>
+                      <p className="text-xs text-gray-400">Add your first downloadable resource!</p>
                     </div>
                   )}
                 </div>
               </div>
             )}
+          </div>
           </div>
         </div>
       </div>
@@ -3135,7 +3343,7 @@ export function EnhancedAdminDashboard() {
       {/* Sidebar overlay for mobile */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-30 lg:hidden mt-16"
+          className="fixed inset-0 bg-black/50 z-30 lg:hidden mt-16"
           onClick={() => setSidebarOpen(false)}
         />
       )}
