@@ -1,6 +1,6 @@
 import { Menu, X } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import logo from 'figma:asset/2b36c5cb8ddf5552ba2d3e612fd68401a7bb193e.png';
+const logo = '/logo.png';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 
 interface GeneralSettings {
@@ -11,8 +11,11 @@ interface GeneralSettings {
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [settings, setSettings] = useState<GeneralSettings | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [settings, setSettings] = useState<GeneralSettings>({
+    siteName: 'Resti Kiryandongo',
+    tagline: 'Community Based Organization',
+    logoUrl: logo
+  });
   const [scrolled, setScrolled] = useState(false);
   const [activeSection, setActiveSection] = useState('home');
 
@@ -62,17 +65,12 @@ export function Header() {
       }
 
       const data = await response.json();
-      setSettings(data.settings.general);
+      if (data.settings?.general) {
+        setSettings(data.settings.general);
+      }
     } catch (error) {
       console.error('Error fetching header settings:', error);
-      // Set default settings if fetch fails
-      setSettings({
-        siteName: 'Resti Kiryandongo',
-        tagline: 'Community Based Organization',
-        logoUrl: logo
-      });
-    } finally {
-      setLoading(false);
+      // Default settings already set as initial state — no action needed
     }
   };
 
@@ -95,7 +93,7 @@ export function Header() {
     return settings.logoUrl;
   };
 
-  if (loading || !settings) {
+  if (!settings) {
     return <header className="fixed top-0 left-0 right-0 bg-white shadow-sm z-50 h-16"></header>;
   }
 

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import logo from 'figma:asset/2b36c5cb8ddf5552ba2d3e612fd68401a7bb193e.png';
+const logo = '/logo.png';
 
 export function LoadingScreen() {
   const [isLoading, setIsLoading] = useState(true);

@@ -1,7 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useEffect } from 'react';
 import { Toaster } from './components/ui/sonner';
-import { LoadingScreen } from './components/LoadingScreen';
 import { Header } from './components/Header';
 import { Hero } from './components/Hero';
 import { About } from './components/About';
@@ -24,7 +23,6 @@ import { BackToTop } from './components/BackToTop';
 import { FloatingContact } from './components/FloatingContact';
 import { PrivacyBanner } from './components/PrivacyBanner';
 import { EnhancedAdminDashboard } from './components/EnhancedAdminDashboard';
-import { DebugInfo } from './components/DebugInfo';
 import { projectId, publicAnonKey } from './utils/supabase/info';
 
 function HomePage() {
@@ -71,7 +69,6 @@ function HomePage() {
         <Contact />
       </main>
       <Footer />
-      <DebugInfo />
       <BackToTop />
       <FloatingContact />
       <PrivacyBanner />

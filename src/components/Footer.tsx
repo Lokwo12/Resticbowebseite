@@ -1,5 +1,5 @@
 import { Heart, Facebook, Twitter, Instagram, Mail } from 'lucide-react';
-import logo from 'figma:asset/2b36c5cb8ddf5552ba2d3e612fd68401a7bb193e.png';
+const logo = '/logo.png';
 import { useState, useEffect } from 'react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 
@@ -27,10 +27,22 @@ interface ContactSettings {
 }
 
 export function Footer() {
-  const [footerSettings, setFooterSettings] = useState<FooterSettings | null>(null);
-  const [generalSettings, setGeneralSettings] = useState<GeneralSettings | null>(null);
-  const [contactSettings, setContactSettings] = useState<ContactSettings | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [footerSettings, setFooterSettings] = useState<FooterSettings>({
+    description: 'Empowering communities through education, healthcare, and sustainable development.',
+    copyrightText: 'Resti Kiryandongo CBO. All rights reserved.',
+    taglineBottom: 'Made with ❤️ for our community'
+  });
+  const [generalSettings, setGeneralSettings] = useState<GeneralSettings>({
+    siteName: 'Resti Kiryandongo',
+    tagline: 'Community Based Organization',
+    logoUrl: logo
+  });
+  const [contactSettings, setContactSettings] = useState<ContactSettings>({
+    address: 'Kiryandongo District, Uganda',
+    email: 'info@restikirya.org',
+    phone: '+256 XXX XXX XXX',
+    socialLinks: { facebook: '#', twitter: '#', instagram: '#' }
+  });
 
   useEffect(() => {
     fetchSettings();
@@ -52,34 +64,12 @@ export function Footer() {
       }
 
       const data = await response.json();
-      setFooterSettings(data.settings.footer);
-      setGeneralSettings(data.settings.general);
-      setContactSettings(data.settings.contact);
+      if (data.settings?.footer) setFooterSettings(data.settings.footer);
+      if (data.settings?.general) setGeneralSettings(data.settings.general);
+      if (data.settings?.contact) setContactSettings(data.settings.contact);
     } catch (error) {
       console.error('Error fetching footer settings:', error);
-      // Set default settings if fetch fails
-      setFooterSettings({
-        description: 'Empowering communities through education, healthcare, and sustainable development.',
-        copyrightText: 'Resti Kiryandongo CBO. All rights reserved.',
-        taglineBottom: 'Made with ❤️ for our community'
-      });
-      setGeneralSettings({
-        siteName: 'Resti Kiryandongo',
-        tagline: 'Community Based Organization',
-        logoUrl: logo
-      });
-      setContactSettings({
-        address: 'Kiryandongo District, Uganda',
-        email: 'info@restikirya.org',
-        phone: '+256 XXX XXX XXX',
-        socialLinks: {
-          facebook: '#',
-          twitter: '#',
-          instagram: '#'
-        }
-      });
-    } finally {
-      setLoading(false);
+      // Default settings already set as initial state — no action needed
     }
   };
 
@@ -101,7 +91,7 @@ export function Footer() {
     return generalSettings.logoUrl;
   };
 
-  if (loading || !footerSettings || !generalSettings || !contactSettings) {
+  if (!footerSettings || !generalSettings || !contactSettings) {
     return <footer className="bg-gray-900 text-white py-12"></footer>;
   }
 
