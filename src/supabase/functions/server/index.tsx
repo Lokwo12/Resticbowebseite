@@ -2018,7 +2018,12 @@ app.get('/make-server-2a4be611/site-settings', async (c) => {
           tagline: 'Community Based Organization',
           description: 'Empowering communities through education, healthcare, and sustainable development.',
           logoUrl: 'figma:asset/2b36c5cb8ddf5552ba2d3e612fd68401a7bb193e.png',
-          primaryColor: '#10b981', // emerald-600
+          primaryColor: '#10b981',
+        },
+        header: {
+          showAnnouncement: true,
+          announcementText: 'We are looking for volunteers in Kiryandongo',
+          announcementLink: 'contact',
         },
         hero: {
           badgeText: 'Making a Difference in Kiryandongo',
@@ -2055,6 +2060,7 @@ app.get('/make-server-2a4be611/site-settings', async (c) => {
           address: 'Kiryandongo District, Uganda',
           email: 'info@restikirya.org',
           phone: '+256 XXX XXX XXX',
+          whatsappNumber: '+256700000000',
           socialLinks: {
             facebook: '#',
             twitter: '#',
@@ -2066,6 +2072,15 @@ app.get('/make-server-2a4be611/site-settings', async (c) => {
             'Partner with us on community initiatives',
             'Spread the word about our work'
           ]
+        },
+        donation: {
+          merchantMTN: '0772 000 000',
+          merchantAirtel: '0701 000 000',
+          bankName: 'Stanbic Bank Uganda',
+          accountName: 'Resti Kiryandongo CBO',
+          accountNumber: '9030012345678',
+          branch: 'Kiryandongo Branch',
+          swiftCode: 'SBICUGKX',
         },
         footer: {
           description: 'Empowering communities through education, healthcare, and sustainable development.',
@@ -2163,6 +2178,20 @@ app.post('/make-server-2a4be611/site-settings/initialize', async (c) => {
         description: 'Empowering communities through education, healthcare, and sustainable development.',
         logoUrl: 'figma:asset/2b36c5cb8ddf5552ba2d3e612fd68401a7bb193e.png',
         primaryColor: '#10b981',
+      },
+      header: {
+        showAnnouncement: true,
+        announcementText: 'We are looking for volunteers in Kiryandongo',
+        announcementLink: 'contact',
+      },
+      donation: {
+        merchantMTN: '0772 000 000',
+        merchantAirtel: '0701 000 000',
+        bankName: 'Stanbic Bank Uganda',
+        accountName: 'Resti Kiryandongo CBO',
+        accountNumber: '9030012345678',
+        branch: 'Kiryandongo Branch',
+        swiftCode: 'SBICUGKX',
       },
       hero: {
         badgeText: 'Making a Difference in Kiryandongo',

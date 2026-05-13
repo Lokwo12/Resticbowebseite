@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
-import { Loader2 } from 'lucide-react';
 import { useScrollAnimation, getStaggerDelay } from '../utils/animations';
 
 interface Program {
@@ -14,12 +13,74 @@ interface Program {
   };
 }
 
+const FALLBACK_PROGRAMS: Program[] = [
+  {
+    key: 'education',
+    value: {
+      title: 'Education & Literacy',
+      description: 'Providing quality education support, school supplies, and tutoring to children and young adults in Kiryandongo District to unlock their potential.',
+      image: 'https://images.unsplash.com/photo-1666281269793-da06484657e8?w=600&q=80',
+      category: 'Education',
+      createdAt: '',
+    },
+  },
+  {
+    key: 'healthcare',
+    value: {
+      title: 'Community Health & Nutrition',
+      description: 'Running mobile health clinics, maternal care programmes, and nutrition campaigns to improve health outcomes for vulnerable families.',
+      image: 'https://images.unsplash.com/photo-1706806595136-5afefb45da1a?w=600&q=80',
+      category: 'Healthcare',
+      createdAt: '',
+    },
+  },
+  {
+    key: 'livelihoods',
+    value: {
+      title: 'Sustainable Livelihoods',
+      description: 'Equipping households with vocational skills, microfinance access, and agricultural training to achieve economic independence.',
+      image: 'https://images.unsplash.com/photo-1761466977752-de51b3ecce84?w=600&q=80',
+      category: 'Livelihoods',
+      createdAt: '',
+    },
+  },
+  {
+    key: 'wash',
+    value: {
+      title: 'Clean Water & Sanitation (WASH)',
+      description: 'Building boreholes, latrines, and hygiene education hubs to ensure safe water and dignified sanitation for every household.',
+      image: 'https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=600&q=80',
+      category: 'Community',
+      createdAt: '',
+    },
+  },
+  {
+    key: 'women',
+    value: {
+      title: 'Women Empowerment',
+      description: 'Supporting women through savings groups, legal aid, gender-based violence prevention, and leadership training programmes.',
+      image: 'https://images.unsplash.com/photo-1573497620053-ea5300f94f21?w=600&q=80',
+      category: 'Community',
+      createdAt: '',
+    },
+  },
+  {
+    key: 'youth',
+    value: {
+      title: 'Youth Development',
+      description: 'Mentorship, sports, arts, and civic engagement programmes that build confidence and purpose in the next generation.',
+      image: 'https://images.unsplash.com/photo-1641569707854-c80945fb4719?w=600&q=80',
+      category: 'Education',
+      createdAt: '',
+    },
+  },
+];
+
 export function Programs() {
-  const [programs, setPrograms] = useState<Program[]>([]);
+  const [programs, setPrograms] = useState<Program[]>(FALLBACK_PROGRAMS);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [sectionSettings, setSectionSettings] = useState({ title: 'Our Programs', description: 'We run comprehensive programs designed to address the most pressing needs in our community, creating pathways to opportunity and sustainable development.' });
-  // Start visible since Programs is near top of page (after Hero & About)
   const { ref, isVisible } = useScrollAnimation({ startVisible: true });
 
   useEffect(() => {
@@ -29,81 +90,49 @@ export function Programs() {
 
   const fetchSettings = async () => {
     try {
-      console.log('🔄 Fetching Programs section settings...');
       const response = await fetch(
         `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/site-settings`,
         {
-          headers: {
-            Authorization: `Bearer ${publicAnonKey}`,
-          },
+          headers: { Authorization: `Bearer ${publicAnonKey}` },
+          signal: AbortSignal.timeout(6000),
         }
       );
-
-      console.log('📡 Programs settings response status:', response.status);
-
       if (response.ok) {
         const data = await response.json();
-        console.log('📦 Programs section settings from API:', data.settings?.sections?.programs);
         if (data.settings?.sections?.programs) {
           setSectionSettings(data.settings.sections.programs);
-          console.log('✅ Programs section settings updated');
-        } else {
-          console.log('⚠️ No programs section settings found, using defaults');
         }
       }
     } catch (err) {
-      console.error('❌ Error fetching section settings:', err);
+      console.warn('Settings API unavailable.', err);
     }
   };
 
   const fetchPrograms = async () => {
     try {
-      console.log('🔄 Fetching Programs list...');
       const response = await fetch(
         `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/programs`,
         {
-          headers: {
-            Authorization: `Bearer ${publicAnonKey}`,
-          },
+          headers: { Authorization: `Bearer ${publicAnonKey}` },
+          signal: AbortSignal.timeout(6000),
         }
       );
 
-      console.log('📡 Programs list response status:', response.status);
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch programs');
-      }
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
       const data = await response.json();
-      console.log('📦 Programs list from API:', data.programs);
-      setPrograms(data.programs || []);
-      console.log('✅ Programs count:', (data.programs || []).length);
+      const fetched: Program[] = data.programs || [];
+      // Only replace fallback if the API actually returned programs
+      if (fetched.length > 0) setPrograms(fetched);
     } catch (err) {
-      console.error('❌ Error fetching programs:', err);
-      setError('Failed to load programs. Please try again later.');
+      // API unreachable — fallback data already set, so just log silently
+      console.warn('Programs API unavailable, using fallback data.', err);
     } finally {
-      console.log('🏁 Programs fetch complete');
       setLoading(false);
     }
   };
 
-  console.log('🎨 Programs component render - loading:', loading, 'programs count:', programs.length);
-  console.log('📋 Section settings:', sectionSettings);
 
-  if (loading) {
-    console.log('⏳ Showing loading spinner');
-    return (
-      <section id="programs" className="py-20 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-center items-center py-20">
-            <Loader2 className="animate-spin text-emerald-600" size={48} />
-          </div>
-        </div>
-      </section>
-    );
-  }
-
-  console.log('🎯 Programs component rendering section');
 
   return (
     <section id="programs" className="py-20 bg-gray-50" ref={ref}>
@@ -130,7 +159,7 @@ export function Programs() {
           {programs.filter(p => p && p.value).map((program, index) => (
             <div
               key={program.key}
-              className={`group bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-500 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
+              className={`card-lift group bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-500 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
               style={{ transitionDelay: isVisible ? getStaggerDelay(index, 100) : '0ms' }}
             >
               {program.value.image && (
@@ -143,7 +172,12 @@ export function Programs() {
                 </div>
               )}
               <div className="p-6">
-                <div className="inline-block bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-xs mb-3 group-hover:bg-emerald-600 group-hover:text-white transition-colors duration-300">
+                <div className={`category-chip mb-3 ${
+                  program.value.category?.toLowerCase().includes('health') ? 'chip-health' :
+                  program.value.category?.toLowerCase().includes('educ') ? 'chip-education' :
+                  program.value.category?.toLowerCase().includes('livelihood') || program.value.category?.toLowerCase().includes('agri') ? 'chip-livelihood' :
+                  'chip-community'
+                }`}>
                   {program.value.category}
                 </div>
                 <h3 className="text-xl text-gray-900 mb-3 group-hover:text-emerald-600 transition-colors duration-300">

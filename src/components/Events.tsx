@@ -19,9 +19,14 @@ interface Event {
   status: 'upcoming' | 'ongoing' | 'completed';
 }
 
+const FALLBACK_EVENTS = [
+  { id: 'evt1', title: 'Community Health Fair', description: 'Free health screenings and vaccinations for all community members.', date: new Date(Date.now() + 30*86400000).toISOString(), time: '9:00 AM - 4:00 PM', location: 'Kiryandongo Community Centre', category: 'healthcare', capacity: 200, registered: 45, status: 'upcoming' },
+  { id: 'evt2', title: 'Youth Skills Workshop', description: 'Vocational training in carpentry, tailoring, and computer skills.', date: new Date(Date.now() + 45*86400000).toISOString(), time: '10:00 AM - 2:00 PM', location: 'Resti Training Centre', category: 'education', capacity: 50, registered: 32, status: 'upcoming' },
+  { id: 'evt3', title: 'Annual Fundraising Gala', description: 'Join us for an evening of celebration and community fundraising.', date: new Date(Date.now() + 60*86400000).toISOString(), time: '6:00 PM - 10:00 PM', location: 'Kiryandongo District Hall', category: 'fundraising', capacity: 300, registered: 120, status: 'upcoming' },
+];
 export function Events() {
-  const [events, setEvents] = useState<Event[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [events, setEvents] = useState<Event[]>(FALLBACK_EVENTS as any);
+  const [loading, setLoading] = useState(false);
   const [sectionSettings, setSectionSettings] = useState({ title: 'Events Calendar', description: 'Join us at our upcoming events and activities. Together, we can create positive change.' });
 
   useEffect(() => {

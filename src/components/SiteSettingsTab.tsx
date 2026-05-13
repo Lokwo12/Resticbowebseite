@@ -110,14 +110,66 @@ export function SiteSettingsTab({ settings: initialSettings, onUpdate }: SiteSet
       </div>
 
       <Tabs value={activeSection} onValueChange={setActiveSection}>
-        <TabsList>
+        <TabsList className="flex-wrap">
           <TabsTrigger value="general">General</TabsTrigger>
+          <TabsTrigger value="header">Header & Banner</TabsTrigger>
           <TabsTrigger value="hero">Hero Section</TabsTrigger>
           <TabsTrigger value="about">About Section</TabsTrigger>
           <TabsTrigger value="contact">Contact Info</TabsTrigger>
+          <TabsTrigger value="donation">Donation & Payments</TabsTrigger>
           <TabsTrigger value="footer">Footer</TabsTrigger>
           <TabsTrigger value="sections">Section Headers</TabsTrigger>
         </TabsList>
+
+        {/* ===== HEADER & ANNOUNCEMENT BAR ===== */}
+        <TabsContent value="header">
+          <Card className="p-6">
+            <h3 className="text-lg text-gray-900 mb-4">Header & Announcement Bar</h3>
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <input
+                  type="checkbox"
+                  id="showAnnouncement"
+                  checked={settings.header?.showAnnouncement !== false}
+                  onChange={(e) =>
+                    setSettings({ ...settings, header: { ...settings.header, showAnnouncement: e.target.checked } })
+                  }
+                  className="w-4 h-4 accent-emerald-600"
+                />
+                <label htmlFor="showAnnouncement" className="text-sm text-gray-700">Show announcement bar at the top of the page</label>
+              </div>
+
+              <div>
+                <label className="block text-sm text-gray-700 mb-2">Announcement Text</label>
+                <input
+                  type="text"
+                  value={settings.header?.announcementText || ''}
+                  onChange={(e) =>
+                    setSettings({ ...settings, header: { ...settings.header, announcementText: e.target.value } })
+                  }
+                  placeholder="We are looking for volunteers in Kiryandongo"
+                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm text-gray-700 mb-2">Announcement Button Link (section ID)</label>
+                <select
+                  value={settings.header?.announcementLink || 'contact'}
+                  onChange={(e) =>
+                    setSettings({ ...settings, header: { ...settings.header, announcementLink: e.target.value } })
+                  }
+                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
+                >
+                  {['home','about','programs','impact','volunteer','contact','donate'].map(id => (
+                    <option key={id} value={id}>{id.charAt(0).toUpperCase() + id.slice(1)}</option>
+                  ))}
+                </select>
+                <p className="text-xs text-gray-500 mt-1">Which page section the "Apply now" button scrolls to.</p>
+              </div>
+            </div>
+          </Card>
+        </TabsContent>
 
         {/* General Settings */}
         <TabsContent value="general">
@@ -523,6 +575,23 @@ export function SiteSettingsTab({ settings: initialSettings, onUpdate }: SiteSet
                   }
                   className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
                 />
+              </div>
+
+              <div>
+                <label className="block text-sm text-gray-700 mb-2">WhatsApp Number (international format, e.g. +256700000000)</label>
+                <input
+                  type="tel"
+                  value={settings.contact?.whatsappNumber || ''}
+                  onChange={(e) =>
+                    setSettings({
+                      ...settings,
+                      contact: { ...settings.contact, whatsappNumber: e.target.value },
+                    })
+                  }
+                  placeholder="+256700000000"
+                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
+                />
+                <p className="text-xs text-gray-500 mt-1">Used for the WhatsApp quick-connect button on the Contact section.</p>
               </div>
 
               <div>
@@ -1098,6 +1167,73 @@ export function SiteSettingsTab({ settings: initialSettings, onUpdate }: SiteSet
                       className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
                     />
                   </div>
+                </div>
+              </div>
+            </div>
+          </Card>
+        </TabsContent>
+
+        {/* ===== DONATION & PAYMENTS ===== */}
+        <TabsContent value="donation">
+          <Card className="p-6">
+            <h3 className="text-lg text-gray-900 mb-4">Donation & Payment Details</h3>
+            <p className="text-sm text-gray-500 mb-6">These values appear on the Donation page and are fully editable here.</p>
+            <div className="space-y-6">
+              <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <h4 className="text-sm font-semibold text-gray-800 mb-3">MTN Mobile Money</h4>
+                <div>
+                  <label className="block text-sm text-gray-700 mb-2">Merchant Number</label>
+                  <input
+                    type="text"
+                    value={settings.donation?.merchantMTN || ''}
+                    onChange={(e) =>
+                      setSettings({ ...settings, donation: { ...settings.donation, merchantMTN: e.target.value } })
+                    }
+                    placeholder="0772 000 000"
+                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
+                  />
+                </div>
+              </div>
+
+              <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                <h4 className="text-sm font-semibold text-gray-800 mb-3">Airtel Money</h4>
+                <div>
+                  <label className="block text-sm text-gray-700 mb-2">Merchant Number</label>
+                  <input
+                    type="text"
+                    value={settings.donation?.merchantAirtel || ''}
+                    onChange={(e) =>
+                      setSettings({ ...settings, donation: { ...settings.donation, merchantAirtel: e.target.value } })
+                    }
+                    placeholder="0701 000 000"
+                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
+                  />
+                </div>
+              </div>
+
+              <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <h4 className="text-sm font-semibold text-gray-800 mb-3">Bank Transfer Details</h4>
+                <div className="space-y-3">
+                  {[
+                    { key: 'bankName', label: 'Bank Name', placeholder: 'Stanbic Bank Uganda' },
+                    { key: 'accountName', label: 'Account Name', placeholder: 'Resti Kiryandongo CBO' },
+                    { key: 'accountNumber', label: 'Account Number', placeholder: '9030012345678' },
+                    { key: 'branch', label: 'Branch', placeholder: 'Kiryandongo Branch' },
+                    { key: 'swiftCode', label: 'SWIFT / BIC Code', placeholder: 'SBICUGKX' },
+                  ].map(({ key, label, placeholder }) => (
+                    <div key={key}>
+                      <label className="block text-sm text-gray-700 mb-1">{label}</label>
+                      <input
+                        type="text"
+                        value={(settings.donation as any)?.[key] || ''}
+                        onChange={(e) =>
+                          setSettings({ ...settings, donation: { ...settings.donation, [key]: e.target.value } })
+                        }
+                        placeholder={placeholder}
+                        className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
+                      />
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>

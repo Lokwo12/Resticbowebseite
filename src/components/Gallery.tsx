@@ -13,9 +13,17 @@ interface GalleryImage {
   date: string;
 }
 
+const FALLBACK_IMAGES = [
+  { id: 'gal1', title: 'Community Meeting', description: 'Local leaders discussing development', imageUrl: 'https://images.unsplash.com/photo-1529070538774-1843cb3265df?w=600&q=80', category: 'events', date: new Date().toISOString() },
+  { id: 'gal2', title: 'School Children Learning', description: 'Students in our education programme', imageUrl: 'https://images.unsplash.com/photo-1497633762265-9d179a990aa6?w=600&q=80', category: 'education', date: new Date().toISOString() },
+  { id: 'gal3', title: 'Healthcare Outreach', description: 'Medical team providing free checkups', imageUrl: 'https://images.unsplash.com/photo-1576765608535-5f04d1e3f289?w=600&q=80', category: 'healthcare', date: new Date().toISOString() },
+  { id: 'gal4', title: 'Skills Training Workshop', description: 'Vocational skills training session', imageUrl: 'https://images.unsplash.com/photo-1531482615713-2afd69097998?w=600&q=80', category: 'development', date: new Date().toISOString() },
+  { id: 'gal5', title: 'Women Empowerment Group', description: 'Savings group weekly meeting', imageUrl: 'https://images.unsplash.com/photo-1573497620053-ea5300f94f21?w=600&q=80', category: 'community', date: new Date().toISOString() },
+  { id: 'gal6', title: 'Clean Water Project', description: 'New borehole serving 500 families', imageUrl: 'https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=600&q=80', category: 'development', date: new Date().toISOString() },
+];
 export function Gallery() {
-  const [images, setImages] = useState<GalleryImage[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [images, setImages] = useState<GalleryImage[]>(FALLBACK_IMAGES as any);
+  const [loading, setLoading] = useState(false);
   const [selectedImage, setSelectedImage] = useState<GalleryImage | null>(null);
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [sectionSettings, setSectionSettings] = useState({ title: 'Photo Gallery', description: 'Explore moments from our programs, events, and the communities we serve.' });

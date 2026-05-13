@@ -54,8 +54,8 @@ export function Newsletter() {
   };
 
   return (
-    <section className="py-16 bg-gradient-to-br from-emerald-600 to-teal-700">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section className="newsletter-bg py-20">
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="max-w-3xl mx-auto text-center">
           <div className="w-16 h-16 bg-white/20 backdrop-blur rounded-full flex items-center justify-center mx-auto mb-6">
             <Mail className="text-white" size={32} />

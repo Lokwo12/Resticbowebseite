@@ -1,4 +1,4 @@
-import { Heart, Facebook, Twitter, Instagram, Mail } from 'lucide-react';
+import { Heart, Facebook, Twitter, Instagram, Mail, ArrowUp, Shield } from 'lucide-react';
 const logo = '/logo.png';
 import { useState, useEffect } from 'react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
@@ -43,6 +43,16 @@ export function Footer() {
     phone: '+256 XXX XXX XXX',
     socialLinks: { facebook: '#', twitter: '#', instagram: '#' }
   });
+
+  const [showBackToTop, setShowBackToTop] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setShowBackToTop(window.scrollY > 400);
+    window.addEventListener('scroll', onScroll);
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  const scrollToTop = () => window.scrollTo({ top: 0, behavior: 'smooth' });
 
   useEffect(() => {
     fetchSettings();
@@ -96,6 +106,7 @@ export function Footer() {
   }
 
   return (
+    <>
     <footer className="bg-gray-900 text-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
@@ -203,11 +214,16 @@ export function Footer() {
           </div>
         </div>
 
-        {/* Bottom */}
+        {/* Bottom bar */}
         <div className="border-t border-gray-800 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
-          <p className="text-sm text-gray-400">
-            © {new Date().getFullYear()} {footerSettings.copyrightText}
-          </p>
+          <div className="flex items-center gap-3">
+            <p className="text-sm text-gray-400">
+              © {new Date().getFullYear()} {footerSettings.copyrightText}
+            </p>
+            <div className="ngo-badge hidden md:inline-flex">
+              <Shield size={12} /> Registered CBO · Uganda
+            </div>
+          </div>
           <p className="text-sm text-gray-400 flex items-center gap-1">
             {footerSettings.taglineBottom.includes('❤️') ? (
               <>
@@ -220,5 +236,17 @@ export function Footer() {
         </div>
       </div>
     </footer>
+
+    {/* Back to top */}
+    {showBackToTop && (
+      <button
+        onClick={scrollToTop}
+        className="back-to-top"
+        aria-label="Back to top"
+      >
+        <ArrowUp size={20} />
+      </button>
+    )}
+    </>
   );
 }
