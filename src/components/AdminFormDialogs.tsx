@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
-import { Upload, X } from 'lucide-react';
+import { Upload, X, User, Mail, Link2, Tag, Hash, Shield, Info, FileText, Globe, Briefcase, Calendar, Heart, TrendingUp, Target, Award } from 'lucide-react';
+
 import { toast } from 'sonner@2.0.3';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import ReactQuill from 'react-quill';
@@ -112,97 +113,127 @@ export function TeamFormDialog({ show, onClose, editingItem, onSuccess, userRole
 
   return (
     <Dialog open={show} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white/95 backdrop-blur-2xl rounded-[2rem] p-8 border-0 shadow-2xl overflow-hidden">
-        <DialogHeader className="mb-2">
-          <DialogTitle>{editingItem ? 'Edit Team Member' : 'Add Team Member'}</DialogTitle>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white/95 backdrop-blur-2xl rounded-[2rem] p-8 border border-slate-100 shadow-2xl">
+        <DialogHeader className="mb-4">
+          <DialogTitle className="text-2xl font-bold text-slate-800">Team Member</DialogTitle>
+
+          <p className="text-sm text-slate-500">Fill in the details for the team member.</p>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label className="block text-sm mb-2">Name *</label>
-            <input
-              type="text"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              required
-              className="w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none"
-            />
+            <label className="block text-sm font-medium text-slate-700 mb-1">Name *</label>
+            <div className="relative">
+              <User size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                required
+                className="w-full pl-10 pr-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all outline-none"
+                placeholder="Full Name"
+              />
+            </div>
           </div>
           <div>
-            <label className="block text-sm mb-2">Role *</label>
-            <input
-              type="text"
-              value={formData.role}
-              onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-              required
-              placeholder="e.g., Executive Director, Program Manager"
-              className="w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none"
-            />
+            <label className="block text-sm font-medium text-slate-700 mb-1">Role *</label>
+            <div className="relative">
+              <Briefcase size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                value={formData.role}
+                onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                required
+                placeholder="e.g., Executive Director, Program Manager"
+                className="w-full pl-10 pr-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all outline-none"
+              />
+            </div>
           </div>
           <div>
-            <label className="block text-sm mb-2">Department</label>
-            <select
-              value={formData.department}
-              onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-              className="w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none"
-            >
-              <option value="general">General</option>
-              <option value="leadership">Leadership</option>
-              <option value="operations">Operations</option>
-              <option value="programs">Programs</option>
-              <option value="finance">Finance</option>
-            </select>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Department</label>
+            <div className="relative">
+              <Tag size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
+              <select
+                value={formData.department}
+                onChange={(e) => setFormData({ ...formData, department: e.target.value })}
+                className="w-full pl-10 pr-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all outline-none appearance-none"
+              >
+                <option value="general">General</option>
+                <option value="leadership">Leadership</option>
+                <option value="operations">Operations</option>
+                <option value="programs">Programs</option>
+                <option value="finance">Finance</option>
+              </select>
+            </div>
           </div>
           <div>
-            <label className="block text-sm mb-2">Bio</label>
-            <textarea
-              value={formData.bio}
-              onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
-              rows={3}
-              className="w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none"
-              placeholder="Brief description about the team member"
-            />
+            <label className="block text-sm font-medium text-slate-700 mb-1">Bio</label>
+            <div className="relative">
+              <FileText size={18} className="absolute left-3 top-4 text-slate-400" />
+              <textarea
+                value={formData.bio}
+                onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
+                rows={3}
+                className="w-full pl-10 pr-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all outline-none"
+                placeholder="Brief description about the team member"
+              />
+            </div>
           </div>
           <div>
-            <label className="block text-sm mb-2">Email</label>
-            <input
-              type="email"
-              value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              className="w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none"
-            />
+            <label className="block text-sm font-medium text-slate-700 mb-1">Email</label>
+            <div className="relative">
+              <Mail size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
+              <input
+                type="email"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                className="w-full pl-10 pr-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all outline-none"
+                placeholder="email@example.com"
+              />
+            </div>
           </div>
           <div>
-            <label className="block text-sm mb-2">LinkedIn URL</label>
-            <input
-              type="url"
-              value={formData.linkedin}
-              onChange={(e) => setFormData({ ...formData, linkedin: e.target.value })}
-              className="w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none"
-            />
+            <label className="block text-sm font-medium text-slate-700 mb-1">LinkedIn URL</label>
+            <div className="relative">
+              <Link2 size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
+              <input
+                type="url"
+                value={formData.linkedin}
+                onChange={(e) => setFormData({ ...formData, linkedin: e.target.value })}
+                className="w-full pl-10 pr-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all outline-none"
+                placeholder="https://linkedin.com/in/..."
+              />
+            </div>
           </div>
           <div>
-            <label className="block text-sm mb-2">Twitter URL</label>
-            <input
-              type="url"
-              value={formData.twitter}
-              onChange={(e) => setFormData({ ...formData, twitter: e.target.value })}
-              className="w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none"
-            />
+            <label className="block text-sm font-medium text-slate-700 mb-1">Twitter URL</label>
+            <div className="relative">
+              <Globe size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
+              <input
+                type="url"
+                value={formData.twitter}
+                onChange={(e) => setFormData({ ...formData, twitter: e.target.value })}
+                className="w-full pl-10 pr-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all outline-none"
+                placeholder="https://twitter.com/..."
+              />
+            </div>
           </div>
           <div>
-            <label className="block text-sm mb-2">Display Order</label>
-            <input
-              type="number"
-              value={formData.order}
-              onChange={(e) => setFormData({ ...formData, order: parseInt(e.target.value) })}
-              className="w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none"
-            />
+            <label className="block text-sm font-medium text-slate-700 mb-1">Display Order</label>
+            <div className="relative">
+              <Hash size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
+              <input
+                type="number"
+                value={formData.order}
+                onChange={(e) => setFormData({ ...formData, order: parseInt(e.target.value) })}
+                className="w-full pl-10 pr-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all outline-none"
+              />
+            </div>
           </div>
           <div>
-            <label className="block text-sm mb-2">Profile Image</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Profile Image</label>
             <div className="flex gap-3 items-center">
               <label className="cursor-pointer">
-                <Button type="button" variant="outline" disabled={uploading} asChild>
+                <Button type="button" variant="outline" disabled={uploading} asChild className="rounded-xl border-slate-200 hover:bg-slate-50">
                   <span>
                     <Upload size={16} className="mr-2" />
                     {uploading ? 'Uploading...' : 'Upload Image'}
@@ -212,11 +243,11 @@ export function TeamFormDialog({ show, onClose, editingItem, onSuccess, userRole
               </label>
               {formData.image && (
                 <div className="relative">
-                  <img src={formData.image} alt="Preview" className="h-16 w-16 object-cover rounded-lg" />
+                  <img src={formData.image} alt="Preview" className="h-16 w-16 object-cover rounded-lg border border-slate-100" />
                   <button
                     type="button"
                     onClick={() => setFormData({ ...formData, image: '' })}
-                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1"
+                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-md hover:bg-red-600 transition-colors"
                   >
                     <X size={12} />
                   </button>
@@ -225,8 +256,8 @@ export function TeamFormDialog({ show, onClose, editingItem, onSuccess, userRole
             </div>
           </div>
           <div className="flex gap-2 justify-end pt-4">
-            <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-            <Button type="submit" disabled={loading} className="rounded-xl px-6 bg-emerald-600 hover:bg-emerald-700 shadow-sm hover:shadow transition-all">
+            <Button type="button" variant="outline" onClick={onClose} className="rounded-xl border-slate-200 hover:bg-slate-50">Cancel</Button>
+            <Button type="submit" disabled={loading} className="rounded-xl px-6 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-semibold transition-all duration-300 transform hover:scale-[1.02] shadow-md hover:shadow-lg">
               {loading ? 'Saving...' : 'Save'}
             </Button>
           </div>
@@ -234,6 +265,7 @@ export function TeamFormDialog({ show, onClose, editingItem, onSuccess, userRole
       </DialogContent>
     </Dialog>
   );
+
 }
 
 // Impact Story Form Dialog
@@ -323,76 +355,94 @@ export function StoryFormDialog({ show, onClose, editingItem, onSuccess, userRol
 
   return (
     <Dialog open={show} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto bg-white/95 backdrop-blur-2xl rounded-[2rem] p-8 border-0 shadow-2xl overflow-hidden">
-        <DialogHeader className="mb-2">
-          <DialogTitle>{editingItem ? 'Edit Impact Story' : 'Add Impact Story'}</DialogTitle>
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto bg-white/95 backdrop-blur-2xl rounded-[2rem] p-8 border border-slate-100 shadow-2xl">
+        <DialogHeader className="mb-4">
+          <DialogTitle className="text-2xl font-bold text-slate-800">Impact Story</DialogTitle>
+
+          <p className="text-sm text-slate-500">Share success stories and testimonials.</p>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label className="block text-sm mb-2">Person's Name *</label>
-            <input
-              type="text"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              required
-              className="w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none"
-            />
+            <label className="block text-sm font-medium text-slate-700 mb-1">Person's Name *</label>
+            <div className="relative">
+              <User size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                required
+                className="w-full pl-10 pr-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all outline-none"
+                placeholder="Name of the person"
+              />
+            </div>
           </div>
           <div>
-            <label className="block text-sm mb-2">Story Title *</label>
-            <input
-              type="text"
-              value={formData.title}
-              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              required
-              className="w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none"
-            />
+            <label className="block text-sm font-medium text-slate-700 mb-1">Story Title *</label>
+            <div className="relative">
+              <FileText size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                value={formData.title}
+                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                required
+                className="w-full pl-10 pr-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all outline-none"
+                placeholder="Title of the story"
+              />
+            </div>
           </div>
           <div>
-            <label className="block text-sm mb-2">Category</label>
-            <select
-              value={formData.category}
-              onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-              className="w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none"
-            >
-              <option value="general">General</option>
-              <option value="education">Education</option>
-              <option value="healthcare">Healthcare</option>
-              <option value="community">Community</option>
-              <option value="empowerment">Empowerment</option>
-            </select>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Category</label>
+            <div className="relative">
+              <Tag size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
+              <select
+                value={formData.category}
+                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                className="w-full pl-10 pr-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all outline-none appearance-none"
+              >
+                <option value="general">General</option>
+                <option value="education">Education</option>
+                <option value="healthcare">Healthcare</option>
+                <option value="community">Community</option>
+                <option value="empowerment">Empowerment</option>
+              </select>
+            </div>
           </div>
           <div>
-            <label className="block text-sm mb-2">Story *</label>
-            <ReactQuill
-              value={formData.story}
-              onChange={(value) => setFormData({ ...formData, story: value })}
-              className="bg-white"
-              modules={{
-                toolbar: [
-                  ['bold', 'italic', 'underline'],
-                  [{ list: 'ordered' }, { list: 'bullet' }],
-                  ['link'],
-                  ['clean']
-                ]
-              }}
-            />
+            <label className="block text-sm font-medium text-slate-700 mb-1">Story *</label>
+            <div className="border border-slate-200 rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-emerald-500/20 focus-within:border-emerald-500 transition-all">
+              <ReactQuill
+                value={formData.story}
+                onChange={(value) => setFormData({ ...formData, story: value })}
+                className="bg-white border-0"
+                modules={{
+                  toolbar: [
+                    ['bold', 'italic', 'underline'],
+                    [{ list: 'ordered' }, { list: 'bullet' }],
+                    ['link'],
+                    ['clean']
+                  ]
+                }}
+              />
+            </div>
           </div>
           <div>
-            <label className="block text-sm mb-2">Impact Summary</label>
-            <textarea
-              value={formData.impact}
-              onChange={(e) => setFormData({ ...formData, impact: e.target.value })}
-              rows={2}
-              placeholder="Brief summary of the impact achieved"
-              className="w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none"
-            />
+            <label className="block text-sm font-medium text-slate-700 mb-1">Impact Summary</label>
+            <div className="relative">
+              <Heart size={18} className="absolute left-3 top-4 text-slate-400" />
+              <textarea
+                value={formData.impact}
+                onChange={(e) => setFormData({ ...formData, impact: e.target.value })}
+                rows={2}
+                placeholder="Brief summary of the impact achieved"
+                className="w-full pl-10 pr-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all outline-none"
+              />
+            </div>
           </div>
           <div>
-            <label className="block text-sm mb-2">Image</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Image</label>
             <div className="flex gap-3 items-center">
               <label className="cursor-pointer">
-                <Button type="button" variant="outline" disabled={uploading} asChild>
+                <Button type="button" variant="outline" disabled={uploading} asChild className="rounded-xl border-slate-200 hover:bg-slate-50">
                   <span>
                     <Upload size={16} className="mr-2" />
                     {uploading ? 'Uploading...' : 'Upload Image'}
@@ -402,11 +452,11 @@ export function StoryFormDialog({ show, onClose, editingItem, onSuccess, userRol
               </label>
               {formData.image && (
                 <div className="relative">
-                  <img src={formData.image} alt="Preview" className="h-24 w-32 object-cover rounded-lg" />
+                  <img src={formData.image} alt="Preview" className="h-24 w-32 object-cover rounded-lg border border-slate-100" />
                   <button
                     type="button"
                     onClick={() => setFormData({ ...formData, image: '' })}
-                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1"
+                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-md hover:bg-red-600 transition-colors"
                   >
                     <X size={12} />
                   </button>
@@ -415,8 +465,8 @@ export function StoryFormDialog({ show, onClose, editingItem, onSuccess, userRol
             </div>
           </div>
           <div className="flex gap-2 justify-end pt-4">
-            <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-            <Button type="submit" disabled={loading} className="rounded-xl px-6 bg-emerald-600 hover:bg-emerald-700 shadow-sm hover:shadow transition-all">
+            <Button type="button" variant="outline" onClick={onClose} className="rounded-xl border-slate-200 hover:bg-slate-50">Cancel</Button>
+            <Button type="submit" disabled={loading} className="rounded-xl px-6 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-semibold transition-all duration-300 transform hover:scale-[1.02] shadow-md hover:shadow-lg">
               {loading ? 'Saving...' : 'Save'}
             </Button>
           </div>
@@ -467,72 +517,92 @@ export function ImpactStatsFormDialog({ show, onClose, currentStats, onSuccess, 
 
   return (
     <Dialog open={show} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl bg-white/95 backdrop-blur-2xl rounded-[2rem] p-8 border-0 shadow-2xl overflow-hidden">
-        <DialogHeader className="mb-2">
-          <DialogTitle>Update Impact Statistics</DialogTitle>
+      <DialogContent className="max-w-2xl bg-white/95 backdrop-blur-2xl rounded-[2rem] p-8 border border-slate-100 shadow-2xl">
+        <DialogHeader className="mb-4">
+          <DialogTitle className="text-2xl font-bold text-slate-800">Impact Statistics</DialogTitle>
+
+          <p className="text-sm text-slate-500">Update your organization's impact numbers.</p>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm mb-2">People Served</label>
-              <input
-                type="number"
-                value={formData.peopleServed}
-                onChange={(e) => setFormData({ ...formData, peopleServed: parseInt(e.target.value) })}
-                className="w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none"
-              />
+              <label className="block text-sm font-medium text-slate-700 mb-1">People Served</label>
+              <div className="relative">
+                <User size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
+                <input
+                  type="number"
+                  value={formData.peopleServed}
+                  onChange={(e) => setFormData({ ...formData, peopleServed: parseInt(e.target.value) })}
+                  className="w-full pl-10 pr-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all outline-none"
+                />
+              </div>
             </div>
             <div>
-              <label className="block text-sm mb-2">Active Programs</label>
-              <input
-                type="number"
-                value={formData.programsActive}
-                onChange={(e) => setFormData({ ...formData, programsActive: parseInt(e.target.value) })}
-                className="w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none"
-              />
+              <label className="block text-sm font-medium text-slate-700 mb-1">Active Programs</label>
+              <div className="relative">
+                <FileText size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
+                <input
+                  type="number"
+                  value={formData.programsActive}
+                  onChange={(e) => setFormData({ ...formData, programsActive: parseInt(e.target.value) })}
+                  className="w-full pl-10 pr-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all outline-none"
+                />
+              </div>
             </div>
             <div>
-              <label className="block text-sm mb-2">Active Volunteers</label>
-              <input
-                type="number"
-                value={formData.volunteersActive}
-                onChange={(e) => setFormData({ ...formData, volunteersActive: parseInt(e.target.value) })}
-                className="w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none"
-              />
+              <label className="block text-sm font-medium text-slate-700 mb-1">Active Volunteers</label>
+              <div className="relative">
+                <Heart size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
+                <input
+                  type="number"
+                  value={formData.volunteersActive}
+                  onChange={(e) => setFormData({ ...formData, volunteersActive: parseInt(e.target.value) })}
+                  className="w-full pl-10 pr-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all outline-none"
+                />
+              </div>
             </div>
             <div>
-              <label className="block text-sm mb-2">Funds Raised ($)</label>
-              <input
-                type="number"
-                value={formData.fundsRaised}
-                onChange={(e) => setFormData({ ...formData, fundsRaised: parseInt(e.target.value) })}
-                className="w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none"
-              />
+              <label className="block text-sm font-medium text-slate-700 mb-1">Funds Raised ($)</label>
+              <div className="relative">
+                <TrendingUp size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
+                <input
+                  type="number"
+                  value={formData.fundsRaised}
+                  onChange={(e) => setFormData({ ...formData, fundsRaised: parseInt(e.target.value) })}
+                  className="w-full pl-10 pr-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all outline-none"
+                />
+              </div>
             </div>
             <div>
-              <label className="block text-sm mb-2">Communities Reached</label>
-              <input
-                type="number"
-                value={formData.communitiesReached}
-                onChange={(e) => setFormData({ ...formData, communitiesReached: parseInt(e.target.value) })}
-                className="w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none"
-              />
+              <label className="block text-sm font-medium text-slate-700 mb-1">Communities Reached</label>
+              <div className="relative">
+                <Target size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
+                <input
+                  type="number"
+                  value={formData.communitiesReached}
+                  onChange={(e) => setFormData({ ...formData, communitiesReached: parseInt(e.target.value) })}
+                  className="w-full pl-10 pr-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all outline-none"
+                />
+              </div>
             </div>
             <div>
-              <label className="block text-sm mb-2">Success Rate (%)</label>
-              <input
-                type="number"
-                value={formData.successRate}
-                min={0}
-                max={100}
-                onChange={(e) => setFormData({ ...formData, successRate: parseInt(e.target.value) })}
-                className="w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none"
-              />
+              <label className="block text-sm font-medium text-slate-700 mb-1">Success Rate (%)</label>
+              <div className="relative">
+                <Award size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
+                <input
+                  type="number"
+                  value={formData.successRate}
+                  min={0}
+                  max={100}
+                  onChange={(e) => setFormData({ ...formData, successRate: parseInt(e.target.value) })}
+                  className="w-full pl-10 pr-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all outline-none"
+                />
+              </div>
             </div>
           </div>
           <div className="flex gap-2 justify-end pt-4">
-            <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-            <Button type="submit" disabled={loading} className="rounded-xl px-6 bg-emerald-600 hover:bg-emerald-700 shadow-sm hover:shadow transition-all">
+            <Button type="button" variant="outline" onClick={onClose} className="rounded-xl border-slate-200 hover:bg-slate-50">Cancel</Button>
+            <Button type="submit" disabled={loading} className="rounded-xl px-6 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-semibold transition-all duration-300 transform hover:scale-[1.02] shadow-md hover:shadow-lg">
               {loading ? 'Saving...' : 'Save'}
             </Button>
           </div>

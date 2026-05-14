@@ -38,6 +38,9 @@ import {
   Award,
   MessageSquare,
   Bell,
+  Sun,
+  Moon,
+
   Search,
   Menu,
   X as XIcon,
@@ -189,7 +192,12 @@ export function EnhancedAdminDashboard() {
   const [showResourceForm, setShowResourceForm] = useState(false);
   const [showUserForm, setShowUserForm] = useState(false);
   const [showPasswordResetDialog, setShowPasswordResetDialog] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+  const [isDarkMode, setIsDarkMode] = useState(false);
   const [editingItem, setEditingItem] = useState<any>(null);
+
+
   const [viewingItem, setViewingItem] = useState<any>(null);
   const [replyMessage, setReplyMessage] = useState('');
   const [userFormData, setUserFormData] = useState({
@@ -327,7 +335,26 @@ export function EnhancedAdminDashboard() {
     }
   };
 
+  const handleSendResetEmail = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+        redirectTo: `${window.location.origin}/admin`,
+      });
+      if (error) throw error;
+      toast.success('Reset link sent to your email!');
+      setShowForgotPassword(false);
+    } catch (err: any) {
+      console.error('Reset error:', err);
+      toast.error(err.message || 'Failed to send reset link');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSignup = async (e: React.FormEvent) => {
+
     e.preventDefault();
     setLoading(true);
 
@@ -1381,58 +1408,107 @@ export function EnhancedAdminDashboard() {
                 </p>
               </div>
 
-              <form onSubmit={isSignup ? handleSignup : handleLogin} className="space-y-6">
-                {isSignup && (
+              {showForgotPassword ? (
+                <form onSubmit={handleSendResetEmail} className="space-y-6">
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 leading-relaxed mb-1">Full Name</label>
+                    <label className="block text-sm font-medium text-slate-700 leading-relaxed mb-1">Email Address</label>
                     <input
-                      type="text"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      placeholder="John Doe"
+                      type="email"
+                      value={resetEmail}
+                      onChange={(e) => setResetEmail(e.target.value)}
+                      placeholder="admin@example.com"
                       required
                       className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition text-sm"
                     />
                   </div>
-                )}
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 leading-relaxed mb-1">Email Address</label>
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="admin@example.com"
-                    required
-                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 leading-relaxed mb-1">Password</label>
-                  <input
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
-                    required
-                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition text-sm"
-                  />
-                </div>
-                <Button
-                  type="submit"
-                  className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white py-3 rounded-xl transition shadow-lg font-medium mt-2"
-                  disabled={loading}
-                >
-                  {loading ? (
-                    <div className="flex items-center justify-center gap-2">
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      Please wait...
+                  <Button
+                    type="submit"
+                    className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white py-3 rounded-xl transition shadow-lg font-medium mt-2"
+                    disabled={loading}
+                  >
+                    {loading ? (
+                      <div className="flex items-center justify-center gap-2">
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        Please wait...
+                      </div>
+                    ) : (
+                      'Send Reset Link'
+                    )}
+                  </Button>
+                  <div className="text-center mt-4">
+                    <button
+                      type="button"
+                      onClick={() => setShowForgotPassword(false)}
+                      className="text-sm font-medium text-emerald-600 hover:text-emerald-700 transition"
+                    >
+                      Back to Login
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                <form onSubmit={isSignup ? handleSignup : handleLogin} className="space-y-6">
+                  {isSignup && (
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 leading-relaxed mb-1">Full Name</label>
+                      <input
+                        type="text"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        placeholder="John Doe"
+                        required
+                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition text-sm"
+                      />
                     </div>
-                  ) : (
-                    isSignup ? 'Create Account' : 'Sign In'
                   )}
-                </Button>
-              </form>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 leading-relaxed mb-1">Email Address</label>
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="admin@example.com"
+                      required
+                      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 leading-relaxed mb-1">Password</label>
 
+                    <input
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="••••••••"
+                      required
+                      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition text-sm"
+                    />
+                  </div>
+                  <Button
+                    type="submit"
+                    className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white py-3 rounded-xl transition shadow-lg font-medium mt-2"
+                    disabled={loading}
+                  >
+                    {loading ? (
+                      <div className="flex items-center justify-center gap-2">
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        Please wait...
+                      </div>
+                    ) : (
+                      isSignup ? 'Create Account' : 'Sign In'
+                    )}
+                  </Button>
+                  <div className="text-center mt-4">
+                    <button
+                      type="button"
+                      onClick={() => setShowForgotPassword(true)}
+                      className="text-sm font-medium text-emerald-600 hover:text-emerald-700 transition"
+                    >
+                      Forgot Password?
+                    </button>
+                  </div>
+                </form>
+
+              )}
               <div className="mt-6 text-center">
                 <button
                   onClick={() => setIsSignup(!isSignup)}
@@ -1582,9 +1658,65 @@ export function EnhancedAdminDashboard() {
         </div>
 
         {/* Main Content Area */}
-        <div className="flex-1 min-w-0 overflow-auto bg-slate-50">
+        <div className={`flex-1 min-w-0 overflow-auto ${isDarkMode ? 'bg-slate-900 text-white dark-mode-override' : 'bg-slate-50'}`}>
+          {isDarkMode && (
+            <style>{`
+              .dark-mode-override p, .dark-mode-override h1, .dark-mode-override h2, .dark-mode-override h3, .dark-mode-override h4, .dark-mode-override h5, .dark-mode-override h6, .dark-mode-override span, .dark-mode-override label, .dark-mode-override td, .dark-mode-override th {
+                color: #f8fafc !important;
+              }
+              .dark-mode-override .bg-white {
+                background-color: #1e293b !important;
+              }
+              .dark-mode-override .bg-white * {
+                color: #f8fafc !important;
+              }
+              .dark-mode-override .text-slate-500, 
+              .dark-mode-override .text-gray-500 {
+                color: #94a3b8 !important;
+              }
+              .dark-mode-override .text-slate-400, 
+              .dark-mode-override .text-gray-400 {
+                color: #cbd5e1 !important;
+              }
+              .dark-mode-override .border {
+                border-color: #334155 !important;
+              }
+              .dark-mode-override .border-gray-100, 
+              .dark-mode-override .border-gray-200, 
+              .dark-mode-override .border-slate-200 {
+                border-color: #334155 !important;
+              }
+              .dark-mode-override input, 
+              .dark-mode-override select, 
+              .dark-mode-override textarea {
+                background-color: #334155 !important;
+                color: #f8fafc !important;
+              }
+              .dark-mode-override a {
+                color: #38bdf8 !important;
+              }
+              .dark-mode-override .bg-slate-50 {
+                background-color: #0f172a !important;
+              }
+              /* Fix action buttons */
+              .dark-mode-override button.bg-white,
+              .dark-mode-override .bg-white button {
+                background-color: #334155 !important;
+                color: #f8fafc !important;
+              }
+              .dark-mode-override .bg-gray-100, 
+              .dark-mode-override .bg-slate-100 {
+                background-color: #334155 !important;
+              }
+              .dark-mode-override .bg-gray-100 *, 
+              .dark-mode-override .bg-slate-100 * {
+                color: #f8fafc !important;
+              }
+            `}</style>
+          )}
           {/* Page Header */}
           <div className="bg-gradient-to-r from-slate-900 to-slate-800 px-6 lg:px-8 py-4 shadow-md">
+
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <div className="p-2.5 rounded-xl bg-white/10 border border-white/20 shadow-lg">
@@ -1600,16 +1732,24 @@ export function EnhancedAdminDashboard() {
                 </div>
               </div>
               <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setIsDarkMode(!isDarkMode)}
+                  className="flex items-center gap-2 text-sm font-semibold text-white bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl px-4 py-2 transition-all shadow-sm"
+                  title={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+                >
+                  {isDarkMode ? <Sun size={16} /> : <Moon size={16} />}
+                </button>
                 <a 
                   href="/" 
                   target="_blank" 
                   rel="noopener noreferrer"
-                  className="hidden sm:flex items-center gap-2 text-sm font-semibold text-white bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl px-4 py-2 transition-all shadow-sm"
+                  className="flex items-center gap-2 text-sm font-semibold text-white bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl px-4 py-2 transition-all shadow-sm"
                 >
                   <ExternalLink size={16} />
                   View Website
                 </a>
                 <div className="hidden sm:flex items-center gap-2 text-sm text-slate-400 bg-white/10 border border-white/20 rounded-xl px-3 py-2">
+
                   <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
                   <span className="text-slate-300 text-xs font-medium">Live</span>
                 </div>
