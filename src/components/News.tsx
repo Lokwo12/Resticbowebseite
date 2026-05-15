@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { Newspaper, Calendar, Tag, ArrowRight, Clock } from 'lucide-react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { Card } from './ui/card';
@@ -76,18 +77,27 @@ export function News() {
 
       if (response.ok) {
         const data = await response.json();
-        // Backend returns { news: [...] }
-        const articles = data.news || [];
-        // Sort by order field and publish date
-        articles.sort((a: NewsArticle, b: NewsArticle) => {
+        // Backend returns { news: [{ key, value: { title, content, image, timestamp } }] }
+        const articles: NewsArticle[] = (data.news || []).map((item: any) => ({
+          id: item.key || item.id || '',
+          title: item.value?.title || item.title || '',
+          content: item.value?.content || item.content || '',
+          image: item.value?.image || item.image || '',
+          category: item.value?.category || item.category || 'general',
+          author: item.value?.author || item.author || 'Admin',
+          publishDate: item.value?.timestamp || item.value?.publishDate || item.publishDate || item.value?.date || new Date().toISOString(),
+          featured: item.value?.featured ?? item.featured ?? false,
+          order: item.value?.order ?? item.order ?? 999,
+        }));
+        // Sort by featured, then order, then date
+        articles.sort((a, b) => {
           if (a.featured !== b.featured) return a.featured ? -1 : 1;
-          if (a.order !== b.order) return (a.order || 999) - (b.order || 999);
+          if ((a.order || 999) !== (b.order || 999)) return (a.order || 999) - (b.order || 999);
           return new Date(b.publishDate).getTime() - new Date(a.publishDate).getTime();
         });
         setNewsArticles(articles);
       } else {
         console.error('Failed to fetch news articles');
-        console.warn("News API error, keeping fallback data.");
       }
     } catch (error) {
       console.error('Error loading news data:', error);
@@ -108,8 +118,10 @@ export function News() {
     : newsArticles.filter(article => article.category === selectedCategory);
 
   // Format date
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString: string | undefined | null) => {
+    if (!dateString) return 'Unknown date';
     const date = new Date(dateString);
+    if (isNaN(date.getTime())) return 'Unknown date';
     return date.toLocaleDateString('en-US', { 
       year: 'numeric', 
       month: 'long', 
@@ -253,16 +265,13 @@ export function News() {
                       </p>
 
                       {/* Read More Button */}
-                      <button
-                        onClick={() => {
-                          // You can implement a modal or navigate to article detail page
-                          alert('Article detail view coming soon!');
-                        }}
+                      <Link
+                        to={`/news/${article.id}`}
                         className="inline-flex items-center gap-2 text-emerald-600 hover:text-emerald-700 transition-colors duration-300 group/btn"
                       >
                         <span>Read More</span>
                         <ArrowRight size={16} className="group-hover/btn:translate-x-1 transition-transform duration-300" />
-                      </button>
+                      </Link>
                     </div>
                   </Card>
                 ))}
@@ -274,6 +283,16 @@ export function News() {
                 </p>
               </div>
             )}
+            
+            {/* View All News Button */}
+            <div className="text-center mt-12">
+              <Link to="/news">
+                <button className="bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-3 rounded-lg transition-all duration-300 shadow-md hover:shadow-xl inline-flex items-center gap-2">
+                  <span>View All News</span>
+                  <ArrowRight size={20} />
+                </button>
+              </Link>
+            </div>
           </>
         )}
 

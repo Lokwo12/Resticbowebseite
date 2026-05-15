@@ -23,6 +23,17 @@ import { BackToTop } from './components/BackToTop';
 import { FloatingContact } from './components/FloatingContact';
 import { PrivacyBanner } from './components/PrivacyBanner';
 import { EnhancedAdminDashboard } from './components/EnhancedAdminDashboard';
+import { LegalPage } from './components/LegalPage';
+import { NewsArchive } from './components/NewsArchive';
+import { StoriesArchive } from './components/StoriesArchive';
+import { ProgramDetail } from './components/ProgramDetail';
+import { NewsDetail } from './components/NewsDetail';
+import { TeamPage } from './components/TeamPage';
+import { ImpactReports } from './components/ImpactReports';
+import { VolunteerPage } from './components/VolunteerPage';
+import { FAQPage } from './components/FAQPage';
+import { PartnersPage } from './components/PartnersPage';
+import { OpportunitiesPage } from './components/OpportunitiesPage';
 import { projectId, publicAnonKey } from './utils/supabase/info';
 
 function HomePage() {
@@ -86,6 +97,19 @@ export default function App() {
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/admin" element={<AdminPage />} />
+        <Route path="/privacy" element={<><Header /><LegalPage type="privacy" /><Footer /></>} />
+        <Route path="/terms" element={<><Header /><LegalPage type="terms" /><Footer /></>} />
+        <Route path="/refund" element={<><Header /><LegalPage type="refund" /><Footer /></>} />
+        <Route path="/news" element={<><Header /><NewsArchive /><Footer /></>} />
+        <Route path="/news/:id" element={<><Header /><NewsDetail /><Footer /></>} />
+        <Route path="/stories" element={<><Header /><StoriesArchive /><Footer /></>} />
+        <Route path="/programs/:id" element={<><Header /><ProgramDetail /><Footer /></>} />
+        <Route path="/team" element={<><Header /><TeamPage /><Footer /></>} />
+        <Route path="/reports" element={<><Header /><ImpactReports /><Footer /></>} />
+        <Route path="/volunteer" element={<><Header /><VolunteerPage /><Footer /></>} />
+        <Route path="/faqs" element={<><Header /><FAQPage /><Footer /></>} />
+        <Route path="/partners" element={<><Header /><PartnersPage /><Footer /></>} />
+        <Route path="/opportunities" element={<><Header /><OpportunitiesPage /><Footer /></>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       <Toaster position="top-right" />

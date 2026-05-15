@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { BookOpen } from 'lucide-react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { useScrollAnimation, getStaggerDelay } from '../utils/animations';
 
@@ -139,6 +141,10 @@ export function Programs() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className={`max-w-3xl mx-auto text-center mb-16 transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+          <div className="inline-flex items-center gap-2 bg-emerald-100 text-emerald-700 text-sm font-semibold px-4 py-2 rounded-full mb-5">
+            <BookOpen size={14} />
+            What We Do
+          </div>
           <h2 className="text-3xl lg:text-5xl text-gray-900 mb-6">
             {sectionSettings.title}
           </h2>
@@ -183,9 +189,16 @@ export function Programs() {
                 <h3 className="text-xl text-gray-900 mb-3 group-hover:text-emerald-600 transition-colors duration-300">
                   {program.value.title}
                 </h3>
-                <p className="text-gray-600 leading-relaxed">
+                <p className="text-gray-600 leading-relaxed mb-4">
                   {program.value.description}
                 </p>
+                <Link 
+                  to={`/programs/${program.key}`}
+                  className="text-emerald-600 hover:text-emerald-700 font-medium inline-flex items-center gap-1 group/link"
+                >
+                  Learn More
+                  <span className="group-hover/link:translate-x-1 transition-transform duration-200">→</span>
+                </Link>
               </div>
             </div>
           ))}

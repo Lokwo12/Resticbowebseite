@@ -45,7 +45,9 @@ import {
   Menu,
   X as XIcon,
   ChevronRight,
-  ExternalLink
+  ExternalLink,
+  Clock,
+  Activity
 } from 'lucide-react';
 import { Card } from './ui/card';
 import { Badge } from './ui/badge';
@@ -114,6 +116,7 @@ const NAVIGATION_ITEMS = [
   { id: 'donations', label: 'Donations', icon: Heart, color: 'text-emerald-600' },
   { id: 'subscribers', label: 'Subscribers', icon: Send, color: 'text-blue-600' },
   { id: 'settings', label: 'Settings', icon: Settings, color: 'text-slate-600' },
+  { id: 'activity-log', label: 'Activity Log', icon: Clock, color: 'text-orange-600' },
 ];
 
 export function EnhancedAdminDashboard() {
@@ -218,6 +221,86 @@ export function EnhancedAdminDashboard() {
   });
 
   const [uploadingImage, setUploadingImage] = useState(false);
+
+  interface ActivityEntry {
+    id: string;
+    action: string;
+    section: string;
+    description: string;
+    user: string;
+    timestamp: string;
+  }
+  const [activityLog, setActivityLog] = useState<ActivityEntry[]>(() => {
+    try {
+      const stored = localStorage.getItem('admin_activity_log');
+      return stored ? JSON.parse(stored) : [];
+    } catch { return []; }
+  });
+  const logActivity = (action: string, section: string, description: string) => {
+    const entry: ActivityEntry = {
+      id: Date.now().toString(),
+      action, section, description,
+      user: userName || 'Admin',
+      timestamp: new Date().toISOString(),
+    };
+    setActivityLog(prev => {
+      const updated = [entry, ...prev].slice(0, 200);
+      try { localStorage.setItem('admin_activity_log', JSON.stringify(updated)); } catch {}
+      return updated;
+    });
+  };
+
+  const [globalSearch, setGlobalSearch] = useState('');
+  const [newsletterSubject, setNewsletterSubject] = useState('');
+  const [newsletterBody, setNewsletterBody] = useState('');
+  const [sendingNewsletter, setSendingNewsletter] = useState(false);
+
+  const exportToCSV = (rows: Record<string, any>[], filename: string) => {
+    if (!rows.length) return;
+    const keys = Object.keys(rows[0]);
+    const csv = [
+      keys.join(','),
+      ...rows.map(r => keys.map(k => `"${String(r[k] ?? '').replace(/"/g, '""')}"`).join(','))
+    ].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleSendNewsletter = async () => {
+    if (!newsletterSubject.trim() || !newsletterBody.trim()) {
+      toast.error('Subject and body are required');
+      return;
+    }
+    setSendingNewsletter(true);
+    try {
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/newsletter/send`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${accessToken}` },
+          body: JSON.stringify({
+            subject: newsletterSubject,
+            html: `<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:24px">${newsletterBody.replace(/\n/g, '<br>')}</div>`
+          }),
+        }
+      );
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Failed to send');
+      toast.success(`Newsletter sent to ${data.sent} subscriber${data.sent !== 1 ? 's' : ''}`);
+      logActivity('sent', 'Newsletter', `Sent newsletter: "${newsletterSubject}" to ${data.sent} subscribers`);
+      setNewsletterSubject('');
+      setNewsletterBody('');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to send newsletter');
+    } finally {
+      setSendingNewsletter(false);
+    }
+  };
 
   useEffect(() => {
     checkAuth();
@@ -326,6 +409,7 @@ export function EnhancedAdminDashboard() {
         }
         
         toast.success('Welcome back!');
+        logActivity('login', 'Auth', 'Admin logged in');
       }
     } catch (err: any) {
       console.error('Login error:', err);
@@ -593,6 +677,7 @@ export function EnhancedAdminDashboard() {
       if (!response.ok) throw new Error('Failed to save program');
 
       toast.success(editingItem ? 'Program updated' : 'Program created');
+      logActivity(editingItem ? 'updated' : 'created', 'Programs', `${editingItem ? 'Updated' : 'Created'} program: ${formData.title}`);
       setShowProgramForm(false);
       setEditingItem(null);
       setFormData({ title: '', description: '', content: '', image: '', category: 'general' });
@@ -618,6 +703,7 @@ export function EnhancedAdminDashboard() {
       if (!response.ok) throw new Error('Failed to delete program');
 
       toast.success('Program deleted');
+      logActivity('deleted', 'Programs', `Deleted program ID: ${id}`);
       loadData();
     } catch (err: any) {
       console.error('Delete error:', err);
@@ -670,6 +756,7 @@ export function EnhancedAdminDashboard() {
       if (!response.ok) throw new Error('Failed to save news');
 
       toast.success(editingItem ? 'News updated' : 'News created');
+      logActivity(editingItem ? 'updated' : 'created', 'News', `${editingItem ? 'Updated' : 'Created'} news: ${formData.title}`);
       setShowNewsForm(false);
       setEditingItem(null);
       setFormData({ title: '', description: '', content: '', image: '', category: 'general' });
@@ -695,6 +782,7 @@ export function EnhancedAdminDashboard() {
       if (!response.ok) throw new Error('Failed to delete news');
 
       toast.success('News deleted');
+      logActivity('deleted', 'News', `Deleted news ID: ${id}`);
       loadData();
     } catch (err: any) {
       console.error('Delete error:', err);
@@ -752,6 +840,7 @@ export function EnhancedAdminDashboard() {
       if (!response.ok) throw new Error('Failed to save gallery item');
 
       toast.success(editingItem ? 'Gallery updated' : 'Gallery item created');
+      logActivity(editingItem ? 'updated' : 'created', 'Gallery', `${editingItem ? 'Updated' : 'Created'} gallery item: ${formData.title}`);
       setShowGalleryForm(false);
       setEditingItem(null);
       setFormData({ title: '', description: '', content: '', image: '', category: 'general' });
@@ -777,6 +866,7 @@ export function EnhancedAdminDashboard() {
       if (!response.ok) throw new Error('Failed to delete gallery item');
 
       toast.success('Gallery item deleted');
+      logActivity('deleted', 'Gallery', `Deleted gallery item ID: ${id}`);
       loadData();
     } catch (err: any) {
       console.error('Delete error:', err);
@@ -880,6 +970,7 @@ export function EnhancedAdminDashboard() {
       if (!response.ok) throw new Error('Failed to delete contact');
 
       toast.success('Contact deleted');
+      logActivity('deleted', 'Contacts', `Deleted contact ID: ${id}`);
       loadData();
     } catch (err: any) {
       console.error('Delete error:', err);
@@ -952,6 +1043,7 @@ export function EnhancedAdminDashboard() {
       if (!response.ok) throw new Error('Failed to delete volunteer');
 
       toast.success('Volunteer deleted');
+      logActivity('deleted', 'Volunteers', `Deleted volunteer ID: ${id}`);
       loadData();
     } catch (err: any) {
       console.error('Delete error:', err);
@@ -993,6 +1085,7 @@ export function EnhancedAdminDashboard() {
       );
       if (!response.ok) throw new Error('Failed to delete team member');
       toast.success('Team member deleted');
+      logActivity('deleted', 'Team', `Deleted team member ID: ${id}`);
       loadData();
     } catch (err: any) {
       console.error('Delete error:', err);
@@ -1009,6 +1102,7 @@ export function EnhancedAdminDashboard() {
       );
       if (!response.ok) throw new Error('Failed to delete story');
       toast.success('Story deleted');
+      logActivity('deleted', 'Stories', `Deleted story ID: ${id}`);
       loadData();
     } catch (err: any) {
       console.error('Delete error:', err);
@@ -1025,6 +1119,7 @@ export function EnhancedAdminDashboard() {
       );
       if (!response.ok) throw new Error('Failed to delete report');
       toast.success('Report deleted');
+      logActivity('deleted', 'Reports', `Deleted report ID: ${id}`);
       loadData();
     } catch (err: any) {
       console.error('Delete error:', err);
@@ -1041,6 +1136,7 @@ export function EnhancedAdminDashboard() {
       );
       if (!response.ok) throw new Error('Failed to delete event');
       toast.success('Event deleted');
+      logActivity('deleted', 'Events', `Deleted event ID: ${id}`);
       loadData();
     } catch (err: any) {
       console.error('Delete error:', err);
@@ -1057,6 +1153,7 @@ export function EnhancedAdminDashboard() {
       );
       if (!response.ok) throw new Error('Failed to delete partner');
       toast.success('Partner deleted');
+      logActivity('deleted', 'Partners', `Deleted partner ID: ${id}`);
       loadData();
     } catch (err: any) {
       console.error('Delete error:', err);
@@ -1073,6 +1170,7 @@ export function EnhancedAdminDashboard() {
       );
       if (!response.ok) throw new Error('Failed to delete opportunity');
       toast.success('Opportunity deleted');
+      logActivity('deleted', 'Opportunities', `Deleted opportunity ID: ${id}`);
       loadData();
     } catch (err: any) {
       console.error('Delete error:', err);
@@ -1089,6 +1187,7 @@ export function EnhancedAdminDashboard() {
       );
       if (!response.ok) throw new Error('Failed to delete FAQ');
       toast.success('FAQ deleted');
+      logActivity('deleted', 'FAQs', `Deleted FAQ ID: ${id}`);
       loadData();
     } catch (err: any) {
       console.error('Delete error:', err);
@@ -1105,6 +1204,7 @@ export function EnhancedAdminDashboard() {
       );
       if (!response.ok) throw new Error('Failed to delete resource');
       toast.success('Resource deleted');
+      logActivity('deleted', 'Resources', `Deleted resource ID: ${id}`);
       loadData();
     } catch (err: any) {
       console.error('Delete error:', err);
@@ -1140,6 +1240,7 @@ export function EnhancedAdminDashboard() {
       }
 
       toast.success(editingItem ? 'User updated successfully' : 'User created successfully');
+      logActivity(editingItem ? 'updated' : 'created', 'Users', `${editingItem ? 'Updated' : 'Created'} user: ${userFormData.email}`);
       setShowUserForm(false);
       setEditingItem(null);
       setUserFormData({ name: '', email: '', password: '', role: 'viewer', status: 'active' });
@@ -1169,6 +1270,7 @@ export function EnhancedAdminDashboard() {
       if (!response.ok) throw new Error('Failed to delete user');
 
       toast.success('User deleted successfully');
+      logActivity('deleted', 'Users', `Deleted user ID: ${id}`);
       loadData();
     } catch (err: any) {
       console.error('Delete user error:', err);
@@ -1933,6 +2035,53 @@ export function EnhancedAdminDashboard() {
                   </div>
                 )}
 
+                {/* Global Search */}
+                <div className="bg-white rounded-2xl border border-gray-100 px-5 py-4 shadow-sm">
+                  <div className="flex items-center gap-3">
+                    <Search size={16} className="text-gray-400 flex-shrink-0" />
+                    <input
+                      type="text"
+                      placeholder="Search programs, news, events, team, partners, FAQs..."
+                      value={globalSearch}
+                      onChange={e => setGlobalSearch(e.target.value)}
+                      className="flex-1 text-sm text-slate-700 placeholder-gray-400 bg-transparent outline-none"
+                    />
+                    {globalSearch && (
+                      <button onClick={() => setGlobalSearch('')} className="text-gray-400 hover:text-gray-600">
+                        <X size={14} />
+                      </button>
+                    )}
+                  </div>
+                  {globalSearch.trim() && (() => {
+                    const q = globalSearch.toLowerCase();
+                    const results: { section: string; title: string; tab: string }[] = [];
+                    programs.forEach(p => p.value.title?.toLowerCase().includes(q) && results.push({ section: 'Program', title: p.value.title, tab: 'programs' }));
+                    news.forEach(n => n.value.title?.toLowerCase().includes(q) && results.push({ section: 'News', title: n.value.title, tab: 'news' }));
+                    events.forEach(e => e.value.title?.toLowerCase().includes(q) && results.push({ section: 'Event', title: e.value.title, tab: 'events' }));
+                    team.forEach(m => m.value.name?.toLowerCase().includes(q) && results.push({ section: 'Team', title: m.value.name, tab: 'team' }));
+                    partners.forEach(p => p.value.name?.toLowerCase().includes(q) && results.push({ section: 'Partner', title: p.value.name, tab: 'partners' }));
+                    faqs.forEach(f => f.value.question?.toLowerCase().includes(q) && results.push({ section: 'FAQ', title: f.value.question, tab: 'faqs' }));
+                    return (
+                      <div className="mt-3 pt-3 border-t border-gray-100">
+                        <p className="text-xs text-gray-400 mb-2">{results.length} result{results.length !== 1 ? 's' : ''}</p>
+                        {results.length === 0 ? (
+                          <p className="text-sm text-slate-400 py-2">No matches found</p>
+                        ) : (
+                          <div className="space-y-0.5">
+                            {results.slice(0, 8).map((r, i) => (
+                              <button key={i} onClick={() => { setActiveTab(r.tab); setGlobalSearch(''); }} className="w-full flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-gray-50 text-left transition-colors">
+                                <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 flex-shrink-0">{r.section}</span>
+                                <span className="text-sm text-slate-700 truncate">{r.title}</span>
+                                <ChevronRight size={13} className="ml-auto text-gray-400 flex-shrink-0" />
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
+                </div>
+
                 {/* Quick Actions */}
                 <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-6">
                   <div className="flex items-center justify-between mb-5">
@@ -2397,6 +2546,13 @@ export function EnhancedAdminDashboard() {
                       <option value="read" className="text-slate-800 tracking-tight">Read</option>
                       <option value="responded" className="text-slate-800 tracking-tight">Responded</option>
                     </select>
+                    <button
+                      onClick={() => exportToCSV(getFilteredContacts().map(c => c.value), 'contacts.csv')}
+                      className="flex items-center gap-1.5 px-3 py-2 bg-white/20 hover:bg-white/30 border border-white/30 rounded-lg text-sm text-white font-medium transition-colors"
+                    >
+                      <Download size={14} />
+                      CSV
+                    </button>
                   </div>
                 </div>
 
@@ -2516,6 +2672,13 @@ export function EnhancedAdminDashboard() {
                       <option value="approved" className="text-slate-800 tracking-tight">Approved</option>
                       <option value="rejected" className="text-slate-800 tracking-tight">Rejected</option>
                     </select>
+                    <button
+                      onClick={() => exportToCSV(getFilteredVolunteers().map(v => v.value), 'volunteers.csv')}
+                      className="flex items-center gap-1.5 px-3 py-2 bg-white/20 hover:bg-white/30 border border-white/30 rounded-lg text-sm text-white font-medium transition-colors"
+                    >
+                      <Download size={14} />
+                      CSV
+                    </button>
                   </div>
                 </div>
 
@@ -2621,13 +2784,46 @@ export function EnhancedAdminDashboard() {
                       <p className="text-sm text-emerald-100 mt-1.5 opacity-80 font-medium">View donation records</p>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-sm text-emerald-100">Total Donations</p>
-                    <p className="text-2xl font-bold text-white">
-                      ${donations.reduce((sum, d) => sum + (d.value.amount || 0), 0).toFixed(2)}
-                    </p>
+                  <div className="flex items-center gap-4">
+                    <div className="text-right">
+                      <p className="text-sm text-emerald-100">Total Donations</p>
+                      <p className="text-2xl font-bold text-white">
+                        ${donations.reduce((sum, d) => sum + (d.value.amount || 0), 0).toFixed(2)}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => exportToCSV(donations.map(d => d.value), 'donations.csv')}
+                      className="flex items-center gap-1.5 px-3 py-2 bg-white/20 hover:bg-white/30 border border-white/30 rounded-lg text-sm text-white font-medium transition-colors"
+                    >
+                      <Download size={14} />
+                      CSV
+                    </button>
                   </div>
                 </div>
+
+                {/* Donation Analytics Chart */}
+                {donations.length > 0 && (() => {
+                  const byMonth: Record<string, number> = {};
+                  donations.forEach(d => {
+                    const month = new Date(d.value.created_at).toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+                    byMonth[month] = (byMonth[month] || 0) + (d.value.amount || 0);
+                  });
+                  const chartData = Object.entries(byMonth).map(([month, total]) => ({ month, total: parseFloat(total.toFixed(2)) }));
+                  return (
+                    <div className="bg-white rounded-2xl border border-gray-100 p-6">
+                      <h4 className="text-sm font-semibold text-slate-700 mb-4">Donations by Month</h4>
+                      <ResponsiveContainer width="100%" height={220}>
+                        <BarChart data={chartData} margin={{ top: 4, right: 8, left: 0, bottom: 4 }}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                          <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#94a3b8' }} />
+                          <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} tickFormatter={v => `$${v}`} />
+                          <Tooltip formatter={(v: any) => [`$${v}`, 'Total']} contentStyle={{ borderRadius: '10px', border: '1px solid #e2e8f0' }} />
+                          <Bar dataKey="total" fill="#10b981" radius={[6, 6, 0, 0]} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  );
+                })()}
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
                   {donations.map((donation) => (
@@ -2675,10 +2871,50 @@ export function EnhancedAdminDashboard() {
                       <p className="text-sm text-indigo-100 mt-1.5 opacity-80 font-medium">Manage newsletter subscribers</p>
                     </div>
                   </div>
-                  <Button variant="outline" className="bg-white/20 border-white/30 text-white hover:bg-white/30 font-semibold px-4 py-2 md:px-5 md:py-2.5 rounded-xl transition-all whitespace-nowrap flex-shrink-0">
-                    <Download size={16} className="mr-2" />
-                    Export List
-                  </Button>
+                  <button
+                    onClick={() => exportToCSV(subscribers.map(s => s.value), 'subscribers.csv')}
+                    className="flex items-center gap-1.5 px-4 py-2 bg-white/20 hover:bg-white/30 border border-white/30 rounded-xl text-sm text-white font-semibold transition-colors whitespace-nowrap flex-shrink-0"
+                  >
+                    <Download size={16} />
+                    Export CSV
+                  </button>
+                </div>
+
+                {/* Newsletter Blast Compose */}
+                <div className="bg-white rounded-2xl border border-gray-100 p-6">
+                  <div className="flex items-center gap-3 mb-5">
+                    <div className="w-9 h-9 rounded-xl bg-indigo-50 flex items-center justify-center">
+                      <Send size={17} className="text-indigo-600" />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-semibold text-slate-800">Send Newsletter Blast</h4>
+                      <p className="text-xs text-gray-400">Send to all {subscribers.length} subscriber{subscribers.length !== 1 ? 's' : ''}</p>
+                    </div>
+                  </div>
+                  <div className="space-y-3">
+                    <input
+                      type="text"
+                      placeholder="Subject line..."
+                      value={newsletterSubject}
+                      onChange={e => setNewsletterSubject(e.target.value)}
+                      className="w-full px-4 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                    />
+                    <textarea
+                      placeholder="Email body (plain text)..."
+                      value={newsletterBody}
+                      onChange={e => setNewsletterBody(e.target.value)}
+                      rows={5}
+                      className="w-full px-4 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-300 resize-none"
+                    />
+                    <button
+                      onClick={handleSendNewsletter}
+                      disabled={sendingNewsletter || subscribers.length === 0 || !newsletterSubject.trim() || !newsletterBody.trim()}
+                      className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-xl transition-colors"
+                    >
+                      <Send size={15} />
+                      {sendingNewsletter ? 'Sending...' : `Send to ${subscribers.length} subscriber${subscribers.length !== 1 ? 's' : ''}`}
+                    </button>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
@@ -3525,6 +3761,60 @@ export function EnhancedAdminDashboard() {
                 </div>
               </div>
             )}
+
+          {/* Activity Log Tab */}
+          {activeTab === 'activity-log' && (
+            <div className="p-6">
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
+                <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-orange-50 flex items-center justify-center">
+                      <Clock size={18} className="text-orange-600" />
+                    </div>
+                    <div>
+                      <h2 className="text-sm font-semibold text-slate-800">Activity Log</h2>
+                      <p className="text-xs text-gray-400">{activityLog.length} entries</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setActivityLog([]);
+                      try { localStorage.removeItem('admin_activity_log'); } catch {}
+                    }}
+                    className="text-xs text-red-500 hover:text-red-700 font-medium px-3 py-1.5 rounded-lg hover:bg-red-50 transition-colors"
+                  >
+                    Clear Log
+                  </button>
+                </div>
+                <div className="divide-y divide-gray-50 max-h-[600px] overflow-y-auto">
+                  {activityLog.length === 0 ? (
+                    <div className="text-center py-16">
+                      <div className="w-12 h-12 rounded-xl bg-orange-50 flex items-center justify-center mx-auto mb-3">
+                        <Activity size={22} className="text-orange-400" />
+                      </div>
+                      <p className="text-sm font-medium text-slate-500">No activity yet</p>
+                      <p className="text-xs text-gray-400 mt-1">Actions will appear here as you use the dashboard</p>
+                    </div>
+                  ) : (
+                    activityLog.map(entry => (
+                      <div key={entry.id} className="flex items-start gap-4 px-6 py-3 hover:bg-gray-50/50 transition-colors">
+                        <span className={`mt-0.5 text-xs font-semibold px-2 py-0.5 rounded-full uppercase tracking-wide whitespace-nowrap ${
+                          entry.action === 'deleted' ? 'bg-red-100 text-red-600' :
+                          entry.action === 'created' ? 'bg-green-100 text-green-600' :
+                          entry.action === 'updated' ? 'bg-blue-100 text-blue-600' :
+                          'bg-orange-100 text-orange-600'
+                        }`}>{entry.action}</span>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-medium text-slate-700 truncate">{entry.description}</p>
+                          <p className="text-xs text-gray-400 mt-0.5">{entry.section} · {entry.user} · {new Date(entry.timestamp).toLocaleString()}</p>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
           </div>
           </div>
         </div>
