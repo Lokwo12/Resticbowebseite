@@ -54,7 +54,6 @@ export function About() {
     };
 
     try {
-      console.log('🔄 Fetching About settings...');
       const response = await fetch(
         `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/site-settings`,
         {
@@ -64,20 +63,14 @@ export function About() {
         }
       );
 
-      console.log('📡 About fetch response status:', response.status);
-
       if (!response.ok) {
         throw new Error('Failed to fetch settings');
       }
 
       const data = await response.json();
-      console.log('📦 Raw API response:', data);
-      console.log('📄 About settings from API:', data.settings?.about);
       
-      // Check if we have valid about settings
       if (data.settings?.about) {
         const aboutData = data.settings.about;
-        
         const mergedSettings = {
           title: aboutData.title || defaultSettings.title,
           intro: aboutData.intro || defaultSettings.intro,
@@ -86,30 +79,19 @@ export function About() {
           values: (aboutData.values && aboutData.values.length > 0) ? aboutData.values : defaultSettings.values,
           story: (aboutData.story && aboutData.story.length > 0) ? aboutData.story : defaultSettings.story
         };
-        
-        console.log('✅ Setting merged About settings:', mergedSettings);
         setSettings(mergedSettings);
       } else {
-        // No about settings, use defaults
-        console.log('⚠️ No about settings found in API, using defaults');
-        console.log('✅ Setting default About settings:', defaultSettings);
         setSettings(defaultSettings);
       }
     } catch (error) {
-      console.error('❌ Error fetching about settings:', error);
-      // Set default settings if fetch fails
-      console.log('✅ Setting default About settings (error fallback):', defaultSettings);
+      console.error('Error fetching about settings:', error);
       setSettings(defaultSettings);
     } finally {
-      console.log('🏁 About fetch complete, loading = false');
       setLoading(false);
     }
   };
 
-  console.log('🎨 About component render - loading:', loading, 'settings:', settings);
-
   if (loading) {
-    console.log('⏳ Showing loading skeleton');
     return (
       <section id="about" className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -132,14 +114,16 @@ export function About() {
     values: [],
     story: []
   };
-  
-  console.log('🎯 About component rendering with displaySettings:', displaySettings);
 
   return (
     <section id="about" className="py-20 bg-white" ref={ref}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Intro */}
         <div className={`max-w-3xl mx-auto text-center mb-16 transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+          <div className="inline-flex items-center gap-2 bg-emerald-100 text-emerald-700 text-sm font-semibold px-4 py-2 rounded-full mb-5">
+            <Heart size={14} className="fill-emerald-600 text-emerald-600" />
+            Community Based Organization
+          </div>
           <h2 className="text-3xl lg:text-5xl text-gray-900 mb-6">
             {displaySettings.title}
           </h2>
@@ -202,6 +186,22 @@ export function About() {
             </div>
           </div>
         )}
+
+        {/* Trust & Certifications Strip */}
+        <div className={`mt-14 grid grid-cols-2 md:grid-cols-4 gap-4 transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`} style={{ transitionDelay: '1000ms' }}>
+          {[
+            { icon: '🏛️', label: 'Registered CBO', sub: 'Uganda NGO Bureau' },
+            { icon: '🌍', label: '2,500+ Lives', sub: 'Changed & Counting' },
+            { icon: '💯', label: '100% Transparent', sub: 'Annual Reports Published' },
+            { icon: '🤝', label: 'Community-Led', sub: 'Locally Driven Solutions' },
+          ].map((item) => (
+            <div key={item.label} className="flex flex-col items-center text-center bg-emerald-50 border border-emerald-100 rounded-2xl py-5 px-4">
+              <span className="text-3xl mb-2">{item.icon}</span>
+              <span className="text-sm font-bold text-emerald-800">{item.label}</span>
+              <span className="text-xs text-emerald-600 mt-0.5">{item.sub}</span>
+            </div>
+          ))}
+        </div>
       </div>
     </section>
   );

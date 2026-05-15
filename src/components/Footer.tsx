@@ -84,6 +84,10 @@ export function Footer() {
   };
 
   const scrollToSection = (id: string) => {
+    if (window.location.pathname !== '/') {
+      window.location.href = `/#${id}`;
+      return;
+    }
     const element = document.getElementById(id);
     if (element) {
       element.scrollIntoView({ behavior: 'smooth' });
@@ -224,6 +228,14 @@ export function Footer() {
               <Shield size={12} /> Registered CBO · Uganda
             </div>
           </div>
+          
+          {/* Legal Links */}
+          <div className="flex gap-4 text-sm text-gray-400">
+            <a href="/privacy" className="hover:text-emerald-400 transition-colors">Privacy Policy</a>
+            <a href="/terms" className="hover:text-emerald-400 transition-colors">Terms of Service</a>
+            <a href="/refund" className="hover:text-emerald-400 transition-colors">Refund Policy</a>
+          </div>
+
           <p className="text-sm text-gray-400 flex items-center gap-1">
             {footerSettings.taglineBottom.includes('❤️') ? (
               <>

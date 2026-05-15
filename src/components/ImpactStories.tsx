@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { Quote, Heart } from 'lucide-react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { Card } from './ui/card';
@@ -173,6 +174,16 @@ export function ImpactStories() {
             <p className="text-gray-500">No stories available yet. Check back soon!</p>
           </div>
         )}
+
+        {/* View All Stories Button */}
+        <div className="text-center mt-12">
+          <Link to="/stories">
+            <button className="bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-3 rounded-lg transition-all duration-300 shadow-md hover:shadow-xl inline-flex items-center gap-2">
+              <span>View All Stories</span>
+              <Heart size={20} />
+            </button>
+          </Link>
+        </div>
 
         {/* Call to Action */}
         <div className="mt-16 bg-gradient-to-r from-emerald-600 to-emerald-700 rounded-2xl p-8 md:p-12 text-center text-white">

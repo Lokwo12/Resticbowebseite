@@ -53,7 +53,7 @@ interface HeroSettings {
 }
 
 // Professional background images for the carousel
-const backgroundImages = [
+const FALLBACK_BACKGROUND_IMAGES = [
   'https://images.unsplash.com/photo-1761039808159-f02b58f07032?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxhZnJpY2FuJTIwY29tbXVuaXR5JTIwZGV2ZWxvcG1lbnR8ZW58MXx8fHwxNzY1MjMyNzc0fDA&ixlib=rb-4.1.0&q=80&w=1080',
   'https://images.unsplash.com/photo-1641569707854-c80945fb4719?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx2b2x1bnRlZXIlMjBoZWxwaW5nJTIwY2hpbGRyZW58ZW58MXx8fHwxNzY1MTk3NzkwfDA&ixlib=rb-4.1.0&q=80&w=1080',
   'https://images.unsplash.com/photo-1666281269793-da06484657e8?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxlZHVjYXRpb24lMjBjbGFzc3Jvb20lMjBhZnJpY2F8ZW58MXx8fHwxNzY1MjMyNzc1fDA&ixlib=rb-4.1.0&q=80&w=1080',
@@ -66,6 +66,11 @@ export function Hero() {
   const [loading, setLoading] = useState(true);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
+  
+  const backgroundImages = (settings as any)?.backgroundImages?.length > 0 
+    ? (settings as any).backgroundImages 
+    : FALLBACK_BACKGROUND_IMAGES;
+
   const [imagesLoaded, setImagesLoaded] = useState<boolean[]>(new Array(backgroundImages.length).fill(false));
   const [statsVisible, setStatsVisible] = useState(false);
   const statsRef = useRef<HTMLDivElement>(null);
@@ -81,6 +86,7 @@ export function Hero() {
 
   // Preload all background images for smooth transitions
   useEffect(() => {
+    setImagesLoaded(new Array(backgroundImages.length).fill(false));
     backgroundImages.forEach((src, index) => {
       const img = new Image();
       img.src = src;
@@ -92,7 +98,7 @@ export function Hero() {
         });
       };
     });
-  }, []);
+  }, [backgroundImages]);
 
   // Automatic background image carousel with pause functionality
   useEffect(() => {

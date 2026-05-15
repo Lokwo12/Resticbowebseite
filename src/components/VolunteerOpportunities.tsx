@@ -40,7 +40,6 @@ export function VolunteerOpportunities() {
 
   const fetchSettings = async () => {
     try {
-      console.log('🔄 Fetching Volunteer Opportunities section settings...');
       const response = await fetch(
         `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/site-settings`,
         {
@@ -50,29 +49,19 @@ export function VolunteerOpportunities() {
         }
       );
 
-      console.log('📡 Volunteer Opportunities settings response status:', response.status);
-
       if (response.ok) {
         const data = await response.json();
-        console.log('📦 Volunteer Opportunities raw API response:', data);
-        
         if (data.settings?.sections?.opportunities) {
-          console.log('✅ Volunteer Opportunities section settings updated:', data.settings.sections.opportunities);
           setSectionSettings(data.settings.sections.opportunities);
-        } else {
-          console.log('⚠️ No volunteer opportunities settings found in API, using defaults');
         }
-      } else {
-        console.error('❌ Failed to fetch volunteer opportunities settings, status:', response.status);
       }
     } catch (err) {
-      console.error('❌ Error fetching volunteer opportunities section settings:', err);
+      console.error('Error fetching volunteer opportunities section settings:', err);
     }
   };
 
   const fetchOpportunities = async () => {
     try {
-      console.log('🔄 Fetching Volunteer Opportunities list...');
       const response = await fetch(
         `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/opportunities`,
         {
@@ -82,22 +71,15 @@ export function VolunteerOpportunities() {
         }
       );
       
-      console.log('📡 Volunteer Opportunities list response status:', response.status);
-      
       if (response.ok) {
         const data = await response.json();
-        console.log('📦 Volunteer Opportunities raw response:', data);
-        console.log('✅ Volunteer Opportunities count:', data.opportunities?.length || 0);
         setOpportunities(data.opportunities || []);
       } else {
-        console.error('❌ Failed to fetch opportunities, status:', response.status);
-        const errorText = await response.text();
-        console.error('❌ Error response:', errorText);
+        console.error('Failed to fetch opportunities, status:', response.status);
       }
     } catch (error) {
-      console.error('❌ Error fetching opportunities:', error);
+      console.error('Error fetching opportunities:', error);
     } finally {
-      console.log('🏁 Volunteer Opportunities fetch complete');
       setLoading(false);
     }
   };
@@ -151,8 +133,6 @@ export function VolunteerOpportunities() {
   const filteredOpportunities = selectedCategory === 'all' 
     ? opportunities 
     : opportunities.filter(o => o.category === selectedCategory);
-
-  console.log('🎨 Volunteer Opportunities component render - loading:', loading, 'opportunities count:', opportunities.length, 'filtered count:', filteredOpportunities.length);
 
   if (loading) {
     return (

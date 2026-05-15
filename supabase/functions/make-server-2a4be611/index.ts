@@ -445,6 +445,48 @@ app.get('/make-server-2a4be611/newsletter', async (c) => {
   }
 })
 
+// Send newsletter blast to all subscribers (admin)
+app.post('/make-server-2a4be611/admin/newsletter/send', async (c) => {
+  try {
+    const authHeader = c.req.header('Authorization')
+    if (!authHeader) {
+      return c.json({ error: 'Unauthorized' }, 401)
+    }
+
+    const body = await c.req.json()
+    const { subject, html } = body
+
+    if (!subject || !html) {
+      return c.json({ error: 'Subject and html are required' }, 400)
+    }
+
+    const subscribers = await kv.getByPrefix('newsletter:')
+
+    if (subscribers.length === 0) {
+      return c.json({ success: true, sent: 0, message: 'No subscribers to send to' })
+    }
+
+    let sent = 0
+    const errors: string[] = []
+
+    for (const sub of subscribers) {
+      const email = sub.value?.email
+      if (!email) continue
+      const result = await sendEmail(email, subject, html)
+      if (result && (result as any).success !== false) {
+        sent++
+      } else {
+        errors.push(email)
+      }
+    }
+
+    return c.json({ success: true, sent, errors, total: subscribers.length })
+  } catch (error) {
+    console.error('Error sending newsletter blast:', error)
+    return c.json({ error: 'Failed to send newsletter', details: String(error) }, 500)
+  }
+})
+
 // Image upload endpoint
 app.post('/make-server-2a4be611/upload-image', async (c) => {
   try {

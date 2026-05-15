@@ -118,6 +118,7 @@ export function SiteSettingsTab({ settings: initialSettings, onUpdate }: SiteSet
           <TabsTrigger value="contact">Contact Info</TabsTrigger>
           <TabsTrigger value="donation">Donation & Payments</TabsTrigger>
           <TabsTrigger value="footer">Footer</TabsTrigger>
+          <TabsTrigger value="legal">Legal Pages</TabsTrigger>
           <TabsTrigger value="sections">Section Headers</TabsTrigger>
         </TabsList>
 
@@ -368,6 +369,25 @@ export function SiteSettingsTab({ settings: initialSettings, onUpdate }: SiteSet
                   }
                   className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
                 />
+              </div>
+
+              <div>
+                <label className="block text-sm text-gray-700 mb-2">Hero Background Images (One URL per line)</label>
+                <textarea
+                  value={settings.hero?.backgroundImages?.join('\n') || ''}
+                  onChange={(e) =>
+                    setSettings({
+                      ...settings,
+                      hero: { ...settings.hero, backgroundImages: e.target.value.split('\n').filter(Boolean) },
+                    })
+                  }
+                  rows={5}
+                  placeholder="https://example.com/image1.jpg&#10;https://example.com/image2.jpg"
+                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  These images will rotate in the background carousel. If empty, default images will be used.
+                </p>
               </div>
 
               <div>
@@ -705,6 +725,65 @@ export function SiteSettingsTab({ settings: initialSettings, onUpdate }: SiteSet
                   }
                   className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
                   placeholder="Made with ❤️ for our community"
+                />
+              </div>
+            </div>
+          </Card>
+        </TabsContent>
+
+        {/* Legal Pages */}
+        <TabsContent value="legal">
+          <Card className="p-6">
+            <h3 className="text-lg text-gray-900 mb-4">Legal Pages</h3>
+            <p className="text-sm text-gray-600 mb-6">
+              Enter the content for your organization's legal pages. You can use simple text or HTML tags if needed.
+            </p>
+            <div className="space-y-6">
+              <div>
+                <label className="block text-sm text-gray-700 mb-2 font-medium">Privacy Policy</label>
+                <textarea
+                  value={settings.legal?.privacyPolicy || ''}
+                  onChange={(e) =>
+                    setSettings({
+                      ...settings,
+                      legal: { ...settings.legal, privacyPolicy: e.target.value },
+                    })
+                  }
+                  rows={10}
+                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
+                  placeholder="Enter your Privacy Policy here..."
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm text-gray-700 mb-2 font-medium">Terms of Service</label>
+                <textarea
+                  value={settings.legal?.termsOfService || ''}
+                  onChange={(e) =>
+                    setSettings({
+                      ...settings,
+                      legal: { ...settings.legal, termsOfService: e.target.value },
+                    })
+                  }
+                  rows={10}
+                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
+                  placeholder="Enter your Terms of Service here..."
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm text-gray-700 mb-2 font-medium">Refund Policy</label>
+                <textarea
+                  value={settings.legal?.refundPolicy || ''}
+                  onChange={(e) =>
+                    setSettings({
+                      ...settings,
+                      legal: { ...settings.legal, refundPolicy: e.target.value },
+                    })
+                  }
+                  rows={6}
+                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
+                  placeholder="Enter your Refund Policy here..."
                 />
               </div>
             </div>

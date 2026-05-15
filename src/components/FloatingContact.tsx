@@ -1,22 +1,39 @@
 import { MessageCircle, Phone, Mail, X } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { projectId, publicAnonKey } from '../utils/supabase/info';
 
 export function FloatingContact() {
   const [isOpen, setIsOpen] = useState(false);
+  const [phone, setPhone] = useState('');
+  const [whatsapp, setWhatsapp] = useState('');
+
+  useEffect(() => {
+    fetch(`https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/site-settings`, {
+      headers: { Authorization: `Bearer ${publicAnonKey}` },
+    })
+      .then(r => r.json())
+      .then(data => {
+        const c = data?.settings?.contact;
+        if (c?.phone) setPhone(c.phone.replace(/\s/g, ''));
+        if (c?.whatsappNumber) setWhatsapp(c.whatsappNumber.replace(/\D/g, ''));
+        else if (c?.phone) setWhatsapp(c.phone.replace(/\D/g, ''));
+      })
+      .catch(() => {});
+  }, []);
 
   const contactOptions = [
-    {
+    ...(whatsapp ? [{
       icon: MessageCircle,
       label: 'WhatsApp',
-      href: 'https://wa.me/256XXXXXXXXX', // Replace with actual WhatsApp number
+      href: `https://wa.me/${whatsapp}`,
       color: 'bg-green-500 hover:bg-green-600',
-    },
-    {
+    }] : []),
+    ...(phone ? [{
       icon: Phone,
       label: 'Call Us',
-      href: 'tel:+256XXXXXXXXX', // Replace with actual phone number
+      href: `tel:${phone}`,
       color: 'bg-blue-500 hover:bg-blue-600',
-    },
+    }] : []),
     {
       icon: Mail,
       label: 'Email',
