@@ -1,4 +1,5 @@
 import { Heart, Facebook, Twitter, Instagram, Mail, ArrowUp, Shield } from 'lucide-react';
+import { Link } from 'react-router-dom';
 const logo = '/logo.png';
 import { useState, useEffect } from 'react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
@@ -133,7 +134,7 @@ export function Footer() {
               <li><button onClick={() => scrollToSection('home')} className="hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Home</button></li>
               <li><button onClick={() => scrollToSection('about')} className="hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">About Us</button></li>
               <li><button onClick={() => scrollToSection('programs')} className="hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Programs</button></li>
-              <li><button onClick={() => scrollToSection('team')} className="hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Our Team</button></li>
+              <li><Link to="/team" className="hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Our Team</Link></li>
               <li><button onClick={() => scrollToSection('impact')} className="hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Impact Stories</button></li>
               <li><button onClick={() => scrollToSection('events')} className="hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Events</button></li>
             </ul>
@@ -143,9 +144,10 @@ export function Footer() {
           <div>
             <h4 className="mb-4">Get Involved</h4>
             <ul className="space-y-2 text-sm text-gray-400">
-              <li><button onClick={() => scrollToSection('volunteer')} className="hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Volunteer</button></li>
+              <li><Link to="/volunteer" className="hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Volunteer</Link></li>
               <li><button onClick={() => scrollToSection('donate')} className="hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Donate</button></li>
-              <li><button onClick={() => scrollToSection('partners')} className="hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Become a Partner</button></li>
+              <li><Link to="/partners" className="hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Become a Partner</Link></li>
+              <li><Link to="/opportunities" className="hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Opportunities</Link></li>
               <li><button onClick={() => scrollToSection('newsletter')} className="hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Newsletter</button></li>
             </ul>
           </div>
@@ -155,9 +157,9 @@ export function Footer() {
             <h4 className="mb-4">Resources</h4>
             <ul className="space-y-2 text-sm text-gray-400">
               <li><button onClick={() => scrollToSection('gallery')} className="hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Gallery</button></li>
-              <li><button onClick={() => scrollToSection('news')} className="hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">News</button></li>
-              <li><button onClick={() => scrollToSection('faq')} className="hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">FAQ</button></li>
-              <li><button onClick={() => scrollToSection('resources')} className="hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Downloads</button></li>
+              <li><Link to="/news" className="hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">News</Link></li>
+              <li><Link to="/faqs" className="hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">FAQ</Link></li>
+              <li><Link to="/reports" className="hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Impact Reports</Link></li>
               <li><button onClick={() => scrollToSection('impact-dashboard')} className="hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Impact Dashboard</button></li>
             </ul>
           </div>

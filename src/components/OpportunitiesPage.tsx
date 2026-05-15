@@ -99,7 +99,7 @@ export function OpportunitiesPage() {
   return (
     <div className="bg-gray-50 min-h-screen">
       {/* Premium Hero Banner */}
-      <div className="bg-gradient-to-r from-emerald-600 to-emerald-800 text-white pt-32 pb-24">
+      <div className="bg-gradient-to-r from-emerald-600 to-emerald-800 text-white pt-40 pb-24">
         <div className="max-width-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-white/10 backdrop-blur-md rounded-full mb-6">
             <Target className="text-white" size={32} />
@@ -112,7 +112,7 @@ export function OpportunitiesPage() {
       </div>
 
       {/* Main Content (List Layout) */}
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 -mt-12 relative z-10 pb-20">
+      <div className="max-width-5xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 relative z-10 pb-20">
         <div className="space-y-6">
           {displayOpportunities.map((opportunity) => (
             <div key={opportunity.id} className="bg-white rounded-2xl shadow-xl p-6 md:p-8 border border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-6 hover:shadow-2xl transition-shadow duration-300">

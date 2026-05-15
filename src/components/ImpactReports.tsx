@@ -93,7 +93,7 @@ export function ImpactReports() {
   return (
     <div className="bg-gray-50 min-h-screen">
       {/* Premium Hero Banner */}
-      <div className="bg-gradient-to-r from-emerald-600 to-emerald-800 text-white pt-32 pb-24">
+      <div className="bg-gradient-to-r from-emerald-600 to-emerald-800 text-white pt-40 pb-24">
         <div className="max-width-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-white/10 backdrop-blur-md rounded-full mb-6">
             <FileText className="text-white" size={32} />
@@ -106,7 +106,7 @@ export function ImpactReports() {
       </div>
 
       {/* Main Content (Grid Layout) */}
-      <div className="max-width-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-12 relative z-10 pb-20">
+      <div className="max-width-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 relative z-10 pb-20">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {displayReports.map((report) => (
             <div key={report.id} className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100 flex flex-col hover:shadow-2xl transition-shadow duration-300">
