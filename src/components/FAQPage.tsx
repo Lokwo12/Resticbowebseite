@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { LoadingScreen } from './LoadingScreen';
 import { HelpCircle, ChevronDown, ChevronUp, Search } from 'lucide-react';
+import '../styles/animations.css';
 
 interface FAQ {
   id: string;
@@ -91,9 +92,9 @@ export function FAQPage() {
   return (
     <div className="bg-gray-50 min-h-screen">
       {/* Premium Hero Banner */}
-      <div className="bg-gradient-to-r from-emerald-600 to-emerald-800 text-white pt-32 pb-24">
+      <div className="bg-gradient-to-r from-emerald-600 to-emerald-800 text-white pt-40 pb-24">
         <div className="max-width-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-white/10 backdrop-blur-md rounded-full mb-6">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-white/10 backdrop-blur-md rounded-full mb-6 animate-float">
             <HelpCircle className="text-white" size={32} />
           </div>
           <h1 className="text-4xl md:text-5xl font-bold mb-4 text-white">Frequently Asked Questions</h1>
@@ -104,7 +105,7 @@ export function FAQPage() {
       </div>
 
       {/* Main Content (Accordion Layout) */}
-      <div className="max-width-4xl mx-auto px-4 sm:px-6 lg:px-8 -mt-12 relative z-10 pb-20">
+      <div className="max-width-4xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 relative z-10 pb-20">
         
         {/* Search Bar */}
         <div className="bg-white rounded-xl shadow-lg p-4 mb-8 border border-gray-100 flex items-center gap-3">
@@ -125,8 +126,12 @@ export function FAQPage() {
             </div>
           ) : (
             <div className="divide-y divide-gray-100">
-              {filteredFaqs.map((faq) => (
-                <div key={faq.id} className="border-b border-gray-100 last:border-b-0">
+              {filteredFaqs.map((faq, index) => (
+                <div 
+                  key={faq.id} 
+                  className="border-b border-gray-100 last:border-b-0 animate-fade-in-up"
+                  style={{ animationDelay: `${index * 100}ms` }}
+                >
                   <button
                     onClick={() => toggleAccordion(faq.id)}
                     className="w-full flex justify-between items-center p-6 text-left hover:bg-emerald-50/50 transition-colors duration-300"

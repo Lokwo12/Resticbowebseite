@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { LoadingScreen } from './LoadingScreen';
 import { Users, Mail, Linkedin, Twitter } from 'lucide-react';
+import '../styles/animations.css';
 
 interface TeamMember {
   id: string;
@@ -89,9 +90,9 @@ export function TeamPage() {
   return (
     <div className="bg-gray-50 min-h-screen">
       {/* Premium Hero Banner */}
-      <div className="bg-gradient-to-r from-emerald-600 to-emerald-800 text-white pt-32 pb-24">
+      <div className="bg-gradient-to-r from-emerald-600 to-emerald-800 text-white pt-40 pb-24">
         <div className="max-width-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-white/10 backdrop-blur-md rounded-full mb-6">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-white/10 backdrop-blur-md rounded-full mb-6 animate-float">
             <Users className="text-white" size={32} />
           </div>
           <h1 className="text-4xl md:text-5xl font-bold mb-4 text-white">Our Dedicated Team</h1>
@@ -102,10 +103,14 @@ export function TeamPage() {
       </div>
 
       {/* Main Content (Grid Layout) */}
-      <div className="max-width-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-12 relative z-10 pb-20">
+      <div className="max-width-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 relative z-10 pb-20">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {displayTeam.map((member) => (
-            <div key={member.id} className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100 flex flex-col hover:shadow-2xl transition-shadow duration-300">
+          {displayTeam.map((member, index) => (
+            <div 
+              key={member.id} 
+              className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100 flex flex-col hover:shadow-2xl transition-all duration-500 hover-shine animate-fade-in-up"
+              style={{ animationDelay: `${index * 150}ms` }}
+            >
               {/* Member Image */}
               <div className="h-64 overflow-hidden relative">
                 <img

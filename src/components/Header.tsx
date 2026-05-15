@@ -1,5 +1,6 @@
-import { Menu, X, Heart, ChevronRight } from 'lucide-react';
+import { Menu, X, Heart, ChevronRight, ChevronDown } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 const logo = '/logo.png';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 
@@ -149,16 +150,24 @@ export function Header() {
             >
               Home
             </button>
-            <button
-              onClick={() => scrollToSection('about')}
-              className={`transition-all duration-300 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-emerald-600 hover:after:w-full after:transition-all ${
-                scrolled 
-                  ? 'text-gray-700 hover:text-emerald-600' 
-                  : 'text-white hover:text-emerald-300 drop-shadow'
-              }`}
-            >
-              About
-            </button>
+            <div className="relative group">
+              <button
+                className={`transition-all duration-300 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-emerald-600 hover:after:w-full after:transition-all flex items-center gap-1 ${
+                  scrolled 
+                    ? 'text-gray-700 hover:text-emerald-600' 
+                    : 'text-white hover:text-emerald-300 drop-shadow'
+                }`}
+              >
+                About <ChevronDown size={14} />
+              </button>
+              <div className="absolute left-0 mt-2 w-48 bg-white rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50 border border-gray-100 overflow-hidden">
+                <div className="py-1">
+                  <button onClick={() => scrollToSection('about')} className="w-full text-left block px-4 py-2.5 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-600 transition-colors">About Us</button>
+                  <Link to="/team" className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-600 transition-colors">Our Team</Link>
+                  <Link to="/faqs" className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-600 transition-colors">FAQs</Link>
+                </div>
+              </div>
+            </div>
             <button
               onClick={() => scrollToSection('programs')}
               className={`transition-all duration-300 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-emerald-600 hover:after:w-full after:transition-all ${
@@ -169,26 +178,41 @@ export function Header() {
             >
               Programs
             </button>
-            <button
-              onClick={() => scrollToSection('impact')}
-              className={`transition-all duration-300 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-emerald-600 hover:after:w-full after:transition-all ${
-                scrolled 
-                  ? 'text-gray-700 hover:text-emerald-600' 
-                  : 'text-white hover:text-emerald-300 drop-shadow'
-              }`}
-            >
-              Impact
-            </button>
-            <button
-              onClick={() => scrollToSection('volunteer')}
-              className={`transition-all duration-300 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-emerald-600 hover:after:w-full after:transition-all ${
-                scrolled 
-                  ? 'text-gray-700 hover:text-emerald-600' 
-                  : 'text-white hover:text-emerald-300 drop-shadow'
-              }`}
-            >
-              Get Involved
-            </button>
+            <div className="relative group">
+              <button
+                className={`transition-all duration-300 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-emerald-600 hover:after:w-full after:transition-all flex items-center gap-1 ${
+                  scrolled 
+                    ? 'text-gray-700 hover:text-emerald-600' 
+                    : 'text-white hover:text-emerald-300 drop-shadow'
+                }`}
+              >
+                Impact <ChevronDown size={14} />
+              </button>
+              <div className="absolute left-0 mt-2 w-48 bg-white rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50 border border-gray-100 overflow-hidden">
+                <div className="py-1">
+                  <button onClick={() => scrollToSection('impact')} className="w-full text-left block px-4 py-2.5 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-600 transition-colors">Impact Stories</button>
+                  <Link to="/reports" className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-600 transition-colors">Impact Reports</Link>
+                </div>
+              </div>
+            </div>
+            <div className="relative group">
+              <button
+                className={`transition-all duration-300 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-emerald-600 hover:after:w-full after:transition-all flex items-center gap-1 ${
+                  scrolled 
+                    ? 'text-gray-700 hover:text-emerald-600' 
+                    : 'text-white hover:text-emerald-300 drop-shadow'
+                }`}
+              >
+                Get Involved <ChevronDown size={14} />
+              </button>
+              <div className="absolute left-0 mt-2 w-48 bg-white rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50 border border-gray-100 overflow-hidden">
+                <div className="py-1">
+                  <Link to="/volunteer" className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-600 transition-colors">Volunteer</Link>
+                  <Link to="/opportunities" className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-600 transition-colors">Opportunities</Link>
+                  <Link to="/partners" className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-600 transition-colors">Become a Partner</Link>
+                </div>
+              </div>
+            </div>
             <button
               onClick={() => scrollToSection('contact')}
               className={`transition-all duration-300 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-emerald-600 hover:after:w-full after:transition-all ${
@@ -241,36 +265,36 @@ export function Header() {
               <button onClick={() => scrollToSection('programs')} className="text-gray-700 hover:text-emerald-600 transition-colors text-left px-2 py-1">
                 Our Programs
               </button>
-              <button onClick={() => scrollToSection('team')} className="text-gray-700 hover:text-emerald-600 transition-colors text-left px-2 py-1">
+              <Link to="/team" className="text-gray-700 hover:text-emerald-600 transition-colors text-left px-2 py-1" onClick={() => setMobileMenuOpen(false)}>
                 Our Team
-              </button>
+              </Link>
               <button onClick={() => scrollToSection('impact')} className="text-gray-700 hover:text-emerald-600 transition-colors text-left px-2 py-1">
                 Impact Stories
               </button>
-              <button onClick={() => scrollToSection('impact-dashboard')} className="text-gray-700 hover:text-emerald-600 transition-colors text-left px-2 py-1">
-                Our Impact
-              </button>
+              <Link to="/reports" className="text-gray-700 hover:text-emerald-600 transition-colors text-left px-2 py-1" onClick={() => setMobileMenuOpen(false)}>
+                Impact Reports
+              </Link>
               <button onClick={() => scrollToSection('events')} className="text-gray-700 hover:text-emerald-600 transition-colors text-left px-2 py-1">
                 Events
               </button>
               <button onClick={() => scrollToSection('gallery')} className="text-gray-700 hover:text-emerald-600 transition-colors text-left px-2 py-1">
                 Gallery
               </button>
-              <button onClick={() => scrollToSection('partners')} className="text-gray-700 hover:text-emerald-600 transition-colors text-left px-2 py-1">
+              <Link to="/partners" className="text-gray-700 hover:text-emerald-600 transition-colors text-left px-2 py-1" onClick={() => setMobileMenuOpen(false)}>
                 Partners
-              </button>
-              <button onClick={() => scrollToSection('volunteer')} className="text-gray-700 hover:text-emerald-600 transition-colors text-left px-2 py-1">
+              </Link>
+              <Link to="/volunteer" className="text-gray-700 hover:text-emerald-600 transition-colors text-left px-2 py-1" onClick={() => setMobileMenuOpen(false)}>
                 Volunteer
-              </button>
-              <button onClick={() => scrollToSection('faq')} className="text-gray-700 hover:text-emerald-600 transition-colors text-left px-2 py-1">
+              </Link>
+              <Link to="/opportunities" className="text-gray-700 hover:text-emerald-600 transition-colors text-left px-2 py-1" onClick={() => setMobileMenuOpen(false)}>
+                Opportunities
+              </Link>
+              <Link to="/faqs" className="text-gray-700 hover:text-emerald-600 transition-colors text-left px-2 py-1" onClick={() => setMobileMenuOpen(false)}>
                 FAQ
-              </button>
-              <button onClick={() => scrollToSection('resources')} className="text-gray-700 hover:text-emerald-600 transition-colors text-left px-2 py-1">
-                Resources
-              </button>
-              <button onClick={() => scrollToSection('news')} className="text-gray-700 hover:text-emerald-600 transition-colors text-left px-2 py-1">
+              </Link>
+              <Link to="/news" className="text-gray-700 hover:text-emerald-600 transition-colors text-left px-2 py-1" onClick={() => setMobileMenuOpen(false)}>
                 News
-              </button>
+              </Link>
               <button onClick={() => scrollToSection('contact')} className="text-gray-700 hover:text-emerald-600 transition-colors text-left px-2 py-1">
                 Contact
               </button>
