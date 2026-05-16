@@ -38,6 +38,7 @@ import { OpportunitiesPage } from './components/OpportunitiesPage';
 import { projectId, publicAnonKey } from './utils/supabase/info';
 import { DonationModalProvider, DonationModal } from './components/DonationModal';
 import { CardPaymentPage } from './components/CardPaymentPage';
+import { ContactPage } from './components/ContactPage';
 
 function PageTitleManager() {
   const { pathname } = useLocation();
@@ -58,6 +59,7 @@ function PageTitleManager() {
       '/partners': 'Our Partners | Resti Kiryandongo',
       '/opportunities': 'Opportunities | Resti Kiryandongo',
       '/donate': 'Donate | Support Our Mission',
+      '/contact': 'Contact Us | Resti Kiryandongo',
     };
 
     if (pathname.startsWith('/news/')) {
@@ -165,6 +167,7 @@ export default function App() {
         <Route path="/partners" element={<MainLayout><PartnersPage /></MainLayout>} />
         <Route path="/opportunities" element={<MainLayout><OpportunitiesPage /></MainLayout>} />
         <Route path="/donate" element={<MainLayout><CardPaymentPage /></MainLayout>} />
+        <Route path="/contact" element={<ContactPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       <Toaster position="top-right" />

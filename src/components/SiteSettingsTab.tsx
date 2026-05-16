@@ -812,6 +812,81 @@ export function SiteSettingsTab({ settings: initialSettings, onUpdate }: SiteSet
                   )}
                 </div>
               </div>
+              {/* Working Hours */}
+              <div className="pt-6 border-t mt-6">
+                <label className="block text-sm font-medium text-gray-900 mb-2">Office Hours</label>
+                <input
+                  type="text"
+                  value={settings.contact?.workingHours || ''}
+                  onChange={(e) =>
+                    setSettings({
+                      ...settings,
+                      contact: { ...settings.contact, workingHours: e.target.value },
+                    })
+                  }
+                  placeholder="Monday - Friday: 8:00 AM - 5:00 PM"
+                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+
+              {/* Department Contacts */}
+              <div className="pt-6 border-t mt-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="text-sm font-medium text-gray-900">Direct Contacts / Departments</h4>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => {
+                      const departments = [...(settings.contact?.departments || [])];
+                      departments.push({ name: '', email: '' });
+                      setSettings({
+                        ...settings,
+                        contact: { ...settings.contact, departments }
+                      });
+                    }}
+                  >
+                    <Plus size={14} className="mr-1" /> Add Department
+                  </Button>
+                </div>
+                
+                <div className="space-y-3">
+                  {(settings.contact?.departments || []).map((dept: any, idx: number) => (
+                    <div key={idx} className="flex gap-3 items-start group">
+                      <input
+                        type="text"
+                        value={dept.name}
+                        onChange={(e) => {
+                          const departments = [...settings.contact.departments];
+                          departments[idx] = { ...departments[idx], name: e.target.value };
+                          setSettings({ ...settings, contact: { ...settings.contact, departments } });
+                        }}
+                        placeholder="Department Name"
+                        className="flex-1 px-3 py-1.5 text-sm border rounded-md"
+                      />
+                      <input
+                        type="email"
+                        value={dept.email}
+                        onChange={(e) => {
+                          const departments = [...settings.contact.departments];
+                          departments[idx] = { ...departments[idx], email: e.target.value };
+                          setSettings({ ...settings, contact: { ...settings.contact, departments } });
+                        }}
+                        placeholder="email@example.com"
+                        className="flex-1 px-3 py-1.5 text-sm border rounded-md"
+                      />
+                      <button 
+                        onClick={() => {
+                          const departments = settings.contact.departments.filter((_: any, i: number) => i !== idx);
+                          setSettings({ ...settings, contact: { ...settings.contact, departments } });
+                        }}
+                        className="p-2 text-gray-400 hover:text-red-500 transition-colors"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           </Card>
         </TabsContent>
