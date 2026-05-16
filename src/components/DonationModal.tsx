@@ -285,7 +285,8 @@ export function DonationModal() {
   const [bankRef, setBankRef] = useState('');
   const [mobileRef, setMobileRef] = useState('');
   const [mobileWaiting, setMobileWaiting] = useState(false);
-  const [config, setConfig] = useState(DEFAULT_CONFIG);
+   const [config, setConfig] = useState(DEFAULT_CONFIG);
+  const [logoUrl, setLogoUrl] = useState('/logo.png');
   const [donorData, setDonorData] = useState({ firstName: '', lastName: '', email: '', phone: '' });
   const shouldLockBackground = isOpen;
 
@@ -302,16 +303,36 @@ export function DonationModal() {
       .then(r => r.ok ? r.json() : null)
       .then(data => {
         if (data?.settings?.donation) setConfig(p => ({ ...p, ...data.settings.donation }));
+        if (data?.settings?.general?.logoUrl) setLogoUrl(data.settings.general.logoUrl);
       })
       .catch(() => { });
   }, [isOpen]);
 
-  // Lock page scroll while open
+  // Lock page scroll and blur background while open
   useEffect(() => {
-    if (!shouldLockBackground) return;
+    const mainContent = document.getElementById('main-content');
+    if (!shouldLockBackground) {
+      document.body.style.overflow = '';
+      if (mainContent) {
+        mainContent.style.filter = '';
+        mainContent.removeAttribute('aria-hidden');
+      }
+      return;
+    }
+
     document.body.style.overflow = 'hidden';
+    if (mainContent) {
+      mainContent.style.filter = 'blur(8px) brightness(0.9)';
+      mainContent.style.transition = 'filter 0.4s ease, brightness 0.4s ease';
+      mainContent.setAttribute('aria-hidden', 'true');
+    }
+
     return () => {
       document.body.style.overflow = '';
+      if (mainContent) {
+        mainContent.style.filter = '';
+        mainContent.removeAttribute('aria-hidden');
+      }
     };
   }, [shouldLockBackground]);
 
@@ -469,9 +490,16 @@ export function DonationModal() {
           80%  { transform: translateY(3px) scale(0.99); }
           100% { opacity: 1; transform: translateY(0) scale(1); }
         }
+        @keyframes fadeInUp {
+          from { opacity: 0; transform: translateY(15px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
         .elegant-modal {
           animation: modalEnter 0.45s cubic-bezier(0.22, 1, 0.36, 1) forwards;
           background: #ffffff;
+        }
+        .animate-fade-in-up {
+          animation: fadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
       `}</style>
 
@@ -498,36 +526,47 @@ export function DonationModal() {
 
 
         {/* ── HEADER ───────────────────────────────────────────── */}
-        <div
-          className="shrink-0 px-6 pt-8 pb-7 flex flex-col items-center relative overflow-hidden"
-          style={{ background: 'linear-gradient(160deg, #059669 0%, #065f46 100%)' }}
+         <div
+          className="shrink-0 px-6 pt-10 pb-8 flex flex-col items-center relative overflow-hidden bg-white border-b border-gray-100"
         >
+          {/* Subtle background pattern/glow */}
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-500"></div>
+          <div className="absolute -top-24 -right-24 w-48 h-48 bg-emerald-50 rounded-full blur-3xl opacity-50"></div>
+          
           {/* Close button */}
           <button
             onClick={handleClose}
-            className="absolute left-4 top-4 z-10 bg-white/20 hover:bg-white hover:text-emerald-700 text-white rounded-full p-2 transition-all duration-300 hover:rotate-90 hover:scale-110 active:scale-95 shadow-md hover:shadow-lg"
+            className="absolute right-4 top-5 z-10 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 p-2 rounded-full transition-all duration-300"
             aria-label="Close"
           >
-            <X size={20} strokeWidth={2.5} />
+            <X size={22} />
           </button>
 
-          <div className="flex flex-col items-center gap-3 text-center">
-            <div className="w-12 h-12 rounded-2xl bg-white/15 border border-white/25 flex items-center justify-center">
-              <Heart size={20} fill="white" className="text-white" />
+          <div className="flex flex-col items-center gap-4 text-center">
+            <div className="relative">
+              <div className="absolute inset-0 bg-emerald-500/10 blur-xl rounded-full scale-150"></div>
+              <img 
+                src={logoUrl} 
+                alt="Company Logo" 
+                className="h-16 w-auto object-contain relative z-10"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = '/logo.png';
+                }}
+              />
             </div>
-            <div>
-              <h2 className="text-sm font-bold text-white tracking-widest uppercase">RESTI</h2>
-              <span className="text-xs text-white/75 tracking-wide">Kiryandongo District, Uganda</span>
+            <div className="space-y-1">
+              <h2 className="text-base font-bold text-gray-900 tracking-tight">Support Our Mission</h2>
+              <p className="text-[10px] text-gray-500 font-medium uppercase tracking-[0.2em] opacity-70">Resti Kiryandongo District</p>
             </div>
           </div>
 
           {/* Step progress dots */}
           {!done && (
-            <div className="flex gap-2 mt-5">
+            <div className="flex gap-2.5 mt-7">
               {[1, 2, 3].map(i => (
                 <div
                   key={i}
-                  className={`h-1 rounded-full transition-all duration-500 ${step === i ? 'w-8 bg-white' : step > i ? 'w-3 bg-emerald-300' : 'w-3 bg-white/25'}`}
+                  className={`h-1.5 rounded-full transition-all duration-500 ${step === i ? 'w-10 bg-emerald-600' : step > i ? 'w-4 bg-emerald-200' : 'w-4 bg-gray-100'}`}
                 />
               ))}
             </div>
@@ -723,7 +762,7 @@ export function DonationModal() {
 
           {/* ── STEP 1: Amount & Frequency ───────────────────────── */}
           {!done && step === 1 && (
-            <div className="px-6 py-6 space-y-6">
+            <div className="px-6 py-6 space-y-6 animate-fade-in-up">
               {/* Frequency toggle */}
               <div className="flex gap-1 p-1 bg-gray-100 rounded-full">
                 {(['once', 'monthly'] as FreqOption[]).map(f => (
@@ -833,7 +872,7 @@ export function DonationModal() {
 
           {/* ── STEP 2: Payment Method ───────────────────────────── */}
           {!done && step === 2 && (
-            <div className="px-6 py-7 space-y-6">
+            <div className="px-6 py-7 space-y-6 animate-fade-in-up">
               <div className="text-center space-y-1">
                 <h3 className="text-sm font-semibold text-gray-900">Choose Payment Method</h3>
                 <p className="text-xs text-gray-400">Select how you'd like to donate</p>
@@ -886,10 +925,10 @@ export function DonationModal() {
                     key={id}
                     type="button"
                     onClick={() => setMethod(id)}
-                    className={`relative py-4 px-3 rounded-2xl border-2 transition-all duration-200 flex flex-col items-center gap-2 ${
+                    className={`relative py-4 px-3 rounded-2xl border-2 transition-all duration-300 flex flex-col items-center gap-2 hover:scale-[1.02] active:scale-[0.98] ${
                       span ? 'col-span-2 flex-row justify-center gap-4 py-3' : ''
                     } ${
-                      method === id ? 'border-emerald-500 bg-emerald-50' : 'border-gray-100 bg-white hover:border-gray-200'
+                      method === id ? 'border-emerald-500 bg-emerald-50 shadow-sm' : 'border-gray-100 bg-white hover:border-emerald-100 hover:shadow-sm'
                     }`}
                   >
                     <div

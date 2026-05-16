@@ -89,7 +89,7 @@ export function Hero() {
   // Preload all background images for smooth transitions
   useEffect(() => {
     setImagesLoaded(new Array(backgroundImages.length).fill(false));
-    backgroundImages.forEach((src, index) => {
+    backgroundImages.forEach((src: string, index: number) => {
       const img = new Image();
       img.src = src;
       img.onload = () => {
@@ -169,7 +169,7 @@ export function Hero() {
       <section id="home" className="relative pt-16 min-h-screen">
         {/* Background Image Carousel */}
         <div className="absolute inset-0 z-0">
-          {backgroundImages.map((image, index) => (
+          {backgroundImages.map((image: string, index: number) => (
             <div
               key={index}
               className={`absolute inset-0 transition-opacity duration-2000 ${
@@ -204,7 +204,7 @@ export function Hero() {
     <section id="home" className="relative pt-16 min-h-screen overflow-hidden">
       {/* Background Image Carousel */}
       <div className="absolute inset-0 z-0">
-        {backgroundImages.map((image, index) => (
+        {backgroundImages.map((image: string, index: number) => (
           <div
             key={index}
             className={`absolute inset-0 transition-opacity duration-2000 ${
@@ -225,7 +225,7 @@ export function Hero() {
 
       {/* Carousel Indicators */}
       <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-20 flex gap-2">
-        {backgroundImages.map((_, index) => (
+        {backgroundImages.map((_: any, index: number) => (
           <button
             key={index}
             onClick={() => setCurrentImageIndex(index)}
@@ -300,11 +300,11 @@ export function Hero() {
 
           {/* Image */}
           <div className="relative animate-[fadeInRight_0.8s_ease-out_0.4s_both]">
-            <div className="aspect-square rounded-2xl overflow-hidden shadow-2xl hover:shadow-3xl transition-shadow duration-500 ring-4 ring-white/20">
+            <div className="aspect-video sm:aspect-square rounded-3xl overflow-hidden shadow-2xl hover:shadow-3xl transition-all duration-500 ring-8 ring-white/10 group">
               <img
                 src={settings.imageUrl}
                 alt="Community empowerment"
-                className="w-full h-full object-cover hover:scale-105 transition-transform duration-700"
+                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
               />
             </div>
             <div className="absolute -bottom-6 -right-2 lg:-right-6 bg-white p-6 rounded-xl shadow-2xl hidden lg:block animate-[fadeIn_0.8s_ease-out_1s_both] hover:shadow-3xl hover:-translate-y-1 transition-all duration-300">
