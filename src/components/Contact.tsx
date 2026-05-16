@@ -3,6 +3,7 @@ import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { Mail, Phone, MapPin, Send, Loader2, MessageCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { useScrollAnimation, getStaggerDelay } from '../utils/animations';
+import { Card } from './ui/card';
 
 interface ContactSettings {
   title: string;
@@ -17,6 +18,11 @@ interface ContactSettings {
     instagram: string;
   };
   supportItems: string[];
+  locations?: {
+    name: string;
+    address: string;
+    mapUrl: string;
+  }[];
 }
 
 export function Contact() {
@@ -71,6 +77,13 @@ export function Contact() {
           'Make a donation to support our programs',
           'Partner with us on community initiatives',
           'Spread the word about our work'
+        ],
+        locations: [
+          {
+            name: 'Main Office',
+            address: 'Kiryandongo District, Uganda',
+            mapUrl: 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d15951.23456789!2d32.0!3d2.0!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMsKwMDAnMDAsLjAiTiAzMsKwMDAnMDAsLjAiRQ!5e0!3m2!1sen!2sug!4v1234567890'
+          }
         ]
       });
     } finally {
@@ -340,6 +353,41 @@ export function Contact() {
             </form>
           </div>
         </div>
+
+        {/* Map Section */}
+        {settings.locations && settings.locations.length > 0 && (
+          <div className="mt-16 animate-[fadeInUp_0.8s_ease-out_0.6s_both]">
+            <div className="text-center mb-10">
+              <h3 className="text-2xl text-gray-900 mb-2">Our Locations</h3>
+              <p className="text-gray-600">Visit us at any of our branches</p>
+            </div>
+            
+            <div className="grid lg:grid-cols-2 gap-8">
+              {settings.locations.map((loc, idx) => (
+                <Card key={idx} className="overflow-hidden border-0 shadow-xl group">
+                  <div className="p-4 bg-emerald-50 border-b border-emerald-100 flex items-center justify-between">
+                    <div>
+                      <h4 className="font-bold text-emerald-900">{loc.name}</h4>
+                      <p className="text-xs text-emerald-700 flex items-center gap-1">
+                        <MapPin size={12} /> {loc.address}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="h-[350px] relative">
+                    <iframe
+                      src={loc.mapUrl}
+                      className="w-full h-full grayscale-[0.2] contrast-[1.1] hover:grayscale-0 transition-all duration-700"
+                      style={{ border: 0 }}
+                      allowFullScreen={true}
+                      loading="lazy"
+                      referrerPolicy="no-referrer-when-downgrade"
+                    ></iframe>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </section>
   );
