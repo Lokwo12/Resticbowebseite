@@ -177,11 +177,13 @@ export function Header() {
               >
                 About <ChevronDown size={14} />
               </button>
-              <div className="absolute left-0 mt-2 w-48 bg-white rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50 border border-gray-100 overflow-hidden">
-                <div className="py-1">
-                  <button onClick={() => scrollToSection('about')} className="w-full text-left block px-4 py-2.5 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-600 transition-colors">About Us</button>
-                  <Link to="/team" className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-600 transition-colors">Our Team</Link>
-                  <Link to="/faqs" className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-600 transition-colors">FAQs</Link>
+              <div className="absolute left-0 top-full w-48 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50 pt-2">
+                <div className="bg-white rounded-lg shadow-lg border border-gray-100 overflow-hidden">
+                  <div className="py-1">
+                    <button onClick={() => scrollToSection('about')} className="w-full text-left block px-4 py-2.5 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-600 transition-colors">About Us</button>
+                    <Link to="/team" className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-600 transition-colors">Our Team</Link>
+                    <Link to="/faqs" className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-600 transition-colors">FAQs</Link>
+                  </div>
                 </div>
               </div>
             </div>
@@ -205,10 +207,12 @@ export function Header() {
               >
                 Impact <ChevronDown size={14} />
               </button>
-              <div className="absolute left-0 mt-2 w-48 bg-white rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50 border border-gray-100 overflow-hidden">
-                <div className="py-1">
-                  <button onClick={() => scrollToSection('impact')} className="w-full text-left block px-4 py-2.5 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-600 transition-colors">Impact Stories</button>
-                  <Link to="/reports" className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-600 transition-colors">Impact Reports</Link>
+              <div className="absolute left-0 top-full w-48 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50 pt-2">
+                <div className="bg-white rounded-lg shadow-lg border border-gray-100 overflow-hidden">
+                  <div className="py-1">
+                    <button onClick={() => scrollToSection('impact')} className="w-full text-left block px-4 py-2.5 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-600 transition-colors">Impact Stories</button>
+                    <Link to="/reports" className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-600 transition-colors">Impact Reports</Link>
+                  </div>
                 </div>
               </div>
             </div>
@@ -222,11 +226,13 @@ export function Header() {
               >
                 Get Involved <ChevronDown size={14} />
               </button>
-              <div className="absolute left-0 mt-2 w-48 bg-white rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50 border border-gray-100 overflow-hidden">
-                <div className="py-1">
-                  <Link to="/volunteer" className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-600 transition-colors">Volunteer</Link>
-                  <Link to="/opportunities" className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-600 transition-colors">Opportunities</Link>
-                  <Link to="/partners" className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-600 transition-colors">Become a Partner</Link>
+              <div className="absolute left-0 top-full w-48 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50 pt-2">
+                <div className="bg-white rounded-lg shadow-lg border border-gray-100 overflow-hidden">
+                  <div className="py-1">
+                    <Link to="/volunteer" className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-600 transition-colors">Volunteer</Link>
+                    <Link to="/opportunities" className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-600 transition-colors">Opportunities</Link>
+                    <Link to="/partners" className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-600 transition-colors">Become a Partner</Link>
+                  </div>
                 </div>
               </div>
             </div>
