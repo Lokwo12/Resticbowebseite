@@ -236,8 +236,8 @@ export function Header() {
                 </div>
               </div>
             </div>
-            <button
-              onClick={() => scrollToSection('contact')}
+            <Link
+              to="/contact"
               className={`transition-all duration-300 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-emerald-600 hover:after:w-full after:transition-all ${
                 scrolled 
                   ? 'text-gray-700 hover:text-emerald-600' 
@@ -245,7 +245,7 @@ export function Header() {
               }`}
             >
               Contact
-            </button>
+            </Link>
             <button
               onClick={openDonationModal}
               className={`px-6 py-2 rounded-lg transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 ${
@@ -318,9 +318,9 @@ export function Header() {
               <Link to="/news" className="text-gray-700 hover:text-emerald-600 transition-colors text-left px-2 py-1" onClick={() => setMobileMenuOpen(false)}>
                 News
               </Link>
-              <button onClick={() => scrollToSection('contact')} className="text-gray-700 hover:text-emerald-600 transition-colors text-left px-2 py-1">
+              <Link to="/contact" className="text-gray-700 hover:text-emerald-600 transition-colors text-left px-2 py-1" onClick={() => setMobileMenuOpen(false)}>
                 Contact
-              </button>
+              </Link>
               <button onClick={openDonationModal} className="bg-emerald-600 text-white px-6 py-2 rounded-lg hover:bg-emerald-700 transition-colors mt-2">
                 Donate Now
               </button>

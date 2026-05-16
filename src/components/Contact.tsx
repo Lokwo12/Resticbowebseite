@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
-import { Mail, Phone, MapPin, Send, Loader2, MessageCircle } from 'lucide-react';
+import { Mail, Phone, MapPin, Send, Loader2, MessageCircle, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import { useScrollAnimation, getStaggerDelay } from '../utils/animations';
 import { Card } from './ui/card';
@@ -22,6 +22,11 @@ interface ContactSettings {
     name: string;
     address: string;
     mapUrl: string;
+  }[];
+  workingHours?: string;
+  departments?: {
+    name: string;
+    email: string;
   }[];
 }
 
@@ -84,6 +89,12 @@ export function Contact() {
             address: 'Kiryandongo District, Uganda',
             mapUrl: 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d15951.23456789!2d32.0!3d2.0!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMsKwMDAnMDAsLjAiTiAzMsKwMDAnMDAsLjAiRQ!5e0!3m2!1sen!2sug!4v1234567890'
           }
+        ],
+        workingHours: 'Monday - Friday: 8:00 AM - 5:00 PM',
+        departments: [
+          { name: 'General Inquiries', email: 'info@restikirya.org' },
+          { name: 'Partnerships', email: 'partners@restikirya.org' },
+          { name: 'Volunteering', email: 'volunteer@restikirya.org' }
         ]
       });
     } finally {
@@ -224,9 +235,9 @@ export function Contact() {
               Chat with us on WhatsApp
             </a>
 
-            <div className="bg-white p-6 rounded-xl">
+            <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
               <h3 className="text-xl text-gray-900 mb-4">Ways to Support</h3>
-              <ul className="space-y-3 text-gray-700">
+              <ul className="space-y-3 text-gray-700 mb-6">
                 {settings.supportItems.map((item, index) => (
                   <li key={index} className="flex items-start gap-2">
                     <span className="text-emerald-600 mt-1">✓</span>
@@ -234,6 +245,34 @@ export function Contact() {
                   </li>
                 ))}
               </ul>
+
+              {settings.workingHours && (
+                <div className="pt-6 border-t border-gray-100">
+                  <h4 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-3">Office Hours</h4>
+                  <div className="flex items-center gap-3 text-gray-600 bg-gray-50 p-3 rounded-lg">
+                    <div className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600">
+                      <Clock size={16} />
+                    </div>
+                    <span className="text-sm">{settings.workingHours}</span>
+                  </div>
+                </div>
+              )}
+
+              {settings.departments && settings.departments.length > 0 && (
+                <div className="pt-6 mt-6 border-t border-gray-100">
+                  <h4 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-3">Direct Contacts</h4>
+                  <div className="space-y-3">
+                    {settings.departments.map((dept, idx) => (
+                      <div key={idx} className="flex flex-col">
+                        <span className="text-xs text-gray-500">{dept.name}</span>
+                        <a href={`mailto:${dept.email}`} className="text-sm text-emerald-600 hover:underline font-medium">
+                          {dept.email}
+                        </a>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
