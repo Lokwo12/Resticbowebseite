@@ -54,64 +54,101 @@ export function ContactPage() {
         </div>
         
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-white">
+          {/* Breadcrumbs */}
+          <nav className="flex justify-center items-center gap-2 mb-8 text-emerald-200/80 text-sm animate-[fadeInDown_0.6s_ease-out]">
+            <a href="/" className="hover:text-white transition-colors">Home</a>
+            <span className="text-emerald-500">/</span>
+            <span className="text-white font-medium">Contact</span>
+          </nav>
+
           <h1 className="text-4xl md:text-6xl font-bold mb-6 animate-[fadeInDown_0.8s_ease-out]">
             {settings?.title || 'Get In Touch'}
           </h1>
           <p className="text-xl text-emerald-50 max-w-2xl mx-auto animate-[fadeInUp_0.8s_ease-out]">
             {settings?.subtitle || "Have questions or want to support our mission? Reach out to us. We'd love to hear from you."}
           </p>
+
+          {/* Scroll Indicator */}
+          <div className="mt-16 animate-bounce opacity-50">
+            <div className="w-1 h-12 rounded-full bg-gradient-to-b from-white/80 to-transparent mx-auto"></div>
+          </div>
         </div>
       </section>
 
       {/* Main Contact Content */}
-      <main className="-mt-16 relative z-20 pb-32">
+      <main className="-mt-16 relative z-20 pb-20">
         <Contact />
       </main>
 
       {/* Map Section Header */}
-      <section className="bg-white pt-24 pb-12">
+      <section className="bg-white pt-16 pb-10">
         <div className="max-w-7xl mx-auto px-4 text-center">
           <span className="text-emerald-600 font-bold tracking-widest uppercase text-xs">Location</span>
           <h2 className="text-4xl font-bold text-gray-900 mt-3">Find Our Office</h2>
         </div>
       </section>
 
-      {/* Full Width Map Footer */}
-      <section className="w-full h-[550px] bg-gray-100 relative shadow-inner overflow-hidden">
-        <iframe 
-          src={primaryLocation.mapUrl}
-          className="w-full h-full border-0"
-          allowFullScreen
-          loading="lazy"
-          referrerPolicy="no-referrer-when-downgrade"
-          title={primaryLocation.name}
-        ></iframe>
-        
-        {/* Floating Address Card on Map - Enhanced Visibility */}
-        <div className="absolute top-1/2 -translate-y-1/2 left-10 z-10 hidden md:block">
-          <div className="bg-slate-900/95 backdrop-blur-xl p-8 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.3)] border border-white/10 max-w-sm transform hover:scale-105 transition-transform duration-500">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-400 text-xs font-bold uppercase tracking-wider mb-4 border border-emerald-500/30">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-              Visit Us
+      {/* Contained Map Section */}
+      <section className="max-w-7xl mx-auto px-4 pb-24">
+        <div className="relative h-[550px] bg-gray-100 rounded-[2.5rem] shadow-[0_30px_60px_-15px_rgba(0,0,0,0.2)] overflow-hidden border border-gray-100">
+          <iframe 
+            src={primaryLocation.mapUrl}
+            className="w-full h-full border-0"
+            allowFullScreen
+            loading="lazy"
+            referrerPolicy="no-referrer-when-downgrade"
+            title={primaryLocation.name}
+          ></iframe>
+          
+          {/* Floating Address Card on Map - Enhanced Visibility */}
+          <div className="absolute top-1/2 -translate-y-1/2 left-10 z-10 hidden md:block">
+            <div className="bg-slate-900/95 backdrop-blur-xl p-8 rounded-[2rem] shadow-2xl border border-white/10 max-w-sm transform hover:scale-105 transition-transform duration-500">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-400 text-xs font-bold uppercase tracking-wider mb-4 border border-emerald-500/30">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                Visit Us
+              </div>
+              <h3 className="text-2xl font-bold text-white mb-2">{primaryLocation.name}</h3>
+              <p className="text-gray-300 mb-6 leading-relaxed text-sm">
+                {primaryLocation.address}
+              </p>
+              <a 
+                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(primaryLocation.address)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-3 w-full py-4 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl transition-all shadow-lg shadow-emerald-600/20 group"
+              >
+                <MapPin size={20} className="group-hover:bounce" />
+                <span>Get Directions</span>
+              </a>
             </div>
-            <h3 className="text-2xl font-bold text-white mb-3">{primaryLocation.name}</h3>
-            <p className="text-gray-300 mb-6 leading-relaxed">
-              {primaryLocation.address}
-            </p>
-            <a 
-              href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(primaryLocation.address)}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center justify-center gap-3 w-full py-4 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-2xl transition-all shadow-lg shadow-emerald-600/20 group"
-            >
-              <MapPin size={20} className="group-hover:bounce" />
-              <span>Get Directions</span>
-            </a>
           </div>
         </div>
       </section>
 
-      <div className="py-32"></div>
+      {/* Mobile-only Address Card */}
+      <section className="md:hidden mx-4 -mt-20 mb-20 relative z-30">
+        <div className="bg-slate-900 p-8 rounded-[2rem] shadow-2xl border border-white/10">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-400 text-xs font-bold uppercase tracking-wider mb-4 border border-emerald-500/30">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            Our Headquarters
+          </div>
+          <h3 className="text-2xl font-bold text-white mb-3">{primaryLocation.name}</h3>
+          <p className="text-gray-300 mb-6 leading-relaxed">
+            {primaryLocation.address}
+          </p>
+          <a 
+            href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(primaryLocation.address)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center gap-3 w-full py-4 bg-emerald-600 text-white font-bold rounded-2xl shadow-lg shadow-emerald-900/20"
+          >
+            <MapPin size={20} />
+            <span>Get Directions</span>
+          </a>
+        </div>
+      </section>
+
+      <div className="py-20 md:py-32 bg-white"></div>
 
       <Newsletter />
       <Footer />

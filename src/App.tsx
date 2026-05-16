@@ -132,7 +132,7 @@ function MainLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen flex flex-col bg-white overflow-x-hidden w-full">
       <Header />
-      <main className="flex-grow w-full overflow-x-hidden pt-20">
+      <main className="flex-grow w-full overflow-x-hidden">
         {children}
       </main>
       <Footer />

@@ -308,13 +308,12 @@ export function DonationModal() {
       .catch(() => { });
   }, [isOpen]);
 
-  // Lock page scroll and blur background while open
+  // Lock page scroll while open (Removed blur effect as per request)
   useEffect(() => {
     const mainContent = document.getElementById('main-content');
     if (!shouldLockBackground) {
       document.body.style.overflow = '';
       if (mainContent) {
-        mainContent.style.filter = '';
         mainContent.removeAttribute('aria-hidden');
       }
       return;
@@ -322,15 +321,12 @@ export function DonationModal() {
 
     document.body.style.overflow = 'hidden';
     if (mainContent) {
-      mainContent.style.filter = 'blur(8px) brightness(0.9)';
-      mainContent.style.transition = 'filter 0.4s ease, brightness 0.4s ease';
       mainContent.setAttribute('aria-hidden', 'true');
     }
 
     return () => {
       document.body.style.overflow = '';
       if (mainContent) {
-        mainContent.style.filter = '';
         mainContent.removeAttribute('aria-hidden');
       }
     };
@@ -503,9 +499,9 @@ export function DonationModal() {
         }
       `}</style>
 
-      {/* Backdrop — Modern glassmorphism blur */}
+      {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black/40 backdrop-blur-md transition-opacity duration-500 cursor-pointer"
+        className="fixed inset-0 bg-black/40 transition-opacity duration-500 cursor-pointer"
         onClick={handleClose}
       />
 
@@ -531,7 +527,7 @@ export function DonationModal() {
         >
           {/* Subtle background pattern/glow */}
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-500"></div>
-          <div className="absolute -top-24 -right-24 w-48 h-48 bg-emerald-50 rounded-full blur-3xl opacity-50"></div>
+          <div className="absolute -top-24 -right-24 w-48 h-48 bg-emerald-50 rounded-full opacity-50"></div>
           
           {/* Close button */}
           <button
@@ -544,7 +540,7 @@ export function DonationModal() {
 
           <div className="flex flex-col items-center gap-4 text-center">
             <div className="relative">
-              <div className="absolute inset-0 bg-emerald-500/10 blur-xl rounded-full scale-150"></div>
+              <div className="absolute inset-0 bg-emerald-500/10 rounded-full scale-150"></div>
               <img 
                 src={logoUrl} 
                 alt="Company Logo" 
