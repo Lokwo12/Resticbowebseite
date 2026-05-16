@@ -720,6 +720,98 @@ export function SiteSettingsTab({ settings: initialSettings, onUpdate }: SiteSet
                   />
                 </div>
               </div>
+
+              {/* Branch Locations */}
+              <div className="pt-6 border-t">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-900">Branch Locations</h4>
+                    <p className="text-xs text-gray-500">Add branch names, addresses and Google Maps embed links</p>
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => {
+                      const locations = [...(settings.contact?.locations || [])];
+                      locations.push({ name: 'New Branch', address: '', mapUrl: '' });
+                      setSettings({
+                        ...settings,
+                        contact: { ...settings.contact, locations }
+                      });
+                    }}
+                  >
+                    <Plus size={14} className="mr-1" /> Add Branch
+                  </Button>
+                </div>
+                
+                <div className="space-y-4">
+                  {(settings.contact?.locations || []).map((loc: any, idx: number) => (
+                    <div key={idx} className="p-4 border rounded-lg bg-gray-50 relative group">
+                      <button 
+                        onClick={() => {
+                          const locations = settings.contact.locations.filter((_: any, i: number) => i !== idx);
+                          setSettings({
+                            ...settings,
+                            contact: { ...settings.contact, locations }
+                          });
+                        }}
+                        className="absolute top-2 right-2 p-1 text-gray-400 hover:text-red-500 transition-colors"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                      
+                      <div className="grid md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs text-gray-600 mb-1">Branch Name</label>
+                          <input
+                            type="text"
+                            value={loc.name}
+                            onChange={(e) => {
+                              const locations = [...settings.contact.locations];
+                              locations[idx] = { ...locations[idx], name: e.target.value };
+                              setSettings({ ...settings, contact: { ...settings.contact, locations } });
+                            }}
+                            className="w-full px-3 py-1.5 text-sm border rounded-md focus:ring-1 focus:ring-emerald-500"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs text-gray-600 mb-1">Address</label>
+                          <input
+                            type="text"
+                            value={loc.address}
+                            onChange={(e) => {
+                              const locations = [...settings.contact.locations];
+                              locations[idx] = { ...locations[idx], address: e.target.value };
+                              setSettings({ ...settings, contact: { ...settings.contact, locations } });
+                            }}
+                            className="w-full px-3 py-1.5 text-sm border rounded-md focus:ring-1 focus:ring-emerald-500"
+                          />
+                        </div>
+                      </div>
+                      <div className="mt-3">
+                        <label className="block text-xs text-gray-600 mb-1">Google Maps Embed URL</label>
+                        <input
+                          type="text"
+                          value={loc.mapUrl}
+                          onChange={(e) => {
+                            const locations = [...settings.contact.locations];
+                            locations[idx] = { ...locations[idx], mapUrl: e.target.value };
+                            setSettings({ ...settings, contact: { ...settings.contact, locations } });
+                          }}
+                          placeholder="https://www.google.com/maps/embed?..."
+                          className="w-full px-3 py-1.5 text-sm border rounded-md focus:ring-1 focus:ring-emerald-500"
+                        />
+                        <p className="text-[10px] text-gray-400 mt-1">To get this: Google Maps → Share → Embed a map → copy 'src' value from iframe.</p>
+                      </div>
+                    </div>
+                  ))}
+                  {(settings.contact?.locations || []).length === 0 && (
+                    <div className="text-center py-6 border-2 border-dashed rounded-lg text-gray-400 text-sm">
+                      No branch locations added.
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           </Card>
         </TabsContent>
