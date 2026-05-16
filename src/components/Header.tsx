@@ -1,8 +1,9 @@
 import { Menu, X, Heart, ChevronRight, ChevronDown } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 const logo = '/logo.png';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
+import { useDonationModal } from './DonationModal';
 
 interface SiteSettings {
   general: { siteName: string; tagline: string; logoUrl: string; };
@@ -11,20 +12,32 @@ interface SiteSettings {
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { open: openDonationModal } = useDonationModal();
   const [settings, setSettings] = useState<SiteSettings>({
     general: { siteName: 'Resti Kiryandongo', tagline: 'Community Based Organization', logoUrl: logo },
     header: { announcementText: 'We are looking for volunteers in Kiryandongo', announcementLink: 'contact', showAnnouncement: true }
   });
   const [scrolled, setScrolled] = useState(false);
+  const [showHeader, setShowHeader] = useState(true);
+  const [lastScrollY, setLastScrollY] = useState(0);
   const [activeSection, setActiveSection] = useState('home');
 
   useEffect(() => {
     const handleScroll = () => {
-      setScrolled(window.scrollY > 20);
+      const currentScrollY = window.scrollY;
+      setScrolled(currentScrollY > 20);
       
+      // Hide on scroll down, show on scroll up
+      if (currentScrollY > lastScrollY && currentScrollY > 100) {
+        setShowHeader(false);
+      } else {
+        setShowHeader(true);
+      }
+      setLastScrollY(currentScrollY);
+
       // Track active section
       const sections = ['home', 'about', 'programs', 'impact', 'volunteer', 'contact'];
-      const scrollPosition = window.scrollY + 100;
+      const scrollPosition = currentScrollY + 100;
       
       for (const section of sections) {
         const element = document.getElementById(section);
@@ -40,9 +53,9 @@ export function Header() {
       }
     };
     
-    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  }, [lastScrollY]);
 
   useEffect(() => {
     fetchSettings();
@@ -100,10 +113,14 @@ export function Header() {
   const showAnnouncement = settings.header?.showAnnouncement !== false;
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50">
+    <header 
+      className={`fixed top-0 left-0 right-0 z-50 transition-transform duration-500 ease-in-out ${
+        showHeader || mobileMenuOpen ? 'translate-y-0' : '-translate-y-full'
+      }`}
+    >
       {/* Announcement Bar */}
       {showAnnouncement && (
-      <div className="announcement-bar text-white text-xs font-medium py-1.5 text-center flex items-center justify-center gap-2">
+      <div className="announcement-bar text-white text-xs font-medium py-1.5 text-center flex items-center justify-center gap-2 px-4 flex-wrap">
         <span>🌍 {announcementText}</span>
         <button
           onClick={() => scrollToSection(announcementLink)}
@@ -124,8 +141,8 @@ export function Header() {
             <button onClick={() => scrollToSection('home')} className="flex items-center gap-3 hover:opacity-90 transition-all duration-300 group">
               <img 
                 src={getLogoUrl()} 
-                alt={`${settings.siteName} Logo`} 
-                className={`w-auto transition-all duration-300 group-hover:scale-105 ${scrolled ? 'h-12 sm:h-14' : 'h-14 sm:h-16'}`} 
+                alt={`${settings.general?.siteName || 'Resti Kiryandongo'} Logo`} 
+                className={`w-auto max-w-[160px] object-contain transition-all duration-300 group-hover:scale-105 ${scrolled ? 'h-12 sm:h-14' : 'h-14 sm:h-16'}`} 
               />
               <div className="hidden sm:block">
                 <h1 className={`leading-tight group-hover:text-emerald-600 transition-colors ${
@@ -224,7 +241,7 @@ export function Header() {
               Contact
             </button>
             <button
-              onClick={() => scrollToSection('donate')}
+              onClick={openDonationModal}
               className={`px-6 py-2 rounded-lg transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 ${
                 scrolled
                   ? 'bg-emerald-600 text-white hover:bg-emerald-700'
@@ -298,7 +315,7 @@ export function Header() {
               <button onClick={() => scrollToSection('contact')} className="text-gray-700 hover:text-emerald-600 transition-colors text-left px-2 py-1">
                 Contact
               </button>
-              <button onClick={() => scrollToSection('donate')} className="bg-emerald-600 text-white px-6 py-2 rounded-lg hover:bg-emerald-700 transition-colors mt-2">
+              <button onClick={openDonationModal} className="bg-emerald-600 text-white px-6 py-2 rounded-lg hover:bg-emerald-700 transition-colors mt-2">
                 Donate Now
               </button>
             </div>

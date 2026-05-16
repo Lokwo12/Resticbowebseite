@@ -380,7 +380,250 @@ app.post('/make-server-2a4be611/donations', async (c) => {
   }
 })
 
-// Get donation statistics
+// ── Mobile Money STK Push helpers ────────────────────────────────────────────
+
+async function getMtnAccessToken(): Promise<string> {
+  const subscriptionKey = Deno.env.get('MTN_MOMO_SUBSCRIPTION_KEY')!
+  const apiUser = Deno.env.get('MTN_MOMO_API_USER')!
+  const apiKey = Deno.env.get('MTN_MOMO_API_KEY')!
+  const environment = Deno.env.get('MTN_MOMO_ENVIRONMENT') ?? 'sandbox'
+  const baseUrl = environment === 'production'
+    ? 'https://proxy.momoapi.mtn.com'
+    : 'https://sandbox.momodeveloper.mtn.com'
+  const credentials = btoa(`${apiUser}:${apiKey}`)
+  const res = await fetch(`${baseUrl}/collection/token/`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Basic ${credentials}`,
+      'Ocp-Apim-Subscription-Key': subscriptionKey,
+    },
+  })
+  if (!res.ok) throw new Error(`MTN auth failed: ${res.status} ${await res.text()}`)
+  const data = await res.json()
+  return data.access_token as string
+}
+
+async function getAirtelAccessToken(): Promise<string> {
+  const clientId = Deno.env.get('AIRTEL_CLIENT_ID')!
+  const clientSecret = Deno.env.get('AIRTEL_CLIENT_SECRET')!
+  const environment = Deno.env.get('AIRTEL_ENVIRONMENT') ?? 'sandbox'
+  const baseUrl = environment === 'production'
+    ? 'https://openapi.airtel.africa'
+    : 'https://openapiuat.airtel.africa'
+  const res = await fetch(`${baseUrl}/auth/oauth2/token`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      client_id: clientId,
+      client_secret: clientSecret,
+      grant_type: 'client_credentials',
+    }),
+  })
+  if (!res.ok) throw new Error(`Airtel auth failed: ${res.status} ${await res.text()}`)
+  const data = await res.json()
+  return data.access_token as string
+}
+
+// ── Initiate mobile money STK push ───────────────────────────────────────────
+app.post('/make-server-2a4be611/mobile-payment/initiate', async (c) => {
+  try {
+    const { provider, phone, amount, donorName, donorEmail, currency } = await c.req.json()
+
+    if (!provider || !phone || !amount) {
+      return c.json({ error: 'provider, phone, and amount are required' }, 400)
+    }
+    if (provider !== 'mtn' && provider !== 'airtel') {
+      return c.json({ error: 'provider must be "mtn" or "airtel"' }, 400)
+    }
+
+    const referenceId = crypto.randomUUID()
+    const cleanPhone = String(phone).replace(/\D/g, '')
+
+    if (provider === 'mtn') {
+      const subscriptionKey = Deno.env.get('MTN_MOMO_SUBSCRIPTION_KEY')
+      if (!subscriptionKey) return c.json({ error: 'MTN Mobile Money is not configured on this server. Please contact the admin.' }, 503)
+
+      const environment = Deno.env.get('MTN_MOMO_ENVIRONMENT') ?? 'sandbox'
+      const baseUrl = environment === 'production'
+        ? 'https://proxy.momoapi.mtn.com'
+        : 'https://sandbox.momodeveloper.mtn.com'
+      const mtnCurrency = Deno.env.get('MTN_CURRENCY') ?? 'UGX'
+
+      const accessToken = await getMtnAccessToken()
+      const res = await fetch(`${baseUrl}/collection/v1_0/requesttopay`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'X-Reference-Id': referenceId,
+          'X-Target-Environment': environment,
+          'Ocp-Apim-Subscription-Key': subscriptionKey,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          amount: String(amount),
+          currency: mtnCurrency,
+          externalId: referenceId,
+          payer: { partyIdType: 'MSISDN', partyId: cleanPhone },
+          payerMessage: 'Donation to Resti Kiryandongo CBO',
+          payeeNote: `Donation ref: ${referenceId}`,
+        }),
+      })
+      // 202 Accepted = successfully queued
+      if (res.status !== 202 && !res.ok) {
+        const errText = await res.text()
+        console.error('MTN requestToPay error:', res.status, errText)
+        return c.json({ error: 'MTN payment initiation failed. Check the phone number and try again.' }, 500)
+      }
+
+    } else {
+      // Airtel
+      const clientId = Deno.env.get('AIRTEL_CLIENT_ID')
+      if (!clientId) return c.json({ error: 'Airtel Money is not configured on this server. Please contact the admin.' }, 503)
+
+      const environment = Deno.env.get('AIRTEL_ENVIRONMENT') ?? 'sandbox'
+      const baseUrl = environment === 'production'
+        ? 'https://openapi.airtel.africa'
+        : 'https://openapiuat.airtel.africa'
+      const country = Deno.env.get('AIRTEL_COUNTRY') ?? 'UG'
+      const airtelCurrency = Deno.env.get('AIRTEL_CURRENCY') ?? 'UGX'
+
+      const accessToken = await getAirtelAccessToken()
+      const res = await fetch(`${baseUrl}/merchant/v2/payments/`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+          'X-Country': country,
+          'X-Currency': airtelCurrency,
+        },
+        body: JSON.stringify({
+          reference: 'Donation to Resti Kiryandongo CBO',
+          subscriber: { country, currency: airtelCurrency, msisdn: cleanPhone },
+          transaction: { amount: String(amount), country, currency: airtelCurrency, id: referenceId },
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        console.error('Airtel payment error:', data)
+        return c.json({ error: 'Airtel payment initiation failed. Check the phone number and try again.' }, 500)
+      }
+    }
+
+    // Record pending donation
+    const donationId = `donation:${Date.now()}`
+    await kv.set(donationId, {
+      amount,
+      currency: currency ?? 'USD',
+      paymentMethod: provider === 'mtn' ? 'mtn_mobile_money' : 'airtel_money',
+      donorName: donorName ?? 'Anonymous',
+      donorEmail: donorEmail ?? '',
+      donorPhone: cleanPhone,
+      transactionId: referenceId,
+      message: `${provider.toUpperCase()} Mobile Money STK push – ref: ${referenceId}`,
+      timestamp: new Date().toISOString(),
+      status: 'pending',
+    })
+
+    return c.json({ success: true, referenceId })
+  } catch (error) {
+    console.error('Mobile payment initiation error:', error)
+    return c.json({ error: 'Payment initiation failed', details: String(error) }, 500)
+  }
+})
+
+// ── Poll mobile money payment status ─────────────────────────────────────────
+app.get('/make-server-2a4be611/mobile-payment/status/:referenceId', async (c) => {
+  try {
+    const referenceId = c.req.param('referenceId')
+    const provider = c.req.query('provider')
+
+    if (!provider || !referenceId) {
+      return c.json({ error: 'provider query param and referenceId are required' }, 400)
+    }
+
+    let paymentStatus = 'PENDING'
+
+    if (provider === 'mtn') {
+      const subscriptionKey = Deno.env.get('MTN_MOMO_SUBSCRIPTION_KEY')
+      if (!subscriptionKey) return c.json({ error: 'MTN not configured' }, 503)
+      const environment = Deno.env.get('MTN_MOMO_ENVIRONMENT') ?? 'sandbox'
+      const baseUrl = environment === 'production'
+        ? 'https://proxy.momoapi.mtn.com'
+        : 'https://sandbox.momodeveloper.mtn.com'
+      const accessToken = await getMtnAccessToken()
+      const res = await fetch(`${baseUrl}/collection/v1_0/requesttopay/${referenceId}`, {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'X-Target-Environment': environment,
+          'Ocp-Apim-Subscription-Key': subscriptionKey,
+        },
+      })
+      if (res.ok) {
+        const data = await res.json()
+        paymentStatus = data.status ?? 'PENDING' // 'PENDING' | 'SUCCESSFUL' | 'FAILED'
+      }
+
+    } else if (provider === 'airtel') {
+      const clientId = Deno.env.get('AIRTEL_CLIENT_ID')
+      if (!clientId) return c.json({ error: 'Airtel not configured' }, 503)
+      const environment = Deno.env.get('AIRTEL_ENVIRONMENT') ?? 'sandbox'
+      const baseUrl = environment === 'production'
+        ? 'https://openapi.airtel.africa'
+        : 'https://openapiuat.airtel.africa'
+      const country = Deno.env.get('AIRTEL_COUNTRY') ?? 'UG'
+      const accessToken = await getAirtelAccessToken()
+      const res = await fetch(`${baseUrl}/standard/v1/payments/${referenceId}`, {
+        headers: { 'Authorization': `Bearer ${accessToken}`, 'X-Country': country },
+      })
+      if (res.ok) {
+        const data = await res.json()
+        // Airtel statuses: 'TS' = successful, 'TF' = failed, 'TIP' = in progress
+        const s: string = data?.data?.transaction?.status ?? 'TIP'
+        paymentStatus = s === 'TS' ? 'SUCCESSFUL' : s === 'TF' ? 'FAILED' : 'PENDING'
+      }
+    }
+
+    // On confirmed success, mark donation complete and send thank-you email (once)
+    if (paymentStatus === 'SUCCESSFUL') {
+      const donations = await kv.getByPrefix('donation:')
+      const match = donations.find(d => d.value?.transactionId === referenceId && d.value?.status === 'pending')
+      if (match) {
+        await kv.set(match.key, { ...match.value, status: 'completed' })
+        if (match.value.donorEmail) {
+          await sendEmail(
+            match.value.donorEmail,
+            'Thank You for Your Donation – Resti Kiryandongo CBO',
+            `
+              <h2>Payment Confirmed! 🙏</h2>
+              <p>Dear ${match.value.donorName},</p>
+              <p>Your ${provider === 'mtn' ? 'MTN Mobile Money' : 'Airtel Money'} donation of
+              <strong>${match.value.currency} ${match.value.amount}</strong> has been confirmed.</p>
+              <p><strong>Reference:</strong> ${referenceId}</p>
+              <p>Thank you for supporting Resti Kiryandongo CBO.</p>
+            `,
+          )
+          await sendEmail(
+            'admin@restikirya.org',
+            `Mobile Money Donation Confirmed: ${match.value.currency} ${match.value.amount}`,
+            `
+              <h2>Mobile Money Donation Confirmed</h2>
+              <p><strong>Donor:</strong> ${match.value.donorName}</p>
+              <p><strong>Phone:</strong> ${match.value.donorPhone}</p>
+              <p><strong>Amount:</strong> ${match.value.currency} ${match.value.amount}</p>
+              <p><strong>Provider:</strong> ${provider.toUpperCase()}</p>
+              <p><strong>Reference:</strong> ${referenceId}</p>
+            `,
+          )
+        }
+      }
+    }
+
+    return c.json({ status: paymentStatus, referenceId })
+  } catch (error) {
+    console.error('Mobile payment status error:', error)
+    return c.json({ error: 'Failed to get payment status', details: String(error) }, 500)
+  }
+})
 app.get('/make-server-2a4be611/donation-stats', async (c) => {
   try {
     const donations = await kv.getByPrefix('donation:')

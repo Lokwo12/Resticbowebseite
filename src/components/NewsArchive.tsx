@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Newspaper, Calendar, Tag, ArrowRight, Clock } from 'lucide-react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
@@ -124,7 +124,7 @@ export function NewsArchive() {
   return (
     <div className="bg-gray-50 min-h-screen">
       {/* Premium Hero Banner */}
-      <div className="bg-gradient-to-r from-emerald-600 to-emerald-800 text-white pt-32 pb-24">
+      <div className="bg-gradient-to-r from-emerald-600 to-emerald-800 text-white pt-12 sm:pt-20 pb-12 sm:pb-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-white/10 backdrop-blur-md rounded-full mb-6">
             <Newspaper className="text-white" size={32} />
@@ -186,7 +186,7 @@ export function NewsArchive() {
                           <img
                             src={article.image}
                             alt={article.title}
-                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                            className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                             onError={(e) => {
                               e.currentTarget.style.display = 'none';
                               e.currentTarget.nextElementSibling?.classList.remove('hidden');

@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
-import { toast } from 'sonner@2.0.3';
-import { Save, RefreshCw, Plus, Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
+import { Save, RefreshCw, Plus, Trash2, Upload } from 'lucide-react';
 import { Card } from './ui/card';
 import { Button } from './ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
@@ -15,12 +15,36 @@ export function SiteSettingsTab({ settings: initialSettings, onUpdate }: SiteSet
   const [settings, setSettings] = useState(initialSettings || {});
   const [saving, setSaving] = useState(false);
   const [activeSection, setActiveSection] = useState('general');
+  const [logoUploading, setLogoUploading] = useState(false);
 
   useEffect(() => {
     if (initialSettings) {
       setSettings(initialSettings);
     }
   }, [initialSettings]);
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setLogoUploading(true);
+    try {
+      const formDataObj = new FormData();
+      formDataObj.append('file', file);
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/upload-image`,
+        { method: 'POST', headers: { Authorization: `Bearer ${publicAnonKey}` }, body: formDataObj }
+      );
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Upload failed');
+      setSettings((prev: any) => ({ ...prev, general: { ...prev.general, logoUrl: data.url } }));
+      toast.success('Logo uploaded successfully');
+    } catch (err: any) {
+      toast.error(err.message || 'Upload failed');
+    } finally {
+      setLogoUploading(false);
+      e.target.value = '';
+    }
+  };
 
   const handleSave = async () => {
     setSaving(true);
@@ -223,9 +247,34 @@ export function SiteSettingsTab({ settings: initialSettings, onUpdate }: SiteSet
               </div>
 
               <div>
-                <label className="block text-sm text-gray-700 mb-2">
-                  Logo URL (Leave as default or provide custom URL)
-                </label>
+                <label className="block text-sm text-gray-700 mb-2">Organization Logo</label>
+                {/* Preview */}
+                {settings.general?.logoUrl && (
+                  <div className="mb-3 p-3 border rounded-lg bg-gray-50 flex items-center gap-4">
+                    <img
+                      src={settings.general.logoUrl}
+                      alt="Logo preview"
+                      className="h-14 w-auto max-w-[140px] object-contain"
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                    />
+                    <span className="text-xs text-gray-500">Current logo</span>
+                  </div>
+                )}
+                {/* Upload button */}
+                <div className="flex gap-2 mb-2">
+                  <label className={`flex items-center gap-2 px-4 py-2 rounded-lg border-2 border-dashed cursor-pointer transition-colors text-sm font-medium ${logoUploading ? 'border-gray-200 text-gray-400 cursor-not-allowed' : 'border-emerald-300 text-emerald-700 hover:bg-emerald-50'}`}>
+                    <Upload size={15} />
+                    {logoUploading ? 'Uploading…' : 'Upload logo image'}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      disabled={logoUploading}
+                      onChange={handleLogoUpload}
+                    />
+                  </label>
+                </div>
+                {/* Manual URL fallback */}
                 <input
                   type="text"
                   value={settings.general?.logoUrl || ''}
@@ -236,11 +285,9 @@ export function SiteSettingsTab({ settings: initialSettings, onUpdate }: SiteSet
                     })
                   }
                   placeholder="https://example.com/logo.png"
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
+                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 text-sm"
                 />
-                <p className="text-xs text-gray-500 mt-1">
-                  Keep the default value to use the imported logo, or provide a custom URL
-                </p>
+                <p className="text-xs text-gray-500 mt-1">Upload a file or paste a URL. Click Save after changing.</p>
               </div>
 
               <div>

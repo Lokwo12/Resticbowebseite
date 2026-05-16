@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 const logo = '/logo.png';
 import { useState, useEffect } from 'react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
+import { useDonationModal } from './DonationModal';
 
 interface FooterSettings {
   description: string;
@@ -28,6 +29,7 @@ interface ContactSettings {
 }
 
 export function Footer() {
+  const { open: openDonationModal } = useDonationModal();
   const [footerSettings, setFooterSettings] = useState<FooterSettings>({
     description: 'Empowering communities through education, healthcare, and sustainable development.',
     copyrightText: 'Resti Kiryandongo CBO. All rights reserved.',
@@ -114,9 +116,9 @@ export function Footer() {
     <>
     <footer className="bg-gray-900 text-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-8 mb-8">
           {/* About */}
-          <div>
+          <div className="col-span-2 sm:col-span-3 lg:col-span-2">
             <div className="mb-4">
               <img src={getLogoUrl()} alt={`${generalSettings.siteName} Logo`} className="h-20 w-auto mb-2" />
               <h3 className="text-white mb-1">{generalSettings.siteName}</h3>
@@ -145,7 +147,7 @@ export function Footer() {
             <h4 className="mb-4">Get Involved</h4>
             <ul className="space-y-2 text-sm text-gray-400">
               <li><Link to="/volunteer" className="hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Volunteer</Link></li>
-              <li><button onClick={() => scrollToSection('donate')} className="hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Donate</button></li>
+              <li><button onClick={openDonationModal} className="hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Donate</button></li>
               <li><Link to="/partners" className="hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Become a Partner</Link></li>
               <li><Link to="/opportunities" className="hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Opportunities</Link></li>
               <li><button onClick={() => scrollToSection('newsletter')} className="hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Newsletter</button></li>

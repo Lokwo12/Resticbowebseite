@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
-import { createClient } from '@supabase/supabase-js@2';
+import React, { useState, useEffect } from 'react';
+import { createClient } from '@supabase/supabase-js';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 const logo = '/logo.png';
 import {
   LayoutDashboard,

@@ -81,7 +81,7 @@ export function StoriesArchive() {
   return (
     <div className="bg-gray-50 min-h-screen">
       {/* Premium Hero Banner */}
-      <div className="bg-gradient-to-r from-emerald-600 to-emerald-800 text-white pt-32 pb-24">
+      <div className="bg-gradient-to-r from-emerald-600 to-emerald-800 text-white pt-12 sm:pt-20 pb-12 sm:pb-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-white/10 backdrop-blur-md rounded-full mb-6">
             <Heart className="text-white" size={32} />
@@ -118,52 +118,55 @@ export function StoriesArchive() {
 
           {/* Stories Grid */}
           {filteredStories.length > 0 ? (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {filteredStories.map((story) => (
-                <Card key={story.id} className="overflow-hidden hover:shadow-xl transition-all duration-500 bg-white border border-gray-100 group">
-                  <div className="md:flex h-full">
-                    {story.image && (
-                      <div className="md:w-1/3 h-64 md:h-auto overflow-hidden">
-                        <img
-                          src={story.image}
-                          alt={story.name}
-                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                        />
+                <Card key={story.id} className="overflow-hidden hover:shadow-xl transition-all duration-500 bg-white border border-gray-100 group flex flex-col">
+                  {/* Uniform image area */}
+                  <div className="relative h-52 overflow-hidden bg-gradient-to-br from-emerald-400 to-emerald-600 flex-shrink-0">
+                    {story.image ? (
+                      <img
+                        src={story.image}
+                        alt={story.name}
+                        className="absolute inset-0 w-full h-full object-cover object-top group-hover:scale-110 transition-transform duration-700"
+                      />
+                    ) : (
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <Quote className="text-white/30" size={64} />
                       </div>
                     )}
-                    <div className="p-6 md:w-2/3 flex flex-col justify-between">
-                      <div>
-                        <div className="flex items-start justify-between mb-4">
-                          <div>
-                            <h3 className="text-xl font-semibold text-gray-900 mb-1 group-hover:text-emerald-600 transition-colors duration-300">{story.name}</h3>
-                            <p className="text-sm text-emerald-600 mb-2">{story.title}</p>
-                          </div>
-                          <Quote className="text-emerald-200 flex-shrink-0" size={32} />
-                        </div>
-                        
-                        <p className="text-gray-600 mb-4 leading-relaxed text-sm">
-                          {story.story}
+                  </div>
+
+                  {/* Card content */}
+                  <div className="p-6 flex-grow flex flex-col">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex-1 min-w-0 pr-2">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-1 group-hover:text-emerald-600 transition-colors duration-300 line-clamp-1">{story.name}</h3>
+                        <p className="text-sm text-emerald-600">{story.title}</p>
+                      </div>
+                      <Quote className="text-emerald-200 flex-shrink-0" size={28} />
+                    </div>
+
+                    <p className="text-gray-600 mb-4 leading-relaxed text-sm line-clamp-4 flex-grow">
+                      {story.story}
+                    </p>
+
+                    {story.impact && (
+                      <div className="bg-emerald-50 border-l-4 border-emerald-500 p-3 mb-4">
+                        <p className="text-sm text-emerald-900">
+                          <strong className="block mb-1">Impact:</strong>
+                          {story.impact}
                         </p>
-                        
-                        {story.impact && (
-                          <div className="bg-emerald-50 border-l-4 border-emerald-500 p-4 mb-4">
-                            <p className="text-sm text-emerald-900">
-                              <strong className="block mb-1">Impact:</strong>
-                              {story.impact}
-                            </p>
-                          </div>
-                        )}
                       </div>
-                      
-                      <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-                        <Badge variant="secondary" className="bg-emerald-50 text-emerald-700 hover:bg-emerald-100">
-                          <Tag size={12} className="mr-1" />
-                          {story.category.charAt(0).toUpperCase() + story.category.slice(1)}
-                        </Badge>
-                        <span className="text-xs text-gray-500">
-                          {new Date(story.date).toLocaleDateString()}
-                        </span>
-                      </div>
+                    )}
+
+                    <div className="flex items-center justify-between pt-4 border-t border-gray-100 mt-auto">
+                      <Badge variant="secondary" className="bg-emerald-50 text-emerald-700 hover:bg-emerald-100">
+                        <Tag size={12} className="mr-1" />
+                        {story.category.charAt(0).toUpperCase() + story.category.slice(1)}
+                      </Badge>
+                      <span className="text-xs text-gray-500">
+                        {new Date(story.date).toLocaleDateString()}
+                      </span>
                     </div>
                   </div>
                 </Card>

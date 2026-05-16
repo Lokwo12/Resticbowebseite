@@ -1,6 +1,7 @@
 import { ArrowRight, ChevronDown } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
+import { useDonationModal } from './DonationModal';
 
 // Animated counter hook
 function useCountUp(target: number, duration = 1800, start = false) {
@@ -62,6 +63,7 @@ const FALLBACK_BACKGROUND_IMAGES = [
 ];
 
 export function Hero() {
+  const { open: openDonationModal } = useDonationModal();
   const [settings, setSettings] = useState<HeroSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -152,13 +154,6 @@ export function Hero() {
       });
     } finally {
       setLoading(false);
-    }
-  };
-
-  const scrollToDonate = () => {
-    const element = document.getElementById('donate');
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
     }
   };
 
@@ -270,15 +265,15 @@ export function Hero() {
             <div className="inline-block bg-emerald-500/90 backdrop-blur-sm text-white px-4 py-2 rounded-full text-sm animate-[fadeIn_0.5s_ease-out] hover:scale-105 transition-transform duration-300 shadow-lg">
               {settings.badgeText}
             </div>
-            <h1 className="text-4xl lg:text-6xl text-white drop-shadow-2xl animate-[fadeInUp_0.8s_ease-out_0.2s_both]">
+            <h1 className="text-3xl sm:text-4xl lg:text-6xl text-white drop-shadow-2xl animate-[fadeInUp_0.8s_ease-out_0.2s_both]">
               {settings.title}
             </h1>
-            <p className="text-xl text-white/95 drop-shadow-lg animate-[fadeInUp_0.8s_ease-out_0.4s_both]">
+            <p className="text-base sm:text-xl text-white/95 drop-shadow-lg animate-[fadeInUp_0.8s_ease-out_0.4s_both]">
               {settings.subtitle}
             </p>
             <div className="flex flex-col sm:flex-row gap-4 animate-[fadeInUp_0.8s_ease-out_0.6s_both]">
               <button
-                onClick={scrollToDonate}
+                onClick={openDonationModal}
                 className="group bg-emerald-600 text-white px-8 py-4 rounded-lg hover:bg-emerald-700 transition-all duration-300 flex items-center justify-center gap-2 hover:shadow-2xl hover:-translate-y-0.5 shadow-lg"
               >
                 {settings.primaryButtonText}
@@ -293,7 +288,7 @@ export function Hero() {
             </div>
 
             {/* Stats with animated counters */}
-            <div ref={statsRef} className="grid grid-cols-3 gap-6 pt-8 animate-[fadeInUp_0.8s_ease-out_0.8s_both]">
+            <div ref={statsRef} className="grid grid-cols-3 gap-3 sm:gap-6 pt-8 animate-[fadeInUp_0.8s_ease-out_0.8s_both]">
               {settings.stats.map((stat, index) => {
                 const { num, suffix } = parseStatValue(stat.value);
                 return (
@@ -312,7 +307,7 @@ export function Hero() {
                 className="w-full h-full object-cover hover:scale-105 transition-transform duration-700"
               />
             </div>
-            <div className="absolute -bottom-6 -right-6 bg-white p-6 rounded-xl shadow-2xl hidden lg:block animate-[fadeIn_0.8s_ease-out_1s_both] hover:shadow-3xl hover:-translate-y-1 transition-all duration-300">
+            <div className="absolute -bottom-6 -right-2 lg:-right-6 bg-white p-6 rounded-xl shadow-2xl hidden lg:block animate-[fadeIn_0.8s_ease-out_1s_both] hover:shadow-3xl hover:-translate-y-1 transition-all duration-300">
               <div className="text-3xl">🤝</div>
               <div className="mt-2">
                 <div className="text-sm text-gray-600">Community Impact</div>
