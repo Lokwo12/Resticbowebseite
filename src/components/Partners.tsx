@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Handshake, ExternalLink } from 'lucide-react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
+import { useDonationModal } from './DonationModal';
 import { Card } from './ui/card';
 import { Badge } from './ui/badge';
 
@@ -19,7 +20,9 @@ const FALLBACK_PARTNERS = [
   { id: 'p2', name: 'Global Health Initiative', description: 'Supporting our healthcare outreach programmes with medical supplies and expertise', logo: '', website: '#', category: 'healthcare', since: '2021' },
   { id: 'p3', name: 'Community Water Alliance', description: 'Partnering on WASH programmes to bring clean water to rural communities', logo: '', website: '#', category: 'development', since: '2022' },
 ];
+
 export function Partners() {
+  const { open: openDonationModal } = useDonationModal();
   const [partners, setPartners] = useState<Partner[]>(FALLBACK_PARTNERS as any);
   const [loading, setLoading] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -197,7 +200,7 @@ export function Partners() {
                 Contact Us
               </button>
               <button
-                onClick={() => document.getElementById('donate')?.scrollIntoView({ behavior: 'smooth' })}
+                onClick={openDonationModal}
                 className="bg-white text-emerald-600 border-2 border-emerald-600 px-8 py-3 rounded-lg hover:bg-emerald-50 transition-colors"
               >
                 Become a Sponsor

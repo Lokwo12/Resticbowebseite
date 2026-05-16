@@ -1,5 +1,5 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { useEffect } from 'react';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import React, { useEffect } from 'react';
 import { Toaster } from './components/ui/sonner';
 import { Header } from './components/Header';
 import { Hero } from './components/Hero';
@@ -21,6 +21,7 @@ import { Contact } from './components/Contact';
 import { Footer } from './components/Footer';
 import { BackToTop } from './components/BackToTop';
 import { FloatingContact } from './components/FloatingContact';
+import { ScrollToTop } from './components/ScrollToTop';
 import { PrivacyBanner } from './components/PrivacyBanner';
 import { EnhancedAdminDashboard } from './components/EnhancedAdminDashboard';
 import { LegalPage } from './components/LegalPage';
@@ -35,10 +36,44 @@ import { FAQPage } from './components/FAQPage';
 import { PartnersPage } from './components/PartnersPage';
 import { OpportunitiesPage } from './components/OpportunitiesPage';
 import { projectId, publicAnonKey } from './utils/supabase/info';
+import { DonationModalProvider, DonationModal } from './components/DonationModal';
+import { CardPaymentPage } from './components/CardPaymentPage';
+
+function PageTitleManager() {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    const titleMap: Record<string, string> = {
+      '/': 'Home | Resti Kiryandongo CBO',
+      '/admin': 'Admin Dashboard | Resti Kiryandongo',
+      '/privacy': 'Privacy Policy | Resti Kiryandongo',
+      '/terms': 'Terms of Service | Resti Kiryandongo',
+      '/refund': 'Refund Policy | Resti Kiryandongo',
+      '/news': 'Latest News | Resti Kiryandongo',
+      '/stories': 'Impact Stories | Resti Kiryandongo',
+      '/team': 'Our Team | Resti Kiryandongo',
+      '/reports': 'Impact Reports | Resti Kiryandongo',
+      '/volunteer': 'Volunteer | Resti Kiryandongo',
+      '/faqs': 'Frequently Asked Questions | Resti Kiryandongo',
+      '/partners': 'Our Partners | Resti Kiryandongo',
+      '/opportunities': 'Opportunities | Resti Kiryandongo',
+      '/donate': 'Donate | Support Our Mission',
+    };
+
+    if (pathname.startsWith('/news/')) {
+      document.title = 'News Article | Resti Kiryandongo';
+    } else if (pathname.startsWith('/programs/')) {
+      document.title = 'Program Details | Resti Kiryandongo';
+    } else {
+      document.title = titleMap[pathname] || 'Resti Kiryandongo CBO';
+    }
+  }, [pathname]);
+
+  return null;
+}
 
 function HomePage() {
   useEffect(() => {
-    // Initialize the backend with sample data
     const initializeData = async () => {
       try {
         await fetch(
@@ -59,9 +94,9 @@ function HomePage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white overflow-x-hidden w-full">
       <Header />
-      <main>
+      <main className="w-full overflow-x-hidden">
         <Hero />
         <About />
         <Programs />
@@ -91,28 +126,51 @@ function AdminPage() {
   return <EnhancedAdminDashboard />;
 }
 
+function MainLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="min-h-screen flex flex-col bg-white overflow-x-hidden w-full">
+      <Header />
+      <main className="flex-grow w-full overflow-x-hidden pt-20">
+        {children}
+      </main>
+      <Footer />
+      <BackToTop />
+      <FloatingContact />
+      <PrivacyBanner />
+    </div>
+  );
+}
+
 export default function App() {
   return (
+    <DonationModalProvider>
     <BrowserRouter>
+    <ScrollToTop />
+    <PageTitleManager />
+    <div id="main-content" className="min-h-screen flex flex-col overflow-x-hidden w-full">
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/admin" element={<AdminPage />} />
-        <Route path="/privacy" element={<><Header /><LegalPage type="privacy" /><Footer /></>} />
-        <Route path="/terms" element={<><Header /><LegalPage type="terms" /><Footer /></>} />
-        <Route path="/refund" element={<><Header /><LegalPage type="refund" /><Footer /></>} />
-        <Route path="/news" element={<><Header /><NewsArchive /><Footer /></>} />
-        <Route path="/news/:id" element={<><Header /><NewsDetail /><Footer /></>} />
-        <Route path="/stories" element={<><Header /><StoriesArchive /><Footer /></>} />
-        <Route path="/programs/:id" element={<><Header /><ProgramDetail /><Footer /></>} />
-        <Route path="/team" element={<><Header /><TeamPage /><Footer /></>} />
-        <Route path="/reports" element={<><Header /><ImpactReports /><Footer /></>} />
-        <Route path="/volunteer" element={<><Header /><VolunteerPage /><Footer /></>} />
-        <Route path="/faqs" element={<><Header /><FAQPage /><Footer /></>} />
-        <Route path="/partners" element={<><Header /><PartnersPage /><Footer /></>} />
-        <Route path="/opportunities" element={<><Header /><OpportunitiesPage /><Footer /></>} />
+        <Route path="/privacy" element={<MainLayout><LegalPage type="privacy" /></MainLayout>} />
+        <Route path="/terms" element={<MainLayout><LegalPage type="terms" /></MainLayout>} />
+        <Route path="/refund" element={<MainLayout><LegalPage type="refund" /></MainLayout>} />
+        <Route path="/news" element={<MainLayout><NewsArchive /></MainLayout>} />
+        <Route path="/news/:id" element={<MainLayout><NewsDetail /></MainLayout>} />
+        <Route path="/stories" element={<MainLayout><StoriesArchive /></MainLayout>} />
+        <Route path="/programs/:id" element={<MainLayout><ProgramDetail /></MainLayout>} />
+        <Route path="/team" element={<MainLayout><TeamPage /></MainLayout>} />
+        <Route path="/reports" element={<MainLayout><ImpactReports /></MainLayout>} />
+        <Route path="/volunteer" element={<MainLayout><VolunteerPage /></MainLayout>} />
+        <Route path="/faqs" element={<MainLayout><FAQPage /></MainLayout>} />
+        <Route path="/partners" element={<MainLayout><PartnersPage /></MainLayout>} />
+        <Route path="/opportunities" element={<MainLayout><OpportunitiesPage /></MainLayout>} />
+        <Route path="/donate" element={<MainLayout><CardPaymentPage /></MainLayout>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       <Toaster position="top-right" />
+    </div>
+    <DonationModal />
     </BrowserRouter>
+    </DonationModalProvider>
   );
 }

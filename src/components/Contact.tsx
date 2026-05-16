@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { Mail, Phone, MapPin, Send, Loader2, MessageCircle } from 'lucide-react';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 import { useScrollAnimation, getStaggerDelay } from '../utils/animations';
 
 interface ContactSettings {

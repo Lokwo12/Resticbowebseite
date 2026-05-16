@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Upload, X, User, Mail, Link2, Tag, Hash, Shield, Info, FileText, Globe, Briefcase, Calendar, Heart, TrendingUp, Target, Award } from 'lucide-react';
 
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';

@@ -188,7 +188,7 @@ export function About() {
         )}
 
         {/* Trust & Certifications Strip */}
-        <div className={`mt-14 grid grid-cols-2 md:grid-cols-4 gap-4 transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`} style={{ transitionDelay: '1000ms' }}>
+        <div className={`mt-8 md:mt-14 grid grid-cols-2 md:grid-cols-4 gap-4 transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`} style={{ transitionDelay: '1000ms' }}>
           {[
             { icon: '🏛️', label: 'Registered CBO', sub: 'Uganda NGO Bureau' },
             { icon: '🌍', label: '2,500+ Lives', sub: 'Changed & Counting' },

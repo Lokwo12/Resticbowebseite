@@ -174,7 +174,7 @@ export function FAQ() {
             </Accordion>
           </Card>
         ) : (
-          <Card className="p-12 text-center bg-gray-50">
+          <Card className="p-6 sm:p-12 text-center bg-gray-50">
             <HelpCircle className="mx-auto text-gray-300 mb-4" size={48} />
             <p className="text-gray-500">
               {searchQuery ? 'No questions match your search.' : 'No FAQs available in this category.'}

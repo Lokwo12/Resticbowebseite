@@ -1,7 +1,9 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { LoadingScreen } from './LoadingScreen';
-import { Handshake, ExternalLink, Globe } from 'lucide-react';
+import { Handshake, ExternalLink, Globe, Heart } from 'lucide-react';
+import { useDonationModal } from './DonationModal';
+import { Button } from './ui/button';
 
 interface Partner {
   id: string;
@@ -13,6 +15,7 @@ interface Partner {
 }
 
 export function PartnersPage() {
+  const { open: openDonationModal } = useDonationModal();
   const [partners, setPartners] = useState<Partner[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -82,8 +85,8 @@ export function PartnersPage() {
   return (
     <div className="bg-gray-50 min-h-screen">
       {/* Premium Hero Banner */}
-      <div className="bg-gradient-to-r from-emerald-600 to-emerald-800 text-white pt-40 pb-24">
-        <div className="max-width-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+      <div className="bg-gradient-to-r from-emerald-600 to-emerald-800 text-white pt-12 sm:pt-20 pb-12 sm:pb-24">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-white/10 backdrop-blur-md rounded-full mb-6">
             <Handshake className="text-white" size={32} />
           </div>
@@ -95,7 +98,7 @@ export function PartnersPage() {
       </div>
 
       {/* Main Content (Grid Layout) */}
-      <div className="max-width-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 relative z-10 pb-20">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 relative z-10 pb-20">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {displayPartners.map((partner) => (
             <div key={partner.id} className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100 flex flex-col hover:shadow-2xl transition-shadow duration-300">
@@ -148,12 +151,20 @@ export function PartnersPage() {
           <p className="text-gray-600 max-w-2xl mx-auto mb-6">
             We are always looking to collaborate with organizations that can help us expand our reach and impact.
           </p>
-          <a
-            href="/#contact"
-            className="inline-flex items-center justify-center bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-3 px-6 rounded-lg transition-colors"
-          >
-            Get in Touch
-          </a>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <a
+              href="/#contact"
+              className="inline-flex items-center justify-center bg-gray-900 hover:bg-black text-white font-medium py-3 px-8 rounded-xl transition-all active:scale-95"
+            >
+              Get in Touch
+            </a>
+            <Button 
+              onClick={openDonationModal}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-3 px-8 h-auto rounded-xl shadow-lg shadow-emerald-100 transition-all active:scale-95 flex items-center gap-2"
+            >
+              <Heart size={18} fill="currentColor" /> Become a Sponsor
+            </Button>
+          </div>
         </div>
       </div>
     </div>

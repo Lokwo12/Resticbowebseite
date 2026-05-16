@@ -5,6 +5,7 @@ import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { LoadingScreen } from './LoadingScreen';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
+import { useDonationModal } from './DonationModal';
 
 interface Program {
   id: string;
@@ -16,6 +17,7 @@ interface Program {
 }
 
 export function ProgramDetail() {
+  const { open: openDonationModal } = useDonationModal();
   const { id } = useParams<{ id: string }>();
   const [program, setProgram] = useState<Program | null>(null);
   const [loading, setLoading] = useState(true);
@@ -67,7 +69,7 @@ export function ProgramDetail() {
 
   if (!program) {
     return (
-      <div className="bg-gray-50 min-h-screen py-24">
+      <div className="bg-gray-50 min-h-screen pb-24">
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-2xl text-gray-900 mb-4">Program Not Found</h2>
           <p className="text-gray-600 mb-8">The program you are looking for does not exist or has been removed.</p>
@@ -83,7 +85,7 @@ export function ProgramDetail() {
   }
 
   return (
-    <div className="bg-gray-50 min-h-screen py-24">
+    <div className="bg-gray-50 min-h-screen pb-24">
       <div className="container mx-auto px-4 max-w-5xl">
         {/* Navigation */}
         <Link to="/" className="inline-flex items-center text-emerald-600 hover:text-emerald-700 mb-8 transition-colors">
@@ -93,7 +95,7 @@ export function ProgramDetail() {
 
         <div className="bg-white rounded-2xl shadow-sm overflow-hidden border border-gray-100">
           {/* Hero Image */}
-          <div className="relative h-96 bg-gray-200">
+          <div className="relative h-52 sm:h-96 bg-gray-200">
             {program.image ? (
               <img
                 src={program.image}
@@ -111,7 +113,7 @@ export function ProgramDetail() {
                 <Tag size={12} className="mr-1" />
                 {program.category.charAt(0).toUpperCase() + program.category.slice(1)}
               </Badge>
-              <h1 className="text-4xl font-bold text-white">{program.title}</h1>
+              <h1 className="text-2xl sm:text-4xl font-bold text-white">{program.title}</h1>
             </div>
           </div>
 
@@ -139,11 +141,12 @@ export function ProgramDetail() {
                 <p className="text-emerald-700 text-sm">Your donation directly funds this initiative and creates lasting impact.</p>
               </div>
               <div className="mt-6 md:mt-0">
-                <Link to="/">
-                  <Button className="bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-3 h-auto text-base">
-                    Donate Now
-                  </Button>
-                </Link>
+                <Button 
+                  onClick={openDonationModal}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-3 h-auto text-base"
+                >
+                  Donate Now
+                </Button>
               </div>
             </div>
           </div>

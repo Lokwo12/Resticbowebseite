@@ -4,6 +4,9 @@ import { ArrowLeft, Calendar, Tag, User, Clock } from 'lucide-react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { LoadingScreen } from './LoadingScreen';
 import { Badge } from './ui/badge';
+import { Button } from './ui/button';
+import { useDonationModal } from './DonationModal';
+import { Heart } from 'lucide-react';
 
 interface NewsArticle {
   id: string;
@@ -16,6 +19,7 @@ interface NewsArticle {
 }
 
 export function NewsDetail() {
+  const { open: openDonationModal } = useDonationModal();
   const { id } = useParams<{ id: string }>();
   const [article, setArticle] = useState<NewsArticle | null>(null);
   const [loading, setLoading] = useState(true);
@@ -79,7 +83,7 @@ export function NewsDetail() {
 
   if (!article) {
     return (
-      <div className="bg-gray-50 min-h-screen py-24">
+      <div className="bg-gray-50 min-h-screen pb-24">
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-2xl text-gray-900 mb-4">Article Not Found</h2>
           <p className="text-gray-600 mb-8">The news article you are looking for does not exist or has been removed.</p>
@@ -136,6 +140,25 @@ export function NewsDetail() {
 
             <div className="prose prose-emerald max-w-none text-gray-700 leading-relaxed text-lg whitespace-pre-wrap">
               {article.content}
+            </div>
+
+            {/* CTA Box */}
+            <div className="mt-12 bg-emerald-50 rounded-xl p-8 text-center md:flex md:items-center md:justify-between md:text-left border border-emerald-100">
+              <div className="md:pr-8">
+                <div className="flex items-center gap-2 justify-center md:justify-start mb-2">
+                  <Heart size={18} className="text-emerald-600" fill="currentColor" />
+                  <h3 className="text-emerald-900 m-0 font-bold">Support Our Mission</h3>
+                </div>
+                <p className="text-emerald-700 text-sm m-0">Your donation helps us continue sharing stories like this and making a real impact in Kiryandongo.</p>
+              </div>
+              <div className="mt-6 md:mt-0 shrink-0">
+                <Button 
+                  onClick={openDonationModal}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-3 h-auto text-base shadow-md transition-all active:scale-95"
+                >
+                  Donate Now
+                </Button>
+              </div>
             </div>
           </div>
         </div>

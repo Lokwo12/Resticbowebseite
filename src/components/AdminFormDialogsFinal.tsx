@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
 import { Button } from './ui/button';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
@@ -9,15 +9,26 @@ import 'react-quill/dist/quill.snow.css';
 interface FormDialogProps {
   show: boolean;
   onClose: () => void;
-  editingItem: any;
+  editingItem: any | null;
   onSuccess: () => void;
   userRole: string;
+}
+
+interface OpportunityFormData {
+  title: string;
+  description: string;
+  requirements: string[];
+  timeCommitment: string;
+  location: string;
+  category: string;
+  openPositions: number;
+  benefits: string[];
 }
 
 // Volunteer Opportunity Form Dialog
 export function OpportunityFormDialog({ show, onClose, editingItem, onSuccess, userRole }: FormDialogProps) {
   const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<OpportunityFormData>({
     title: '',
     description: '',
     requirements: [],

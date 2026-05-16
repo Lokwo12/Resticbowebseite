@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { LoadingScreen } from './LoadingScreen';
 import { Users, Mail, Linkedin, Twitter } from 'lucide-react';
@@ -90,8 +90,8 @@ export function TeamPage() {
   return (
     <div className="bg-gray-50 min-h-screen">
       {/* Premium Hero Banner */}
-      <div className="bg-gradient-to-r from-emerald-600 to-emerald-800 text-white pt-40 pb-24">
-        <div className="max-width-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+      <div className="bg-gradient-to-r from-emerald-600 to-emerald-800 text-white pt-12 sm:pt-20 pb-12 sm:pb-24">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-white/10 backdrop-blur-md rounded-full mb-6 animate-float">
             <Users className="text-white" size={32} />
           </div>
@@ -103,7 +103,7 @@ export function TeamPage() {
       </div>
 
       {/* Main Content (Grid Layout) */}
-      <div className="max-width-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 relative z-10 pb-20">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 relative z-10 pb-20">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {displayTeam.map((member, index) => (
             <div 
@@ -116,7 +116,7 @@ export function TeamPage() {
                 <img
                   src={member.image}
                   alt={member.name}
-                  className="w-full h-full object-cover object-center hover:scale-105 transition-transform duration-500"
+                  className="absolute inset-0 w-full h-full object-cover object-top hover:scale-105 transition-transform duration-500"
                 />
                 <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-6">
                   <h3 className="text-xl font-bold text-white">{member.name}</h3>
