@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { LoadingScreen } from './LoadingScreen';
 import { Target, Calendar, MapPin, Briefcase, ArrowRight } from 'lucide-react';
@@ -148,13 +149,13 @@ export function OpportunitiesPage() {
 
               {/* Action */}
               <div className="flex-shrink-0">
-                <a
-                  href={opportunity.link}
+                <Link
+                  to="/volunteer"
                   className="inline-flex items-center justify-center bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-medium py-3 px-6 rounded-xl transition-colors gap-2 w-full md:w-auto"
                 >
                   <span>Apply Now</span>
                   <ArrowRight size={16} />
-                </a>
+                </Link>
               </div>
             </div>
           ))}

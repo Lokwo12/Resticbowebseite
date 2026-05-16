@@ -21,6 +21,7 @@ export function Header() {
   const [showHeader, setShowHeader] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
   const [activeSection, setActiveSection] = useState('home');
+  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -99,6 +100,7 @@ export function Header() {
     if (element) {
       element.scrollIntoView({ behavior: 'smooth' });
       setMobileMenuOpen(false);
+      setActiveDropdown(null);
     }
   };
 
@@ -111,6 +113,7 @@ export function Header() {
   const announcementText = settings.header?.announcementText || 'We are looking for volunteers in Kiryandongo';
   const announcementLink = settings.header?.announcementLink || 'contact';
   const showAnnouncement = settings.header?.showAnnouncement !== false;
+  const isSolid = scrolled;
 
   return (
     <header 
@@ -122,34 +125,43 @@ export function Header() {
       {showAnnouncement && (
       <div className="announcement-bar text-white text-xs font-medium py-1.5 text-center flex items-center justify-center gap-2 px-4 flex-wrap">
         <span>🌍 {announcementText}</span>
-        <button
-          onClick={() => scrollToSection(announcementLink)}
+        <Link
+          to="/volunteer"
           className="inline-flex items-center gap-1 bg-white/20 hover:bg-white/30 px-3 py-0.5 rounded-full transition-colors font-semibold"
         >
           Apply now <ChevronRight size={12} />
-        </button>
+        </Link>
       </div>
       )}
       {/* Main nav */}
       <div className={`transition-all duration-300 ${
-        scrolled ? 'bg-white shadow-md' : 'bg-white/10 backdrop-blur-md border-b border-white/20'
+        isSolid ? 'bg-white shadow-md' : 'bg-emerald-900/90 border-b border-white/20'
       }`}>
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className={`flex justify-between items-center transition-all duration-300 ${scrolled ? 'h-14' : 'h-16'}`}>
+        <div className={`flex justify-between items-center transition-all duration-300 ${isSolid ? 'h-14' : 'h-16'}`}>
           {/* Logo */}
           <div className="flex items-center">
-            <button onClick={() => scrollToSection('home')} className="flex items-center gap-3 hover:opacity-90 transition-all duration-300 group">
+            <button 
+              onClick={() => {
+                if (window.location.pathname !== '/') {
+                  window.location.href = '/';
+                } else {
+                  scrollToSection('home');
+                }
+              }}
+              className="flex items-center gap-3 group transition-transform hover:scale-102"
+            >
               <img 
-                src={getLogoUrl()} 
-                alt={`${settings.general?.siteName || 'Resti Kiryandongo'} Logo`} 
-                className={`w-auto max-w-[160px] object-contain transition-all duration-300 group-hover:scale-105 ${scrolled ? 'h-12 sm:h-14' : 'h-14 sm:h-16'}`} 
+                src={settings.general?.logoUrl || logo} 
+                alt="Resti Kiryandongo" 
+                className={`w-auto max-w-[160px] object-contain transition-all duration-300 group-hover:scale-105 ${isSolid ? 'h-12 sm:h-14' : 'h-14 sm:h-16'}`} 
               />
               <div className="hidden sm:block">
-                <h1 className={`leading-tight group-hover:text-emerald-600 transition-colors ${
-                  scrolled ? 'text-emerald-700' : 'text-white drop-shadow-lg'
+                <h1 className={`text-lg font-bold tracking-tight transition-colors ${
+                  isSolid ? 'text-gray-800' : 'text-white'
                 }`}>{settings.general?.siteName || 'Resti Kiryandongo'}</h1>
                 <p className={`text-xs transition-colors ${
-                  scrolled ? 'text-gray-600' : 'text-white/90 drop-shadow'
+                  isSolid ? 'text-gray-600' : 'text-white/90'
                 }`}>{settings.general?.tagline || 'Community Based Organization'}</p>
               </div>
             </button>
@@ -160,96 +172,169 @@ export function Header() {
             <button
               onClick={() => scrollToSection('home')}
               className={`transition-all duration-300 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-emerald-600 hover:after:w-full after:transition-all ${
-                scrolled 
+                isSolid 
                   ? 'text-gray-700 hover:text-emerald-600' 
-                  : 'text-white hover:text-emerald-300 drop-shadow'
+                  : 'text-white hover:text-emerald-300'
               }`}
             >
               Home
             </button>
-            <div className="relative group">
+            
+            {/* About Dropdown */}
+            <div 
+              className="relative"
+              onMouseEnter={() => setActiveDropdown('about')}
+              onMouseLeave={() => setActiveDropdown(null)}
+            >
               <button
-                className={`transition-all duration-300 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-emerald-600 hover:after:w-full after:transition-all flex items-center gap-1 ${
-                  scrolled 
+                className={`transition-all duration-300 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-emerald-600 hover:after:w-full after:transition-all flex items-center gap-1 py-4 ${
+                  isSolid 
                     ? 'text-gray-700 hover:text-emerald-600' 
                     : 'text-white hover:text-emerald-300 drop-shadow'
                 }`}
               >
                 About <ChevronDown size={14} />
               </button>
-              <div className="absolute left-0 top-full w-48 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50 pt-2">
-                <div className="bg-white rounded-lg shadow-lg border border-gray-100 overflow-hidden">
+              <div className={`absolute left-0 top-full w-48 transition-all duration-300 z-50 pt-0 ${
+                activeDropdown === 'about' ? 'opacity-100 visible translate-y-0' : 'opacity-0 invisible translate-y-2'
+              }`}>
+                <div className="bg-white rounded-lg shadow-xl border border-gray-100 overflow-hidden mt-1">
                   <div className="py-1">
-                    <button onClick={() => scrollToSection('about')} className="w-full text-left block px-4 py-2.5 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-600 transition-colors">About Us</button>
-                    <Link to="/team" className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-600 transition-colors">Our Team</Link>
-                    <Link to="/faqs" className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-600 transition-colors">FAQs</Link>
+                    <button 
+                      onClick={() => { scrollToSection('about'); setActiveDropdown(null); }} 
+                      className="w-full text-left block px-4 py-2.5 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-600 transition-colors"
+                    >
+                      About Us
+                    </button>
+                    <Link 
+                      to="/team" 
+                      onClick={() => setActiveDropdown(null)}
+                      className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-600 transition-colors"
+                    >
+                      Our Team
+                    </Link>
+                    <Link 
+                      to="/faqs" 
+                      onClick={() => setActiveDropdown(null)}
+                      className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-600 transition-colors"
+                    >
+                      FAQs
+                    </Link>
                   </div>
                 </div>
               </div>
             </div>
+
             <button
               onClick={() => scrollToSection('programs')}
               className={`transition-all duration-300 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-emerald-600 hover:after:w-full after:transition-all ${
-                scrolled 
+                isSolid 
                   ? 'text-gray-700 hover:text-emerald-600' 
-                  : 'text-white hover:text-emerald-300 drop-shadow'
+                  : 'text-white hover:text-emerald-300'
               }`}
             >
               Programs
             </button>
-            <div className="relative group">
+
+            {/* Impact Dropdown */}
+            <div 
+              className="relative"
+              onMouseEnter={() => setActiveDropdown('impact')}
+              onMouseLeave={() => setActiveDropdown(null)}
+            >
               <button
-                className={`transition-all duration-300 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-emerald-600 hover:after:w-full after:transition-all flex items-center gap-1 ${
-                  scrolled 
+                className={`transition-all duration-300 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-emerald-600 hover:after:w-full after:transition-all flex items-center gap-1 py-4 ${
+                  isSolid 
                     ? 'text-gray-700 hover:text-emerald-600' 
                     : 'text-white hover:text-emerald-300 drop-shadow'
                 }`}
               >
                 Impact <ChevronDown size={14} />
               </button>
-              <div className="absolute left-0 top-full w-48 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50 pt-2">
-                <div className="bg-white rounded-lg shadow-lg border border-gray-100 overflow-hidden">
+              <div className={`absolute left-0 top-full w-48 transition-all duration-300 z-50 pt-0 ${
+                activeDropdown === 'impact' ? 'opacity-100 visible translate-y-0' : 'opacity-0 invisible translate-y-2'
+              }`}>
+                <div className="bg-white rounded-lg shadow-xl border border-gray-100 overflow-hidden mt-1">
                   <div className="py-1">
-                    <button onClick={() => scrollToSection('impact')} className="w-full text-left block px-4 py-2.5 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-600 transition-colors">Impact Stories</button>
-                    <Link to="/reports" className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-600 transition-colors">Impact Reports</Link>
+                    <button 
+                      onClick={() => { scrollToSection('impact'); setActiveDropdown(null); }} 
+                      className="w-full text-left block px-4 py-2.5 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-600 transition-colors"
+                    >
+                      Impact Stories
+                    </button>
+                    <Link 
+                      to="/reports" 
+                      onClick={() => setActiveDropdown(null)}
+                      className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-600 transition-colors"
+                    >
+                      Impact Reports
+                    </Link>
                   </div>
                 </div>
               </div>
             </div>
-            <div className="relative group">
+
+            {/* Get Involved Dropdown */}
+            <div 
+              className="relative"
+              onMouseEnter={() => setActiveDropdown('involved')}
+              onMouseLeave={() => setActiveDropdown(null)}
+            >
               <button
-                className={`transition-all duration-300 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-emerald-600 hover:after:w-full after:transition-all flex items-center gap-1 ${
-                  scrolled 
+                className={`transition-all duration-300 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-emerald-600 hover:after:w-full after:transition-all flex items-center gap-1 py-4 ${
+                  isSolid 
                     ? 'text-gray-700 hover:text-emerald-600' 
                     : 'text-white hover:text-emerald-300 drop-shadow'
                 }`}
               >
                 Get Involved <ChevronDown size={14} />
               </button>
-              <div className="absolute left-0 top-full w-48 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50 pt-2">
-                <div className="bg-white rounded-lg shadow-lg border border-gray-100 overflow-hidden">
+              <div className={`absolute left-0 top-full w-48 transition-all duration-300 z-50 pt-0 ${
+                activeDropdown === 'involved' ? 'opacity-100 visible translate-y-0' : 'opacity-0 invisible translate-y-2'
+              }`}>
+                <div className="bg-white rounded-lg shadow-xl border border-gray-100 overflow-hidden mt-1">
                   <div className="py-1">
-                    <Link to="/volunteer" className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-600 transition-colors">Volunteer</Link>
-                    <Link to="/opportunities" className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-600 transition-colors">Opportunities</Link>
-                    <Link to="/partners" className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-600 transition-colors">Become a Partner</Link>
+                    <Link 
+                      to="/volunteer" 
+                      onClick={() => setActiveDropdown(null)}
+                      className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-600 transition-colors"
+                    >
+                      Volunteer
+                    </Link>
+                    <Link 
+                      to="/opportunities" 
+                      onClick={() => setActiveDropdown(null)}
+                      className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-600 transition-colors"
+                    >
+                      Opportunities
+                    </Link>
+                    <Link 
+                      to="/partners" 
+                      onClick={() => setActiveDropdown(null)}
+                      className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-600 transition-colors"
+                    >
+                      Become a Partner
+                    </Link>
                   </div>
                 </div>
               </div>
             </div>
+
             <Link
               to="/contact"
+              onClick={() => setActiveDropdown(null)}
               className={`transition-all duration-300 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-emerald-600 hover:after:w-full after:transition-all ${
-                scrolled 
+                isSolid 
                   ? 'text-gray-700 hover:text-emerald-600' 
-                  : 'text-white hover:text-emerald-300 drop-shadow'
+                  : 'text-white hover:text-emerald-300'
               }`}
             >
               Contact
             </Link>
             <button
-              onClick={openDonationModal}
+              onClick={() => { openDonationModal(); setActiveDropdown(null); }}
               className={`px-6 py-2 rounded-lg transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 ${
-                scrolled
+                isSolid
                   ? 'bg-emerald-600 text-white hover:bg-emerald-700'
                   : 'bg-white text-emerald-600 hover:bg-emerald-50 shadow-lg'
               }`}
@@ -262,7 +347,7 @@ export function Header() {
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             className={`lg:hidden p-2 rounded-lg transition-colors ${
-              scrolled 
+              isSolid 
                 ? 'hover:bg-gray-100 text-gray-700' 
                 : 'hover:bg-white/20 text-white'
             }`}

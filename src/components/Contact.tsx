@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
-import { Mail, Phone, MapPin, Send, Loader2, MessageCircle, Clock } from 'lucide-react';
+import { Mail, Phone, MapPin, Send, Loader2, MessageCircle, Clock, User, Briefcase, Calendar, MessageSquare } from 'lucide-react';
 import { toast } from 'sonner';
 import { useScrollAnimation, getStaggerDelay } from '../utils/animations';
 import { Card } from './ui/card';
@@ -273,6 +273,31 @@ export function Contact() {
                   </div>
                 </div>
               )}
+              {settings.socialLinks && (
+                <div className="pt-6 mt-6 border-t border-gray-100">
+                  <h4 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-3">Follow Us</h4>
+                  <div className="flex gap-3">
+                    {settings.socialLinks.facebook && (
+                      <a href={settings.socialLinks.facebook} target="_blank" rel="noopener noreferrer" className="w-10 h-10 bg-gray-50 rounded-lg flex items-center justify-center text-gray-600 hover:bg-emerald-100 hover:text-emerald-600 transition-all">
+                        <span className="sr-only">Facebook</span>
+                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+                      </a>
+                    )}
+                    {settings.socialLinks.twitter && (
+                      <a href={settings.socialLinks.twitter} target="_blank" rel="noopener noreferrer" className="w-10 h-10 bg-gray-50 rounded-lg flex items-center justify-center text-gray-600 hover:bg-emerald-100 hover:text-emerald-600 transition-all">
+                        <span className="sr-only">Twitter</span>
+                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.84 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/></svg>
+                      </a>
+                    )}
+                    {settings.socialLinks.instagram && (
+                      <a href={settings.socialLinks.instagram} target="_blank" rel="noopener noreferrer" className="w-10 h-10 bg-gray-50 rounded-lg flex items-center justify-center text-gray-600 hover:bg-emerald-100 hover:text-emerald-600 transition-all">
+                        <span className="sr-only">Instagram</span>
+                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+                      </a>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -280,96 +305,172 @@ export function Contact() {
           <div className="bg-white p-8 rounded-2xl shadow-lg">
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Form Type Selection */}
+              {/* Form Type Selection - Tabbed Style */}
+              <div className="bg-gray-100 p-1.5 rounded-xl flex mb-8">
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, type: 'contact' })}
+                  className={`flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all ${
+                    formData.type === 'contact' 
+                      ? 'bg-white text-emerald-600 shadow-sm' 
+                      : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  General Inquiry
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, type: 'volunteer' })}
+                  className={`flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all ${
+                    formData.type === 'volunteer' 
+                      ? 'bg-white text-emerald-600 shadow-sm' 
+                      : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  Volunteer Application
+                </button>
+              </div>
+
               <div>
-                <label className="text-gray-900 mb-2 block">I want to:</label>
-                <div className="flex gap-4">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="type"
-                      value="contact"
-                      checked={formData.type === 'contact'}
-                      onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                      className="text-emerald-600 focus:ring-emerald-500"
-                    />
-                    <span className="text-gray-700">Send a message</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="type"
-                      value="volunteer"
-                      checked={formData.type === 'volunteer'}
-                      onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                      className="text-emerald-600 focus:ring-emerald-500"
-                    />
-                    <span className="text-gray-700">Volunteer</span>
-                  </label>
+                <label htmlFor="name" className="text-[13px] font-semibold text-gray-500 mb-1.5 ml-1 block uppercase tracking-[0.05em]">
+                  Full Name <span className="text-emerald-500">*</span>
+                </label>
+                <div className="flex group rounded-2xl border border-gray-200 overflow-hidden focus-within:ring-4 focus-within:ring-emerald-500/10 focus-within:border-emerald-500 transition-all bg-gray-50/50 focus-within:bg-white">
+                  <div className="flex-shrink-0 w-14 flex items-center justify-center text-gray-400 group-focus-within:text-emerald-600 transition-all border-r border-gray-100">
+                    <User size={22} />
+                  </div>
+                  <input
+                    type="text"
+                    id="name"
+                    required
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    className="flex-1 px-5 py-4 bg-transparent outline-none text-gray-900 font-medium placeholder:text-gray-400"
+                    placeholder="Your name"
+                  />
                 </div>
               </div>
 
-              <div>
-                <label htmlFor="name" className="text-gray-900 mb-2 block">
-                  Full Name *
-                </label>
-                <input
-                  type="text"
-                  id="name"
-                  required
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  placeholder="Your name"
-                />
+              <div className="grid md:grid-cols-2 gap-6">
+                <div>
+                  <label htmlFor="email" className="text-[13px] font-semibold text-gray-500 mb-1.5 ml-1 block uppercase tracking-[0.05em]">
+                    Email Address <span className="text-emerald-500">*</span>
+                  </label>
+                  <div className="flex group rounded-2xl border border-gray-200 overflow-hidden focus-within:ring-4 focus-within:ring-emerald-500/10 focus-within:border-emerald-500 transition-all bg-gray-50/50 focus-within:bg-white">
+                    <div className="flex-shrink-0 w-14 flex items-center justify-center text-gray-400 group-focus-within:text-emerald-600 transition-all border-r border-gray-100">
+                      <Mail size={22} />
+                    </div>
+                    <input
+                      type="email"
+                      id="email"
+                      required
+                      value={formData.email}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      className="flex-1 px-5 py-4 bg-transparent outline-none text-gray-900 font-medium placeholder:text-gray-400"
+                      placeholder="your@email.com"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label htmlFor="phone" className="text-[13px] font-semibold text-gray-500 mb-1.5 ml-1 block uppercase tracking-[0.05em]">
+                    Phone Number {formData.type === 'volunteer' && <span className="text-emerald-500">*</span>}
+                  </label>
+                  <div className="flex group rounded-2xl border border-gray-200 overflow-hidden focus-within:ring-4 focus-within:ring-emerald-500/10 focus-within:border-emerald-500 transition-all bg-gray-50/50 focus-within:bg-white">
+                    <div className="flex-shrink-0 w-14 flex items-center justify-center text-gray-400 group-focus-within:text-emerald-600 transition-all border-r border-gray-100">
+                      <Phone size={22} />
+                    </div>
+                    <input
+                      type="tel"
+                      id="phone"
+                      required={formData.type === 'volunteer'}
+                      value={formData.phone}
+                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                      className="flex-1 px-5 py-4 bg-transparent outline-none text-gray-900 font-medium placeholder:text-gray-400"
+                      placeholder="+256 ..."
+                    />
+                  </div>
+                </div>
               </div>
 
-              <div>
-                <label htmlFor="email" className="text-gray-900 mb-2 block">
-                  Email *
-                </label>
-                <input
-                  type="email"
-                  id="email"
-                  required
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  placeholder="your@email.com"
-                />
-              </div>
+              {formData.type === 'volunteer' && (
+                <div className="grid md:grid-cols-2 gap-6 animate-[fadeIn_0.5s_ease-out]">
+                  <div>
+                    <label className="text-sm font-bold text-gray-700 mb-2 block uppercase tracking-wider">
+                      Area of Interest *
+                    </label>
+                    <div className="flex group rounded-2xl border border-gray-200 overflow-hidden focus-within:ring-4 focus-within:ring-emerald-500/10 focus-within:border-emerald-500 transition-all bg-gray-50/50 focus-within:bg-white">
+                      <div className="flex-shrink-0 w-14 flex items-center justify-center text-gray-400 group-focus-within:text-emerald-600 transition-all border-r border-gray-100 pointer-events-none">
+                        <Briefcase size={22} />
+                      </div>
+                      <div className="relative flex-1">
+                        <select 
+                          required
+                          className="w-full px-5 py-4 bg-transparent outline-none text-gray-900 font-medium appearance-none cursor-pointer"
+                        >
+                          <option value="">Select Area</option>
+                          <option value="education">Education & Tutoring</option>
+                          <option value="healthcare">Healthcare Support</option>
+                          <option value="environment">Environmental Conservation</option>
+                          <option value="community">Community Outreach</option>
+                          <option value="admin">Administrative Support</option>
+                        </select>
+                        <div className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-sm font-bold text-gray-700 mb-2 block uppercase tracking-wider">
+                      Availability *
+                    </label>
+                    <div className="flex group rounded-2xl border border-gray-200 overflow-hidden focus-within:ring-4 focus-within:ring-emerald-500/10 focus-within:border-emerald-500 transition-all bg-gray-50/50 focus-within:bg-white">
+                      <div className="flex-shrink-0 w-14 flex items-center justify-center text-gray-400 group-focus-within:text-emerald-600 transition-all border-r border-gray-100 pointer-events-none">
+                        <Calendar size={22} />
+                      </div>
+                      <div className="relative flex-1">
+                        <select 
+                          required
+                          className="w-full px-5 py-4 bg-transparent outline-none text-gray-900 font-medium appearance-none cursor-pointer"
+                        >
+                          <option value="">Select Availability</option>
+                          <option value="full-time">Full Time</option>
+                          <option value="part-time">Part Time</option>
+                          <option value="weekends">Weekends Only</option>
+                          <option value="remote">Remote / Digital</option>
+                        </select>
+                        <div className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div>
-                <label htmlFor="phone" className="text-gray-900 mb-2 block">
-                  Phone {formData.type === 'volunteer' && '*'}
+                <label htmlFor="message" className="text-[13px] font-semibold text-gray-500 mb-1.5 ml-1 block uppercase tracking-[0.05em]">
+                  {formData.type === 'volunteer' ? 'Why do you want to join us?' : 'Message'} <span className="text-emerald-500">*</span>
                 </label>
-                <input
-                  type="tel"
-                  id="phone"
-                  required={formData.type === 'volunteer'}
-                  value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  placeholder={settings.phone}
-                />
-              </div>
-
-              <div>
-                <label htmlFor="message" className="text-gray-900 mb-2 block">
-                  Message *
-                </label>
-                <textarea
-                  id="message"
-                  required
-                  rows={5}
-                  value={formData.message}
-                  onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none"
-                  placeholder={
-                    formData.type === 'volunteer'
-                      ? 'Tell us about your skills and availability...'
-                      : 'Your message...'
-                  }
-                />
+                <div className="flex group rounded-2xl border border-gray-200 overflow-hidden focus-within:ring-4 focus-within:ring-emerald-500/10 focus-within:border-emerald-500 transition-all bg-gray-50/50 focus-within:bg-white">
+                  <div className="flex-shrink-0 w-14 flex items-center justify-center text-gray-400 group-focus-within:text-emerald-600 transition-all border-r border-gray-100 pt-5 items-start">
+                    <MessageSquare size={22} />
+                  </div>
+                  <textarea
+                    id="message"
+                    required
+                    rows={5}
+                    value={formData.message}
+                    onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                    className="flex-1 px-5 py-4 bg-transparent outline-none text-gray-900 font-medium placeholder:text-gray-400 resize-none"
+                    placeholder={
+                      formData.type === 'volunteer'
+                        ? 'Tell us about your background, skills, and what motivates you to volunteer...'
+                        : 'How can we help you?'
+                    }
+                  />
+                </div>
               </div>
 
               <button
