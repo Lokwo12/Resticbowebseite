@@ -90,7 +90,7 @@ export function Events() {
             <img
               src={event.image}
               alt={event.title}
-              className="absolute inset-0 w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
+              className="absolute inset-0 w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-300"
             />
           ) : (
             <div className="absolute inset-0 flex items-center justify-center">

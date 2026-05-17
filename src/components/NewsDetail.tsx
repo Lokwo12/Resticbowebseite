@@ -138,9 +138,10 @@ export function NewsDetail() {
               </div>
             </div>
 
-            <div className="prose prose-emerald max-w-none text-gray-700 leading-relaxed text-lg whitespace-pre-wrap">
-              {article.content}
-            </div>
+            <div 
+              className="prose prose-emerald max-w-none text-gray-700 leading-relaxed text-lg"
+              dangerouslySetInnerHTML={{ __html: article.content }}
+            />
 
             {/* CTA Box */}
             <div className="mt-12 bg-emerald-50 rounded-xl p-8 text-center md:flex md:items-center md:justify-between md:text-left border border-emerald-100">
