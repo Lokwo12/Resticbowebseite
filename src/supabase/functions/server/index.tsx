@@ -204,7 +204,7 @@ app.get('/make-server-2a4be611/news', async (c) => {
 app.post('/make-server-2a4be611/news', async (c) => {
   try {
     const body = await c.req.json()
-    const { title, content, image } = body
+    const { title, description, content, image, category } = body
 
     if (!title || !content) {
       return c.json({ error: 'Title and content are required' }, 400)
@@ -213,8 +213,10 @@ app.post('/make-server-2a4be611/news', async (c) => {
     const newsId = `news:${Date.now()}`
     await kv.set(newsId, {
       title,
+      description: description || '',
       content,
       image: image || '',
+      category: category || 'general',
       timestamp: new Date().toISOString()
     })
 
@@ -1040,7 +1042,7 @@ app.put('/make-server-2a4be611/news/:id', async (c) => {
   try {
     const id = c.req.param('id')
     const body = await c.req.json()
-    const { title, content, image } = body
+    const { title, description, content, image, category } = body
 
     if (!title || !content) {
       return c.json({ error: 'Title and content are required' }, 400)
@@ -1054,8 +1056,10 @@ app.put('/make-server-2a4be611/news/:id', async (c) => {
     await kv.set(id, {
       ...existing,
       title,
+      description: description || '',
       content,
       image: image || '',
+      category: category || 'general',
       updatedAt: new Date().toISOString()
     })
 

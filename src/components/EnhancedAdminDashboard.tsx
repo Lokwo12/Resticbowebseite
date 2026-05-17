@@ -421,8 +421,16 @@ export function EnhancedAdminDashboard() {
   };
 
   const handleSendNewsletter = async () => {
-    if (!newsletterSubject.trim() || !newsletterBody.trim()) {
-      toast.error('Subject and body are required');
+    if (subscribers.length === 0) {
+      toast.error('Cannot send newsletter: You have 0 subscribers currently.');
+      return;
+    }
+    if (!newsletterSubject.trim()) {
+      toast.error('Please enter a subject line for your newsletter.');
+      return;
+    }
+    if (!newsletterBody.trim()) {
+      toast.error('Please enter the email body content.');
       return;
     }
     setSendingNewsletter(true);
@@ -2547,7 +2555,12 @@ export function EnhancedAdminDashboard() {
                           <div className="flex items-center gap-2">
                             <Badge className="bg-violet-50 text-violet-700 border-violet-100">{item.value.category}</Badge>
                             <span className="text-xs text-gray-400">
-                              {new Date(item.value.created_at).toLocaleDateString()}
+                              {(() => {
+                                const dateStr = item.value.timestamp || item.value.created_at || item.value.publishDate || item.value.date;
+                                if (!dateStr) return 'No Date';
+                                const parsed = new Date(dateStr);
+                                return isNaN(parsed.getTime()) ? 'No Date' : parsed.toLocaleDateString();
+                              })()}
                             </span>
                           </div>
                         </div>
@@ -3152,7 +3165,7 @@ export function EnhancedAdminDashboard() {
                     />
                     <button
                       onClick={handleSendNewsletter}
-                      disabled={sendingNewsletter || subscribers.length === 0 || !newsletterSubject.trim() || !newsletterBody.trim()}
+                      disabled={sendingNewsletter}
                       className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-xl transition-colors"
                     >
                       <Send size={15} />
