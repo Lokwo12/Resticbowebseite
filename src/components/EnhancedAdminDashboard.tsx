@@ -47,7 +47,10 @@ import {
   ChevronRight,
   ExternalLink,
   Clock,
-  Activity
+  Activity,
+  Terminal,
+  DownloadCloud,
+  RotateCcw
 } from 'lucide-react';
 import { Card } from './ui/card';
 import { Badge } from './ui/badge';
@@ -200,6 +203,13 @@ export function EnhancedAdminDashboard() {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [editingItem, setEditingItem] = useState<any>(null);
 
+  // Advanced Diagnostics & Database Operations States
+  const [diagnosing, setDiagnosing] = useState(false);
+  const [diagResults, setDiagResults] = useState<any>(null);
+  const [exporting, setExporting] = useState(false);
+  const [showResetModal, setShowResetModal] = useState(false);
+  const [resetting, setResetting] = useState(false);
+
 
   const [viewingItem, setViewingItem] = useState<any>(null);
   const [replyMessage, setReplyMessage] = useState('');
@@ -269,6 +279,145 @@ export function EnhancedAdminDashboard() {
     a.download = filename;
     a.click();
     URL.revokeObjectURL(url);
+  };
+
+  const handleDiagnostics = async () => {
+    setDiagnosing(true);
+    const start = Date.now();
+    try {
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/site-settings`,
+        { headers: { Authorization: `Bearer ${accessToken || publicAnonKey}` } }
+      );
+      const latency = Date.now() - start;
+      const status = response.ok ? 'Healthy' : 'Degraded';
+      
+      setDiagResults({
+        status,
+        latency,
+        checkedAt: new Date().toLocaleTimeString(),
+        logs: [
+          `[INFO] Starting database diagnostics at ${new Date().toLocaleTimeString()}`,
+          response.ok 
+            ? `[SUCCESS] Connection response code ${response.status}: Supabase is online.`
+            : `[WARNING] Connection response code ${response.status}: Connection response degraded.`,
+          `[LATENCY] Latency check: ${latency}ms`,
+          `[COUNT] Programs: ${programs.length} rows`,
+          `[COUNT] News / Blogs: ${news.length} rows`,
+          `[COUNT] Team Members: ${team.length} rows`,
+          `[COUNT] Events Calendar: ${events.length} rows`,
+          `[COUNT] Volunteer Applications: ${volunteers.length} rows`,
+          `[COUNT] Donations Log: ${donations.length} rows`,
+          `[COUNT] Newsletter Subscribers: ${subscribers.length} rows`,
+          `[COUNT] Gallery Images: ${gallery.length} rows`,
+          `[COUNT] Impact Stories: ${stories.length} rows`,
+          `[COUNT] FAQs: ${faqs.length} rows`,
+          `[COUNT] Resources: ${resources.length} rows`,
+          `[INFO] Diagnostics check completed successfully.`
+        ]
+      });
+      if (response.ok) {
+        toast.success(`Database health check completed in ${latency}ms!`);
+      } else {
+        toast.error(`Database diagnostics reported warning: status code ${response.status}`);
+      }
+    } catch (err: any) {
+      const latency = Date.now() - start;
+      setDiagResults({
+        status: 'Offline',
+        latency,
+        checkedAt: new Date().toLocaleTimeString(),
+        logs: [
+          `[INFO] Starting database diagnostics at ${new Date().toLocaleTimeString()}`,
+          `[ERROR] Connection failed: ${err.message || 'Network error'}`,
+          `[LATENCY] Calculated timeout / failure: ${latency}ms`,
+          `[ERROR] Diagnostics completed with fatal connection errors.`
+        ]
+      });
+      toast.error('Database connection failed or timed out.');
+    } finally {
+      setDiagnosing(false);
+    }
+  };
+
+  const handleBackupJSON = () => {
+    setExporting(true);
+    try {
+      const backupPayload = {
+        backupName: "Resticbo CMS Full Backup",
+        exportedAt: new Date().toISOString(),
+        exportedBy: userName || 'Admin',
+        databaseStats: {
+          totalPrograms: programs.length,
+          totalNews: news.length,
+          totalTeam: team.length,
+          totalEvents: events.length,
+          totalVolunteers: volunteers.length,
+          totalDonations: donations.length,
+          totalSubscribers: subscribers.length,
+          totalFAQs: faqs.length,
+          totalResources: resources.length,
+          totalGallery: gallery.length,
+          totalStories: stories.length
+        },
+        data: {
+          programs,
+          news,
+          team,
+          events,
+          volunteers,
+          donations,
+          subscribers,
+          faqs,
+          resources,
+          gallery,
+          stories,
+          siteSettings
+        }
+      };
+      
+      const blob = new Blob([JSON.stringify(backupPayload, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `resticbo-cms-backup-${new Date().toISOString().split('T')[0]}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success("Database backup generated and downloaded successfully!");
+      logActivity('backup', 'Database', 'Generated full JSON backup export');
+    } catch (err: any) {
+      toast.error("Failed to generate backup: " + err.message);
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const handleRestoreDefaults = async () => {
+    setResetting(true);
+    try {
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/site-settings/initialize`,
+        {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${accessToken || publicAnonKey}` }
+        }
+      );
+      if (response.ok) {
+        toast.success("CMS re-initialized successfully! Restored default factory content.");
+        logActivity('reset', 'Database', 'Restored default factory seed data');
+        setTimeout(() => {
+          window.location.reload();
+        }, 1500);
+      } else {
+        const text = await response.text();
+        throw new Error(text || "Failed to re-initialize database settings");
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Failed to seed default settings");
+    } finally {
+      setResetting(false);
+      setShowResetModal(false);
+    }
   };
 
   const handleSendNewsletter = async () => {
@@ -2116,6 +2265,100 @@ export function EnhancedAdminDashboard() {
                       Add Team Member
                     </button>
                   </div>
+                </div>
+
+                {/* System Operations & Diagnostics Suite */}
+                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 hover:shadow-md transition-shadow duration-200 border-t-4 border-t-emerald-600">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                    <div>
+                      <h3 className="text-lg font-bold text-slate-800 tracking-tight flex items-center gap-2">
+                        <Terminal size={18} className="text-emerald-600 animate-pulse" />
+                        System Operations & Telemetry
+                      </h3>
+                      <p className="text-xs text-gray-400 mt-1">Real-time connection monitoring, CMS backup generation, and database re-initialization.</p>
+                    </div>
+                    {diagResults && (
+                      <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-100 rounded-full px-3 py-1 self-start md:self-auto">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+                        <span className="text-[10px] font-bold text-emerald-800 uppercase tracking-wider">
+                          Status: {diagResults.status} ({diagResults.latency}ms)
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {/* Action 1: Run Diagnostics */}
+                    <button
+                      onClick={handleDiagnostics}
+                      disabled={diagnosing}
+                      className="group flex flex-col items-start text-left p-4 rounded-xl border border-gray-200 hover:border-emerald-300 hover:bg-emerald-50/30 transition-all duration-200 disabled:opacity-50"
+                    >
+                      <div className="p-2 rounded-lg bg-emerald-100 text-emerald-600 group-hover:scale-110 transition-transform duration-200 mb-3">
+                        <Activity size={18} className={diagnosing ? "animate-spin" : ""} />
+                      </div>
+                      <h4 className="text-sm font-bold text-slate-800 mb-1">Database Health Check</h4>
+                      <p className="text-xs text-gray-400 leading-normal">Ping Supabase, inspect response times, and count all active table entries.</p>
+                      <span className="text-[10px] font-bold text-emerald-600 mt-3 group-hover:translate-x-1 transition-transform inline-flex items-center gap-1">
+                        {diagnosing ? "Running check..." : "Run Diagnostics →"}
+                      </span>
+                    </button>
+
+                    {/* Action 2: Export JSON Backup */}
+                    <button
+                      onClick={handleBackupJSON}
+                      disabled={exporting}
+                      className="group flex flex-col items-start text-left p-4 rounded-xl border border-gray-200 hover:border-blue-300 hover:bg-blue-50/30 transition-all duration-200 disabled:opacity-50"
+                    >
+                      <div className="p-2 rounded-lg bg-blue-100 text-blue-600 group-hover:scale-110 transition-transform duration-200 mb-3">
+                        <DownloadCloud size={18} className={exporting ? "animate-bounce" : ""} />
+                      </div>
+                      <h4 className="text-sm font-bold text-slate-800 mb-1">Global CMS Backup</h4>
+                      <p className="text-xs text-gray-400 leading-normal">Compile and export all table content into a single downloadable JSON backup file.</p>
+                      <span className="text-[10px] font-bold text-blue-600 mt-3 group-hover:translate-x-1 transition-transform inline-flex items-center gap-1">
+                        {exporting ? "Compiling payload..." : "Download Backup →"}
+                      </span>
+                    </button>
+
+                    {/* Action 3: Restore Default Seed */}
+                    <button
+                      onClick={() => setShowResetModal(true)}
+                      className="group flex flex-col items-start text-left p-4 rounded-xl border border-gray-200 hover:border-rose-300 hover:bg-rose-50/30 transition-all duration-200"
+                    >
+                      <div className="p-2 rounded-lg bg-rose-100 text-rose-600 group-hover:scale-110 transition-transform duration-200 mb-3">
+                        <RotateCcw size={18} />
+                      </div>
+                      <h4 className="text-sm font-bold text-slate-800 mb-1">Factory Seed Reset</h4>
+                      <p className="text-xs text-gray-400 leading-normal">Emergency operation to re-seed fallback default CMS records to Supabase.</p>
+                      <span className="text-[10px] font-bold text-rose-600 mt-3 group-hover:translate-x-1 transition-transform inline-flex items-center gap-1">
+                        Restore Factory Defaults →
+                      </span>
+                    </button>
+                  </div>
+
+                  {/* Terminal Console Log Output */}
+                  {diagResults && (
+                    <div className="mt-6 border-t border-gray-100 pt-6 animate-fade-in-up">
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-xs font-bold text-slate-700 tracking-wider uppercase">Telemetry Logs</span>
+                        <span className="text-[10px] text-gray-400">Checked at {diagResults.checkedAt}</span>
+                      </div>
+                      <div className="bg-slate-950 font-mono text-[11px] leading-relaxed text-emerald-400 p-4 rounded-xl border border-slate-900 max-h-48 overflow-y-auto space-y-1 shadow-inner scrollbar-thin scrollbar-thumb-slate-800">
+                        {diagResults.logs.map((log: string, idx: number) => {
+                          let color = "text-emerald-400";
+                          if (log.includes("[ERROR]")) color = "text-rose-400 font-bold";
+                          else if (log.includes("[WARNING]")) color = "text-amber-400 font-bold";
+                          else if (log.includes("[SUCCESS]")) color = "text-teal-300 font-semibold";
+                          else if (log.includes("[LATENCY]")) color = "text-blue-300";
+                          return (
+                            <div key={idx} className={`${color} tracking-tight`}>
+                              {log}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -4355,6 +4598,56 @@ export function EnhancedAdminDashboard() {
           onSuccess={loadData}
           userRole={userRole}
         />
+      )}
+      {showResetModal && (
+        <Dialog open={showResetModal} onOpenChange={setShowResetModal}>
+          <DialogContent className="max-w-md bg-white rounded-2xl p-6 border border-slate-100 shadow-xl">
+            <DialogHeader className="space-y-3">
+              <div className="w-12 h-12 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center mx-auto mb-2 animate-bounce">
+                <RotateCcw size={24} />
+              </div>
+              <DialogTitle className="text-xl font-bold text-center text-slate-800 tracking-tight">
+                Factory Defaults Reset
+              </DialogTitle>
+              <p className="text-sm text-gray-500 text-center leading-relaxed">
+                Are you absolutely sure you want to restore the website CMS to factory seed defaults? This action will overwrite existing configuration settings.
+              </p>
+            </DialogHeader>
+
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex gap-3 mt-4">
+              <div className="text-amber-600 text-sm font-semibold shrink-0">⚠️ Warning</div>
+              <p className="text-xs text-amber-800 leading-normal">
+                This will reset all main dashboard pages to their initial mock data. Make sure you have downloaded a **Global CMS Backup** before proceeding.
+              </p>
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <Button
+                variant="outline"
+                className="flex-1 rounded-xl"
+                onClick={() => setShowResetModal(false)}
+                disabled={resetting}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                className="flex-1 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-semibold flex items-center justify-center gap-2"
+                onClick={handleRestoreDefaults}
+                disabled={resetting}
+              >
+                {resetting ? (
+                  <>
+                    <span className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full" />
+                    Resetting...
+                  </>
+                ) : (
+                  "Force Reset"
+                )}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   );
