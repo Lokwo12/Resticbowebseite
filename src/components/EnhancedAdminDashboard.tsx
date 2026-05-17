@@ -2390,8 +2390,9 @@ export function EnhancedAdminDashboard() {
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                   {gallery.map((item) => (
                     <div key={item.key} className="bg-white border border-gray-200 border-t-4 border-t-amber-500 rounded-xl p-4 hover:shadow-md hover:border-amber-300 transition-all duration-300 shadow-sm cursor-pointer group" onClick={() => {
-                      setEditingItem(null);
-                      setShowTeamForm(true);
+                      setEditingItem(item);
+                      setFormData({ ...item.value, image: item.value.imageUrl || item.value.image });
+                      setShowGalleryForm(true);
                     }}>
                       <div className="relative">
                         <input
@@ -3329,8 +3330,8 @@ export function EnhancedAdminDashboard() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
                   {reports.map((report) => (
                     <div key={report.id} className="bg-white border border-gray-200 relative border-t-4 border-l-0 overflow-hidden border-l-slate-500 rounded-2xl p-6 md:p-7 hover:shadow-xl hover:-translate-y-2 hover:shadow-2xl hover:border-slate-400 transition-all duration-300 shadow-sm cursor-pointer group" onClick={() => {
-                      setEditingItem(null);
-                      setShowEventForm(true);
+                      setEditingItem(report);
+                      setShowReportForm(true);
                     }}>
                       <div className="flex items-center justify-between">
                         <div className="flex-1">

@@ -1,9 +1,48 @@
 import { useEffect, useState } from 'react';
-const logo = '/logo.png';
+import { projectId, publicAnonKey } from '../utils/supabase/info';
+const defaultLogo = '/logo.png';
 
 export function LoadingScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [progress, setProgress] = useState(0);
+  const [logoUrl, setLogoUrl] = useState(defaultLogo);
+  const [siteName, setSiteName] = useState('Resti Kiryandongo');
+  const [tagline, setTagline] = useState('Community Based Organization');
+
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const response = await fetch(
+          `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/site-settings`,
+          {
+            headers: {
+              Authorization: `Bearer ${publicAnonKey}`,
+            },
+          }
+        );
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.settings?.general) {
+            const fetchedLogo = data.settings.general.logoUrl;
+            if (fetchedLogo && !fetchedLogo.includes('figma:asset')) {
+              setLogoUrl(fetchedLogo);
+            }
+            if (data.settings.general.siteName) {
+              setSiteName(data.settings.general.siteName);
+            }
+            if (data.settings.general.tagline) {
+              setTagline(data.settings.general.tagline);
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching loading screen settings:', error);
+      }
+    };
+
+    fetchSettings();
+  }, []);
 
   useEffect(() => {
     // Simulate loading progress
@@ -28,16 +67,16 @@ export function LoadingScreen() {
       <div className="text-center space-y-6 px-4">
         {/* Logo with pulse animation */}
         <div className="animate-pulse">
-          <img src={logo} alt="Resti Kiryandongo Logo" className="h-24 w-auto mx-auto mb-4" />
+          <img src={logoUrl} alt={`${siteName} Logo`} className="h-24 w-auto mx-auto mb-4" />
         </div>
 
         {/* Organization name */}
         <div className="space-y-2">
           <h1 className="text-3xl text-emerald-700 animate-[fadeIn_0.5s_ease-out]">
-            Resti Kiryandongo
+            {siteName}
           </h1>
           <p className="text-gray-600 animate-[fadeIn_0.5s_ease-out_0.2s_both]">
-            Community Based Organization
+            {tagline}
           </p>
         </div>
 

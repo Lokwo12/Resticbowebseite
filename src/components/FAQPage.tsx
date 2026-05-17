@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { LoadingScreen } from './LoadingScreen';
 import { HelpCircle, ChevronDown, ChevronUp, Search } from 'lucide-react';
-import '../styles/animations.css';
 
 interface FAQ {
   id: string;

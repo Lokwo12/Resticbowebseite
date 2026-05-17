@@ -172,12 +172,12 @@ export function Team() {
                     className="overflow-hidden hover:shadow-2xl transition-all duration-500 group bg-white"
                   >
                     {/* Member Image */}
-                    <div className="relative h-72 bg-gradient-to-br from-emerald-400 to-emerald-600 overflow-hidden">
+                    <div className="relative h-72 bg-slate-50 overflow-hidden">
                       {member.image ? (
                         <img
                           src={member.image}
                           alt={member.name}
-                          className="absolute inset-0 w-full h-full object-cover object-top group-hover:scale-110 transition-transform duration-700"
+                          className="absolute inset-0 w-full h-full object-contain group-hover:scale-110 transition-transform duration-700"
                           onError={(e) => {
                             e.currentTarget.style.display = 'none';
                             e.currentTarget.nextElementSibling?.classList.remove('hidden');

@@ -85,12 +85,12 @@ export function Events() {
     <Card className="overflow-hidden hover:shadow-xl transition-all duration-300 group">
       <div className="md:flex">
         {/* Image */}
-        <div className="md:w-2/5 h-56 relative overflow-hidden bg-gradient-to-br from-emerald-400 to-emerald-600 flex-shrink-0">
+        <div className="md:w-2/5 h-56 relative overflow-hidden bg-slate-50 flex-shrink-0">
           {event.image ? (
             <img
               src={event.image}
               alt={event.title}
-              className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+              className="absolute inset-0 w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
             />
           ) : (
             <div className="absolute inset-0 flex items-center justify-center">

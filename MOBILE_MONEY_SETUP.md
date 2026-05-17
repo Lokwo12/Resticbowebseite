@@ -39,7 +39,9 @@ Thank-you email sent to donor + admin notification
 1. Go to **https://momodeveloper.mtn.com/**
 2. Click **Sign Up** and register a new account
 3. After logging in, go to **Products** and subscribe to the **Collection** product
-4. Copy your **Primary Key** (this is `MTN_MOMO_SUBSCRIPTION_KEY`)
+4. Copy your **Primary Key** (this is `MTN_MOMO_SUBSCRIPTION_KEY`) 
+Your Primary Key
+cf512761af1a46d09f792faabe1e8b94
 
 ### 1b. Create an API User (Sandbox)
 
@@ -58,8 +60,7 @@ curl -X POST https://sandbox.momodeveloper.mtn.com/v1_0/apiuser \
   -d '{"providerCallbackHost": "https://your-site.com"}'
 
 # 3. Create the API key for that user
-curl -X POST https://sandbox.momodeveloper.mtn.com/v1_0/apiuser/<YOUR_UUID>/apikey \
-  -H "Ocp-Apim-Subscription-Key: <YOUR_SUBSCRIPTION_KEY>"
+clear
 # → Returns: { "apiKey": "abc123..." }
 ```
 
