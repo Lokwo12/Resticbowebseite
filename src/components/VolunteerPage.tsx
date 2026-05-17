@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { Heart, Send, CheckCircle2, User, Mail, Phone, MessageSquare, Briefcase, Calendar, Cake, MapPin, GraduationCap, Globe, Shield, Users, ChevronDown, Upload, FileText } from 'lucide-react';
+import { projectId, publicAnonKey } from '../utils/supabase/info';
+import { toast } from 'sonner';
 
 export function VolunteerPage() {
   const [formData, setFormData] = useState({
@@ -37,46 +39,94 @@ export function VolunteerPage() {
     e.preventDefault();
     setLoading(true);
     
-    // Simulate API call
-    setTimeout(() => {
-      setLoading(false);
+    try {
+      // Package extra form fields nicely inside skills and message to fit the database/KV store schema perfectly without changing backend
+      const combinedSkills = [
+        formData.areaOfInterest ? `Area: ${formData.areaOfInterest}` : '',
+        formData.education ? `Education: ${formData.education}` : '',
+        formData.occupation ? `Occupation: ${formData.occupation}` : '',
+        formData.languages ? `Languages: ${formData.languages}` : ''
+      ].filter(Boolean).join(' | ');
+
+      const combinedMessage = [
+        formData.message ? `Message: ${formData.message}` : '',
+        formData.dob ? `DOB: ${formData.dob}` : '',
+        formData.gender ? `Gender: ${formData.gender}` : '',
+        formData.address ? `Address: ${formData.address}` : '',
+        formData.availability ? `Availability: ${formData.availability}` : '',
+        formData.emergencyContact ? `Emergency Contact: ${formData.emergencyContact}` : '',
+        formData.reference ? `Reference: ${formData.reference}` : ''
+      ].filter(Boolean).join('\n');
+
+      const payload = {
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        skills: combinedSkills,
+        message: combinedMessage
+      };
+
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/volunteer`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${publicAnonKey}`,
+          },
+          body: JSON.stringify(payload),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to submit application');
+      }
+
+      toast.success('Volunteer application submitted successfully!');
       setSubmitted(true);
       setFormData({
         name: '', email: '', phone: '', dob: '', gender: '', address: '', 
         education: '', occupation: '', languages: '', areaOfInterest: '', 
-        availability: '', emergencyContact: '', reference: '', message: '' 
+        availability: '', emergencyContact: '', reference: '', message: '',
+        cv: null
       });
-    }, 1500);
+    } catch (err) {
+      console.error('Error submitting volunteer form:', err);
+      toast.error(err instanceof Error ? err.message : 'Failed to submit application. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="bg-gray-50 min-h-screen">
       {/* Premium Hero Banner */}
-      <div className="bg-emerald-950 text-white pt-64 pb-32 overflow-hidden relative antialiased">
+      <div className="bg-emerald-950 text-white pt-44 pb-36 overflow-hidden relative antialiased">
         <div className="absolute inset-0 z-0">
           <img 
-            src="https://images.unsplash.com/photo-1559027615-cd7607dfdc0f?w=1600&q=80" 
+            src="https://images.unsplash.com/photo-1641569707854-c80945fb4719?w=1600&q=80" 
             alt="Volunteer Background" 
-            className="w-full h-full object-cover opacity-40 contrast-125"
+            className="w-full h-full object-cover opacity-30 contrast-110"
           />
-          {/* Darker overlay for text legibility */}
-          <div className="absolute inset-0 bg-emerald-950/60 z-10"></div>
+          {/* Darker premium overlay for absolute text legibility */}
+          <div className="absolute inset-0 bg-emerald-950/80 z-10"></div>
         </div>
         <div className="relative z-30 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           {/* Breadcrumbs */}
           <nav className="flex justify-center items-center gap-2 mb-10 text-emerald-400 text-sm font-bold tracking-wide animate-[fadeIn_1s_ease-out]">
             <a href="/" className="hover:text-emerald-300 transition-colors uppercase">Home</a>
-            <span className="text-emerald-600">/</span>
+            <span className="text-emerald-500">/</span>
             <span className="text-white uppercase">Volunteer</span>
           </nav>
           
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-white/20 rounded-full mb-8 border border-white/30 shadow-2xl backdrop-blur-none">
-            <Heart className="text-white animate-pulse" size={40} />
+          <div className="inline-flex items-center justify-center w-20 h-20 bg-white/10 rounded-full mb-8 border border-white/20 shadow-2xl backdrop-blur-sm">
+            <Heart className="text-emerald-400 animate-pulse" size={40} />
           </div>
-          <h1 className="text-6xl md:text-9xl font-black mb-6 text-white tracking-tighter leading-none uppercase drop-shadow-2xl">
+          <h1 className="text-5xl md:text-8xl font-black mb-6 text-white tracking-tighter leading-none uppercase drop-shadow-2xl">
             Join Our Mission
           </h1>
-          <p className="text-emerald-50 max-w-3xl mx-auto text-xl md:text-3xl font-bold tracking-tight leading-tight drop-shadow-lg opacity-100">
+          <p className="text-emerald-50/90 max-w-3xl mx-auto text-xl md:text-2xl font-medium tracking-tight leading-relaxed drop-shadow-md">
             Share your skills, make new friends, and be a part of positive change in Kiryandongo.
           </p>
         </div>

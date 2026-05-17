@@ -515,7 +515,7 @@ export function Contact() {
                   </div>
                   <div className="h-[350px] relative">
                     <iframe
-                      src={loc.mapUrl}
+                      src={loc.mapUrl && loc.mapUrl.includes('embed') ? loc.mapUrl : `https://maps.google.com/maps?q=${encodeURIComponent(loc.address)}&t=&z=14&ie=UTF8&iwloc=&output=embed`}
                       className="w-full h-full grayscale-[0.2] contrast-[1.1] hover:grayscale-0 transition-all duration-700"
                       style={{ border: 0 }}
                       allowFullScreen={true}

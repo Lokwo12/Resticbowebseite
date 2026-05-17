@@ -315,6 +315,10 @@ export function DonationModal() {
       document.body.style.overflow = '';
       if (mainContent) {
         mainContent.removeAttribute('aria-hidden');
+        mainContent.style.pointerEvents = '';
+        mainContent.style.userSelect = '';
+        mainContent.style.filter = '';
+        mainContent.style.transition = '';
       }
       return;
     }
@@ -322,12 +326,20 @@ export function DonationModal() {
     document.body.style.overflow = 'hidden';
     if (mainContent) {
       mainContent.setAttribute('aria-hidden', 'true');
+      mainContent.style.pointerEvents = 'none';
+      mainContent.style.userSelect = 'none';
+      mainContent.style.filter = 'opacity(0.4) saturate(0.6)';
+      mainContent.style.transition = 'filter 0.3s ease, opacity 0.3s ease';
     }
 
     return () => {
       document.body.style.overflow = '';
       if (mainContent) {
         mainContent.removeAttribute('aria-hidden');
+        mainContent.style.pointerEvents = '';
+        mainContent.style.userSelect = '';
+        mainContent.style.filter = '';
+        mainContent.style.transition = '';
       }
     };
   }, [shouldLockBackground]);

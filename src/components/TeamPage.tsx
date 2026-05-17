@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { LoadingScreen } from './LoadingScreen';
 import { Users, Mail, Linkedin, Twitter } from 'lucide-react';
-import '../styles/animations.css';
 
 interface TeamMember {
   id: string;
@@ -112,13 +111,13 @@ export function TeamPage() {
               style={{ animationDelay: `${index * 150}ms` }}
             >
               {/* Member Image */}
-              <div className="h-64 overflow-hidden relative">
+              <div className="h-72 overflow-hidden relative bg-slate-50">
                 <img
                   src={member.image}
                   alt={member.name}
-                  className="absolute inset-0 w-full h-full object-cover object-top hover:scale-105 transition-transform duration-500"
+                  className="absolute inset-0 w-full h-full object-contain hover:scale-105 transition-transform duration-500"
                 />
-                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-6">
+                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/35 to-transparent p-6">
                   <h3 className="text-xl font-bold text-white">{member.name}</h3>
                   <p className="text-emerald-300 font-medium">{member.role}</p>
                 </div>

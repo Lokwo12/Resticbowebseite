@@ -123,7 +123,7 @@ export function Header() {
     >
       {/* Announcement Bar */}
       {showAnnouncement && (
-      <div className="announcement-bar text-white text-xs font-medium py-1.5 text-center flex items-center justify-center gap-2 px-4 flex-wrap">
+      <div className="announcement-bar bg-emerald-950 text-white text-xs font-medium py-1.5 text-center flex items-center justify-center gap-2 px-4 flex-wrap border-b border-emerald-900/50">
         <span>🌍 {announcementText}</span>
         <Link
           to="/volunteer"
@@ -135,7 +135,9 @@ export function Header() {
       )}
       {/* Main nav */}
       <div className={`transition-all duration-300 ${
-        isSolid ? 'bg-white shadow-md' : 'bg-emerald-900/90 border-b border-white/20'
+        isSolid 
+          ? 'bg-white/95 backdrop-blur-md shadow-md border-b border-slate-100' 
+          : 'bg-emerald-950/80 backdrop-blur-md border-b border-white/10'
       }`}>
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className={`flex justify-between items-center transition-all duration-300 ${isSolid ? 'h-14' : 'h-16'}`}>

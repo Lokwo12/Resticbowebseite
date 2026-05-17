@@ -92,7 +92,7 @@ export function ContactPage() {
       <section className="max-w-7xl mx-auto px-4 pb-24">
         <div className="relative h-[550px] bg-gray-100 rounded-[2.5rem] shadow-[0_30px_60px_-15px_rgba(0,0,0,0.2)] overflow-hidden border border-gray-100">
           <iframe 
-            src={primaryLocation.mapUrl}
+            src={primaryLocation.mapUrl && primaryLocation.mapUrl.includes('embed') ? primaryLocation.mapUrl : `https://maps.google.com/maps?q=${encodeURIComponent(primaryLocation.address)}&t=&z=14&ie=UTF8&iwloc=&output=embed`}
             className="w-full h-full border-0"
             allowFullScreen
             loading="lazy"
@@ -102,7 +102,7 @@ export function ContactPage() {
           
           {/* Floating Address Card on Map - Enhanced Visibility */}
           <div className="absolute top-1/2 -translate-y-1/2 left-10 z-10 hidden md:block">
-            <div className="bg-slate-900/95 backdrop-blur-xl p-8 rounded-[2rem] shadow-2xl border border-white/10 max-w-sm transform hover:scale-105 transition-transform duration-500">
+            <div className="bg-gray-900/95 backdrop-blur-xl p-8 rounded-[2rem] shadow-2xl border border-white/10 max-w-sm transform hover:scale-105 transition-transform duration-500">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-400 text-xs font-bold uppercase tracking-wider mb-4 border border-emerald-500/30">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
                 Visit Us
@@ -127,7 +127,7 @@ export function ContactPage() {
 
       {/* Mobile-only Address Card */}
       <section className="md:hidden mx-4 -mt-20 mb-20 relative z-30">
-        <div className="bg-slate-900 p-8 rounded-[2rem] shadow-2xl border border-white/10">
+        <div className="bg-gray-900 p-8 rounded-[2rem] shadow-2xl border border-white/10">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-400 text-xs font-bold uppercase tracking-wider mb-4 border border-emerald-500/30">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
             Our Headquarters
