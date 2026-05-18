@@ -177,7 +177,7 @@ export function Team() {
                         <img
                           src={member.image}
                           alt={member.name}
-                          className="absolute inset-0 w-full h-full object-contain group-hover:scale-110 transition-transform duration-700"
+                          className="absolute inset-0 w-full h-full object-cover object-[center_30%] group-hover:scale-110 transition-transform duration-700"
                           onError={(e) => {
                             e.currentTarget.style.display = 'none';
                             e.currentTarget.nextElementSibling?.classList.remove('hidden');

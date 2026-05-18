@@ -165,7 +165,10 @@ export function StoriesArchive() {
                         {story.category.charAt(0).toUpperCase() + story.category.slice(1)}
                       </Badge>
                       <span className="text-xs text-gray-500">
-                        {new Date(story.date).toLocaleDateString()}
+                        {(() => {
+                          const d = new Date(story.date);
+                          return isNaN(d.getTime()) ? 'No Date' : d.toLocaleDateString();
+                        })()}
                       </span>
                     </div>
                   </div>

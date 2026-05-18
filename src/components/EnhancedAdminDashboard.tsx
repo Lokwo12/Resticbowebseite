@@ -27,6 +27,7 @@ import {
   CheckSquare,
   Square,
   Eye,
+  EyeOff,
   Reply,
   Filter,
   Settings,
@@ -50,7 +51,9 @@ import {
   Activity,
   Terminal,
   DownloadCloud,
-  RotateCcw
+  RotateCcw,
+  User,
+  Lock
 } from 'lucide-react';
 import { Card } from './ui/card';
 import { Badge } from './ui/badge';
@@ -182,6 +185,10 @@ export function EnhancedAdminDashboard() {
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [isSignup, setIsSignup] = useState(false);
+  const [showSignupSuccessDialog, setShowSignupSuccessDialog] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showUserFormPassword, setShowUserFormPassword] = useState(false);
+  const [showResetPassword, setShowResetPassword] = useState(false);
 
   // Add/Edit form states
   const [showProgramForm, setShowProgramForm] = useState(false);
@@ -524,14 +531,34 @@ export function EnhancedAdminDashboard() {
       const { data: { session } } = await supabase.auth.getSession();
       
       if (session?.access_token) {
-        setIsAuthenticated(true);
-        setAccessToken(session.access_token);
-        
         // Get user metadata
         const { data: { user } } = await supabase.auth.getUser(session.access_token);
-        if (user?.user_metadata) {
-          setUserRole(user.user_metadata.role || 'viewer');
-          setUserName(user.user_metadata.name || '');
+        if (user) {
+          // Fetch user status from backend to verify approval
+          const statusRes = await fetch(
+            `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/users/${user.id}/status`,
+            { headers: { Authorization: `Bearer ${publicAnonKey}` } }
+          );
+          const statusData = await statusRes.json();
+          
+          if (statusData.status && statusData.status !== 'active') {
+            await supabase.auth.signOut();
+            setIsAuthenticated(false);
+            setAccessToken('');
+            if (statusData.status === 'pending') {
+              toast.error('Your account is pending confirmation/approval from the admin.');
+            } else if (statusData.status === 'suspended') {
+              toast.error('Your account has been suspended.');
+            } else {
+              toast.error('Your account is inactive.');
+            }
+            return;
+          }
+
+          setIsAuthenticated(true);
+          setAccessToken(session.access_token);
+          setUserRole(user.user_metadata?.role || statusData.role || 'viewer');
+          setUserName(user.user_metadata?.name || '');
           setUserEmail(user.email || '');
         }
       }
@@ -554,16 +581,48 @@ export function EnhancedAdminDashboard() {
 
       if (error) throw error;
 
-      if (data.session) {
+      if (data.session && data.user) {
+        // Fetch user status from backend to verify approval
+        const statusRes = await fetch(
+          `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/users/${data.user.id}/status`,
+          { headers: { Authorization: `Bearer ${publicAnonKey}` } }
+        );
+        const statusData = await statusRes.json();
+        
+        if (statusData.status && statusData.status !== 'active') {
+          await supabase.auth.signOut();
+          if (statusData.status === 'pending') {
+            throw new Error('Your account is pending confirmation/approval from the admin.');
+          } else if (statusData.status === 'suspended') {
+            throw new Error('Your account has been suspended. Please contact a super admin.');
+          } else {
+            throw new Error('Your account is inactive. Please contact a super admin.');
+          }
+        }
+
         setIsAuthenticated(true);
         setAccessToken(data.session.access_token);
         
         // Get user metadata
         if (data.user?.user_metadata) {
-          setUserRole(data.user.user_metadata.role || 'viewer');
+          setUserRole(data.user.user_metadata.role || statusData.role || 'viewer');
           setUserName(data.user.user_metadata.name || '');
           setUserEmail(data.user.email || '');
         }
+
+        // Track the user login on the backend to sync metrics/KV catalog
+        fetch(`https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/users/${data.user.id}/track-login`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${data.session.access_token}`
+          },
+          body: JSON.stringify({
+            email: data.user.email,
+            name: data.user.user_metadata?.name,
+            role: data.user.user_metadata?.role
+          })
+        }).catch(err => console.error('Failed to track login metrics:', err));
         
         toast.success('Welcome back!');
         logActivity('login', 'Auth', 'Admin logged in');
@@ -618,9 +677,7 @@ export function EnhancedAdminDashboard() {
         throw new Error(data.error || 'Failed to create account');
       }
 
-      toast.success('Account created! Please login.');
-      setIsSignup(false);
-      setPassword('');
+      setShowSignupSuccessDialog(true);
     } catch (err: any) {
       console.error('Signup error:', err);
       toast.error(err.message || 'Failed to create account');
@@ -1626,63 +1683,101 @@ export function EnhancedAdminDashboard() {
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen flex">
+      <div className="min-h-screen flex bg-gradient-to-br from-slate-50 to-slate-100">
         {/* Left brand panel */}
-        <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-emerald-800 via-emerald-700 to-teal-600 flex-col items-center justify-center p-12 relative overflow-hidden">
+        <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-emerald-800 via-emerald-700 to-teal-700 flex-col items-center justify-center p-12 relative overflow-hidden">
           {/* Decorative circles */}
           <div className="absolute top-0 right-0 w-96 h-96 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2" />
           <div className="absolute bottom-0 left-0 w-72 h-72 bg-white/5 rounded-full translate-y-1/2 -translate-x-1/2" />
           <div className="absolute top-1/2 left-1/4 w-32 h-32 bg-white/5 rounded-full" />
-          <div className="relative z-10 text-center">
-            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 mb-8 inline-block border border-white/20">
-              <img src={logo} alt="Resti Kiryandongo CBO" className="h-24 w-auto mx-auto" />
+          <div className="relative z-10 text-center max-w-lg">
+            <div className="bg-white/10 backdrop-blur-md rounded-[2.5rem] p-6 mb-8 inline-block border border-white/20 shadow-2xl hover:scale-105 transition-transform duration-500">
+              <img src={logo} alt="Resti Kiryandongo CBO" className="h-28 w-auto mx-auto" />
             </div>
-            <h1 className="text-4xl font-bold text-white mb-3">Resti Kiryandongo CBO</h1>
-            <p className="text-emerald-100 text-lg mb-8">Community Based Organization</p>
+            <h1 className="text-4xl font-extrabold text-white mb-3 tracking-tight">Resti Kiryandongo CBO</h1>
+            <p className="text-emerald-100/90 text-lg font-medium mb-10">Empowering Communities, Transforming Lives</p>
             <div className="grid grid-cols-3 gap-4 mt-8">
-              {[{label:'Programs',val:'12+'},{label:'Volunteers',val:'150+'},{label:'Lives Impacted',val:'5K+'}].map(s => (
-                <div key={s.label} className="bg-white/10 rounded-xl p-4 border border-white/20">
+              {[
+                { label: 'Programs', val: '12+' },
+                { label: 'Volunteers', val: '150+' },
+                { label: 'Lives Impacted', val: '5K+' }
+              ].map(s => (
+                <div key={s.label} className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 border border-white/10 shadow-lg hover:bg-white/15 hover:scale-105 transition-all duration-300">
                   <p className="text-2xl font-bold text-white">{s.val}</p>
-                  <p className="text-emerald-200 text-xs mt-1">{s.label}</p>
+                  <p className="text-emerald-200 text-xs font-semibold tracking-wider uppercase mt-1">{s.label}</p>
                 </div>
               ))}
             </div>
           </div>
         </div>
         {/* Right form panel */}
-        <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-gray-50">
-          <div className="w-full max-w-md">
+        <div className="w-full lg:w-1/2 flex items-center justify-center p-6 md:p-8 relative overflow-hidden bg-gradient-to-br from-slate-50 via-white to-slate-100/50">
+          {/* Decorative glowing gradient orbs for high-end depth */}
+          <div className="absolute -top-40 -right-40 w-96 h-96 bg-gradient-to-br from-emerald-100/20 to-teal-100/10 rounded-full blur-[80px] pointer-events-none" />
+          <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-gradient-to-br from-teal-100/15 to-emerald-100/5 rounded-full blur-[80px] pointer-events-none" />
+          
+          <div 
+            className="w-full max-w-md relative z-10"
+            style={{
+              animation: 'slideUpFade 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+              opacity: 0,
+              transform: 'translateY(15px)'
+            }}
+          >
+            <style>{`
+              @keyframes slideUpFade {
+                from {
+                  opacity: 0;
+                  transform: translateY(20px);
+                }
+                to {
+                  opacity: 1;
+                  transform: translateY(0);
+                }
+              }
+            `}</style>
             {/* Mobile logo */}
-            <div className="lg:hidden text-center mb-8">
-              <img src={logo} alt="Logo" className="h-16 w-auto mx-auto mb-3" />
-              <h2 className="text-xl font-semibold text-emerald-700">Resti Kiryandongo CBO</h2>
+            <div className="lg:hidden text-center mb-6">
+              <div className="bg-white rounded-2xl p-3 inline-block shadow-sm border border-slate-100 mb-2">
+                <img src={logo} alt="Logo" className="h-12 w-auto mx-auto" />
+              </div>
+              <h2 className="text-xl font-bold text-slate-800">Resti Kiryandongo CBO</h2>
+              <p className="text-slate-500 text-xs mt-0.5">Admin Dashboard Portal</p>
             </div>
-            <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
-              <div className="mb-8">
-                <h1 className="text-2xl font-bold text-slate-800 tracking-tight mb-1">
-                  {isSignup ? 'Create Account' : 'Welcome back'}
+            <div className="bg-white rounded-2xl shadow-xl border border-slate-100 p-8 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+              <div className="mb-6">
+                <h1 className="text-2xl font-bold text-slate-800 tracking-tight mb-1.5">
+                  {showForgotPassword ? 'Reset Password' : (isSignup ? 'Create Account' : 'Welcome back')}
                 </h1>
-                <p className="text-gray-500 text-sm">
-                  {isSignup ? 'Fill in your details to get started' : 'Sign in to your admin dashboard'}
+                <p className="text-slate-500 text-sm font-medium leading-relaxed">
+                  {showForgotPassword ? 'Enter your email to receive a recovery link' : (isSignup ? 'Fill in your details to get started' : 'Sign in to your admin dashboard')}
                 </p>
               </div>
 
               {showForgotPassword ? (
-                <form onSubmit={handleSendResetEmail} className="space-y-6">
+                <form onSubmit={handleSendResetEmail} className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 leading-relaxed mb-1">Email Address</label>
-                    <input
-                      type="email"
-                      value={resetEmail}
-                      onChange={(e) => setResetEmail(e.target.value)}
-                      placeholder="admin@example.com"
-                      required
-                      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition text-sm"
-                    />
+                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Email Address</label>
+                    <div className="relative rounded-xl shadow-sm group">
+                      <div 
+                        className="absolute inset-y-0 left-0 flex items-center pointer-events-none text-slate-400 group-focus-within:text-emerald-500 transition-colors duration-300"
+                        style={{ left: '14px' }}
+                      >
+                        <Mail className="h-5 w-5" />
+                      </div>
+                      <input
+                        type="email"
+                        value={resetEmail}
+                        onChange={(e) => setResetEmail(e.target.value)}
+                        placeholder="admin@example.com"
+                        required
+                        className="w-full pl-12 pr-4 py-3 bg-slate-50/50 border border-slate-200/80 rounded-xl focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all duration-300 placeholder:text-slate-400 font-semibold text-slate-700 text-sm focus:bg-white"
+                      />
+                    </div>
                   </div>
                   <Button
                     type="submit"
-                    className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white py-3 rounded-xl transition shadow-lg font-medium mt-2"
+                    className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white py-3 rounded-xl shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 font-bold tracking-wide mt-6 active:translate-y-0"
                     disabled={loading}
                   >
                     {loading ? (
@@ -1694,57 +1789,83 @@ export function EnhancedAdminDashboard() {
                       'Send Reset Link'
                     )}
                   </Button>
-                  <div className="text-center mt-4">
-                    <button
-                      type="button"
-                      onClick={() => setShowForgotPassword(false)}
-                      className="text-sm font-medium text-emerald-600 hover:text-emerald-700 transition"
-                    >
-                      Back to Login
-                    </button>
-                  </div>
                 </form>
               ) : (
-                <form onSubmit={isSignup ? handleSignup : handleLogin} className="space-y-6">
+                <form onSubmit={isSignup ? handleSignup : handleLogin} className="space-y-4">
                   {isSignup && (
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 leading-relaxed mb-1">Full Name</label>
-                      <input
-                        type="text"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        placeholder="John Doe"
-                        required
-                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition text-sm"
-                      />
+                      <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Full Name</label>
+                      <div className="relative rounded-xl shadow-sm group">
+                        <div 
+                          className="absolute inset-y-0 left-0 flex items-center pointer-events-none text-slate-400 group-focus-within:text-emerald-500 transition-colors duration-300"
+                          style={{ left: '14px' }}
+                        >
+                          <User className="h-5 w-5" />
+                        </div>
+                        <input
+                          type="text"
+                          value={name}
+                          onChange={(e) => setName(e.target.value)}
+                          placeholder="John Doe"
+                          required
+                          className="w-full pl-12 pr-4 py-3 bg-slate-50/50 border border-slate-200/80 rounded-xl focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all duration-300 placeholder:text-slate-400 font-semibold text-slate-700 text-sm focus:bg-white"
+                        />
+                      </div>
                     </div>
                   )}
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 leading-relaxed mb-1">Email Address</label>
-                    <input
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="admin@example.com"
-                      required
-                      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition text-sm"
-                    />
+                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Email Address</label>
+                    <div className="relative rounded-xl shadow-sm group">
+                      <div 
+                        className="absolute inset-y-0 left-0 flex items-center pointer-events-none text-slate-400 group-focus-within:text-emerald-500 transition-colors duration-300"
+                        style={{ left: '14px' }}
+                      >
+                        <Mail className="h-5 w-5" />
+                      </div>
+                      <input
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="admin@example.com"
+                        required
+                        className="w-full pl-12 pr-4 py-3 bg-slate-50/50 border border-slate-200/80 rounded-xl focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all duration-300 placeholder:text-slate-400 font-semibold text-slate-700 text-sm focus:bg-white"
+                      />
+                    </div>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 leading-relaxed mb-1">Password</label>
-
-                    <input
-                      type="password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="••••••••"
-                      required
-                      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition text-sm"
-                    />
+                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Password</label>
+                    <div className="relative rounded-xl shadow-sm group">
+                      <div 
+                        className="absolute inset-y-0 left-0 flex items-center pointer-events-none text-slate-400 group-focus-within:text-emerald-500 transition-colors duration-300"
+                        style={{ left: '14px' }}
+                      >
+                        <Lock className="h-5 w-5" />
+                      </div>
+                      <input
+                        type={showPassword ? "text" : "password"}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="••••••••"
+                        required
+                        className="w-full pl-12 pr-12 py-3 bg-slate-50/50 border border-slate-200/80 rounded-xl focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all duration-300 placeholder:text-slate-400 font-semibold text-slate-700 text-sm focus:bg-white"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-emerald-500 transition-colors duration-300 focus:outline-none"
+                        style={{ right: '14px' }}
+                      >
+                        {showPassword ? (
+                          <EyeOff className="h-5 w-5" />
+                        ) : (
+                          <Eye className="h-5 w-5" />
+                        )}
+                      </button>
+                    </div>
                   </div>
                   <Button
                     type="submit"
-                    className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white py-3 rounded-xl transition shadow-lg font-medium mt-2"
+                    className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white py-3 rounded-xl shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 font-bold tracking-wide mt-6 active:translate-y-0"
                     disabled={loading}
                   >
                     {loading ? (
@@ -1756,29 +1877,82 @@ export function EnhancedAdminDashboard() {
                       isSignup ? 'Create Account' : 'Sign In'
                     )}
                   </Button>
-                  <div className="text-center mt-4">
-                    <button
-                      type="button"
-                      onClick={() => setShowForgotPassword(true)}
-                      className="text-sm font-medium text-emerald-600 hover:text-emerald-700 transition"
-                    >
-                      Forgot Password?
-                    </button>
-                  </div>
                 </form>
-
               )}
-              <div className="mt-6 text-center">
-                <button
-                  onClick={() => setIsSignup(!isSignup)}
-                  className="text-emerald-600 hover:text-emerald-700 text-sm font-medium transition"
-                >
-                  {isSignup ? 'Already have an account? Sign in' : "Don't have an account? Sign up"}
-                </button>
+              <div className="mt-6 pt-5 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4">
+                {showForgotPassword ? (
+                  <button
+                    onClick={() => setShowForgotPassword(false)}
+                    className="text-emerald-600 hover:text-emerald-700 text-sm font-bold transition-colors w-full text-center hover:scale-105 transition-transform duration-200"
+                  >
+                    Back to Login
+                  </button>
+                ) : (
+                  <>
+                    <button
+                      onClick={() => setIsSignup(!isSignup)}
+                      className="text-emerald-600 hover:text-emerald-700 text-sm font-bold transition-colors hover:scale-105 transition-transform duration-200"
+                    >
+                      {isSignup ? 'Already have an account? Sign in' : "Don't have an account? Sign up"}
+                    </button>
+                    {!isSignup && (
+                      <button
+                        onClick={() => setShowForgotPassword(true)}
+                        className="text-slate-400 hover:text-emerald-600 text-sm font-semibold transition-colors hover:scale-105 transition-transform duration-200"
+                      >
+                        Forgot Password?
+                      </button>
+                    )}
+                  </>
+                )}
               </div>
             </div>
           </div>
         </div>
+
+        {/* Signup Success Pending Approval Dialog */}
+        <Dialog open={showSignupSuccessDialog} onOpenChange={setShowSignupSuccessDialog}>
+          <DialogContent className="max-w-md bg-white/95 backdrop-blur-2xl rounded-[2rem] p-8 border-0 shadow-2xl overflow-hidden">
+            <DialogHeader className="mb-2 flex flex-col items-center text-center">
+              <div className="w-16 h-16 bg-yellow-50 rounded-full flex items-center justify-center mb-4 border border-yellow-100 shadow-inner">
+                <Clock className="h-8 w-8 text-yellow-600 animate-pulse" />
+              </div>
+              <DialogTitle className="text-2xl font-extrabold text-slate-800 tracking-tight">Account Pending Approval</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-6 text-center">
+              <p className="text-base text-slate-600 leading-relaxed">
+                Your administrator account has been created successfully!
+              </p>
+              <div className="p-5 bg-slate-50 rounded-2xl border border-slate-100/80 text-left space-y-2">
+                <p className="text-sm text-slate-700 font-semibold flex items-center gap-2">
+                  <span className="relative flex h-2.5 w-2.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-yellow-500"></span>
+                  </span>
+                  Status: Pending Confirmation
+                </p>
+                <p className="text-xs text-slate-500 leading-relaxed">
+                  To ensure platform security, all self-registered administrator accounts must be manually confirmed and activated by a <strong>Super Admin</strong> from the user management portal before you can log in.
+                </p>
+              </div>
+              <p className="text-xs text-slate-400">
+                Please contact the organization's Super Admin to request account activation.
+              </p>
+              <Button
+                onClick={() => {
+                  setShowSignupSuccessDialog(false);
+                  setIsSignup(false);
+                  setEmail('');
+                  setPassword('');
+                  setName('');
+                }}
+                className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold py-3 rounded-xl shadow-md hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 transition-all duration-300"
+              >
+                Understood
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     );
   }
@@ -3240,7 +3414,9 @@ export function EnhancedAdminDashboard() {
                   >
                     <option value="all">All Status</option>
                     <option value="active">Active</option>
+                    <option value="pending">Pending Approval</option>
                     <option value="inactive">Inactive</option>
+                    <option value="suspended">Suspended</option>
                   </select>
                   <select
                     value={userRoleFilter}
@@ -3302,7 +3478,9 @@ export function EnhancedAdminDashboard() {
                       >
                         <option value="">Change Status...</option>
                         <option value="active">Active</option>
+                        <option value="pending">Pending Approval</option>
                         <option value="inactive">Inactive</option>
+                        <option value="suspended">Suspended</option>
                       </select>
                     </div>
                     <Button onClick={() => setSelectedUsers([])} variant="outline" size="sm">
@@ -3344,6 +3522,10 @@ export function EnhancedAdminDashboard() {
                             <Badge className={
                               user.value.status === 'active'
                                 ? 'bg-green-100 text-green-700 border-green-300'
+                                : user.value.status === 'pending'
+                                ? 'bg-yellow-100 text-yellow-700 border-yellow-300'
+                                : user.value.status === 'suspended'
+                                ? 'bg-red-100 text-red-700 border-red-300'
                                 : 'bg-gray-100 text-slate-700 leading-relaxed border-gray-300'
                             }>
                               {user.value.status}
@@ -3351,7 +3533,7 @@ export function EnhancedAdminDashboard() {
                           </div>
                           <p className="text-sm text-slate-600 mb-1">{user.value.email}</p>
                           <p className="text-xs text-gray-400">
-                            Created: {new Date(user.value.created_at).toLocaleDateString()}
+                            Created: {new Date(user.value.created_at || user.value.createdAt).toLocaleDateString()}
                           </p>
                         </div>
                         <div className="flex flex-wrap gap-2 mt-auto pt-4 border-t border-slate-100 w-full relative z-20" onClick={(e) => e.stopPropagation()}>
@@ -4399,14 +4581,27 @@ export function EnhancedAdminDashboard() {
             {!editingItem && (
               <div>
                 <label className="block text-sm mb-2">Password</label>
-                <input
-                  type="password"
-                  value={userFormData.password}
-                  onChange={(e) => setUserFormData({ ...userFormData, password: e.target.value })}
-                  className="w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none"
-                  required
-                  minLength={6}
-                />
+                <div className="relative rounded-xl shadow-sm">
+                  <input
+                    type={showUserFormPassword ? "text" : "password"}
+                    value={userFormData.password}
+                    onChange={(e) => setUserFormData({ ...userFormData, password: e.target.value })}
+                    className="w-full pl-4 pr-12 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none"
+                    required
+                    minLength={6}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowUserFormPassword(!showUserFormPassword)}
+                    className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-emerald-500 transition-colors duration-300 focus:outline-none"
+                  >
+                    {showUserFormPassword ? (
+                      <EyeOff className="h-5 w-5" />
+                    ) : (
+                      <Eye className="h-5 w-5" />
+                    )}
+                  </button>
+                </div>
                 <p className="text-xs text-gray-500 mt-1">Minimum 6 characters</p>
               </div>
             )}
@@ -4434,7 +4629,9 @@ export function EnhancedAdminDashboard() {
                 required
               >
                 <option value="active">Active</option>
+                <option value="pending">Pending Approval</option>
                 <option value="inactive">Inactive</option>
+                <option value="suspended">Suspended</option>
               </select>
             </div>
             <div className="flex gap-2 justify-end">
@@ -4464,14 +4661,27 @@ export function EnhancedAdminDashboard() {
               </div>
               <div>
                 <label className="block text-sm mb-2">New Password</label>
-                <input
-                  type="password"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  className="w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none"
-                  placeholder="Enter new password"
-                  minLength={6}
-                />
+                <div className="relative rounded-xl shadow-sm">
+                  <input
+                    type={showResetPassword ? "text" : "password"}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    className="w-full pl-4 pr-12 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none"
+                    placeholder="Enter new password"
+                    minLength={6}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowResetPassword(!showResetPassword)}
+                    className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-emerald-500 transition-colors duration-300 focus:outline-none"
+                  >
+                    {showResetPassword ? (
+                      <EyeOff className="h-5 w-5" />
+                    ) : (
+                      <Eye className="h-5 w-5" />
+                    )}
+                  </button>
+                </div>
                 <p className="text-xs text-gray-500 mt-1">Minimum 6 characters</p>
               </div>
               <div className="flex gap-2 justify-end">

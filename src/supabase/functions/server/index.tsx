@@ -536,7 +536,11 @@ app.post('/make-server-2a4be611/admin/signup', async (c) => {
     }
 
     // Default role is 'editor', first user can be 'super-admin'
-    const userRole = role || 'editor'
+    const existingUsers = await kv.getByPrefix('admin_user:')
+    const isFirstUser = !existingUsers || existingUsers.length === 0
+
+    const userRole = isFirstUser ? 'super-admin' : (role || 'editor')
+    const userStatus = isFirstUser ? 'active' : 'pending'
 
     const { data, error } = await supabase.auth.admin.createUser({
       email,
@@ -550,11 +554,40 @@ app.post('/make-server-2a4be611/admin/signup', async (c) => {
       return c.json({ error: error.message }, 400)
     }
 
-    console.log(`Admin user created: ${data.user.id} with role: ${userRole}`)
+    // Store user info in KV to keep User Management tab fully synced
+    const userId = `admin_user:${data.user.id}`
+    await kv.set(userId, {
+      id: data.user.id,
+      email,
+      name: name || email.split('@')[0],
+      role: userRole,
+      status: userStatus,
+      createdAt: new Date().toISOString(),
+      lastLogin: null,
+      loginCount: 0
+    })
+
+    console.log(`Admin user created and synced to KV: ${data.user.id} with role: ${userRole}, status: ${userStatus}`)
     return c.json({ success: true, message: 'Admin account created successfully', user: data.user })
   } catch (error) {
     console.error('Error creating admin account:', error)
     return c.json({ error: 'Failed to create admin account', details: String(error) }, 500)
+  }
+})
+
+// Get user status
+app.get('/make-server-2a4be611/admin/users/:userId/status', async (c) => {
+  try {
+    const userId = c.req.param('userId')
+    const user = await kv.get(`admin_user:${userId}`)
+    if (!user) {
+      // If not in KV, default to active to prevent CLI-created users from being locked out
+      return c.json({ success: true, status: 'active', role: 'viewer' })
+    }
+    return c.json({ success: true, status: user.status, role: user.role })
+  } catch (error) {
+    console.error('Error fetching user status:', error)
+    return c.json({ error: 'Failed to fetch status', details: String(error) }, 500)
   }
 })
 
@@ -579,7 +612,18 @@ app.patch('/make-server-2a4be611/admin/users/:userId/role', async (c) => {
       return c.json({ error: error.message }, 400)
     }
 
-    console.log(`User role updated: ${userId} to ${role}`)
+    // Also update KV store to keep User Management tab fully synced
+    const kvKey = `admin_user:${userId}`
+    const existingKV = await kv.get(kvKey)
+    if (existingKV) {
+      await kv.set(kvKey, {
+        ...existingKV,
+        role,
+        updatedAt: new Date().toISOString()
+      })
+    }
+
+    console.log(`User role updated: ${userId} to ${role} (Supabase Auth and KV)`)
     return c.json({ success: true, message: 'Role updated successfully', user: data.user })
   } catch (error) {
     console.error('Error updating user role:', error)
@@ -2021,7 +2065,7 @@ app.get('/make-server-2a4be611/site-settings', async (c) => {
           siteName: 'Resti Kiryandongo CBO',
           tagline: 'Community Based Organization',
           description: 'Empowering communities through education, healthcare, and sustainable development.',
-          logoUrl: 'figma:asset/2b36c5cb8ddf5552ba2d3e612fd68401a7bb193e.png',
+          logoUrl: '/logo.png',
           primaryColor: '#10b981',
         },
         header: {
@@ -2180,7 +2224,7 @@ app.post('/make-server-2a4be611/site-settings/initialize', async (c) => {
         siteName: 'Resti Kiryandongo CBO',
         tagline: 'Community Based Organization',
         description: 'Empowering communities through education, healthcare, and sustainable development.',
-        logoUrl: 'figma:asset/2b36c5cb8ddf5552ba2d3e612fd68401a7bb193e.png',
+        logoUrl: '/logo.png',
         primaryColor: '#10b981',
       },
       header: {
@@ -2583,7 +2627,6 @@ app.post('/make-server-2a4be611/admin/users/:id/reset-password', async (c) => {
   }
 })
 
-// Track user login
 app.post('/make-server-2a4be611/admin/users/:id/track-login', async (c) => {
   try {
     const id = c.req.param('id')
@@ -2596,6 +2639,39 @@ app.post('/make-server-2a4be611/admin/users/:id/track-login', async (c) => {
         lastLogin: new Date().toISOString(),
         loginCount: (user.loginCount || 0) + 1
       })
+    } else {
+      // Auto-register in KV if user logs in but wasn't in KV yet (e.g. users created before fix or via standard CLI)
+      let email = ''
+      let name = ''
+      let role = 'editor'
+      try {
+        const body = await c.req.json()
+        email = body.email || ''
+        name = body.name || ''
+        role = body.role || 'editor'
+      } catch (_) {
+        // Fallback: fetch user from Supabase Auth admin API
+        const { data: authUser } = await supabase.auth.admin.getUserById(id)
+        if (authUser?.user) {
+          email = authUser.user.email || ''
+          name = authUser.user.user_metadata?.name || email.split('@')[0]
+          role = authUser.user.user_metadata?.role || 'editor'
+        }
+      }
+
+      if (email) {
+        await kv.set(userId, {
+          id,
+          email,
+          name: name || email.split('@')[0],
+          role,
+          status: 'active',
+          createdAt: new Date().toISOString(),
+          lastLogin: new Date().toISOString(),
+          loginCount: 1
+        })
+        console.log(`Auto-registered user ${id} in KV store during login tracking`)
+      }
     }
 
     return c.json({ success: true })
