@@ -154,7 +154,7 @@ export function Header() {
               className="flex items-center gap-3 group transition-transform hover:scale-102"
             >
               <img 
-                src={settings.general?.logoUrl || logo} 
+                src={getLogoUrl()} 
                 alt="Resti Kiryandongo" 
                 className={`w-auto max-w-[160px] object-contain transition-all duration-300 group-hover:scale-105 ${isSolid ? 'h-12 sm:h-14' : 'h-14 sm:h-16'}`} 
               />

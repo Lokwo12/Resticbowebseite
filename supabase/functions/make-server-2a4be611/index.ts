@@ -1,4 +1,4 @@
-﻿import { Hono } from 'npm:hono'
+import { Hono } from 'npm:hono'
 import { cors } from 'npm:hono/cors'
 import { logger } from 'npm:hono/logger'
 import { createClient } from 'npm:@supabase/supabase-js@2'
@@ -819,7 +819,11 @@ app.post('/make-server-2a4be611/admin/signup', async (c) => {
     }
 
     // Default role is 'editor', first user can be 'super-admin'
-    const userRole = role || 'editor'
+    const existingUsers = await kv.getByPrefix('admin_user:')
+    const isFirstUser = !existingUsers || existingUsers.length === 0
+
+    const userRole = isFirstUser ? 'super-admin' : (role || 'editor')
+    const userStatus = isFirstUser ? 'active' : 'pending'
 
     const { data, error } = await supabase.auth.admin.createUser({
       email,
@@ -833,11 +837,40 @@ app.post('/make-server-2a4be611/admin/signup', async (c) => {
       return c.json({ error: error.message }, 400)
     }
 
-    console.log(`Admin user created: ${data.user.id} with role: ${userRole}`)
+    // Store user info in KV to keep User Management tab fully synced
+    const userId = `admin_user:${data.user.id}`
+    await kv.set(userId, {
+      id: data.user.id,
+      email,
+      name: name || email.split('@')[0],
+      role: userRole,
+      status: userStatus,
+      createdAt: new Date().toISOString(),
+      lastLogin: null,
+      loginCount: 0
+    })
+
+    console.log(`Admin user created and synced to KV: ${data.user.id} with role: ${userRole}, status: ${userStatus}`)
     return c.json({ success: true, message: 'Admin account created successfully', user: data.user })
   } catch (error) {
     console.error('Error creating admin account:', error)
     return c.json({ error: 'Failed to create admin account', details: String(error) }, 500)
+  }
+})
+
+// Get user status
+app.get('/make-server-2a4be611/admin/users/:userId/status', async (c) => {
+  try {
+    const userId = c.req.param('userId')
+    const user = await kv.get(`admin_user:${userId}`)
+    if (!user) {
+      // If not in KV, default to active to prevent CLI-created users from being locked out
+      return c.json({ success: true, status: 'active', role: 'viewer' })
+    }
+    return c.json({ success: true, status: user.status, role: user.role })
+  } catch (error) {
+    console.error('Error fetching user status:', error)
+    return c.json({ error: 'Failed to fetch status', details: String(error) }, 500)
   }
 })
 

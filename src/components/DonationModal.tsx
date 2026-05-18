@@ -303,7 +303,10 @@ export function DonationModal() {
       .then(r => r.ok ? r.json() : null)
       .then(data => {
         if (data?.settings?.donation) setConfig(p => ({ ...p, ...data.settings.donation }));
-        if (data?.settings?.general?.logoUrl) setLogoUrl(data.settings.general.logoUrl);
+        if (data?.settings?.general?.logoUrl) {
+          const fetchedLogo = data.settings.general.logoUrl;
+          setLogoUrl(fetchedLogo && !fetchedLogo.includes('figma:asset') ? fetchedLogo : '/logo.png');
+        }
       })
       .catch(() => { });
   }, [isOpen]);

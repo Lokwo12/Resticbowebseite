@@ -88,6 +88,7 @@ export function OpportunitiesPage() {
   const formatDate = (dateString: string) => {
     if (!dateString || dateString.toLowerCase() === 'ongoing') return 'Ongoing';
     const date = new Date(dateString);
+    if (isNaN(date.getTime())) return dateString;
     return date.toLocaleDateString('en-US', { 
       year: 'numeric', 
       month: 'long', 

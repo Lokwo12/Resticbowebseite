@@ -167,7 +167,10 @@ export function ImpactStories() {
                   <div className="flex items-center justify-between mt-auto pt-4 border-t border-gray-100">
                     <Badge variant="secondary">{story.category}</Badge>
                     <span className="text-xs text-gray-500">
-                      {new Date(story.date).toLocaleDateString()}
+                      {(() => {
+                        const d = new Date(story.date);
+                        return isNaN(d.getTime()) ? 'No Date' : d.toLocaleDateString();
+                      })()}
                     </span>
                   </div>
                 </div>
