@@ -181,12 +181,12 @@ export function NewsArchive() {
                         article.featured ? 'ring-2 ring-emerald-600' : ''
                       }`}
                     >
-                      <div className="relative h-56 bg-gradient-to-br from-emerald-400 to-emerald-600 overflow-hidden">
+                      <div className="relative h-56 bg-slate-50 overflow-hidden flex items-center justify-center">
                         {article.image ? (
                           <img
                             src={article.image}
                             alt={article.title}
-                            className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                            className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-700"
                             onError={(e) => {
                               e.currentTarget.style.display = 'none';
                               e.currentTarget.nextElementSibling?.classList.remove('hidden');

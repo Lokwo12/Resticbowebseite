@@ -111,12 +111,12 @@ export function ImpactReports() {
           {displayReports.map((report) => (
             <div key={report.id} className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100 flex flex-col hover:shadow-2xl transition-shadow duration-300">
               {/* Report Thumbnail */}
-              <div className="h-48 overflow-hidden relative bg-gray-100">
+              <div className="h-48 overflow-hidden relative bg-slate-50 flex items-center justify-center">
                 {report.thumbnail ? (
                   <img
                     src={report.thumbnail}
                     alt={report.title}
-                    className="w-full h-full object-cover object-center hover:scale-105 transition-transform duration-500"
+                    className="w-full h-full object-contain hover:scale-105 transition-transform duration-500"
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center bg-emerald-50">

@@ -95,15 +95,15 @@ export function ProgramDetail() {
 
         <div className="bg-white rounded-2xl shadow-sm overflow-hidden border border-gray-100">
           {/* Hero Image */}
-          <div className="relative h-52 sm:h-96 bg-gray-200">
+          <div className="relative h-52 sm:h-96 bg-slate-950 flex items-center justify-center overflow-hidden">
             {program.image ? (
               <img
                 src={program.image}
                 alt={program.title}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-contain"
               />
             ) : (
-              <div className="w-full h-full flex items-center justify-center bg-emerald-100">
+              <div className="w-full h-full flex items-center justify-center bg-emerald-950">
                 <Heart size={80} className="text-emerald-500" />
               </div>
             )}
