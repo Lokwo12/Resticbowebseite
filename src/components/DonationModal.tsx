@@ -559,7 +559,7 @@ export function DonationModal() {
               <img 
                 src={logoUrl} 
                 alt="Company Logo" 
-                className="h-16 w-auto object-contain relative z-10"
+                className="h-16 w-16 rounded-full object-cover shadow-sm border border-emerald-500/20 relative z-10"
                 onError={(e) => {
                   (e.target as HTMLImageElement).src = '/logo.png';
                 }}

@@ -109,11 +109,11 @@ export function NewsDetail() {
         <div className="bg-white rounded-2xl shadow-sm overflow-hidden border border-gray-100">
           {/* Article Image */}
           {article.image && (
-            <div className="relative h-96 bg-gray-200">
+            <div className="relative h-96 bg-slate-950 flex items-center justify-center overflow-hidden">
               <img
                 src={article.image}
                 alt={article.title}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-contain"
               />
             </div>
           )}

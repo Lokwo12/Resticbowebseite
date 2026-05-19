@@ -122,12 +122,12 @@ export function StoriesArchive() {
               {filteredStories.map((story) => (
                 <Card key={story.id} className="overflow-hidden hover:shadow-xl transition-all duration-500 bg-white border border-gray-100 group flex flex-col">
                   {/* Uniform image area */}
-                  <div className="relative h-52 overflow-hidden bg-gradient-to-br from-emerald-400 to-emerald-600 flex-shrink-0">
+                  <div className="relative h-52 overflow-hidden bg-slate-50 border-b border-slate-100 flex-shrink-0 flex items-center justify-center">
                     {story.image ? (
                       <img
                         src={story.image}
                         alt={story.name}
-                        className="absolute inset-0 w-full h-full object-cover object-center group-hover:scale-110 transition-transform duration-700"
+                        className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-700"
                       />
                     ) : (
                       <div className="absolute inset-0 flex items-center justify-center">

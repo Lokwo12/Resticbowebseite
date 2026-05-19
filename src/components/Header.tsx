@@ -156,7 +156,11 @@ export function Header() {
               <img 
                 src={getLogoUrl()} 
                 alt="Resti Kiryandongo" 
-                className={`w-auto max-w-[160px] object-contain transition-all duration-300 group-hover:scale-105 ${isSolid ? 'h-12 sm:h-14' : 'h-14 sm:h-16'}`} 
+                className={`rounded-full object-cover shadow-sm transition-all duration-300 group-hover:scale-105 border ${
+                  isSolid 
+                    ? 'h-12 w-12 sm:h-14 sm:w-14 border-emerald-500/20' 
+                    : 'h-14 w-14 sm:h-16 sm:w-16 border-white/20'
+                }`} 
               />
               <div className="hidden sm:block">
                 <h1 className={`text-lg font-bold tracking-tight transition-colors ${

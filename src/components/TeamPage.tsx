@@ -111,11 +111,11 @@ export function TeamPage() {
               style={{ animationDelay: `${index * 150}ms` }}
             >
               {/* Member Image */}
-              <div className="h-72 overflow-hidden relative bg-slate-50">
+              <div className="h-72 overflow-hidden relative bg-slate-50 flex items-center justify-center">
                 <img
                   src={member.image}
                   alt={member.name}
-                  className="absolute inset-0 w-full h-full object-cover object-[center_30%] hover:scale-105 transition-transform duration-500"
+                  className="w-full h-full object-contain hover:scale-105 transition-transform duration-500"
                 />
                 <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/35 to-transparent p-6">
                   <h3 className="text-xl font-bold text-white">{member.name}</h3>

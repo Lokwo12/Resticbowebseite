@@ -67,7 +67,7 @@ export function LoadingScreen() {
       <div className="text-center space-y-6 px-4">
         {/* Logo with pulse animation */}
         <div className="animate-pulse">
-          <img src={logoUrl} alt={`${siteName} Logo`} className="h-24 w-auto mx-auto mb-4" />
+          <img src={logoUrl} alt={`${siteName} Logo`} className="h-24 w-24 rounded-full object-cover shadow-md border border-emerald-500/20 mx-auto mb-4" />
         </div>
 
         {/* Organization name */}

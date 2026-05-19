@@ -352,22 +352,63 @@ export function Donation() {
                       )}
 
                       {(method === 'mtn' || method === 'airtel') && (
-                        <form onSubmit={handleMobileMoneySubmit} className="space-y-6">
-                          <div><label className={lbl}>Phone Number</label><input required className={inp} placeholder="256 700 000 000" value={donorData.phone} onChange={e => setDonorData(p => ({ ...p, phone: e.target.value }))} /></div>
-                          <button type="submit" disabled={submitting} className="w-full bg-emerald-600 text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2">
+                        <form onSubmit={handleMobileMoneySubmit} className="space-y-4">
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <label className={lbl}>First Name</label>
+                              <input required className={inp} value={donorData.firstName} onChange={e => setDonorData(p => ({ ...p, firstName: e.target.value }))} />
+                            </div>
+                            <div>
+                              <label className={lbl}>Last Name</label>
+                              <input required className={inp} value={donorData.lastName} onChange={e => setDonorData(p => ({ ...p, lastName: e.target.value }))} />
+                            </div>
+                          </div>
+                          <div>
+                            <label className={lbl}>Email</label>
+                            <input required type="email" className={inp} value={donorData.email} onChange={e => setDonorData(p => ({ ...p, email: e.target.value }))} />
+                          </div>
+                          <div>
+                            <label className={lbl}>Phone Number</label>
+                            <input required className={inp} placeholder="256 700 000 000" value={donorData.phone} onChange={e => setDonorData(p => ({ ...p, phone: e.target.value }))} />
+                          </div>
+                          <button type="submit" disabled={submitting} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2 transition-all active:scale-[0.99]">
                             {submitting ? <span className="animate-spin w-5 h-5 border-2 border-white border-t-transparent rounded-full" /> : <><Phone size={18} /> Pay {formatUSD(finalAmount)}</>}
                           </button>
                         </form>
                       )}
 
                       {method === 'bank' && (
-                        <form onSubmit={handleBankSubmit} className="space-y-6">
-                          <div className="bg-gray-50 rounded-2xl p-6 space-y-4 text-xs">
-                            <p><strong>Bank:</strong> {donationConfig.bankName}</p>
-                            <p><strong>Account:</strong> {donationConfig.accountNumber}</p>
-                            <p><strong>SWIFT:</strong> {donationConfig.swiftCode}</p>
+                        <form onSubmit={handleBankSubmit} className="space-y-4">
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <label className={lbl}>First Name</label>
+                              <input required className={inp} value={donorData.firstName} onChange={e => setDonorData(p => ({ ...p, firstName: e.target.value }))} />
+                            </div>
+                            <div>
+                              <label className={lbl}>Last Name</label>
+                              <input required className={inp} value={donorData.lastName} onChange={e => setDonorData(p => ({ ...p, lastName: e.target.value }))} />
+                            </div>
                           </div>
-                          <button type="submit" className="w-full bg-emerald-600 text-white font-bold py-4 rounded-xl shadow-lg">Register Transfer</button>
+                          <div>
+                            <label className={lbl}>Email</label>
+                            <input required type="email" className={inp} value={donorData.email} onChange={e => setDonorData(p => ({ ...p, email: e.target.value }))} />
+                          </div>
+                          
+                          <div className="bg-gray-50 border border-gray-100 rounded-2xl p-5 space-y-3.5 text-xs text-gray-700">
+                            <div className="font-semibold text-gray-900 border-b border-gray-200/60 pb-2 mb-1.5 flex items-center gap-1.5">
+                              <Building2 size={14} className="text-emerald-600" />
+                              Bank Transfer Information
+                            </div>
+                            <div className="flex justify-between"><span className="text-gray-500">Bank Name:</span> <strong>{donationConfig.bankName}</strong></div>
+                            <div className="flex justify-between"><span className="text-gray-500">Account Name:</span> <strong>{donationConfig.accountName}</strong></div>
+                            <div className="flex justify-between"><span className="text-gray-500">Account No:</span> <strong>{donationConfig.accountNumber}</strong></div>
+                            <div className="flex justify-between"><span className="text-gray-500">Branch:</span> <strong>{donationConfig.branch}</strong></div>
+                            <div className="flex justify-between"><span className="text-gray-500">SWIFT Code:</span> <strong>{donationConfig.swiftCode}</strong></div>
+                          </div>
+                          
+                          <button type="submit" disabled={submitting} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded-xl shadow-lg transition-all active:scale-[0.99] flex items-center justify-center gap-2">
+                            {submitting ? <span className="animate-spin w-5 h-5 border-2 border-white border-t-transparent rounded-full" /> : <><Heart size={18} fill="currentColor" /> Register Transfer</>}
+                          </button>
                         </form>
                       )}
                     </>
