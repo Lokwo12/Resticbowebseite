@@ -133,33 +133,35 @@ export function Partners() {
             {filteredPartners.map((partner) => (
               <Card 
                 key={partner.id} 
-                className="p-6 hover:shadow-xl transition-all duration-300 group"
+                className="p-6 hover:shadow-2xl hover:border-emerald-500/20 hover:-translate-y-1 transition-all duration-500 group bg-white border border-slate-100 rounded-2xl shadow-sm"
               >
                 {/* Logo */}
-                <div className="h-32 flex items-center justify-center mb-6 bg-gray-50 rounded-lg p-4 group-hover:bg-emerald-50 transition-colors">
+                <div className="h-32 flex items-center justify-center mb-6 bg-slate-50 rounded-xl p-4 group-hover:bg-emerald-50 transition-all duration-500 border border-slate-100/50 group-hover:border-emerald-500/10">
                   {partner.logo ? (
                     <img
                       src={partner.logo}
                       alt={partner.name}
-                      className="max-h-full max-w-full object-contain"
+                      className="max-h-full max-w-full object-contain filter grayscale group-hover:grayscale-0 transition-all duration-500"
                     />
                   ) : (
-                    <Handshake className="text-gray-300" size={64} />
+                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-50 to-emerald-100/40 border border-emerald-500/10 flex items-center justify-center text-emerald-800 font-black text-xl shadow-inner tracking-wider">
+                      {partner.name.split(' ').map(w => w[0]).join('').substring(0, 3).toUpperCase()}
+                    </div>
                   )}
                 </div>
 
                 {/* Content */}
                 <div className="text-center mb-4">
-                  <h3 className="text-gray-900 mb-2">{partner.name}</h3>
-                  <Badge variant="secondary" className="mb-3">{partner.category}</Badge>
+                  <h3 className="text-gray-900 font-bold mb-2 group-hover:text-emerald-600 transition-colors duration-300">{partner.name}</h3>
+                  <Badge variant="secondary" className="mb-3 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-500/10">{partner.category}</Badge>
                   <p className="text-sm text-gray-600 leading-relaxed">
                     {partner.description}
                   </p>
                 </div>
 
                 {/* Footer */}
-                <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-                  <span className="text-xs text-gray-500">
+                <div className="flex items-center justify-between pt-4 border-t border-slate-100">
+                  <span className="text-xs text-gray-400">
                     Partner since {partner.since}
                   </span>
                   {partner.website && (
@@ -167,7 +169,7 @@ export function Partners() {
                       href={partner.website}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-1 text-sm text-emerald-600 hover:text-emerald-700 transition-colors"
+                      className="flex items-center gap-1 text-sm font-semibold text-emerald-600 hover:text-emerald-700 transition-colors"
                     >
                       <span>Visit</span>
                       <ExternalLink size={14} />

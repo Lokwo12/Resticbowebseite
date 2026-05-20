@@ -124,3 +124,6 @@ Secret API keys are securely processed in Supabase Edge Functions (and never exp
 ## 🔒 Security & Optimization Recommendations
 - **Activate SSL**: Enable Hostinger's Free SSL in hPanel under **Security** -> **SSL** so your site runs securely over `https://`.
 - **Cache Management**: If you upload new updates and do not see changes immediately, go to Hostinger hPanel -> **Advanced** -> **Cache Manager** and click **Purge All**.
+
+
+super-secret-admin-route

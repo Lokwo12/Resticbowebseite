@@ -32,13 +32,13 @@ function StatCounter({ num, suffix, label, visible, delay }: { num: number; suff
   const count = useCountUp(num, 1800, visible);
   return (
     <div
-      className="group hover:scale-105 transition-transform duration-300 bg-white/10 backdrop-blur-sm p-4 rounded-xl shadow-lg"
+      className="group hover:scale-105 transition-all duration-500 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-emerald-500/30 p-4 rounded-2xl shadow-xl backdrop-blur-md"
       style={{ animationDelay: `${delay}ms` }}
     >
-      <div className={`text-3xl font-extrabold text-emerald-400 group-hover:text-emerald-300 transition-colors drop-shadow-lg ${visible ? 'counter-animated' : ''}`}>
+      <div className={`text-3xl font-extrabold text-emerald-400 group-hover:text-emerald-300 transition-colors duration-300 drop-shadow-md ${visible ? 'counter-animated' : ''}`}>
         {visible ? count : 0}{suffix}
       </div>
-      <div className="text-sm text-white/90 mt-1">{label}</div>
+      <div className="text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-white/80 group-hover:text-white transition-colors duration-300 mt-1">{label}</div>
     </div>
   );
 }
@@ -78,12 +78,11 @@ export function Hero() {
   const statsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting) setStatsVisible(true); },
-      { threshold: 0.3 }
-    );
-    if (statsRef.current) observer.observe(statsRef.current);
-    return () => observer.disconnect();
+    // Stats are above the fold; animate immediately on mount for instant visual engagement
+    const timer = setTimeout(() => {
+      setStatsVisible(true);
+    }, 400);
+    return () => clearTimeout(timer);
   }, []);
 
   // Preload all background images for smooth transitions

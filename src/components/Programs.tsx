@@ -169,11 +169,11 @@ export function Programs() {
               style={{ transitionDelay: isVisible ? getStaggerDelay(index, 100) : '0ms' }}
             >
               {program.value.image && (
-                <div className="relative aspect-video overflow-hidden bg-slate-50/80 border-b border-slate-100 flex items-center justify-center">
+                <div className="relative aspect-video overflow-hidden bg-slate-100 border-b border-slate-100 flex items-center justify-center">
                   <img
                     src={program.value.image}
                     alt={program.value.title}
-                    className="w-full h-full object-contain group-hover:scale-102 transition-transform duration-500"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
                   />
                 </div>
               )}
