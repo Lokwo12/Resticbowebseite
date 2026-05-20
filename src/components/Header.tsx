@@ -123,21 +123,21 @@ export function Header() {
     >
       {/* Announcement Bar */}
       {showAnnouncement && (
-      <div className="announcement-bar bg-emerald-950 text-white text-xs font-medium py-1.5 text-center flex items-center justify-center gap-2 px-4 flex-wrap border-b border-emerald-900/50">
-        <span>🌍 {announcementText}</span>
+      <div className="announcement-bar bg-emerald-950 text-white text-[11px] sm:text-xs font-semibold tracking-wider uppercase py-2 text-center flex items-center justify-center gap-2 px-4 flex-wrap border-b border-emerald-900/30">
+        <span className="flex items-center gap-1.5"><span className="animate-pulse text-emerald-400">🌍</span> {announcementText}</span>
         <Link
           to="/volunteer"
-          className="inline-flex items-center gap-1 bg-white/20 hover:bg-white/30 px-3 py-0.5 rounded-full transition-colors font-semibold"
+          className="inline-flex items-center gap-1 bg-emerald-500/20 hover:bg-emerald-500/40 text-emerald-200 border border-emerald-500/30 hover:border-emerald-500/50 px-3 py-0.5 rounded-full transition-all duration-300 font-bold text-[10px] tracking-wide"
         >
-          Apply now <ChevronRight size={12} />
+          Apply now <ChevronRight size={10} />
         </Link>
       </div>
       )}
       {/* Main nav */}
       <div className={`transition-all duration-300 ${
         isSolid 
-          ? 'bg-white/95 backdrop-blur-md shadow-md border-b border-slate-100' 
-          : 'bg-emerald-950/80 backdrop-blur-md border-b border-white/10'
+          ? 'bg-white/80 backdrop-blur-lg shadow-sm border-b border-slate-100/80' 
+          : 'bg-emerald-950/40 backdrop-blur-md border-b border-white/5'
       }`}>
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className={`flex justify-between items-center transition-all duration-300 ${isSolid ? 'h-14' : 'h-16'}`}>

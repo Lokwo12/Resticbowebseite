@@ -114,80 +114,81 @@ export function ImpactDashboard() {
         {stats && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-16">
             {/* People Served */}
-            <Card className="p-6 hover:shadow-lg transition-shadow">
+            <Card className="p-6 hover:shadow-xl hover:border-emerald-500/20 hover:-translate-y-1 transition-all duration-300 bg-white border-slate-100 rounded-2xl shadow-sm">
               <div className="flex items-center justify-between mb-4">
-                <div className="w-12 h-12 bg-emerald-100 rounded-lg flex items-center justify-center">
+                <div className="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center shadow-inner">
                   <Users className="text-emerald-600" size={24} />
                 </div>
                 <Badge variant="secondary">+12% YoY</Badge>
               </div>
-              <h3 className="text-gray-600 text-sm mb-1">People Served</h3>
-              <p className="text-3xl text-gray-900 mb-2">{stats.peopleServed.toLocaleString()}</p>
+              <h3 className="text-gray-600 text-sm mb-1 font-medium">People Served</h3>
+              <p className="text-3xl font-bold text-gray-900 mb-3">{stats.peopleServed.toLocaleString()}</p>
               <Progress value={75} className="h-2" />
             </Card>
 
             {/* Active Programs */}
-            <Card className="p-6 hover:shadow-lg transition-shadow">
+            <Card className="p-6 hover:shadow-xl hover:border-emerald-500/20 hover:-translate-y-1 transition-all duration-300 bg-white border-slate-100 rounded-2xl shadow-sm">
               <div className="flex items-center justify-between mb-4">
-                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center shadow-inner">
                   <BookOpen className="text-blue-600" size={24} />
                 </div>
                 <Badge variant="secondary">Active</Badge>
               </div>
-              <h3 className="text-gray-600 text-sm mb-1">Active Programs</h3>
-              <p className="text-3xl text-gray-900 mb-2">{stats.programsActive}</p>
+              <h3 className="text-gray-600 text-sm mb-1 font-medium">Active Programs</h3>
+              <p className="text-3xl font-bold text-gray-900 mb-3">{stats.programsActive}</p>
               <Progress value={stats.programsActive * 10} className="h-2" />
             </Card>
 
             {/* Volunteers */}
-            <Card className="p-6 hover:shadow-lg transition-shadow">
+            <Card className="p-6 hover:shadow-xl hover:border-emerald-500/20 hover:-translate-y-1 transition-all duration-300 bg-white border-slate-100 rounded-2xl shadow-sm">
               <div className="flex items-center justify-between mb-4">
-                <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                <div className="w-12 h-12 bg-purple-50 rounded-xl flex items-center justify-center shadow-inner">
                   <Users className="text-purple-600" size={24} />
                 </div>
                 <Badge variant="secondary">Growing</Badge>
               </div>
-              <h3 className="text-gray-600 text-sm mb-1">Active Volunteers</h3>
-              <p className="text-3xl text-gray-900 mb-2">{stats.volunteersActive}</p>
+              <h3 className="text-gray-600 text-sm mb-1 font-medium">Active Volunteers</h3>
+              <p className="text-3xl font-bold text-gray-900 mb-3">{stats.volunteersActive}</p>
               <Progress value={60} className="h-2" />
             </Card>
 
             {/* Funds Raised */}
-            <Card className="p-6 hover:shadow-lg transition-shadow">
+            <Card className="p-6 hover:shadow-xl hover:border-emerald-500/20 hover:-translate-y-1 transition-all duration-300 bg-white border-slate-100 rounded-2xl shadow-sm">
               <div className="flex items-center justify-between mb-4">
-                <div className="w-12 h-12 bg-emerald-100 rounded-lg flex items-center justify-center">
+                <div className="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center shadow-inner">
                   <Heart className="text-emerald-600" size={24} />
                 </div>
                 <Badge variant="secondary">2024</Badge>
               </div>
-              <h3 className="text-gray-600 text-sm mb-1">Funds Raised</h3>
-              <p className="text-3xl text-gray-900 mb-2">${stats.fundsRaised.toLocaleString()}</p>
+              <h3 className="text-gray-600 text-sm mb-1 font-medium">Funds Raised</h3>
+              <p className="text-2xl font-bold text-gray-900 mb-1">UGX {stats.fundsRaised.toLocaleString()}</p>
+              <div className="text-xs text-gray-500 mb-3">Est. ${(stats.fundsRaised / 3750).toLocaleString(undefined, {maximumFractionDigits: 0})} USD</div>
               <Progress value={65} className="h-2" />
             </Card>
 
             {/* Communities Reached */}
-            <Card className="p-6 hover:shadow-lg transition-shadow">
+            <Card className="p-6 hover:shadow-xl hover:border-emerald-500/20 hover:-translate-y-1 transition-all duration-300 bg-white border-slate-100 rounded-2xl shadow-sm">
               <div className="flex items-center justify-between mb-4">
-                <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
+                <div className="w-12 h-12 bg-orange-50 rounded-xl flex items-center justify-center shadow-inner">
                   <Users className="text-orange-600" size={24} />
                 </div>
                 <Badge variant="secondary">Expanding</Badge>
               </div>
-              <h3 className="text-gray-600 text-sm mb-1">Communities Reached</h3>
-              <p className="text-3xl text-gray-900 mb-2">{stats.communitiesReached}</p>
+              <h3 className="text-gray-600 text-sm mb-1 font-medium">Communities Reached</h3>
+              <p className="text-3xl font-bold text-gray-900 mb-3">{stats.communitiesReached}</p>
               <Progress value={stats.communitiesReached * 20} className="h-2" />
             </Card>
 
             {/* Success Rate */}
-            <Card className="p-6 hover:shadow-lg transition-shadow">
+            <Card className="p-6 hover:shadow-xl hover:border-emerald-500/20 hover:-translate-y-1 transition-all duration-300 bg-white border-slate-100 rounded-2xl shadow-sm">
               <div className="flex items-center justify-between mb-4">
-                <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                <div className="w-12 h-12 bg-green-50 rounded-xl flex items-center justify-center shadow-inner">
                   <TrendingUp className="text-green-600" size={24} />
                 </div>
                 <Badge variant="secondary">Excellence</Badge>
               </div>
-              <h3 className="text-gray-600 text-sm mb-1">Program Success Rate</h3>
-              <p className="text-3xl text-gray-900 mb-2">{stats.successRate}%</p>
+              <h3 className="text-gray-600 text-sm mb-1 font-medium">Program Success Rate</h3>
+              <p className="text-3xl font-bold text-gray-900 mb-3">{stats.successRate}%</p>
               <Progress value={stats.successRate} className="h-2" />
             </Card>
           </div>

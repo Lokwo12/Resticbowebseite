@@ -8,7 +8,7 @@ This guide will get you up and running in 10 minutes.
 
 ## Step 1: Access the Admin Dashboard (1 minute)
 
-1. Open your browser and go to: `your-website-url.com/admin`
+1. Open your browser and go to: `your-website-url.com/super-secret-admin-route`
 2. Click **"Need an account? Sign up"**
 3. Enter:
    - Your name

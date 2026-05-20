@@ -158,13 +158,13 @@ export function About() {
               return (
                 <div
                   key={index}
-                  className={`group p-6 border border-gray-200 rounded-xl hover:shadow-xl hover:border-emerald-200 hover:-translate-y-2 transition-all duration-500 bg-white ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
+                  className={`group p-6 border border-slate-100 rounded-2xl hover:shadow-xl hover:border-emerald-500/20 hover:-translate-y-2 transition-all duration-500 bg-gradient-to-b from-white to-slate-50/50 hover:to-emerald-50/10 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
                   style={{ transitionDelay: isVisible ? getStaggerDelay(index, 100) : '0ms' }}
                 >
-                  <div className="w-12 h-12 bg-emerald-100 rounded-lg flex items-center justify-center mb-4 group-hover:bg-emerald-600 group-hover:scale-110 transition-all duration-300">
+                  <div className="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center mb-5 group-hover:bg-emerald-600 group-hover:scale-110 transition-all duration-300 shadow-sm border border-emerald-500/10">
                     <IconComponent className="text-emerald-600 group-hover:text-white transition-colors" size={24} />
                   </div>
-                  <h4 className="text-lg text-gray-900 mb-2 group-hover:text-emerald-600 transition-colors">{value.title}</h4>
+                  <h4 className="text-lg text-gray-900 mb-2 group-hover:text-emerald-600 transition-colors duration-300 font-bold">{value.title}</h4>
                   <p className="text-sm text-gray-600 leading-relaxed">{value.description}</p>
                 </div>
               );
@@ -175,14 +175,20 @@ export function About() {
 
         {/* Story */}
         {displaySettings.story && displaySettings.story.length > 0 && (
-          <div className={`bg-gray-50 p-8 lg:p-12 rounded-2xl hover:shadow-lg transition-all duration-500 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`} style={{ transitionDelay: '800ms' }}>
+          <div className={`relative overflow-hidden bg-gradient-to-br from-slate-50 to-emerald-50/20 p-8 lg:p-12 rounded-3xl border border-slate-100 hover:shadow-xl transition-all duration-500 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`} style={{ transitionDelay: '800ms' }}>
+            <div className="absolute top-0 left-0 w-1.5 h-full bg-emerald-600"></div>
             <div className="max-w-3xl mx-auto">
-              <h3 className="text-2xl text-gray-900 mb-6">Our Story</h3>
-              {displaySettings.story.map((paragraph, index) => (
-                <p key={index} className="text-gray-700 mb-4 leading-relaxed">
-                  {paragraph}
-                </p>
-              ))}
+              <h3 className="text-2xl font-bold text-gray-900 mb-6 tracking-tight flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
+                Our Story
+              </h3>
+              <div className="space-y-6">
+                {displaySettings.story.map((paragraph, index) => (
+                  <p key={index} className="text-gray-600 text-base md:text-lg leading-relaxed font-normal">
+                    {paragraph}
+                  </p>
+                ))}
+              </div>
             </div>
           </div>
         )}

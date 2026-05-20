@@ -4,8 +4,8 @@
 
 ### Accessing the Admin Dashboard
 
-1. **Navigate to the admin page**: Add `/admin` to your website URL
-   - Example: `https://your-website.com/admin`
+1. **Navigate to the admin page**: Add `/super-secret-admin-route` to your website URL
+   - Example: `https://your-website.com/super-secret-admin-route`
 
 2. **Create Your Admin Account** (First Time Only)
    - Click "Need an account? Sign up"

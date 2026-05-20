@@ -46,7 +46,7 @@ function PageTitleManager() {
   useEffect(() => {
     const titleMap: Record<string, string> = {
       '/': 'Home | Resti Kiryandongo CBO',
-      '/admin': 'Admin Dashboard | Resti Kiryandongo',
+      '/super-secret-admin-route': 'Admin Dashboard | Resti Kiryandongo',
       '/privacy': 'Privacy Policy | Resti Kiryandongo',
       '/terms': 'Terms of Service | Resti Kiryandongo',
       '/refund': 'Refund Policy | Resti Kiryandongo',
@@ -152,7 +152,7 @@ export default function App() {
     <div id="main-content" className="min-h-screen flex flex-col overflow-x-hidden w-full">
       <Routes>
         <Route path="/" element={<HomePage />} />
-        <Route path="/admin" element={<AdminPage />} />
+        <Route path="/super-secret-admin-route" element={<AdminPage />} />
         <Route path="/privacy" element={<MainLayout><LegalPage type="privacy" /></MainLayout>} />
         <Route path="/terms" element={<MainLayout><LegalPage type="terms" /></MainLayout>} />
         <Route path="/refund" element={<MainLayout><LegalPage type="refund" /></MainLayout>} />

@@ -22,7 +22,7 @@ The site settings in the database may be missing or incomplete. The About compon
 
 **Option 1: Initialize Site Settings (Recommended)**
 
-1. Go to your admin dashboard: `/admin`
+1. Go to your admin dashboard: `/super-secret-admin-route`
 2. Click on the **Settings** tab
 3. Click on **"Initialize Default Settings"** button if you see it
 4. OR go to the **About Section** tab
@@ -124,7 +124,7 @@ After applying the fix:
    - Should show an object with mission, vision, story, values
 
 2. **Verify Backend is Running**:
-   - Try visiting `/admin` - should load
+   - Try visiting `/super-secret-admin-route` - should load
    - Check that Supabase is configured correctly
 
 3. **Clear Browser Cache**:
@@ -138,7 +138,7 @@ After applying the fix:
    - Check the response - should have `about` object with all fields
 
 5. **Manually Set in Admin**:
-   - Go to `/admin`
+   - Go to `/super-secret-admin-route`
    - Settings tab → About Section
    - Manually type in your content
    - Save Changes
@@ -187,7 +187,7 @@ After applying the fix:
 
 ## Next Steps
 
-1. Go to `/admin` → Settings → About Section
+1. Go to `/super-secret-admin-route` → Settings → About Section
 2. Fill in or verify the content
 3. Click "Save Changes"
 4. Refresh homepage to see changes

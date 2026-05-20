@@ -135,7 +135,7 @@ Each program card displays:
 ## 🎛️ Admin Dashboard Integration
 
 ### About Section Settings:
-**Location**: `/admin` → Settings tab → About Section
+**Location**: `/super-secret-admin-route` → Settings tab → About Section
 
 **Editable Fields**:
 - Section Title
@@ -146,7 +146,7 @@ Each program card displays:
 - Values (managed separately in future)
 
 ### Programs Management:
-**Location**: `/admin` → Programs tab
+**Location**: `/super-secret-admin-route` → Programs tab
 
 **Actions Available**:
 - ➕ Add Program
@@ -156,7 +156,7 @@ Each program card displays:
 - 🏷️ Set Category
 - 📝 Edit Title & Description
 
-**Section Settings**: `/admin` → Settings tab → Section Headers → Programs
+**Section Settings**: `/super-secret-admin-route` → Settings tab → Section Headers → Programs
 
 ---
 
@@ -199,7 +199,7 @@ Each program card displays:
    - [ ] Hover over title - changes to emerald color
 
 4. **Add Program Test** (Admin):
-   - [ ] Go to `/admin` → Programs
+   - [ ] Go to `/super-secret-admin-route` → Programs
    - [ ] Click "Add Program"
    - [ ] Fill in title, description, category
    - [ ] Upload image
@@ -216,7 +216,7 @@ Each program card displays:
 1. Open browser console (F12)
 2. Look for: `"About settings fetched: ..."`
 3. If it shows `null` or missing fields:
-   - Go to `/admin` → Settings → About Section
+   - Go to `/super-secret-admin-route` → Settings → About Section
    - Fill in Mission, Vision, Story
    - Click "Save Changes"
 4. Refresh homepage
@@ -224,7 +224,7 @@ Each program card displays:
 ### Problem: No programs showing
 
 **Solution**:
-1. Go to `/admin` → Programs tab
+1. Go to `/super-secret-admin-route` → Programs tab
 2. Check if any programs exist
 3. If empty, click "Add Program" and create one
 4. Make sure to fill all fields and upload image
