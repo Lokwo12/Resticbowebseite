@@ -44,10 +44,15 @@ export function Footer() {
     address: 'Kiryandongo District, Uganda',
     email: 'info@restikirya.org',
     phone: '+256 XXX XXX XXX',
-    socialLinks: { facebook: '#', twitter: '#', instagram: '#' }
+    socialLinks: {
+      facebook: 'https://www.facebook.com/restikiryandongo',
+      twitter: 'https://x.com/restikirya',
+      instagram: 'https://www.instagram.com/restikiryandongo'
+    }
   });
 
   const [showBackToTop, setShowBackToTop] = useState(false);
+  const [customPages, setCustomPages] = useState<Array<{slug: string; title: string}>>([]);
 
   useEffect(() => {
     const onScroll = () => setShowBackToTop(window.scrollY > 400);
@@ -59,6 +64,7 @@ export function Footer() {
 
   useEffect(() => {
     fetchSettings();
+    fetchCustomPages();
   }, []);
 
   const fetchSettings = async () => {
@@ -83,6 +89,22 @@ export function Footer() {
     } catch (error) {
       console.error('Error fetching footer settings:', error);
       // Default settings already set as initial state — no action needed
+    }
+  };
+
+  const fetchCustomPages = async () => {
+    try {
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/pages`,
+        { headers: { Authorization: `Bearer ${publicAnonKey}` } }
+      );
+      if (response.ok) {
+        const data = await response.json();
+        const published = (data.pages || []).filter((p: any) => p.published);
+        setCustomPages(published.map((p: any) => ({ slug: p.slug, title: p.title })));
+      }
+    } catch {
+      // silently ignore
     }
   };
 
@@ -133,12 +155,12 @@ export function Footer() {
           <div>
             <h4 className="mb-4">Quick Links</h4>
             <ul className="space-y-2 text-sm text-gray-400">
-              <li><button onClick={() => scrollToSection('home')} className="hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Home</button></li>
-              <li><button onClick={() => scrollToSection('about')} className="hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">About Us</button></li>
-              <li><button onClick={() => scrollToSection('programs')} className="hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Programs</button></li>
-              <li><Link to="/team" className="hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Our Team</Link></li>
-              <li><button onClick={() => scrollToSection('impact')} className="hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Impact Stories</button></li>
-              <li><button onClick={() => scrollToSection('events')} className="hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Events</button></li>
+              <li><Link to="/#home" className="block hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Home</Link></li>
+              <li><Link to="/#about" className="block hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">About Us</Link></li>
+              <li><Link to="/#programs" className="block hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Programs</Link></li>
+              <li><Link to="/team" className="block hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Our Team</Link></li>
+              <li><Link to="/stories" className="block hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Impact Stories</Link></li>
+              <li><Link to="/#events" className="block hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Events</Link></li>
             </ul>
           </div>
 
@@ -146,11 +168,11 @@ export function Footer() {
           <div>
             <h4 className="mb-4">Get Involved</h4>
             <ul className="space-y-2 text-sm text-gray-400">
-              <li><Link to="/volunteer" className="hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Volunteer</Link></li>
-              <li><button onClick={openDonationModal} className="hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Donate</button></li>
-              <li><Link to="/partners" className="hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Become a Partner</Link></li>
-              <li><Link to="/opportunities" className="hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Opportunities</Link></li>
-              <li><button onClick={() => scrollToSection('newsletter')} className="hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Newsletter</button></li>
+              <li><Link to="/volunteer" className="block hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Volunteer</Link></li>
+              <li><button onClick={openDonationModal} className="block text-left hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Donate</button></li>
+              <li><Link to="/partners" className="block hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Become a Partner</Link></li>
+              <li><Link to="/opportunities" className="block hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Opportunities</Link></li>
+              <li><Link to="/#newsletter" className="block hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Newsletter</Link></li>
             </ul>
           </div>
 
@@ -158,11 +180,18 @@ export function Footer() {
           <div>
             <h4 className="mb-4">Resources</h4>
             <ul className="space-y-2 text-sm text-gray-400">
-              <li><button onClick={() => scrollToSection('gallery')} className="hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Gallery</button></li>
-              <li><Link to="/news" className="hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">News</Link></li>
-              <li><Link to="/faqs" className="hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">FAQ</Link></li>
-              <li><Link to="/reports" className="hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Impact Reports</Link></li>
-              <li><button onClick={() => scrollToSection('impact-dashboard')} className="hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Impact Dashboard</button></li>
+              <li><Link to="/#gallery" className="block hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Gallery</Link></li>
+              <li><Link to="/news" className="block hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">News</Link></li>
+              <li><Link to="/faqs" className="block hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">FAQ</Link></li>
+              <li><Link to="/reports" className="block hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Impact Reports</Link></li>
+              <li><Link to="/#impact-dashboard" className="block hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Impact Dashboard</Link></li>
+              {customPages.map(page => (
+                <li key={page.slug}>
+                  <Link to={`/pages/${page.slug}`} className="block hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">
+                    {page.title}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
 
@@ -235,9 +264,9 @@ export function Footer() {
           
           {/* Legal Links */}
           <div className="flex gap-4 text-sm text-gray-400">
-            <a href="/privacy" className="hover:text-emerald-400 transition-colors">Privacy Policy</a>
-            <a href="/terms" className="hover:text-emerald-400 transition-colors">Terms of Service</a>
-            <a href="/refund" className="hover:text-emerald-400 transition-colors">Refund Policy</a>
+            <Link to="/privacy" className="hover:text-emerald-400 transition-colors">Privacy Policy</Link>
+            <Link to="/terms" className="hover:text-emerald-400 transition-colors">Terms of Service</Link>
+            <Link to="/refund" className="hover:text-emerald-400 transition-colors">Refund Policy</Link>
           </div>
 
           <p className="text-sm text-gray-400 flex items-center gap-1">

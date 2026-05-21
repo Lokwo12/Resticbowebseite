@@ -73,9 +73,9 @@ export function Contact() {
         email: 'info@restikirya.org',
         phone: '+256 XXX XXX XXX',
         socialLinks: {
-          facebook: '#',
-          twitter: '#',
-          instagram: '#'
+          facebook: 'https://www.facebook.com/restikiryandongo',
+          twitter: 'https://x.com/restikirya',
+          instagram: 'https://www.instagram.com/restikiryandongo'
         },
         supportItems: [
           'Volunteer your time and skills',
@@ -332,12 +332,12 @@ export function Contact() {
               </div>
 
               <div>
-                <label htmlFor="name" className="text-[13px] font-semibold text-gray-500 mb-1.5 ml-1 block uppercase tracking-[0.05em]">
+                <label htmlFor="name" className="text-xs font-bold text-slate-500 mb-2 ml-1 block uppercase tracking-wider">
                   Full Name <span className="text-emerald-500">*</span>
                 </label>
-                <div className="flex group rounded-2xl border border-gray-200 overflow-hidden focus-within:ring-4 focus-within:ring-emerald-500/10 focus-within:border-emerald-500 transition-all bg-gray-50/50 focus-within:bg-white">
-                  <div className="flex-shrink-0 w-14 flex items-center justify-center text-gray-400 group-focus-within:text-emerald-600 transition-all border-r border-gray-100">
-                    <User size={22} />
+                <div className="relative flex items-center group rounded-xl border border-slate-200 bg-slate-50/40 hover:bg-slate-50/80 focus-within:bg-white focus-within:border-emerald-500 focus-within:ring-4 focus-within:ring-emerald-500/10 transition-all duration-300 shadow-sm">
+                  <div className="absolute left-4 text-slate-400 group-focus-within:text-emerald-600 transition-colors duration-300 pointer-events-none">
+                    <User size={20} />
                   </div>
                   <input
                     type="text"
@@ -345,7 +345,7 @@ export function Contact() {
                     required
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="flex-1 px-5 py-4 bg-transparent outline-none text-gray-900 font-medium placeholder:text-gray-400"
+                    className="w-full pl-12 pr-5 py-2.5 bg-transparent outline-none text-slate-800 font-medium placeholder:text-slate-400/70 text-sm"
                     placeholder="Your name"
                   />
                 </div>
@@ -353,12 +353,12 @@ export function Contact() {
 
               <div className="grid md:grid-cols-2 gap-6">
                 <div>
-                  <label htmlFor="email" className="text-[13px] font-semibold text-gray-500 mb-1.5 ml-1 block uppercase tracking-[0.05em]">
+                  <label htmlFor="email" className="text-xs font-bold text-slate-500 mb-2 ml-1 block uppercase tracking-wider">
                     Email Address <span className="text-emerald-500">*</span>
                   </label>
-                  <div className="flex group rounded-2xl border border-gray-200 overflow-hidden focus-within:ring-4 focus-within:ring-emerald-500/10 focus-within:border-emerald-500 transition-all bg-gray-50/50 focus-within:bg-white">
-                    <div className="flex-shrink-0 w-14 flex items-center justify-center text-gray-400 group-focus-within:text-emerald-600 transition-all border-r border-gray-100">
-                      <Mail size={22} />
+                  <div className="relative flex items-center group rounded-xl border border-slate-200 bg-slate-50/40 hover:bg-slate-50/80 focus-within:bg-white focus-within:border-emerald-500 focus-within:ring-4 focus-within:ring-emerald-500/10 transition-all duration-300 shadow-sm">
+                    <div className="absolute left-4 text-slate-400 group-focus-within:text-emerald-600 transition-colors duration-300 pointer-events-none">
+                      <Mail size={20} />
                     </div>
                     <input
                       type="email"
@@ -366,19 +366,19 @@ export function Contact() {
                       required
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      className="flex-1 px-5 py-4 bg-transparent outline-none text-gray-900 font-medium placeholder:text-gray-400"
+                      className="w-full pl-12 pr-5 py-2.5 bg-transparent outline-none text-slate-800 font-medium placeholder:text-slate-400/70 text-sm"
                       placeholder="your@email.com"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label htmlFor="phone" className="text-[13px] font-semibold text-gray-500 mb-1.5 ml-1 block uppercase tracking-[0.05em]">
+                  <label htmlFor="phone" className="text-xs font-bold text-slate-500 mb-2 ml-1 block uppercase tracking-wider">
                     Phone Number {formData.type === 'volunteer' && <span className="text-emerald-500">*</span>}
                   </label>
-                  <div className="flex group rounded-2xl border border-gray-200 overflow-hidden focus-within:ring-4 focus-within:ring-emerald-500/10 focus-within:border-emerald-500 transition-all bg-gray-50/50 focus-within:bg-white">
-                    <div className="flex-shrink-0 w-14 flex items-center justify-center text-gray-400 group-focus-within:text-emerald-600 transition-all border-r border-gray-100">
-                      <Phone size={22} />
+                  <div className="relative flex items-center group rounded-xl border border-slate-200 bg-slate-50/40 hover:bg-slate-50/80 focus-within:bg-white focus-within:border-emerald-500 focus-within:ring-4 focus-within:ring-emerald-500/10 transition-all duration-300 shadow-sm">
+                    <div className="absolute left-4 text-slate-400 group-focus-within:text-emerald-600 transition-colors duration-300 pointer-events-none">
+                      <Phone size={20} />
                     </div>
                     <input
                       type="tel"
@@ -386,7 +386,7 @@ export function Contact() {
                       required={formData.type === 'volunteer'}
                       value={formData.phone}
                       onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                      className="flex-1 px-5 py-4 bg-transparent outline-none text-gray-900 font-medium placeholder:text-gray-400"
+                      className="w-full pl-12 pr-5 py-2.5 bg-transparent outline-none text-slate-800 font-medium placeholder:text-slate-400/70 text-sm"
                       placeholder="+256 ..."
                     />
                   </div>
@@ -396,53 +396,49 @@ export function Contact() {
               {formData.type === 'volunteer' && (
                 <div className="grid md:grid-cols-2 gap-6 animate-[fadeIn_0.5s_ease-out]">
                   <div>
-                    <label className="text-sm font-bold text-gray-700 mb-2 block uppercase tracking-wider">
-                      Area of Interest *
+                    <label className="text-xs font-bold text-slate-500 mb-2 ml-1 block uppercase tracking-wider">
+                      Area of Interest <span className="text-emerald-500">*</span>
                     </label>
-                    <div className="flex group rounded-2xl border border-gray-200 overflow-hidden focus-within:ring-4 focus-within:ring-emerald-500/10 focus-within:border-emerald-500 transition-all bg-gray-50/50 focus-within:bg-white">
-                      <div className="flex-shrink-0 w-14 flex items-center justify-center text-gray-400 group-focus-within:text-emerald-600 transition-all border-r border-gray-100 pointer-events-none">
-                        <Briefcase size={22} />
+                    <div className="relative flex items-center group rounded-xl border border-slate-200 bg-slate-50/40 hover:bg-slate-50/80 focus-within:bg-white focus-within:border-emerald-500 focus-within:ring-4 focus-within:ring-emerald-500/10 transition-all duration-300 shadow-sm">
+                      <div className="absolute left-4 text-slate-400 group-focus-within:text-emerald-600 transition-colors duration-300 pointer-events-none">
+                        <Briefcase size={20} />
                       </div>
-                      <div className="relative flex-1">
-                        <select 
-                          required
-                          className="w-full px-5 py-4 bg-transparent outline-none text-gray-900 font-medium appearance-none cursor-pointer"
-                        >
-                          <option value="">Select Area</option>
-                          <option value="education">Education & Tutoring</option>
-                          <option value="healthcare">Healthcare Support</option>
-                          <option value="environment">Environmental Conservation</option>
-                          <option value="community">Community Outreach</option>
-                          <option value="admin">Administrative Support</option>
-                        </select>
-                        <div className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
-                        </div>
+                      <select 
+                        required
+                        className="w-full pl-12 pr-10 py-2.5 bg-transparent outline-none text-slate-800 font-medium appearance-none cursor-pointer text-sm"
+                      >
+                        <option value="">Select Area</option>
+                        <option value="education">Education & Tutoring</option>
+                        <option value="healthcare">Healthcare Support</option>
+                        <option value="environment">Environmental Conservation</option>
+                        <option value="community">Community Outreach</option>
+                        <option value="admin">Administrative Support</option>
+                      </select>
+                      <div className="absolute right-4 text-slate-400 pointer-events-none group-focus-within:text-emerald-600 transition-colors duration-300">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
                       </div>
                     </div>
                   </div>
                   <div>
-                    <label className="text-sm font-bold text-gray-700 mb-2 block uppercase tracking-wider">
-                      Availability *
+                    <label className="text-xs font-bold text-slate-500 mb-2 ml-1 block uppercase tracking-wider">
+                      Availability <span className="text-emerald-500">*</span>
                     </label>
-                    <div className="flex group rounded-2xl border border-gray-200 overflow-hidden focus-within:ring-4 focus-within:ring-emerald-500/10 focus-within:border-emerald-500 transition-all bg-gray-50/50 focus-within:bg-white">
-                      <div className="flex-shrink-0 w-14 flex items-center justify-center text-gray-400 group-focus-within:text-emerald-600 transition-all border-r border-gray-100 pointer-events-none">
-                        <Calendar size={22} />
+                    <div className="relative flex items-center group rounded-xl border border-slate-200 bg-slate-50/40 hover:bg-slate-50/80 focus-within:bg-white focus-within:border-emerald-500 focus-within:ring-4 focus-within:ring-emerald-500/10 transition-all duration-300 shadow-sm">
+                      <div className="absolute left-4 text-slate-400 group-focus-within:text-emerald-600 transition-colors duration-300 pointer-events-none">
+                        <Calendar size={20} />
                       </div>
-                      <div className="relative flex-1">
-                        <select 
-                          required
-                          className="w-full px-5 py-4 bg-transparent outline-none text-gray-900 font-medium appearance-none cursor-pointer"
-                        >
-                          <option value="">Select Availability</option>
-                          <option value="full-time">Full Time</option>
-                          <option value="part-time">Part Time</option>
-                          <option value="weekends">Weekends Only</option>
-                          <option value="remote">Remote / Digital</option>
-                        </select>
-                        <div className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
-                        </div>
+                      <select 
+                        required
+                        className="w-full pl-12 pr-10 py-2.5 bg-transparent outline-none text-slate-800 font-medium appearance-none cursor-pointer text-sm"
+                      >
+                        <option value="">Select Availability</option>
+                        <option value="full-time">Full Time</option>
+                        <option value="part-time">Part Time</option>
+                        <option value="weekends">Weekends Only</option>
+                        <option value="remote">Remote / Digital</option>
+                      </select>
+                      <div className="absolute right-4 text-slate-400 pointer-events-none group-focus-within:text-emerald-600 transition-colors duration-300">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
                       </div>
                     </div>
                   </div>
@@ -450,12 +446,12 @@ export function Contact() {
               )}
 
               <div>
-                <label htmlFor="message" className="text-[13px] font-semibold text-gray-500 mb-1.5 ml-1 block uppercase tracking-[0.05em]">
+                <label htmlFor="message" className="text-xs font-bold text-slate-500 mb-2 ml-1 block uppercase tracking-wider">
                   {formData.type === 'volunteer' ? 'Why do you want to join us?' : 'Message'} <span className="text-emerald-500">*</span>
                 </label>
-                <div className="flex group rounded-2xl border border-gray-200 overflow-hidden focus-within:ring-4 focus-within:ring-emerald-500/10 focus-within:border-emerald-500 transition-all bg-gray-50/50 focus-within:bg-white">
-                  <div className="flex-shrink-0 w-14 flex items-center justify-center text-gray-400 group-focus-within:text-emerald-600 transition-all border-r border-gray-100 pt-5 items-start">
-                    <MessageSquare size={22} />
+                <div className="relative flex items-start group rounded-xl border border-slate-200 bg-slate-50/40 hover:bg-slate-50/80 focus-within:bg-white focus-within:border-emerald-500 focus-within:ring-4 focus-within:ring-emerald-500/10 transition-all duration-300 shadow-sm">
+                  <div className="absolute left-4 top-4 text-slate-400 group-focus-within:text-emerald-600 transition-colors duration-300 pointer-events-none">
+                    <MessageSquare size={20} />
                   </div>
                   <textarea
                     id="message"
@@ -463,7 +459,7 @@ export function Contact() {
                     rows={5}
                     value={formData.message}
                     onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                    className="flex-1 px-5 py-4 bg-transparent outline-none text-gray-900 font-medium placeholder:text-gray-400 resize-none"
+                    className="w-full pl-12 pr-5 py-2.5 bg-transparent outline-none text-slate-800 font-medium placeholder:text-slate-400/70 text-sm resize-none"
                     placeholder={
                       formData.type === 'volunteer'
                         ? 'Tell us about your background, skills, and what motivates you to volunteer...'
@@ -476,7 +472,7 @@ export function Contact() {
               <button
                 type="submit"
                 disabled={submitting}
-                className="w-full bg-emerald-600 text-white px-8 py-4 rounded-lg hover:bg-emerald-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold py-4 px-6 rounded-xl shadow-lg shadow-emerald-600/15 hover:shadow-xl hover:shadow-emerald-600/25 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.99] transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
               >
                 {submitting ? (
                   <>
@@ -485,8 +481,8 @@ export function Contact() {
                   </>
                 ) : (
                   <>
-                    <Send size={20} />
-                    {formData.type === 'volunteer' ? 'Submit Application' : 'Send Message'}
+                    <Send size={16} />
+                    <span>{formData.type === 'volunteer' ? 'Submit Application' : 'Send Message'}</span>
                   </>
                 )}
               </button>

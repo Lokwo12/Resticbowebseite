@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
+import { DraggableDialog } from './DraggableDialog';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Upload, X, User, Mail, Link2, Tag, Hash, Shield, Info, FileText, Globe, Briefcase, Calendar, Heart, TrendingUp, Target, Award } from 'lucide-react';
@@ -112,13 +112,7 @@ export function TeamFormDialog({ show, onClose, editingItem, onSuccess, userRole
   };
 
   return (
-    <Dialog open={show} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white/95 backdrop-blur-2xl rounded-[2rem] p-8 border border-slate-100 shadow-2xl">
-        <DialogHeader className="mb-4">
-          <DialogTitle className="text-2xl font-bold text-slate-800">Team Member</DialogTitle>
-
-          <p className="text-sm text-slate-500">Fill in the details for the team member.</p>
-        </DialogHeader>
+    <DraggableDialog open={show} onClose={onClose} title={editingItem ? 'Edit Team Member' : 'Add Team Member'} headerColor="#2f5496">
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Name *</label>
@@ -262,8 +256,7 @@ export function TeamFormDialog({ show, onClose, editingItem, onSuccess, userRole
             </Button>
           </div>
         </form>
-      </DialogContent>
-    </Dialog>
+    </DraggableDialog>
   );
 
 }
@@ -354,13 +347,7 @@ export function StoryFormDialog({ show, onClose, editingItem, onSuccess, userRol
   };
 
   return (
-    <Dialog open={show} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto bg-white/95 backdrop-blur-2xl rounded-[2rem] p-8 border border-slate-100 shadow-2xl">
-        <DialogHeader className="mb-4">
-          <DialogTitle className="text-2xl font-bold text-slate-800">Impact Story</DialogTitle>
-
-          <p className="text-sm text-slate-500">Share success stories and testimonials.</p>
-        </DialogHeader>
+    <DraggableDialog open={show} onClose={onClose} title={editingItem ? 'Edit Impact Story' : 'Add Impact Story'} defaultWidth={720} headerColor="#2f5496">
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Person's Name *</label>
@@ -471,8 +458,7 @@ export function StoryFormDialog({ show, onClose, editingItem, onSuccess, userRol
             </Button>
           </div>
         </form>
-      </DialogContent>
-    </Dialog>
+    </DraggableDialog>
   );
 }
 
@@ -480,13 +466,29 @@ export function StoryFormDialog({ show, onClose, editingItem, onSuccess, userRol
 export function ImpactStatsFormDialog({ show, onClose, currentStats, onSuccess, userRole }: any) {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
-    peopleServed: currentStats?.peopleServed || 5000,
-    programsActive: currentStats?.programsActive || 12,
-    volunteersActive: currentStats?.volunteersActive || 150,
-    fundsRaised: currentStats?.fundsRaised || 250000,
-    communitiesReached: currentStats?.communitiesReached || 8,
-    successRate: currentStats?.successRate || 92
+    peopleServed: 5000,
+    programsActive: 12,
+    volunteersActive: 150,
+    fundsRaised: 250000,
+    communitiesReached: 8,
+    successRate: 92
   });
+
+  useEffect(() => {
+    setFormData({
+      peopleServed: currentStats?.peopleServed ?? 5000,
+      programsActive: currentStats?.programsActive ?? 12,
+      volunteersActive: currentStats?.volunteersActive ?? 150,
+      fundsRaised: currentStats?.fundsRaised ?? 250000,
+      communitiesReached: currentStats?.communitiesReached ?? 8,
+      successRate: currentStats?.successRate ?? 92
+    });
+  }, [currentStats, show]);
+
+  const handleNumber = (field: string, value: string) => {
+    const num = parseInt(value);
+    setFormData(prev => ({ ...prev, [field]: isNaN(num) ? 0 : num }));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -516,99 +518,112 @@ export function ImpactStatsFormDialog({ show, onClose, currentStats, onSuccess, 
   };
 
   return (
-    <Dialog open={show} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl bg-white/95 backdrop-blur-2xl rounded-[2rem] p-8 border border-slate-100 shadow-2xl">
-        <DialogHeader className="mb-4">
-          <DialogTitle className="text-2xl font-bold text-slate-800">Impact Statistics</DialogTitle>
+    <DraggableDialog open={show} onClose={onClose} title="Update Impact Statistics" headerColor="#2f5496">
 
-          <p className="text-sm text-slate-500">Update your organization's impact numbers.</p>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid grid-cols-2 gap-4">
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">People Served</label>
-              <div className="relative">
-                <User size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
+              <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 focus-within:ring-2 focus-within:ring-emerald-500/20 focus-within:border-emerald-500 transition-all">
+                <User size={18} className="text-slate-400 shrink-0" />
                 <input
                   type="number"
+                  min={0}
                   value={formData.peopleServed}
-                  onChange={(e) => setFormData({ ...formData, peopleServed: parseInt(e.target.value) })}
-                  className="w-full pl-10 pr-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all outline-none"
+                  onChange={(e) => handleNumber('peopleServed', e.target.value)}
+                  className="flex-1 bg-transparent py-3 outline-none text-slate-800 placeholder:text-slate-400"
+                  placeholder="e.g. 5000"
                 />
               </div>
             </div>
+
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Active Programs</label>
-              <div className="relative">
-                <FileText size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
+              <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 focus-within:ring-2 focus-within:ring-emerald-500/20 focus-within:border-emerald-500 transition-all">
+                <FileText size={18} className="text-slate-400 shrink-0" />
                 <input
                   type="number"
+                  min={0}
                   value={formData.programsActive}
-                  onChange={(e) => setFormData({ ...formData, programsActive: parseInt(e.target.value) })}
-                  className="w-full pl-10 pr-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all outline-none"
+                  onChange={(e) => handleNumber('programsActive', e.target.value)}
+                  className="flex-1 bg-transparent py-3 outline-none text-slate-800 placeholder:text-slate-400"
+                  placeholder="e.g. 12"
                 />
               </div>
             </div>
+
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Active Volunteers</label>
-              <div className="relative">
-                <Heart size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
+              <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 focus-within:ring-2 focus-within:ring-emerald-500/20 focus-within:border-emerald-500 transition-all">
+                <Heart size={18} className="text-slate-400 shrink-0" />
                 <input
                   type="number"
+                  min={0}
                   value={formData.volunteersActive}
-                  onChange={(e) => setFormData({ ...formData, volunteersActive: parseInt(e.target.value) })}
-                  className="w-full pl-10 pr-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all outline-none"
+                  onChange={(e) => handleNumber('volunteersActive', e.target.value)}
+                  className="flex-1 bg-transparent py-3 outline-none text-slate-800 placeholder:text-slate-400"
+                  placeholder="e.g. 150"
                 />
               </div>
             </div>
+
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Funds Raised ($)</label>
-              <div className="relative">
-                <TrendingUp size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
+              <label className="block text-sm font-medium text-slate-700 mb-1">Funds Raised <span className="text-slate-400 font-normal">(USD)</span></label>
+              <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 focus-within:ring-2 focus-within:ring-emerald-500/20 focus-within:border-emerald-500 transition-all">
+                <TrendingUp size={18} className="text-slate-400 shrink-0" />
                 <input
                   type="number"
+                  min={0}
                   value={formData.fundsRaised}
-                  onChange={(e) => setFormData({ ...formData, fundsRaised: parseInt(e.target.value) })}
-                  className="w-full pl-10 pr-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all outline-none"
+                  onChange={(e) => handleNumber('fundsRaised', e.target.value)}
+                  className="flex-1 bg-transparent py-3 outline-none text-slate-800 placeholder:text-slate-400"
+                  placeholder="e.g. 250000"
                 />
               </div>
             </div>
+
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Communities Reached</label>
-              <div className="relative">
-                <Target size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
+              <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 focus-within:ring-2 focus-within:ring-emerald-500/20 focus-within:border-emerald-500 transition-all">
+                <Target size={18} className="text-slate-400 shrink-0" />
                 <input
                   type="number"
+                  min={0}
                   value={formData.communitiesReached}
-                  onChange={(e) => setFormData({ ...formData, communitiesReached: parseInt(e.target.value) })}
-                  className="w-full pl-10 pr-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all outline-none"
+                  onChange={(e) => handleNumber('communitiesReached', e.target.value)}
+                  className="flex-1 bg-transparent py-3 outline-none text-slate-800 placeholder:text-slate-400"
+                  placeholder="e.g. 8"
                 />
               </div>
             </div>
+
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Success Rate (%)</label>
-              <div className="relative">
-                <Award size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
+              <label className="block text-sm font-medium text-slate-700 mb-1">Success Rate <span className="text-slate-400 font-normal">(%)</span></label>
+              <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 focus-within:ring-2 focus-within:ring-emerald-500/20 focus-within:border-emerald-500 transition-all">
+                <Award size={18} className="text-slate-400 shrink-0" />
                 <input
                   type="number"
-                  value={formData.successRate}
                   min={0}
                   max={100}
-                  onChange={(e) => setFormData({ ...formData, successRate: parseInt(e.target.value) })}
-                  className="w-full pl-10 pr-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all outline-none"
+                  value={formData.successRate}
+                  onChange={(e) => handleNumber('successRate', e.target.value)}
+                  className="flex-1 bg-transparent py-3 outline-none text-slate-800 placeholder:text-slate-400"
+                  placeholder="e.g. 92"
                 />
               </div>
             </div>
+
           </div>
+
           <div className="flex gap-2 justify-end pt-4">
             <Button type="button" variant="outline" onClick={onClose} className="rounded-xl border-slate-200 hover:bg-slate-50">Cancel</Button>
             <Button type="submit" disabled={loading} className="rounded-xl px-6 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-semibold transition-all duration-300 transform hover:scale-[1.02] shadow-md hover:shadow-lg">
-              {loading ? 'Saving...' : 'Save'}
+              {loading ? 'Saving...' : 'Save Changes'}
             </Button>
           </div>
         </form>
-      </DialogContent>
-    </Dialog>
+    </DraggableDialog>
   );
 }
 

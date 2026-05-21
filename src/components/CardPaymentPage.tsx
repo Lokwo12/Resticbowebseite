@@ -80,7 +80,7 @@ export function CardPaymentPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-10">
+    <div className="min-h-screen bg-gray-50 pt-28 sm:pt-36 pb-10">
       <div className="max-w-lg mx-auto px-4 space-y-6">
         <button onClick={() => navigate(-1)} className="flex items-center gap-1.5 text-sm text-gray-500 font-medium">
           <ArrowLeft size={15} /> Back

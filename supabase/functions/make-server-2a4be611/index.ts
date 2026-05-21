@@ -688,6 +688,19 @@ app.get('/make-server-2a4be611/newsletter', async (c) => {
   }
 })
 
+// Delete newsletter subscriber (admin)
+app.delete('/make-server-2a4be611/admin/newsletter/:id', async (c) => {
+  try {
+    const id = c.req.param('id')
+    await kv.del(id)
+    console.log(`Newsletter subscriber deleted: ${id}`)
+    return c.json({ success: true, message: 'Subscriber deleted successfully' })
+  } catch (error) {
+    console.error('Error deleting subscriber:', error)
+    return c.json({ error: 'Failed to delete subscriber', details: String(error) }, 500)
+  }
+})
+
 // Send newsletter blast to all subscribers (admin)
 app.post('/make-server-2a4be611/admin/newsletter/send', async (c) => {
   try {
@@ -2079,6 +2092,85 @@ app.delete('/make-server-2a4be611/admin/resources/:id', async (c) => {
   }
 })
 
+// Pages routes
+app.get('/make-server-2a4be611/pages', async (c) => {
+  try {
+    const pages = await kv.getByPrefix('page:')
+
+    // Seed default pages if none exist (first-run for existing installations)
+    if (pages.length === 0) {
+      const now = new Date().toISOString()
+      const defaults = [
+        { key: 'page:default-1', value: { title: 'Privacy Policy', slug: 'privacy-policy', content: '<h2>Privacy Policy</h2><p>We are committed to protecting your personal information and your right to privacy.</p>', published: true, createdAt: now, updatedAt: now } },
+        { key: 'page:default-2', value: { title: 'Terms of Service', slug: 'terms-of-service', content: '<h2>Terms of Service</h2><p>By accessing our website, you agree to be bound by these Terms of Service.</p>', published: true, createdAt: now, updatedAt: now } },
+        { key: 'page:default-3', value: { title: 'Refund Policy', slug: 'refund-policy', content: '<h2>Refund Policy</h2><p>Donations are generally non-refundable. Please contact us if you believe a refund is warranted.</p>', published: true, createdAt: now, updatedAt: now } },
+      ]
+      await kv.mset(defaults)
+      return c.json({ pages: defaults.map(d => ({ id: d.key, ...d.value })) })
+    }
+
+    pages.sort((a: any, b: any) => new Date(b.value.updatedAt || b.value.createdAt).getTime() - new Date(a.value.updatedAt || a.value.createdAt).getTime())
+    return c.json({ pages: pages.map((p: any) => ({ id: p.key, ...p.value })) })
+  } catch (error) {
+    console.error('Error fetching pages:', error)
+    return c.json({ error: 'Failed to fetch pages', details: String(error) }, 500)
+  }
+})
+
+// Get a single page by slug (used by the public-facing CustomPage component)
+app.get('/make-server-2a4be611/pages/:slug', async (c) => {
+  try {
+    const slug = c.req.param('slug')
+    const pages = await kv.getByPrefix('page:')
+    const match = pages.find((p: any) => p.value?.slug === slug)
+    if (!match) return c.json({ error: 'Page not found' }, 404)
+    return c.json({ page: { id: match.key, ...match.value } })
+  } catch (error) {
+    console.error('Error fetching page by slug:', error)
+    return c.json({ error: 'Failed to fetch page', details: String(error) }, 500)
+  }
+})
+
+app.post('/make-server-2a4be611/pages', async (c) => {
+  try {
+    const body = await c.req.json()
+    const { title, slug, content, published } = body
+    if (!title || !slug) return c.json({ error: 'Title and slug are required' }, 400)
+    const pageId = `page:${Date.now()}`
+    const now = new Date().toISOString()
+    await kv.set(pageId, { title, slug, content: content || '', published: published ?? true, createdAt: now, updatedAt: now })
+    return c.json({ success: true, message: 'Page created successfully', id: pageId })
+  } catch (error) {
+    console.error('Error creating page:', error)
+    return c.json({ error: 'Failed to create page', details: String(error) }, 500)
+  }
+})
+
+app.put('/make-server-2a4be611/pages/:id', async (c) => {
+  try {
+    const id = c.req.param('id')
+    const body = await c.req.json()
+    const existing = await kv.get(id)
+    if (!existing) return c.json({ error: 'Page not found' }, 404)
+    await kv.set(id, { ...existing, ...body, updatedAt: new Date().toISOString() })
+    return c.json({ success: true, message: 'Page updated successfully' })
+  } catch (error) {
+    console.error('Error updating page:', error)
+    return c.json({ error: 'Failed to update page', details: String(error) }, 500)
+  }
+})
+
+app.delete('/make-server-2a4be611/pages/:id', async (c) => {
+  try {
+    const id = c.req.param('id')
+    await kv.del(id)
+    return c.json({ success: true, message: 'Page deleted successfully' })
+  } catch (error) {
+    console.error('Error deleting page:', error)
+    return c.json({ error: 'Failed to delete page', details: String(error) }, 500)
+  }
+})
+
 // Initialize with sample data if empty
 app.post('/make-server-2a4be611/initialize', async (c) => {
   try {
@@ -2312,6 +2404,15 @@ app.post('/make-server-2a4be611/initialize', async (c) => {
       })
 
       console.log('Sample data initialized')
+    }
+
+    // Always seed default pages if none exist
+    const existingPages = await kv.getByPrefix('page:')
+    if (existingPages.length === 0) {
+      const now = new Date().toISOString()
+      await kv.set('page:default-1', { title: 'Privacy Policy', slug: 'privacy-policy', content: '<h2>Privacy Policy</h2><p>We are committed to protecting your personal information and your right to privacy. This policy outlines how we collect, use, and protect your data.</p>', published: true, createdAt: now, updatedAt: now })
+      await kv.set('page:default-2', { title: 'Terms of Service', slug: 'terms-of-service', content: '<h2>Terms of Service</h2><p>By accessing our website, you agree to be bound by these Terms of Service. Please read them carefully before using our services.</p>', published: true, createdAt: now, updatedAt: now })
+      await kv.set('page:default-3', { title: 'Refund Policy', slug: 'refund-policy', content: '<h2>Refund Policy</h2><p>Donations made to Resti Kiryandongo CBO are generally non-refundable. If you believe a refund is warranted, please contact us within 30 days.</p>', published: true, createdAt: now, updatedAt: now })
     }
 
     return c.json({ success: true, message: 'Initialization complete' })

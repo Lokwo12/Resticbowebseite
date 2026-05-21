@@ -1,4 +1,4 @@
-import { Menu, X, Heart, ChevronRight, ChevronDown } from 'lucide-react';
+import { Menu, X, Heart, ChevronRight, ChevronDown, Sun, Moon } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 const logo = '/logo.png';
@@ -22,6 +22,14 @@ export function Header() {
   const [lastScrollY, setLastScrollY] = useState(0);
   const [activeSection, setActiveSection] = useState('home');
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const [customPages, setCustomPages] = useState<Array<{slug: string; title: string}>>([]);
+  const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains('dark'));
+
+  const handleToggleDark = () => {
+    const newDark = document.documentElement.classList.toggle('dark');
+    try { localStorage.setItem('theme', newDark ? 'dark' : 'light'); } catch { /* noop */ }
+    setIsDark(newDark);
+  };
 
   useEffect(() => {
     const handleScroll = () => {
@@ -60,6 +68,18 @@ export function Header() {
 
   useEffect(() => {
     fetchSettings();
+    fetchCustomPages();
+  }, []);
+
+  useEffect(() => {
+    const handleDocumentClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest('.nav-dropdown-container')) {
+        setActiveDropdown(null);
+      }
+    };
+    document.addEventListener('click', handleDocumentClick);
+    return () => document.removeEventListener('click', handleDocumentClick);
   }, []);
 
   const fetchSettings = async () => {
@@ -91,6 +111,22 @@ export function Header() {
     }
   };
 
+  const fetchCustomPages = async () => {
+    try {
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/pages`,
+        { headers: { Authorization: `Bearer ${publicAnonKey}` } }
+      );
+      if (response.ok) {
+        const data = await response.json();
+        const published = (data.pages || []).filter((p: any) => p.published);
+        setCustomPages(published.map((p: any) => ({ slug: p.slug, title: p.title })));
+      }
+    } catch {
+      // silently ignore
+    }
+  };
+
   const scrollToSection = (id: string) => {
     if (window.location.pathname !== '/') {
       window.location.href = `/#${id}`;
@@ -113,7 +149,7 @@ export function Header() {
   const announcementText = settings.header?.announcementText || 'We are looking for volunteers in Kiryandongo';
   const announcementLink = settings.header?.announcementLink || 'contact';
   const showAnnouncement = settings.header?.showAnnouncement !== false;
-  const isSolid = scrolled;
+  const isSolid = scrolled || window.location.pathname !== '/';
 
   return (
     <header 
@@ -143,14 +179,8 @@ export function Header() {
         <div className={`flex justify-between items-center transition-all duration-300 ${isSolid ? 'h-14' : 'h-16'}`}>
           {/* Logo */}
           <div className="flex items-center">
-            <button 
-              onClick={() => {
-                if (window.location.pathname !== '/') {
-                  window.location.href = '/';
-                } else {
-                  scrollToSection('home');
-                }
-              }}
+            <Link 
+              to="/#home"
               className="flex items-center gap-3 group transition-transform hover:scale-102"
             >
               <img 
@@ -170,13 +200,13 @@ export function Header() {
                   isSolid ? 'text-gray-600' : 'text-white/90'
                 }`}>{settings.general?.tagline || 'Community Based Organization'}</p>
               </div>
-            </button>
+            </Link>
           </div>
 
           {/* Desktop Navigation */}
           <div className="hidden lg:flex items-center space-x-6">
-            <button
-              onClick={() => scrollToSection('home')}
+            <Link
+              to="/#home"
               className={`transition-all duration-300 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-emerald-600 hover:after:w-full after:transition-all ${
                 isSolid 
                   ? 'text-gray-700 hover:text-emerald-600' 
@@ -184,15 +214,19 @@ export function Header() {
               }`}
             >
               Home
-            </button>
+            </Link>
             
             {/* About Dropdown */}
             <div 
-              className="relative"
-              onMouseEnter={() => setActiveDropdown('about')}
+              className="nav-dropdown-container relative"
               onMouseLeave={() => setActiveDropdown(null)}
             >
               <button
+                onMouseEnter={() => setActiveDropdown('about')}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setActiveDropdown(activeDropdown === 'about' ? null : 'about');
+                }}
                 className={`transition-all duration-300 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-emerald-600 hover:after:w-full after:transition-all flex items-center gap-1 py-4 ${
                   isSolid 
                     ? 'text-gray-700 hover:text-emerald-600' 
@@ -206,12 +240,13 @@ export function Header() {
               }`}>
                 <div className="bg-white rounded-lg shadow-xl border border-gray-100 overflow-hidden mt-1">
                   <div className="py-1">
-                    <button 
-                      onClick={() => { scrollToSection('about'); setActiveDropdown(null); }} 
+                    <Link 
+                      to="/#about"
+                      onClick={() => setActiveDropdown(null)} 
                       className="w-full text-left block px-4 py-2.5 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-600 transition-colors"
                     >
                       About Us
-                    </button>
+                    </Link>
                     <Link 
                       to="/team" 
                       onClick={() => setActiveDropdown(null)}
@@ -231,8 +266,8 @@ export function Header() {
               </div>
             </div>
 
-            <button
-              onClick={() => scrollToSection('programs')}
+            <Link
+              to="/#programs"
               className={`transition-all duration-300 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-emerald-600 hover:after:w-full after:transition-all ${
                 isSolid 
                   ? 'text-gray-700 hover:text-emerald-600' 
@@ -240,15 +275,19 @@ export function Header() {
               }`}
             >
               Programs
-            </button>
+            </Link>
 
             {/* Impact Dropdown */}
             <div 
-              className="relative"
-              onMouseEnter={() => setActiveDropdown('impact')}
+              className="nav-dropdown-container relative"
               onMouseLeave={() => setActiveDropdown(null)}
             >
               <button
+                onMouseEnter={() => setActiveDropdown('impact')}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setActiveDropdown(activeDropdown === 'impact' ? null : 'impact');
+                }}
                 className={`transition-all duration-300 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-emerald-600 hover:after:w-full after:transition-all flex items-center gap-1 py-4 ${
                   isSolid 
                     ? 'text-gray-700 hover:text-emerald-600' 
@@ -262,12 +301,13 @@ export function Header() {
               }`}>
                 <div className="bg-white rounded-lg shadow-xl border border-gray-100 overflow-hidden mt-1">
                   <div className="py-1">
-                    <button 
-                      onClick={() => { scrollToSection('impact'); setActiveDropdown(null); }} 
-                      className="w-full text-left block px-4 py-2.5 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-600 transition-colors"
+                    <Link 
+                      to="/stories" 
+                      onClick={() => setActiveDropdown(null)}
+                      className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-600 transition-colors"
                     >
                       Impact Stories
-                    </button>
+                    </Link>
                     <Link 
                       to="/reports" 
                       onClick={() => setActiveDropdown(null)}
@@ -282,11 +322,15 @@ export function Header() {
 
             {/* Get Involved Dropdown */}
             <div 
-              className="relative"
-              onMouseEnter={() => setActiveDropdown('involved')}
+              className="nav-dropdown-container relative"
               onMouseLeave={() => setActiveDropdown(null)}
             >
               <button
+                onMouseEnter={() => setActiveDropdown('involved')}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setActiveDropdown(activeDropdown === 'involved' ? null : 'involved');
+                }}
                 className={`transition-all duration-300 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-emerald-600 hover:after:w-full after:transition-all flex items-center gap-1 py-4 ${
                   isSolid 
                     ? 'text-gray-700 hover:text-emerald-600' 
@@ -326,6 +370,47 @@ export function Header() {
               </div>
             </div>
 
+            {/* Pages Dropdown — only when published custom pages exist */}
+            {customPages.length > 0 && (
+              <div
+                className="nav-dropdown-container relative"
+                onMouseLeave={() => setActiveDropdown(null)}
+              >
+                <button
+                  onMouseEnter={() => setActiveDropdown('pages')}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setActiveDropdown(activeDropdown === 'pages' ? null : 'pages');
+                  }}
+                  className={`transition-all duration-300 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-emerald-600 hover:after:w-full after:transition-all flex items-center gap-1 py-4 ${
+                    isSolid
+                      ? 'text-gray-700 hover:text-emerald-600'
+                      : 'text-white hover:text-emerald-300 drop-shadow'
+                  }`}
+                >
+                  Pages <ChevronDown size={14} />
+                </button>
+                <div className={`absolute left-0 top-full w-52 transition-all duration-300 z-50 pt-0 ${
+                  activeDropdown === 'pages' ? 'opacity-100 visible translate-y-0' : 'opacity-0 invisible translate-y-2'
+                }`}>
+                  <div className="bg-white rounded-lg shadow-xl border border-gray-100 overflow-hidden mt-1">
+                    <div className="py-1">
+                      {customPages.map(page => (
+                        <Link
+                          key={page.slug}
+                          to={`/pages/${page.slug}`}
+                          onClick={() => setActiveDropdown(null)}
+                          className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-600 transition-colors"
+                        >
+                          {page.title}
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <Link
               to="/contact"
               onClick={() => setActiveDropdown(null)}
@@ -338,6 +423,15 @@ export function Header() {
               Contact
             </Link>
             <button
+              onClick={handleToggleDark}
+              title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+              className={`p-2 rounded-lg transition-all duration-300 ${
+                isSolid ? 'hover:bg-gray-100 text-gray-600' : 'hover:bg-white/20 text-white'
+              }`}
+            >
+              {isDark ? <Sun size={18} /> : <Moon size={18} />}
+            </button>
+            <button
               onClick={() => { openDonationModal(); setActiveDropdown(null); }}
               className={`px-6 py-2 rounded-lg transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 ${
                 isSolid
@@ -349,17 +443,28 @@ export function Header() {
             </button>
           </div>
 
-          {/* Mobile Menu Button */}
-          <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className={`lg:hidden p-2 rounded-lg transition-colors ${
-              isSolid 
-                ? 'hover:bg-gray-100 text-gray-700' 
-                : 'hover:bg-white/20 text-white'
-            }`}
-          >
-            {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-          </button>
+          {/* Mobile right actions: dark toggle + hamburger */}
+          <div className="lg:hidden flex items-center gap-1">
+            <button
+              onClick={handleToggleDark}
+              title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+              className={`p-2 rounded-lg transition-all duration-300 ${
+                isSolid ? 'hover:bg-gray-100 text-gray-600' : 'hover:bg-white/20 text-white'
+              }`}
+            >
+              {isDark ? <Sun size={18} /> : <Moon size={18} />}
+            </button>
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className={`p-2 rounded-lg transition-colors ${
+                isSolid
+                  ? 'hover:bg-gray-100 text-gray-700'
+                  : 'hover:bg-white/20 text-white'
+              }`}
+            >
+              {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+            </button>
+          </div>
         </div>
 
         {/* Mobile Menu */}
@@ -370,30 +475,30 @@ export function Header() {
               : 'border-white/20 bg-white/95 backdrop-blur-lg'
           }`}>
             <div className="flex flex-col space-y-3">
-              <button onClick={() => scrollToSection('home')} className="text-gray-700 hover:text-emerald-600 transition-colors text-left px-2 py-1">
+              <Link to="/#home" onClick={() => setMobileMenuOpen(false)} className="text-gray-700 hover:text-emerald-600 transition-colors text-left px-2 py-1">
                 Home
-              </button>
-              <button onClick={() => scrollToSection('about')} className="text-gray-700 hover:text-emerald-600 transition-colors text-left px-2 py-1">
+              </Link>
+              <Link to="/#about" onClick={() => setMobileMenuOpen(false)} className="text-gray-700 hover:text-emerald-600 transition-colors text-left px-2 py-1">
                 About Us
-              </button>
-              <button onClick={() => scrollToSection('programs')} className="text-gray-700 hover:text-emerald-600 transition-colors text-left px-2 py-1">
+              </Link>
+              <Link to="/#programs" onClick={() => setMobileMenuOpen(false)} className="text-gray-700 hover:text-emerald-600 transition-colors text-left px-2 py-1">
                 Our Programs
-              </button>
+              </Link>
               <Link to="/team" className="text-gray-700 hover:text-emerald-600 transition-colors text-left px-2 py-1" onClick={() => setMobileMenuOpen(false)}>
                 Our Team
               </Link>
-              <button onClick={() => scrollToSection('impact')} className="text-gray-700 hover:text-emerald-600 transition-colors text-left px-2 py-1">
+              <Link to="/stories" className="text-gray-700 hover:text-emerald-600 transition-colors text-left px-2 py-1" onClick={() => setMobileMenuOpen(false)}>
                 Impact Stories
-              </button>
+              </Link>
               <Link to="/reports" className="text-gray-700 hover:text-emerald-600 transition-colors text-left px-2 py-1" onClick={() => setMobileMenuOpen(false)}>
                 Impact Reports
               </Link>
-              <button onClick={() => scrollToSection('events')} className="text-gray-700 hover:text-emerald-600 transition-colors text-left px-2 py-1">
+              <Link to="/#events" onClick={() => setMobileMenuOpen(false)} className="text-gray-700 hover:text-emerald-600 transition-colors text-left px-2 py-1">
                 Events
-              </button>
-              <button onClick={() => scrollToSection('gallery')} className="text-gray-700 hover:text-emerald-600 transition-colors text-left px-2 py-1">
+              </Link>
+              <Link to="/#gallery" onClick={() => setMobileMenuOpen(false)} className="text-gray-700 hover:text-emerald-600 transition-colors text-left px-2 py-1">
                 Gallery
-              </button>
+              </Link>
               <Link to="/partners" className="text-gray-700 hover:text-emerald-600 transition-colors text-left px-2 py-1" onClick={() => setMobileMenuOpen(false)}>
                 Partners
               </Link>
@@ -412,6 +517,16 @@ export function Header() {
               <Link to="/contact" className="text-gray-700 hover:text-emerald-600 transition-colors text-left px-2 py-1" onClick={() => setMobileMenuOpen(false)}>
                 Contact
               </Link>
+              {customPages.map(page => (
+                <Link
+                  key={page.slug}
+                  to={`/pages/${page.slug}`}
+                  className="text-gray-700 hover:text-emerald-600 transition-colors text-left px-2 py-1"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  {page.title}
+                </Link>
+              ))}
               <button onClick={openDonationModal} className="bg-emerald-600 text-white px-6 py-2 rounded-lg hover:bg-emerald-700 transition-colors mt-2">
                 Donate Now
               </button>

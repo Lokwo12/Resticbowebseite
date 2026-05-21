@@ -43,7 +43,7 @@ export function FloatingContact() {
   ];
 
   return (
-    <div className="fixed bottom-8 left-8 z-40">
+    <div className="fixed bottom-4 left-4 sm:bottom-8 sm:left-8 z-40">
       {/* Contact Options */}
       <div
         className={`flex flex-col gap-3 mb-3 transition-all duration-300 ${

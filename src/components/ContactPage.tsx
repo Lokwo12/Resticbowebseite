@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { Header } from './Header';
 import { Contact } from './Contact';
@@ -56,7 +57,7 @@ export function ContactPage() {
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-white">
           {/* Breadcrumbs */}
           <nav className="flex justify-center items-center gap-2 mb-8 text-emerald-200/80 text-sm animate-[fadeInDown_0.6s_ease-out]">
-            <a href="/" className="hover:text-white transition-colors">Home</a>
+            <Link to="/" className="hover:text-white transition-colors">Home</Link>
             <span className="text-emerald-500">/</span>
             <span className="text-white font-medium">Contact</span>
           </nav>

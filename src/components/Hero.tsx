@@ -32,13 +32,13 @@ function StatCounter({ num, suffix, label, visible, delay }: { num: number; suff
   const count = useCountUp(num, 1800, visible);
   return (
     <div
-      className="group hover:scale-105 transition-all duration-500 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-emerald-500/30 p-4 rounded-2xl shadow-xl backdrop-blur-md"
+      className="group hover:scale-105 transition-all duration-500 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-emerald-500/30 p-2.5 sm:p-4 rounded-xl sm:rounded-2xl shadow-xl backdrop-blur-md"
       style={{ animationDelay: `${delay}ms` }}
     >
-      <div className={`text-3xl font-extrabold text-emerald-400 group-hover:text-emerald-300 transition-colors duration-300 drop-shadow-md ${visible ? 'counter-animated' : ''}`}>
+      <div className={`text-2xl sm:text-3xl font-extrabold text-emerald-400 group-hover:text-emerald-300 transition-colors duration-300 drop-shadow-md ${visible ? 'counter-animated' : ''}`}>
         {visible ? count : 0}{suffix}
       </div>
-      <div className="text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-white/80 group-hover:text-white transition-colors duration-300 mt-1">{label}</div>
+      <div className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-white/80 group-hover:text-white transition-colors duration-300 mt-1 break-words leading-tight">{label}</div>
     </div>
   );
 }

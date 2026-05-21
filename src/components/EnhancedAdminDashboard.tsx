@@ -53,12 +53,14 @@ import {
   DownloadCloud,
   RotateCcw,
   User,
-  Lock
+  Lock,
+  Globe,
+  Copy
 } from 'lucide-react';
 import { Card } from './ui/card';
 import { Badge } from './ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
+import { DraggableDialog } from './DraggableDialog';
 import { Button } from './ui/button';
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import ReactQuill from 'react-quill';
@@ -79,6 +81,7 @@ import {
   FAQFormDialog, 
   ResourceFormDialog 
 } from './AdminFormDialogsFinal';
+import { PageFormDialog } from './AdminFormDialogsPages';
 
 const supabase = createClient(
   `https://${projectId}.supabase.co`,
@@ -104,25 +107,26 @@ interface Analytics {
 
 // Navigation menu items
 const NAVIGATION_ITEMS = [
-  { id: 'overview', label: 'Dashboard', icon: LayoutDashboard, color: 'text-emerald-600' },
-  { id: 'programs', label: 'Programs', icon: FileText, color: 'text-blue-600' },
-  { id: 'news', label: 'News', icon: Newspaper, color: 'text-purple-600' },
-  { id: 'gallery', label: 'Gallery', icon: ImageIcon, color: 'text-pink-600' },
-  { id: 'team', label: 'Team', icon: Users, color: 'text-cyan-600' },
-  { id: 'stories', label: 'Stories', icon: MessageSquare, color: 'text-orange-600' },
-  { id: 'impact', label: 'Impact Stats', icon: TrendingUp, color: 'text-green-600' },
-  { id: 'reports', label: 'Reports', icon: Download, color: 'text-indigo-600' },
-  { id: 'events', label: 'Events', icon: Calendar, color: 'text-red-600' },
-  { id: 'partners', label: 'Partners', icon: Handshake, color: 'text-teal-600' },
-  { id: 'opportunities', label: 'Opportunities', icon: Target, color: 'text-amber-600' },
-  { id: 'faqs', label: 'FAQs', icon: HelpCircle, color: 'text-violet-600' },
-  { id: 'resources', label: 'Resources', icon: BookOpen, color: 'text-lime-600' },
-  { id: 'contacts', label: 'Contacts', icon: Mail, color: 'text-sky-600' },
-  { id: 'volunteers', label: 'Volunteers', icon: Heart, color: 'text-rose-600' },
-  { id: 'donations', label: 'Donations', icon: Heart, color: 'text-emerald-600' },
-  { id: 'subscribers', label: 'Subscribers', icon: Send, color: 'text-blue-600' },
-  { id: 'settings', label: 'Settings', icon: Settings, color: 'text-slate-600' },
-  { id: 'activity-log', label: 'Activity Log', icon: Clock, color: 'text-orange-600' },
+  { id: 'overview',      label: 'Dashboard',      icon: LayoutDashboard, color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496' },
+  { id: 'programs',      label: 'Programs',        icon: FileText,        color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496' },
+  { id: 'news',          label: 'News',             icon: Newspaper,       color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496' },
+  { id: 'gallery',       label: 'Gallery',          icon: ImageIcon,       color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496' },
+  { id: 'team',          label: 'Team',             icon: Users,           color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496' },
+  { id: 'stories',       label: 'Stories',          icon: MessageSquare,   color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496' },
+  { id: 'impact',        label: 'Impact Stats',     icon: TrendingUp,      color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496' },
+  { id: 'reports',       label: 'Reports',          icon: Download,        color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496' },
+  { id: 'events',        label: 'Events',           icon: Calendar,        color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496' },
+  { id: 'partners',      label: 'Partners',         icon: Handshake,       color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496' },
+  { id: 'opportunities', label: 'Opportunities',    icon: Target,          color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496' },
+  { id: 'faqs',          label: 'FAQs',             icon: HelpCircle,      color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496' },
+  { id: 'resources',     label: 'Resources',        icon: BookOpen,        color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496' },
+  { id: 'pages',         label: 'Pages',            icon: Globe,           color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496' },
+  { id: 'contacts',      label: 'Contacts',         icon: Mail,            color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496' },
+  { id: 'volunteers',    label: 'Volunteers',       icon: Heart,           color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496' },
+  { id: 'donations',     label: 'Donations',        icon: Heart,           color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496' },
+  { id: 'subscribers',   label: 'Subscribers',      icon: Send,            color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496' },
+  { id: 'settings',      label: 'Settings',         icon: Settings,        color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496' },
+  { id: 'activity-log',  label: 'Activity Log',     icon: Clock,           color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496' },
 ];
 
 export function EnhancedAdminDashboard() {
@@ -161,6 +165,7 @@ export function EnhancedAdminDashboard() {
   const [opportunities, setOpportunities] = useState<any[]>([]);
   const [faqs, setFAQs] = useState<any[]>([]);
   const [resources, setResources] = useState<any[]>([]);
+  const [pages, setPages] = useState<any[]>([]);
 
   // Selection states for bulk actions
   const [selectedPrograms, setSelectedPrograms] = useState<string[]>([]);
@@ -206,6 +211,7 @@ export function EnhancedAdminDashboard() {
   const [showOpportunityForm, setShowOpportunityForm] = useState(false);
   const [showFAQForm, setShowFAQForm] = useState(false);
   const [showResourceForm, setShowResourceForm] = useState(false);
+  const [showPageForm, setShowPageForm] = useState(false);
   const [showUserForm, setShowUserForm] = useState(false);
   const [showPasswordResetDialog, setShowPasswordResetDialog] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
@@ -274,6 +280,8 @@ export function EnhancedAdminDashboard() {
   const [newsletterSubject, setNewsletterSubject] = useState('');
   const [newsletterBody, setNewsletterBody] = useState('');
   const [sendingNewsletter, setSendingNewsletter] = useState(false);
+  const [subscriberSearch, setSubscriberSearch] = useState('');
+  const [selectedSubscribers, setSelectedSubscribers] = useState<string[]>([]);
 
   const exportToCSV = (rows: Record<string, any>[], filename: string) => {
     if (!rows.length) return;
@@ -427,6 +435,36 @@ export function EnhancedAdminDashboard() {
     } finally {
       setResetting(false);
       setShowResetModal(false);
+    }
+  };
+
+  const handleDeleteSubscriber = async (key: string) => {
+    try {
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/newsletter/${encodeURIComponent(key)}`,
+        { method: 'DELETE', headers: { Authorization: `Bearer ${publicAnonKey}` } }
+      );
+      if (!response.ok) throw new Error('Failed to delete');
+      toast.success('Subscriber removed');
+      loadData();
+    } catch (err: any) {
+      toast.error(err.message);
+    }
+  };
+
+  const handleBulkDeleteSubscribers = async (keys: string[]) => {
+    try {
+      await Promise.all(keys.map(key =>
+        fetch(
+          `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/newsletter/${encodeURIComponent(key)}`,
+          { method: 'DELETE', headers: { Authorization: `Bearer ${publicAnonKey}` } }
+        )
+      ));
+      toast.success(`${keys.length} subscriber(s) removed`);
+      setSelectedSubscribers([]);
+      loadData();
+    } catch (err: any) {
+      toast.error(err.message);
     }
   };
 
@@ -870,6 +908,13 @@ export function EnhancedAdminDashboard() {
         );
         const data = await response.json();
         setResources(data.resources || []);
+      } else if (activeTab === 'pages') {
+        const response = await fetch(
+          `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/pages`,
+          { headers: { Authorization: `Bearer ${publicAnonKey}` } }
+        );
+        const data = await response.json();
+        setPages(data.pages || []);
       }
     } catch (err) {
       console.error('Error loading data:', err);
@@ -1458,6 +1503,23 @@ export function EnhancedAdminDashboard() {
     }
   };
 
+  const handleDeletePage = async (id: string) => {
+    if (!confirm('Delete this page? It will no longer be accessible on the website.')) return;
+    try {
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/pages/${encodeURIComponent(id)}`,
+        { method: 'DELETE', headers: { Authorization: `Bearer ${publicAnonKey}` } }
+      );
+      if (!response.ok) throw new Error('Failed to delete page');
+      toast.success('Page deleted');
+      logActivity('deleted', 'Pages', `Deleted page ID: ${id}`);
+      loadData();
+    } catch (err: any) {
+      console.error('Delete error:', err);
+      toast.error(err.message || 'Failed to delete page');
+    }
+  };
+
   // User Management Handlers
   const handleSubmitUser = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1781,7 +1843,7 @@ export function EnhancedAdminDashboard() {
           <div className="absolute top-1/2 left-1/4 w-32 h-32 bg-white/5 rounded-full" />
           <div className="relative z-10 text-center max-w-lg">
             <div className="bg-white/10 backdrop-blur-md rounded-[2.5rem] p-6 mb-8 inline-block border border-white/20 shadow-2xl hover:scale-105 transition-transform duration-500">
-              <img src={loginLogo} alt="Resti Kiryandongo CBO" className="h-28 w-28 rounded-full object-cover shadow-lg border border-slate-100/50 mx-auto" />
+              <img src={loginLogo} alt="Resti Kiryandongo CBO" className="h-16 w-16 rounded-full object-cover shadow-lg border border-slate-100/50 mx-auto" />
             </div>
             <h1 className="text-4xl font-extrabold text-white mb-3 tracking-tight">Resti Kiryandongo CBO</h1>
             <p className="text-emerald-100/90 text-lg font-medium mb-10">Empowering Communities, Transforming Lives</p>
@@ -2000,15 +2062,13 @@ export function EnhancedAdminDashboard() {
         </div>
 
         {/* Signup Success Pending Approval Dialog */}
-        <Dialog open={showSignupSuccessDialog} onOpenChange={setShowSignupSuccessDialog}>
-          <DialogContent className="max-w-md bg-white/95 backdrop-blur-2xl rounded-[2rem] p-8 border-0 shadow-2xl overflow-hidden">
-            <DialogHeader className="mb-2 flex flex-col items-center text-center">
-              <div className="w-16 h-16 bg-yellow-50 rounded-full flex items-center justify-center mb-4 border border-yellow-100 shadow-inner">
-                <Clock className="h-8 w-8 text-yellow-600 animate-pulse" />
-              </div>
-              <DialogTitle className="text-2xl font-extrabold text-slate-800 tracking-tight">Account Pending Approval</DialogTitle>
-            </DialogHeader>
+        <DraggableDialog open={showSignupSuccessDialog} onClose={() => setShowSignupSuccessDialog(false)} title="Account Pending Approval" defaultWidth={480} headerColor="#2f5496">
             <div className="space-y-6 text-center">
+              <div className="flex flex-col items-center mb-2">
+                <div className="w-16 h-16 bg-yellow-50 rounded-full flex items-center justify-center mb-4 border border-yellow-100 shadow-inner">
+                  <Clock className="h-8 w-8 text-yellow-600 animate-pulse" />
+                </div>
+              </div>
               <p className="text-base text-slate-600 leading-relaxed">
                 Your administrator account has been created successfully!
               </p>
@@ -2040,8 +2100,7 @@ export function EnhancedAdminDashboard() {
                 Understood
               </Button>
             </div>
-          </DialogContent>
-        </Dialog>
+        </DraggableDialog>
       </div>
     );
   }
@@ -2063,8 +2122,8 @@ export function EnhancedAdminDashboard() {
               {sidebarOpen ? <XIcon size={20} /> : <Menu size={20} />}
             </button>
             <div className="flex items-center gap-3">
-              <div className="bg-emerald-500/10 rounded-full p-1 border border-emerald-500/20 shadow-sm flex items-center justify-center">
-                <img src={loginLogo} alt="Logo" className="h-11 w-11 rounded-full object-cover" />
+              <div className="bg-emerald-500/10 rounded-full p-1 border border-emerald-500/20 shadow-sm flex items-center justify-center overflow-hidden h-[46px] w-[46px] shrink-0">
+                <img src={loginLogo} alt="Logo" className="h-9 w-9 rounded-full object-cover shrink-0 block" />
               </div>
               <div className="hidden md:block">
                 <h1 className="text-sm font-semibold text-white leading-tight">Resti Kiryandongo CBO</h1>
@@ -2223,12 +2282,16 @@ export function EnhancedAdminDashboard() {
                         setActiveTab(item.id);
                         if (window.innerWidth < 1024) setSidebarOpen(false);
                       }}
-                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-150 group ${
+                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-150 group relative ${
                         isActive
-                          ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/30'
+                          ? 'text-white shadow-lg'
                           : 'text-slate-400 hover:bg-slate-800 hover:text-white'
                       }`}
+                      style={isActive ? { backgroundColor: item.accentBg, boxShadow: `0 4px 14px ${item.accentBg}55` } : {}}
                     >
+                      {isActive && (
+                        <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 rounded-r-full bg-white/70" />
+                      )}
                       <Icon size={17} className={isActive ? 'text-white' : 'text-slate-500 group-hover:text-emerald-400'} />
                       <span className="text-sm font-medium">{item.label}</span>
                       {isActive && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-white/70" />}
@@ -2241,12 +2304,16 @@ export function EnhancedAdminDashboard() {
                       setActiveTab('users');
                       if (window.innerWidth < 1024) setSidebarOpen(false);
                     }}
-                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-150 group ${
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-150 group relative ${
                       activeTab === 'users'
-                        ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/30'
+                        ? 'text-white'
                         : 'text-slate-400 hover:bg-slate-800 hover:text-white'
                     }`}
+                    style={activeTab === 'users' ? { backgroundColor: '#2f5496', boxShadow: '0 4px 14px #2f549655' } : {}}
                   >
+                    {activeTab === 'users' && (
+                      <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 rounded-r-full bg-white/70" />
+                    )}
                     <Shield size={17} className={activeTab === 'users' ? 'text-white' : 'text-slate-500 group-hover:text-emerald-400'} />
                     <span className="text-sm font-medium">Users</span>
                     {activeTab === 'users' && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-white/70" />}
@@ -2332,19 +2399,24 @@ export function EnhancedAdminDashboard() {
             `}</style>
           )}
           {/* Page Header */}
-          <div className="bg-gradient-to-r from-slate-900 to-slate-800 px-6 lg:px-8 py-4 shadow-md">
-
+          <div
+            className="px-6 lg:px-8 py-5 shadow-lg"
+            style={{ background: `linear-gradient(135deg, ${currentMenuItem?.headerBg ?? '#1e293b'} 0%, ${currentMenuItem?.accentBg ?? '#475569'}44 100%)` }}
+          >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <div className="p-2.5 rounded-xl bg-white/10 border border-white/20 shadow-lg">
-                  <CurrentIcon size={20} className="text-white" />
+                <div
+                  className="p-2.5 rounded-xl border border-white/25 shadow-lg"
+                  style={{ backgroundColor: `${currentMenuItem?.accentBg ?? '#475569'}55` }}
+                >
+                  <CurrentIcon size={22} className="text-white" />
                 </div>
                 <div>
-                  <h2 className="text-lg font-bold text-white leading-tight">{currentMenuItem?.label || 'Dashboard'}</h2>
-                  <div className="flex items-center gap-1.5 text-sm text-slate-400">
+                  <h2 className="text-xl font-bold text-white leading-tight tracking-tight">{currentMenuItem?.label || 'Dashboard'}</h2>
+                  <div className="flex items-center gap-1.5 text-xs text-white/60 mt-0.5">
                     <span>Admin</span>
-                    <ChevronRight size={13} />
-                    <span className="text-slate-300">{currentMenuItem?.label || 'Dashboard'}</span>
+                    <ChevronRight size={11} />
+                    <span className="text-white/80 font-medium">{currentMenuItem?.label || 'Dashboard'}</span>
                   </div>
                 </div>
               </div>
@@ -2732,6 +2804,8 @@ export function EnhancedAdminDashboard() {
             {/* Programs Management */}
             {activeTab === 'programs' && (
               <div className="bg-white/95 backdrop-blur-xl rounded-[2rem] shadow-sm border border-slate-100/80 p-8 md:p-10 space-y-8">
+
+                {/* Header */}
                 <div className="flex flex-row items-center justify-between gap-4 bg-gradient-to-r from-blue-600 to-blue-700 rounded-2xl px-6 py-5 md:px-8 md:py-6 shadow-md">
                   <div className="flex items-center gap-3">
                     <div className="p-3 md:p-3.5 rounded-xl bg-white/20 border border-white/30 shadow-sm flex-shrink-0">
@@ -2742,76 +2816,75 @@ export function EnhancedAdminDashboard() {
                       <p className="text-sm text-blue-100 mt-1.5 opacity-80 font-medium">Manage your community programs</p>
                     </div>
                   </div>
-                  <Button
+                  <button
                     onClick={() => {
                       setEditingItem(null);
                       setFormData({ title: '', description: '', content: '', image: '', category: 'general' });
                       setShowProgramForm(true);
                     }}
-                    className="bg-white text-blue-700 hover:bg-blue-50 shadow-md font-semibold px-4 py-2 md:px-5 md:py-2.5 rounded-xl transition-all whitespace-nowrap flex-shrink-0"
+                    className="flex items-center gap-2 px-4 py-2 md:px-5 md:py-2.5 bg-white text-blue-700 hover:bg-blue-50 shadow-md font-semibold rounded-xl transition-all whitespace-nowrap flex-shrink-0 text-sm"
                   >
-                    <Plus size={16} className="mr-2" />
+                    <Plus size={16} />
                     Add Program
-                  </Button>
+                  </button>
                 </div>
 
+                {/* Bulk Actions */}
                 {selectedPrograms.length > 0 && (
-                  <div className="flex items-center gap-3 p-4 bg-emerald-50 rounded-lg border border-emerald-200">
-                    <span className="text-sm text-slate-700 leading-relaxed">{selectedPrograms.length} selected</span>
-                    <Button
+                  <div className="flex flex-wrap items-center gap-3 p-4 bg-slate-50 border border-slate-200 rounded-2xl">
+                    <span className="text-sm text-slate-700 font-medium">{selectedPrograms.length} selected</span>
+                    <button
                       onClick={() => handleBulkDeletePrograms(selectedPrograms)}
-                      variant="outline"
-                      size="sm"
-                      className="text-red-600 hover:bg-red-50"
+                      className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-colors"
                     >
-                      <Trash2 size={14} className="mr-1" />
+                      <Trash2 size={13} />
                       Delete Selected
-                    </Button>
-                    <Button
+                    </button>
+                    <button
                       onClick={() => setSelectedPrograms([])}
-                      variant="outline"
-                      size="sm"
+                      className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-slate-600 bg-white hover:bg-slate-100 border border-slate-200 rounded-lg transition-colors"
                     >
-                      Clear Selection
-                    </Button>
+                      <X size={13} />
+                      Clear
+                    </button>
                   </div>
                 )}
 
+                {/* Cards grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
                   {programs.map((program) => (
-                    <div key={program.key} className="bg-white border border-gray-200 relative border-t-4 border-l-0 overflow-hidden border-l-blue-500 rounded-2xl p-6 md:p-7 hover:shadow-xl hover:-translate-y-2 hover:shadow-2xl hover:border-blue-300 transition-all duration-300 shadow-sm cursor-pointer group" onClick={() => {
-                              setEditingItem(program);
-                              setFormData(program.value);
-                              setShowProgramForm(true);
-                            }}>
-                      <div className="flex flex-col h-full gap-5">
-                        <input
-                          type="checkbox"
-                          checked={selectedPrograms.includes(program.key)}
-                           onClick={(e) => e.stopPropagation()} onChange={(e) => {
-                            if (e.target.checked) {
-                              setSelectedPrograms([...selectedPrograms, program.key]);
-                            } else {
-                              setSelectedPrograms(selectedPrograms.filter(id => id !== program.key));
-                            }
-                          }}
-                          className="absolute top-4 left-4 z-10 w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500"
-                        />
-                        {program.value.image && (
-                          <img src={program.value.image} alt={program.value.title} className="w-full h-48 object-cover rounded-xl" />
-                        )}
-                        <div className="flex-1">
-                          <h4 className="text-lg font-semibold text-slate-800 tracking-tight mb-1">{program.value.title}</h4>
-                          <p className="text-sm text-slate-600 mb-2">{program.value.description}</p>
-                          <Badge className="bg-blue-50 text-blue-700 border-blue-100">{program.value.category}</Badge>
-                        </div>
-                        <div className="flex flex-wrap gap-2 mt-auto pt-4 border-t border-slate-100 w-full relative z-20" onClick={(e) => e.stopPropagation()}>
-                          <button
-                            onClick={() => {
-                              setEditingItem(program);
-                              setFormData(program.value);
-                              setShowProgramForm(true);
+                    <div
+                      key={program.key}
+                      className="bg-white border border-gray-200 border-l-4 border-l-blue-500 rounded-2xl hover:shadow-xl hover:-translate-y-1 hover:border-blue-300 transition-all duration-300 shadow-sm cursor-pointer group flex flex-col overflow-hidden"
+                      onClick={() => { setEditingItem(program); setFormData(program.value); setShowProgramForm(true); }}
+                    >
+                      {program.value.image && (
+                        <img src={program.value.image} alt={program.value.title} className="w-full h-44 object-cover" />
+                      )}
+                      <div className="p-6 flex flex-col flex-1">
+                        <div className="flex items-start gap-3 mb-3">
+                          <input
+                            type="checkbox"
+                            checked={selectedPrograms.includes(program.key)}
+                            onClick={(e) => e.stopPropagation()}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedPrograms([...selectedPrograms, program.key]);
+                              } else {
+                                setSelectedPrograms(selectedPrograms.filter(id => id !== program.key));
+                              }
                             }}
+                            className="mt-0.5 w-4 h-4 rounded flex-shrink-0 text-blue-600 focus:ring-blue-400"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <h4 className="text-sm font-semibold text-slate-800 truncate mb-1.5">{program.value.title}</h4>
+                            <Badge className="bg-blue-50 text-blue-700 border-blue-200">{program.value.category}</Badge>
+                          </div>
+                        </div>
+                        <p className="text-sm text-slate-600 line-clamp-2 flex-1 pl-7">{program.value.description}</p>
+                        <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-slate-100 relative z-20" onClick={(e) => e.stopPropagation()}>
+                          <button
+                            onClick={() => { setEditingItem(program); setFormData(program.value); setShowProgramForm(true); }}
                             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors"
                           >
                             <Edit size={13} />
@@ -2822,13 +2895,14 @@ export function EnhancedAdminDashboard() {
                             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-colors"
                           >
                             <Trash2 size={13} />
+                            Delete
                           </button>
                         </div>
                       </div>
                     </div>
                   ))}
                   {programs.length === 0 && (
-                    <div className="text-center py-24">
+                    <div className="col-span-3 text-center py-16">
                       <div className="w-14 h-14 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center mx-auto mb-4">
                         <FileText size={26} className="text-blue-400" />
                       </div>
@@ -2886,61 +2960,59 @@ export function EnhancedAdminDashboard() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
                   {news.map((item) => (
-                    <div key={item.key} className="bg-white border border-gray-200 relative border-t-4 border-l-0 overflow-hidden border-l-violet-500 rounded-2xl p-6 md:p-7 hover:shadow-xl hover:-translate-y-2 hover:shadow-2xl hover:border-violet-300 transition-all duration-300 shadow-sm cursor-pointer group" onClick={() => {
+                    <div key={item.key} className="bg-white border border-gray-200 border-l-4 border-l-violet-500 relative rounded-2xl p-6 md:p-7 hover:shadow-xl hover:-translate-y-1 hover:border-violet-300 transition-all duration-300 shadow-sm cursor-pointer group flex flex-col" onClick={() => {
                               setEditingItem(item);
                               setFormData(item.value);
                               setShowNewsForm(true);
                             }}>
-                      <div className="flex flex-col h-full gap-5">
-                        <input
-                          type="checkbox"
-                          checked={selectedNews.includes(item.key)}
-                           onClick={(e) => e.stopPropagation()} onChange={(e) => {
-                            if (e.target.checked) {
-                              setSelectedNews([...selectedNews, item.key]);
-                            } else {
-                              setSelectedNews(selectedNews.filter(id => id !== item.key));
-                            }
+                      <input
+                        type="checkbox"
+                        checked={selectedNews.includes(item.key)}
+                        onClick={(e) => e.stopPropagation()} onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedNews([...selectedNews, item.key]);
+                          } else {
+                            setSelectedNews(selectedNews.filter(id => id !== item.key));
+                          }
+                        }}
+                        className="absolute top-4 left-4 z-10 w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500"
+                      />
+                      {item.value.image && (
+                        <img src={item.value.image} alt={item.value.title} className="w-full h-48 object-cover rounded-xl mb-4" />
+                      )}
+                      <div className="flex-1 pl-6">
+                        <h4 className="text-base font-semibold text-slate-800 tracking-tight mb-1">{item.value.title}</h4>
+                        <p className="text-sm text-slate-500 mb-2 line-clamp-2">
+                          {item.value.content?.replace(/<[^>]+>/g, '').slice(0, 120) || ''}
+                        </p>
+                        <span className="text-xs text-gray-400">
+                          {(() => {
+                            const dateStr = item.value.timestamp || item.value.created_at || item.value.publishDate || item.value.date;
+                            if (!dateStr) return 'No Date';
+                            const parsed = new Date(dateStr);
+                            return isNaN(parsed.getTime()) ? 'No Date' : parsed.toLocaleDateString();
+                          })()}
+                        </span>
+                      </div>
+                      <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-slate-100 relative z-20" onClick={(e) => e.stopPropagation()}>
+                        <button
+                          onClick={() => {
+                            setEditingItem(item);
+                            setFormData(item.value);
+                            setShowNewsForm(true);
                           }}
-                          className="absolute top-4 left-4 z-10 w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500"
-                        />
-                        {item.value.image && (
-                          <img src={item.value.image} alt={item.value.title} className="w-full h-48 object-cover rounded-xl" />
-                        )}
-                        <div className="flex-1">
-                          <h4 className="text-lg font-semibold text-slate-800 tracking-tight mb-1">{item.value.title}</h4>
-                          <p className="text-sm text-slate-600 mb-2">{item.value.description}</p>
-                          <div className="flex items-center gap-2">
-                            <Badge className="bg-violet-50 text-violet-700 border-violet-100">{item.value.category}</Badge>
-                            <span className="text-xs text-gray-400">
-                              {(() => {
-                                const dateStr = item.value.timestamp || item.value.created_at || item.value.publishDate || item.value.date;
-                                if (!dateStr) return 'No Date';
-                                const parsed = new Date(dateStr);
-                                return isNaN(parsed.getTime()) ? 'No Date' : parsed.toLocaleDateString();
-                              })()}
-                            </span>
-                          </div>
-                        </div>
-                        <div className="flex flex-wrap gap-2 mt-auto pt-4 border-t border-slate-100 w-full relative z-20" onClick={(e) => e.stopPropagation()}>
-                          <button
-                            onClick={() => {
-                              setEditingItem(item);
-                              setFormData(item.value);
-                              setShowNewsForm(true);
-                            }}
-                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors"
-                          >
-                            <Edit size={13} />
-                            Edit
-                          </button>
-                          <button
-                            onClick={() => handleDeleteNews(item.key)}
-                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-colors"
-                          >
-                            <Trash2 size={13} />
-                          </button>
-                        </div>
+                          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors"
+                        >
+                          <Edit size={13} />
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDeleteNews(item.key)}
+                          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-colors"
+                        >
+                          <Trash2 size={13} />
+                          Delete
+                        </button>
                       </div>
                     </div>
                   ))}
@@ -2960,6 +3032,8 @@ export function EnhancedAdminDashboard() {
             {/* Gallery Management */}
             {activeTab === 'gallery' && (
               <div className="bg-white/95 backdrop-blur-xl rounded-[2rem] shadow-sm border border-slate-100/80 p-8 md:p-10 space-y-8">
+
+                {/* Header */}
                 <div className="flex flex-row items-center justify-between gap-4 bg-gradient-to-r from-amber-500 to-amber-600 rounded-2xl px-6 py-5 md:px-8 md:py-6 shadow-md">
                   <div className="flex items-center gap-3">
                     <div className="p-3 md:p-3.5 rounded-xl bg-white/20 border border-white/30 shadow-sm flex-shrink-0">
@@ -2970,79 +3044,83 @@ export function EnhancedAdminDashboard() {
                       <p className="text-sm text-amber-100 mt-1.5 opacity-80 font-medium">Manage images and media</p>
                     </div>
                   </div>
-                  <Button
+                  <button
                     onClick={() => {
                       setEditingItem(null);
                       setFormData({ title: '', description: '', content: '', image: '', category: 'general' });
                       setShowGalleryForm(true);
                     }}
-                    className="bg-white text-amber-700 hover:bg-amber-50 shadow-md font-semibold px-4 py-2 md:px-5 md:py-2.5 rounded-xl transition-all whitespace-nowrap flex-shrink-0"
+                    className="flex items-center gap-2 px-4 py-2 md:px-5 md:py-2.5 bg-white text-amber-700 hover:bg-amber-50 shadow-md font-semibold rounded-xl transition-all whitespace-nowrap flex-shrink-0 text-sm"
                   >
-                    <Plus size={16} className="mr-2" />
+                    <Plus size={16} />
                     Add Image
-                  </Button>
+                  </button>
                 </div>
 
+                {/* Bulk Actions */}
                 {selectedGallery.length > 0 && (
-                  <div className="flex items-center gap-3 p-4 bg-emerald-50 rounded-lg border border-emerald-200">
-                    <span className="text-sm text-slate-700 leading-relaxed">{selectedGallery.length} selected</span>
-                    <Button
+                  <div className="flex flex-wrap items-center gap-3 p-4 bg-slate-50 border border-slate-200 rounded-2xl">
+                    <span className="text-sm text-slate-700 font-medium">{selectedGallery.length} selected</span>
+                    <button
                       onClick={() => handleBulkDeleteGallery(selectedGallery)}
-                      variant="outline"
-                      size="sm"
-                      className="text-red-600 hover:bg-red-50"
+                      className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-colors"
                     >
-                      <Trash2 size={14} className="mr-1" />
+                      <Trash2 size={13} />
                       Delete Selected
-                    </Button>
-                    <Button onClick={() => setSelectedGallery([])} variant="outline" size="sm">
-                      Clear Selection
-                    </Button>
+                    </button>
+                    <button
+                      onClick={() => setSelectedGallery([])}
+                      className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-slate-600 bg-white hover:bg-slate-100 border border-slate-200 rounded-lg transition-colors"
+                    >
+                      <X size={13} />
+                      Clear
+                    </button>
                   </div>
                 )}
 
+                {/* Image grid */}
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                   {gallery.map((item) => (
-                    <div key={item.key} className="bg-white border border-gray-200 border-t-4 border-t-amber-500 rounded-xl p-4 hover:shadow-md hover:border-amber-300 transition-all duration-300 shadow-sm cursor-pointer group" onClick={() => {
-                      setEditingItem(item);
-                      setFormData({ ...item.value, image: item.value.imageUrl || item.value.image });
-                      setShowGalleryForm(true);
-                    }}>
+                    <div
+                      key={item.key}
+                      className="bg-white border border-gray-200 border-l-4 border-l-amber-400 rounded-xl hover:shadow-md hover:-translate-y-0.5 hover:border-amber-300 transition-all duration-300 shadow-sm cursor-pointer group flex flex-col overflow-hidden"
+                      onClick={() => { setEditingItem(item); setFormData({ ...item.value, image: item.value.imageUrl || item.value.image }); setShowGalleryForm(true); }}
+                    >
                       <div className="relative">
+                        <img src={item.value.imageUrl || item.value.image} alt={item.value.title} className="w-full h-40 object-cover" />
                         <input
                           type="checkbox"
                           checked={selectedGallery.includes(item.key)}
-                           onClick={(e) => e.stopPropagation()} onChange={(e) => {
+                          onClick={(e) => e.stopPropagation()}
+                          onChange={(e) => {
                             if (e.target.checked) {
                               setSelectedGallery([...selectedGallery, item.key]);
                             } else {
                               setSelectedGallery(selectedGallery.filter(id => id !== item.key));
                             }
                           }}
-                          className="absolute top-2 left-2 z-10"
+                          className="absolute top-2 left-2 z-10 w-4 h-4 rounded text-amber-600 focus:ring-amber-400"
                         />
-                        <img src={item.value.imageUrl || item.value.image} alt={item.value.title} className="w-full h-48 object-cover rounded-lg mb-3" />
                       </div>
-                      <h4 className="text-sm text-slate-800 tracking-tight mb-1 truncate">{item.value.title}</h4>
-                      <p className="text-xs text-slate-600 mb-2 line-clamp-2">{item.value.description}</p>
-                      <div className="flex flex-wrap gap-2 mt-auto pt-4 border-t border-slate-100 w-full relative z-20" onClick={(e) => e.stopPropagation()}>
-                        <button
-                          onClick={() => {
-                            setEditingItem(item);
-                            setFormData({ ...item.value, image: item.value.imageUrl || item.value.image });
-                            setShowGalleryForm(true);
-                          }}
-                          className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors"
-                        >
-                          <Edit size={12} />
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => handleDeleteGallery(item.key)}
-                          className="flex items-center justify-center px-2 py-1.5 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-colors"
-                        >
-                          <Trash2 size={12} />
-                        </button>
+                      <div className="p-3 flex flex-col flex-1">
+                        <h4 className="text-xs font-semibold text-slate-800 truncate mb-1">{item.value.title}</h4>
+                        <p className="text-xs text-slate-500 line-clamp-2 flex-1">{item.value.description}</p>
+                        <div className="flex gap-2 mt-3 pt-3 border-t border-slate-100 relative z-20" onClick={(e) => e.stopPropagation()}>
+                          <button
+                            onClick={() => { setEditingItem(item); setFormData({ ...item.value, image: item.value.imageUrl || item.value.image }); setShowGalleryForm(true); }}
+                            className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors"
+                          >
+                            <Edit size={12} />
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => handleDeleteGallery(item.key)}
+                            className="flex items-center justify-center gap-1 px-2 py-1.5 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-colors"
+                          >
+                            <Trash2 size={12} />
+                            Delete
+                          </button>
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -3062,6 +3140,8 @@ export function EnhancedAdminDashboard() {
             {/* Team Management */}
             {activeTab === 'team' && (
               <div className="bg-white/95 backdrop-blur-xl rounded-[2rem] shadow-sm border border-slate-100/80 p-8 md:p-10 space-y-8">
+
+                {/* Header */}
                 <div className="flex flex-row items-center justify-between gap-4 bg-gradient-to-r from-teal-600 to-teal-700 rounded-2xl px-6 py-5 md:px-8 md:py-6 shadow-md">
                   <div className="flex items-center gap-3">
                     <div className="p-3 md:p-3.5 rounded-xl bg-white/20 border border-white/30 shadow-sm flex-shrink-0">
@@ -3072,60 +3152,68 @@ export function EnhancedAdminDashboard() {
                       <p className="text-sm text-teal-100 mt-1.5 opacity-80 font-medium">Manage your team</p>
                     </div>
                   </div>
-                  <Button
-                    onClick={() => {
-                      setEditingItem(null);
-                      setShowTeamForm(true);
-                    }}
-                    className="bg-white text-teal-700 hover:bg-teal-50 shadow-md font-semibold px-4 py-2 md:px-5 md:py-2.5 rounded-xl transition-all whitespace-nowrap flex-shrink-0"
+                  <button
+                    onClick={() => { setEditingItem(null); setShowTeamForm(true); }}
+                    className="flex items-center gap-2 px-4 py-2 md:px-5 md:py-2.5 bg-white text-teal-700 hover:bg-teal-50 shadow-md font-semibold rounded-xl transition-all whitespace-nowrap flex-shrink-0 text-sm"
                   >
-                    <Plus size={16} className="mr-2" />
+                    <Plus size={16} />
                     Add Team Member
-                  </Button>
+                  </button>
                 </div>
 
+                {/* Cards grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
                   {team.map((member) => (
-                    <div key={member.id} className="bg-white border border-gray-200 relative border-t-4 border-l-0 overflow-hidden border-l-teal-500 rounded-2xl p-6 md:p-7 hover:shadow-xl hover:-translate-y-2 hover:shadow-2xl hover:border-teal-300 transition-all duration-300 shadow-sm cursor-pointer group" onClick={() => {
-                              setEditingItem(member);
-                              setShowTeamForm(true);
-                            }}>
-                      <div className="flex flex-col h-full gap-5">
-                        {member.image && (
-                          <Avatar className="h-20 w-20 mb-2 shadow-sm border-2 border-white">
-                            <AvatarImage src={member.image} alt={member.name} />
-                            <AvatarFallback>{member.name?.charAt(0)}</AvatarFallback>
-                          </Avatar>
+                    <div
+                      key={member.id}
+                      className="bg-white border border-gray-200 border-l-4 border-l-teal-500 rounded-2xl p-6 hover:shadow-xl hover:-translate-y-1 hover:border-teal-300 transition-all duration-300 shadow-sm cursor-pointer group flex flex-col"
+                      onClick={() => { setEditingItem(member); setShowTeamForm(true); }}
+                    >
+                      {/* Avatar + name + role */}
+                      <div className="flex items-center gap-3 mb-4">
+                        <Avatar className="h-12 w-12 flex-shrink-0 shadow-sm border-2 border-white">
+                          {member.image && <AvatarImage src={member.image} alt={member.name} />}
+                          <AvatarFallback className="bg-gradient-to-br from-teal-500 to-teal-700 text-white text-sm font-semibold">
+                            {member.name?.charAt(0)?.toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="text-sm font-semibold text-slate-800 truncate">{member.name}</h4>
+                          <p className="text-xs text-teal-600 font-medium truncate">{member.role}</p>
+                        </div>
+                      </div>
+
+                      {/* Details */}
+                      <div className="flex-1 space-y-1.5">
+                        {member.department && (
+                          <p className="text-xs text-slate-500"><span className="font-medium text-slate-600">Dept:</span> {member.department}</p>
                         )}
-                        <div className="flex-1">
-                          <h4 className="text-lg font-semibold text-slate-800 tracking-tight mb-1">{member.name}</h4>
-                          <p className="text-sm text-emerald-600 mb-2">{member.role}</p>
-                          <p className="text-sm text-gray-500 mb-1">Department: {member.department}</p>
-                          <p className="text-sm text-slate-600">{member.bio}</p>
-                        </div>
-                        <div className="flex flex-wrap gap-2 mt-auto pt-4 border-t border-slate-100 w-full relative z-20" onClick={(e) => e.stopPropagation()}>
-                          <button
-                            onClick={() => {
-                              setEditingItem(member);
-                              setShowTeamForm(true);
-                            }}
-                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors"
-                          >
-                            <Edit size={13} />
-                            Edit
-                          </button>
-                          <button
-                            onClick={() => handleDeleteTeam(member.id)}
-                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-colors"
-                          >
-                            <Trash2 size={13} />
-                          </button>
-                        </div>
+                        {member.bio && (
+                          <p className="text-xs text-slate-600 line-clamp-3">{member.bio}</p>
+                        )}
+                      </div>
+
+                      {/* Action buttons */}
+                      <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-slate-100 relative z-20" onClick={(e) => e.stopPropagation()}>
+                        <button
+                          onClick={() => { setEditingItem(member); setShowTeamForm(true); }}
+                          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors"
+                        >
+                          <Edit size={13} />
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDeleteTeam(member.id)}
+                          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-colors"
+                        >
+                          <Trash2 size={13} />
+                          Delete
+                        </button>
                       </div>
                     </div>
                   ))}
                   {team.length === 0 && (
-                    <div className="text-center py-24">
+                    <div className="col-span-3 text-center py-16">
                       <div className="w-14 h-14 rounded-2xl bg-teal-50 border border-teal-100 flex items-center justify-center mx-auto mb-4">
                         <Users size={26} className="text-teal-400" />
                       </div>
@@ -3266,6 +3354,8 @@ export function EnhancedAdminDashboard() {
             {/* Volunteers Management */}
             {activeTab === 'volunteers' && (
               <div className="bg-white/95 backdrop-blur-xl rounded-[2rem] shadow-sm border border-slate-100/80 p-8 md:p-10 space-y-8">
+
+                {/* Header */}
                 <div className="flex flex-row items-center justify-between gap-4 bg-gradient-to-r from-rose-600 to-pink-700 rounded-2xl px-6 py-5 md:px-8 md:py-6 shadow-md">
                   <div className="flex items-center gap-3">
                     <div className="p-3 md:p-3.5 rounded-xl bg-white/20 border border-white/30 shadow-sm flex-shrink-0">
@@ -3276,110 +3366,175 @@ export function EnhancedAdminDashboard() {
                       <p className="text-sm text-rose-100 mt-1.5 opacity-80 font-medium">Manage volunteer registrations</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <select
-                      value={volunteerFilter}
-                      onChange={(e) => setVolunteerFilter(e.target.value)}
-                      className="px-3 py-2 bg-white/20 border border-white/30 rounded-lg text-sm text-white"
-                    >
-                      <option value="all" className="text-slate-800 tracking-tight">All Status</option>
-                      <option value="pending" className="text-slate-800 tracking-tight">Pending</option>
-                      <option value="approved" className="text-slate-800 tracking-tight">Approved</option>
-                      <option value="rejected" className="text-slate-800 tracking-tight">Rejected</option>
-                    </select>
-                    <button
-                      onClick={() => exportToCSV(getFilteredVolunteers().map(v => v.value), 'volunteers.csv')}
-                      className="flex items-center gap-1.5 px-3 py-2 bg-white/20 hover:bg-white/30 border border-white/30 rounded-lg text-sm text-white font-medium transition-colors"
-                    >
-                      <Download size={14} />
-                      CSV
-                    </button>
+                  <button
+                    onClick={() => exportToCSV(getFilteredVolunteers().map(v => v.value), 'volunteers.csv')}
+                    className="flex items-center gap-1.5 px-4 py-2 bg-white/20 hover:bg-white/30 border border-white/30 rounded-xl text-sm text-white font-semibold transition-colors whitespace-nowrap flex-shrink-0"
+                  >
+                    <Download size={16} />
+                    Export CSV
+                  </button>
+                </div>
+
+                {/* Stats row */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                  <div className="bg-rose-50 border border-rose-100 rounded-2xl p-4 flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-rose-100 flex items-center justify-center flex-shrink-0">
+                      <Heart size={18} className="text-rose-600" />
+                    </div>
+                    <div>
+                      <p className="text-2xl font-bold text-rose-700">{volunteers.length}</p>
+                      <p className="text-xs text-rose-500 font-medium">Total</p>
+                    </div>
+                  </div>
+                  <div className="bg-amber-50 border border-amber-100 rounded-2xl p-4 flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center flex-shrink-0">
+                      <Clock size={18} className="text-amber-600" />
+                    </div>
+                    <div>
+                      <p className="text-2xl font-bold text-amber-700">{volunteers.filter(v => v.value?.status === 'pending').length}</p>
+                      <p className="text-xs text-amber-500 font-medium">Pending</p>
+                    </div>
+                  </div>
+                  <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-4 flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center flex-shrink-0">
+                      <Check size={18} className="text-emerald-600" />
+                    </div>
+                    <div>
+                      <p className="text-2xl font-bold text-emerald-700">{volunteers.filter(v => v.value?.status === 'approved').length}</p>
+                      <p className="text-xs text-emerald-500 font-medium">Approved</p>
+                    </div>
+                  </div>
+                  <div className="bg-red-50 border border-red-100 rounded-2xl p-4 flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-red-100 flex items-center justify-center flex-shrink-0">
+                      <X size={18} className="text-red-500" />
+                    </div>
+                    <div>
+                      <p className="text-2xl font-bold text-red-600">{volunteers.filter(v => v.value?.status === 'rejected').length}</p>
+                      <p className="text-xs text-red-400 font-medium">Rejected</p>
+                    </div>
                   </div>
                 </div>
 
+                {/* Filter bar */}
+                <div className="flex flex-wrap items-center gap-3">
+                  <select
+                    value={volunteerFilter}
+                    onChange={(e) => setVolunteerFilter(e.target.value)}
+                    className="px-3 py-2.5 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-rose-200 text-slate-700"
+                  >
+                    <option value="all">All Status</option>
+                    <option value="pending">Pending</option>
+                    <option value="approved">Approved</option>
+                    <option value="rejected">Rejected</option>
+                  </select>
+                </div>
+
+                {/* Bulk Actions */}
                 {selectedVolunteers.length > 0 && (
-                  <div className="flex items-center gap-3 p-4 bg-emerald-50 rounded-lg border border-emerald-200">
-                    <span className="text-sm text-slate-700 leading-relaxed">{selectedVolunteers.length} selected</span>
-                    <Button
+                  <div className="flex flex-wrap items-center gap-3 p-4 bg-slate-50 border border-slate-200 rounded-2xl">
+                    <span className="text-sm text-slate-700 font-medium">{selectedVolunteers.length} selected</span>
+                    <button
                       onClick={() => handleBulkDeleteVolunteers(selectedVolunteers)}
-                      variant="outline"
-                      size="sm"
-                      className="text-red-600 hover:bg-red-50"
+                      className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-colors"
                     >
-                      <Trash2 size={14} className="mr-1" />
+                      <Trash2 size={13} />
                       Delete Selected
-                    </Button>
-                    <Button onClick={() => setSelectedVolunteers([])} variant="outline" size="sm">
-                      Clear Selection
-                    </Button>
+                    </button>
+                    <button
+                      onClick={() => setSelectedVolunteers([])}
+                      className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-slate-600 bg-white hover:bg-slate-100 border border-slate-200 rounded-lg transition-colors"
+                    >
+                      <X size={13} />
+                      Clear
+                    </button>
                   </div>
                 )}
 
+                {/* Cards grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
                   {getFilteredVolunteers().map((volunteer) => (
-                    <div key={volunteer.key} className="bg-white border border-gray-200 relative border-t-4 border-l-0 overflow-hidden border-l-rose-500 rounded-2xl p-6 md:p-7 hover:shadow-xl hover:-translate-y-2 hover:shadow-2xl hover:border-rose-300 transition-all duration-300 shadow-sm">
-                      <div className="flex flex-col h-full gap-5">
+                    <div key={volunteer.key} className="bg-white border border-gray-200 border-l-4 border-l-rose-400 rounded-2xl p-6 hover:shadow-xl hover:-translate-y-1 hover:border-rose-300 transition-all duration-300 shadow-sm flex flex-col group">
+
+                      {/* Top: checkbox + avatar + name/badge */}
+                      <div className="flex items-start gap-3 mb-4">
                         <input
                           type="checkbox"
                           checked={selectedVolunteers.includes(volunteer.key)}
-                           onClick={(e) => e.stopPropagation()} onChange={(e) => {
+                          onChange={(e) => {
                             if (e.target.checked) {
                               setSelectedVolunteers([...selectedVolunteers, volunteer.key]);
                             } else {
                               setSelectedVolunteers(selectedVolunteers.filter(id => id !== volunteer.key));
                             }
                           }}
-                          className="absolute top-4 left-4 z-10 w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500"
+                          className="mt-1 w-4 h-4 rounded flex-shrink-0 text-rose-600 focus:ring-rose-400"
                         />
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <h4 className="text-lg text-slate-800 tracking-tight">{volunteer.value.name}</h4>
-                            <Badge className={
-                              volunteer.value.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-                              volunteer.value.status === 'approved' ? 'bg-green-100 text-green-700' :
-                              'bg-red-100 text-red-700'
-                            }>
-                              {volunteer.value.status}
-                            </Badge>
-                          </div>
-                          <p className="text-sm text-slate-600 mb-1">{volunteer.value.email} • {volunteer.value.phone}</p>
-                          <p className="text-sm text-slate-700 leading-relaxed mb-2">Skills: {volunteer.value.skills}</p>
-                          <span className="text-xs text-gray-400">
-                            Applied: {new Date(volunteer.value.created_at).toLocaleDateString()}
-                          </span>
+                        <div className="w-10 h-10 rounded-full bg-rose-100 flex items-center justify-center flex-shrink-0 text-sm font-bold text-rose-700">
+                          {volunteer.value.name?.charAt(0)?.toUpperCase() || '?'}
                         </div>
-                        <div className="flex flex-wrap gap-2 mt-auto pt-4 border-t border-slate-100 w-full relative z-20" onClick={(e) => e.stopPropagation()}>
-                          <button
-                            onClick={() => handleUpdateVolunteerStatus(volunteer.key, 'approved')}
-                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-lg transition-colors"
-                          >
-                            <Check size={13} />
-                            Approve
-                          </button>
-                          <button
-                            onClick={() => handleUpdateVolunteerStatus(volunteer.key, 'rejected')}
-                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-orange-600 bg-orange-50 hover:bg-orange-100 border border-orange-200 rounded-lg transition-colors"
-                          >
-                            <X size={13} />
-                            Reject
-                          </button>
-                          <button
-                            onClick={() => handleDeleteVolunteer(volunteer.key)}
-                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-colors"
-                          >
-                            <Trash2 size={13} />
-                          </button>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="text-sm font-semibold text-slate-800 truncate mb-1.5">{volunteer.value.name}</h4>
+                          <Badge className={
+                            volunteer.value.status === 'pending' ? 'bg-amber-100 text-amber-700 border-amber-200' :
+                            volunteer.value.status === 'approved' ? 'bg-emerald-100 text-emerald-700 border-emerald-200' :
+                            'bg-red-100 text-red-700 border-red-200'
+                          }>
+                            {volunteer.value.status}
+                          </Badge>
                         </div>
+                      </div>
+
+                      {/* Details */}
+                      <div className="flex-1 space-y-1.5 pl-7">
+                        <p className="text-xs text-slate-600 truncate">{volunteer.value.email}</p>
+                        {volunteer.value.phone && (
+                          <p className="text-xs text-slate-500">{volunteer.value.phone}</p>
+                        )}
+                        {volunteer.value.skills && (
+                          <p className="text-xs text-slate-600 line-clamp-2">
+                            <span className="font-medium text-slate-700">Skills:</span> {volunteer.value.skills}
+                          </p>
+                        )}
+                        <p className="text-xs text-gray-400">
+                          Applied: {new Date(volunteer.value.created_at).toLocaleDateString()}
+                        </p>
+                      </div>
+
+                      {/* Action buttons */}
+                      <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-slate-100 relative z-20">
+                        <button
+                          onClick={() => handleUpdateVolunteerStatus(volunteer.key, 'approved')}
+                          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-lg transition-colors"
+                        >
+                          <Check size={13} />
+                          Approve
+                        </button>
+                        <button
+                          onClick={() => handleUpdateVolunteerStatus(volunteer.key, 'rejected')}
+                          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-orange-600 bg-orange-50 hover:bg-orange-100 border border-orange-200 rounded-lg transition-colors"
+                        >
+                          <X size={13} />
+                          Reject
+                        </button>
+                        <button
+                          onClick={() => handleDeleteVolunteer(volunteer.key)}
+                          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-colors"
+                        >
+                          <Trash2 size={13} />
+                          Delete
+                        </button>
                       </div>
                     </div>
                   ))}
                   {getFilteredVolunteers().length === 0 && (
-                    <div className="text-center py-24">
+                    <div className="col-span-3 text-center py-16">
                       <div className="w-14 h-14 rounded-2xl bg-rose-50 border border-rose-100 flex items-center justify-center mx-auto mb-4">
                         <Heart size={26} className="text-rose-400" />
                       </div>
                       <p className="text-sm font-semibold text-slate-600 mb-1">No volunteer applications</p>
-                      <p className="text-xs text-gray-400">Applications will appear here when submitted</p>
+                      <p className="text-xs text-gray-400">
+                        {volunteerFilter !== 'all' ? 'No applications match this filter' : 'Applications will appear here when submitted'}
+                      </p>
                     </div>
                   )}
                 </div>
@@ -3476,6 +3631,8 @@ export function EnhancedAdminDashboard() {
             {/* Subscribers Management */}
             {activeTab === 'subscribers' && (
               <div className="bg-white/95 backdrop-blur-xl rounded-[2rem] shadow-sm border border-slate-100/80 p-8 md:p-10 space-y-8">
+
+                {/* Header */}
                 <div className="flex flex-row items-center justify-between gap-4 bg-gradient-to-r from-indigo-600 to-indigo-700 rounded-2xl px-6 py-5 md:px-8 md:py-6 shadow-md">
                   <div className="flex items-center gap-3">
                     <div className="p-3 md:p-3.5 rounded-xl bg-white/20 border border-white/30 shadow-sm flex-shrink-0">
@@ -3483,7 +3640,7 @@ export function EnhancedAdminDashboard() {
                     </div>
                     <div>
                       <h3 className="text-xl md:text-2xl font-bold text-white tracking-tight">Newsletter Subscribers <span className="text-sm font-normal text-indigo-200">({subscribers.length})</span></h3>
-                      <p className="text-sm text-indigo-100 mt-1.5 opacity-80 font-medium">Manage newsletter subscribers</p>
+                      <p className="text-sm text-indigo-100 mt-1.5 opacity-80 font-medium">Manage newsletter subscribers and send blasts</p>
                     </div>
                   </div>
                   <button
@@ -3495,36 +3652,80 @@ export function EnhancedAdminDashboard() {
                   </button>
                 </div>
 
+                {/* Stats row */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="bg-indigo-50 border border-indigo-100 rounded-2xl p-4 flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-indigo-100 flex items-center justify-center flex-shrink-0">
+                      <Users size={18} className="text-indigo-600" />
+                    </div>
+                    <div>
+                      <p className="text-2xl font-bold text-indigo-700">{subscribers.length}</p>
+                      <p className="text-xs text-indigo-500 font-medium">Total Subscribers</p>
+                    </div>
+                  </div>
+                  <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-4 flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center flex-shrink-0">
+                      <Check size={18} className="text-emerald-600" />
+                    </div>
+                    <div>
+                      <p className="text-2xl font-bold text-emerald-700">{subscribers.length}</p>
+                      <p className="text-xs text-emerald-500 font-medium">Active</p>
+                    </div>
+                  </div>
+                  <div className="bg-violet-50 border border-violet-100 rounded-2xl p-4 flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-violet-100 flex items-center justify-center flex-shrink-0">
+                      <Send size={18} className="text-violet-600" />
+                    </div>
+                    <div>
+                      <p className="text-2xl font-bold text-violet-700">
+                        {subscribers.length > 0
+                          ? new Date(Math.max(...subscribers.map(s => new Date(s.value.created_at || 0).getTime()))).toLocaleDateString()
+                          : '—'}
+                      </p>
+                      <p className="text-xs text-violet-500 font-medium">Latest Signup</p>
+                    </div>
+                  </div>
+                </div>
+
                 {/* Newsletter Blast Compose */}
-                <div className="bg-white rounded-2xl border border-gray-100 p-6">
+                <div className="bg-gradient-to-br from-indigo-50 to-violet-50 border border-indigo-100 rounded-2xl p-6">
                   <div className="flex items-center gap-3 mb-5">
-                    <div className="w-9 h-9 rounded-xl bg-indigo-50 flex items-center justify-center">
-                      <Send size={17} className="text-indigo-600" />
+                    <div className="w-10 h-10 rounded-xl bg-indigo-100 flex items-center justify-center">
+                      <Send size={18} className="text-indigo-600" />
                     </div>
                     <div>
                       <h4 className="text-sm font-semibold text-slate-800">Send Newsletter Blast</h4>
-                      <p className="text-xs text-gray-400">Send to all {subscribers.length} subscriber{subscribers.length !== 1 ? 's' : ''}</p>
+                      <p className="text-xs text-gray-500">Compose and send to all {subscribers.length} subscriber{subscribers.length !== 1 ? 's' : ''}</p>
                     </div>
                   </div>
                   <div className="space-y-3">
-                    <input
-                      type="text"
-                      placeholder="Subject line..."
-                      value={newsletterSubject}
-                      onChange={e => setNewsletterSubject(e.target.value)}
-                      className="w-full px-4 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-300"
-                    />
-                    <textarea
-                      placeholder="Email body (plain text)..."
-                      value={newsletterBody}
-                      onChange={e => setNewsletterBody(e.target.value)}
-                      rows={5}
-                      className="w-full px-4 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-300 resize-none"
-                    />
+                    <div>
+                      <label className="block text-xs font-medium text-slate-600 mb-1">Subject Line *</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Monthly Update — May 2026"
+                        value={newsletterSubject}
+                        onChange={e => setNewsletterSubject(e.target.value)}
+                        className="w-full px-4 py-2.5 text-sm bg-white border border-indigo-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-300 transition-all"
+                      />
+                    </div>
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="block text-xs font-medium text-slate-600">Message Body *</label>
+                        <span className="text-xs text-gray-400">{newsletterBody.length} chars</span>
+                      </div>
+                      <textarea
+                        placeholder="Write your newsletter message here (plain text)..."
+                        value={newsletterBody}
+                        onChange={e => setNewsletterBody(e.target.value)}
+                        rows={5}
+                        className="w-full px-4 py-2.5 text-sm bg-white border border-indigo-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-300 resize-none transition-all"
+                      />
+                    </div>
                     <button
                       onClick={handleSendNewsletter}
-                      disabled={sendingNewsletter}
-                      className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-xl transition-colors"
+                      disabled={sendingNewsletter || subscribers.length === 0}
+                      className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-xl transition-all shadow-md hover:shadow-lg transform hover:scale-[1.01]"
                     >
                       <Send size={15} />
                       {sendingNewsletter ? 'Sending...' : `Send to ${subscribers.length} subscriber${subscribers.length !== 1 ? 's' : ''}`}
@@ -3532,29 +3733,102 @@ export function EnhancedAdminDashboard() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
-                  {subscribers.map((subscriber) => (
-                    <div key={subscriber.key} className="bg-white border border-gray-200 relative border-t-4 border-l-0 overflow-hidden border-l-indigo-500 rounded-2xl px-7 py-6 hover:shadow-xl hover:-translate-y-2 hover:shadow-2xl hover:border-indigo-300 transition-all duration-300 shadow-sm">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-sm font-semibold text-slate-800 tracking-tight">{subscriber.value.email}</p>
-                          <span className="text-xs text-gray-400">
-                            Subscribed: {new Date(subscriber.value.created_at).toLocaleDateString()}
-                          </span>
+                {/* Search + Bulk Actions */}
+                <div>
+                  <div className="flex flex-wrap items-center gap-3 mb-4">
+                    <div className="relative flex-1 min-w-[200px]">
+                      <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 pointer-events-none" />
+                      <input
+                        type="text"
+                        placeholder="Search by email..."
+                        value={subscriberSearch}
+                        onChange={e => setSubscriberSearch(e.target.value)}
+                        className="w-full pl-9 pr-4 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 bg-white transition-all"
+                      />
+                    </div>
+                    {selectedSubscribers.length > 0 && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-slate-600 font-medium">{selectedSubscribers.length} selected</span>
+                        <button
+                          onClick={() => handleBulkDeleteSubscribers(selectedSubscribers)}
+                          className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-colors"
+                        >
+                          <Trash2 size={13} />
+                          Delete Selected
+                        </button>
+                        <button
+                          onClick={() => setSelectedSubscribers([])}
+                          className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-lg transition-colors"
+                        >
+                          <X size={13} />
+                          Clear
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Subscriber list */}
+                  <div className="space-y-2">
+                    {subscribers
+                      .filter(s => !subscriberSearch || s.value.email?.toLowerCase().includes(subscriberSearch.toLowerCase()))
+                      .map((subscriber) => (
+                        <div key={subscriber.key} className="bg-white border border-gray-200 border-l-4 border-l-indigo-400 rounded-xl px-4 py-3 flex items-center justify-between hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 group">
+                          <div className="flex items-center gap-3">
+                            <input
+                              type="checkbox"
+                              checked={selectedSubscribers.includes(subscriber.key)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedSubscribers(prev => [...prev, subscriber.key]);
+                                } else {
+                                  setSelectedSubscribers(prev => prev.filter(k => k !== subscriber.key));
+                                }
+                              }}
+                              className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 flex-shrink-0"
+                            />
+                            <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center flex-shrink-0">
+                              <Mail size={14} className="text-indigo-600" />
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium text-slate-800">{subscriber.value.email}</p>
+                              <p className="text-xs text-gray-400">
+                                Subscribed: {subscriber.value.created_at ? new Date(subscriber.value.created_at).toLocaleDateString() : 'Unknown'}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="px-2 py-0.5 text-xs font-semibold text-indigo-700 bg-indigo-50 border border-indigo-200 rounded-full">Active</span>
+                            <button
+                              title="Copy email"
+                              onClick={() => { navigator.clipboard.writeText(subscriber.value.email); toast.success('Email copied'); }}
+                              className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+                            >
+                              <Copy size={13} />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteSubscriber(subscriber.key)}
+                              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-colors"
+                            >
+                              <Trash2 size={13} />
+                              Remove
+                            </button>
+                          </div>
                         </div>
-                        <span className="px-2.5 py-0.5 text-xs font-semibold text-indigo-700 bg-indigo-50 border border-indigo-200 rounded-full">Active</span>
+                      ))}
+                    {subscribers.filter(s => !subscriberSearch || s.value.email?.toLowerCase().includes(subscriberSearch.toLowerCase())).length === 0 && (
+                      <div className="text-center py-16">
+                        <div className="w-14 h-14 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center mx-auto mb-4">
+                          <Send size={26} className="text-indigo-400" />
+                        </div>
+                        <p className="text-sm font-semibold text-slate-600 mb-1">
+                          {subscriberSearch ? 'No matching subscribers' : 'No subscribers yet'}
+                        </p>
+                        <p className="text-xs text-gray-400">
+                          {subscriberSearch ? 'Try a different search term' : 'Subscribers will appear here when they sign up'}
+                        </p>
                       </div>
-                    </div>
-                  ))}
-                  {subscribers.length === 0 && (
-                    <div className="text-center py-24">
-                      <div className="w-14 h-14 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center mx-auto mb-4">
-                        <Send size={26} className="text-indigo-400" />
-                      </div>
-                      <p className="text-sm font-semibold text-slate-600 mb-1">No subscribers yet</p>
-                      <p className="text-xs text-gray-400">Subscribers will appear here when they sign up</p>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
               </div>
             )}
@@ -3562,6 +3836,8 @@ export function EnhancedAdminDashboard() {
             {/* User Management - Super Admin Only */}
             {activeTab === 'users' && userRole === 'super-admin' && (
               <div className="bg-white/95 backdrop-blur-xl rounded-[2rem] shadow-sm border border-slate-100/80 p-8 md:p-10 space-y-8">
+
+                {/* Header */}
                 <div className="flex flex-row items-center justify-between gap-4 bg-gradient-to-r from-slate-700 to-slate-800 rounded-2xl px-6 py-5 md:px-8 md:py-6 shadow-md">
                   <div className="flex items-center gap-3">
                     <div className="p-3 md:p-3.5 rounded-xl bg-white/20 border border-white/30 shadow-sm flex-shrink-0">
@@ -3572,40 +3848,86 @@ export function EnhancedAdminDashboard() {
                       <p className="text-sm text-slate-300 mt-1.5 opacity-80 font-medium">Manage admin users and permissions</p>
                     </div>
                   </div>
-                  <Button
+                  <button
                     onClick={() => {
                       setEditingItem(null);
                       setUserFormData({ name: '', email: '', password: '', role: 'viewer', status: 'active' });
                       setShowUserForm(true);
                     }}
-                    className="bg-white text-slate-800 hover:bg-slate-50 shadow-md font-semibold px-4 py-2 md:px-5 md:py-2.5 rounded-xl transition-all whitespace-nowrap flex-shrink-0"
+                    className="flex items-center gap-2 px-4 py-2 md:px-5 md:py-2.5 bg-white text-slate-800 hover:bg-slate-50 shadow-md font-semibold rounded-xl transition-all whitespace-nowrap flex-shrink-0 text-sm"
                   >
-                    <Plus size={16} className="mr-2" />
+                    <Plus size={16} />
                     Add User
-                  </Button>
+                  </button>
+                </div>
+
+                {/* Stats row */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                  <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-slate-200 flex items-center justify-center flex-shrink-0">
+                      <Users size={18} className="text-slate-600" />
+                    </div>
+                    <div>
+                      <p className="text-2xl font-bold text-slate-700">{adminUsers.length}</p>
+                      <p className="text-xs text-slate-500 font-medium">Total Users</p>
+                    </div>
+                  </div>
+                  <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-4 flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center flex-shrink-0">
+                      <Check size={18} className="text-emerald-600" />
+                    </div>
+                    <div>
+                      <p className="text-2xl font-bold text-emerald-700">{adminUsers.filter(u => u.value?.status === 'active').length}</p>
+                      <p className="text-xs text-emerald-500 font-medium">Active</p>
+                    </div>
+                  </div>
+                  <div className="bg-amber-50 border border-amber-100 rounded-2xl p-4 flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center flex-shrink-0">
+                      <Clock size={18} className="text-amber-600" />
+                    </div>
+                    <div>
+                      <p className="text-2xl font-bold text-amber-700">{adminUsers.filter(u => u.value?.status === 'pending').length}</p>
+                      <p className="text-xs text-amber-500 font-medium">Pending</p>
+                    </div>
+                  </div>
+                  <div className="bg-red-50 border border-red-100 rounded-2xl p-4 flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-red-100 flex items-center justify-center flex-shrink-0">
+                      <X size={18} className="text-red-500" />
+                    </div>
+                    <div>
+                      <p className="text-2xl font-bold text-red-600">{adminUsers.filter(u => u.value?.status === 'suspended').length}</p>
+                      <p className="text-xs text-red-400 font-medium">Suspended</p>
+                    </div>
+                  </div>
                 </div>
 
                 {/* Filters */}
-                <div className="flex flex-wrap items-center gap-3 p-4 bg-gray-50 rounded-lg">
-                  <div className="flex items-center gap-2">
-                    <Filter size={16} className="text-gray-500" />
-                    <span className="text-sm text-slate-600">Filters:</span>
+                <div className="flex flex-wrap items-center gap-3">
+                  <div className="relative flex-1 min-w-[200px]">
+                    <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 pointer-events-none" />
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="Search by name or email..."
+                      className="w-full pl-9 pr-4 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-300 focus:border-slate-400 bg-white transition-all"
+                    />
                   </div>
                   <select
                     value={userFilter}
                     onChange={(e) => setUserFilter(e.target.value)}
-                    className="px-3 py-1.5 border rounded-lg text-sm"
+                    className="px-3 py-2.5 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-slate-300 text-slate-700"
                   >
                     <option value="all">All Status</option>
                     <option value="active">Active</option>
-                    <option value="pending">Pending Approval</option>
+                    <option value="pending">Pending</option>
                     <option value="inactive">Inactive</option>
                     <option value="suspended">Suspended</option>
                   </select>
                   <select
                     value={userRoleFilter}
                     onChange={(e) => setUserRoleFilter(e.target.value)}
-                    className="px-3 py-1.5 border rounded-lg text-sm"
+                    className="px-3 py-2.5 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-slate-300 text-slate-700"
                   >
                     <option value="all">All Roles</option>
                     <option value="super-admin">Super Admin</option>
@@ -3613,158 +3935,151 @@ export function EnhancedAdminDashboard() {
                     <option value="editor">Editor</option>
                     <option value="viewer">Viewer</option>
                   </select>
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search by name or email..."
-                    className="px-3 py-1.5 border rounded-lg text-sm flex-1 min-w-[200px]"
-                  />
                 </div>
 
                 {/* Bulk Actions */}
                 {selectedUsers.length > 0 && (
-                  <div className="flex items-center gap-3 p-4 bg-emerald-50 rounded-lg border border-emerald-200">
-                    <span className="text-sm text-slate-700 leading-relaxed">{selectedUsers.length} selected</span>
-                    <div className="flex gap-2 flex-wrap">
-                      <Button
-                        onClick={() => handleBulkDeleteUsers(selectedUsers)}
-                        variant="outline"
-                        size="sm"
-                        className="text-red-600 hover:bg-red-50"
-                      >
-                        <Trash2 size={14} className="mr-1" />
-                        Delete Selected
-                      </Button>
-                      <select
-                        onChange={(e) => {
-                          if (e.target.value) {
-                            handleBulkUpdateUserRole(selectedUsers, e.target.value);
-                            e.target.value = '';
-                          }
-                        }}
-                        className="px-3 py-1.5 border rounded-lg text-sm"
-                      >
-                        <option value="">Change Role...</option>
-                        <option value="super-admin">Super Admin</option>
-                        <option value="admin">Admin</option>
-                        <option value="editor">Editor</option>
-                        <option value="viewer">Viewer</option>
-                      </select>
-                      <select
-                        onChange={(e) => {
-                          if (e.target.value) {
-                            handleBulkUpdateUserStatus(selectedUsers, e.target.value);
-                            e.target.value = '';
-                          }
-                        }}
-                        className="px-3 py-1.5 border rounded-lg text-sm"
-                      >
-                        <option value="">Change Status...</option>
-                        <option value="active">Active</option>
-                        <option value="pending">Pending Approval</option>
-                        <option value="inactive">Inactive</option>
-                        <option value="suspended">Suspended</option>
-                      </select>
-                    </div>
-                    <Button onClick={() => setSelectedUsers([])} variant="outline" size="sm">
-                      Clear Selection
-                    </Button>
+                  <div className="flex flex-wrap items-center gap-3 p-4 bg-slate-50 border border-slate-200 rounded-2xl">
+                    <span className="text-sm text-slate-700 font-medium">{selectedUsers.length} selected</span>
+                    <button
+                      onClick={() => handleBulkDeleteUsers(selectedUsers)}
+                      className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-colors"
+                    >
+                      <Trash2 size={13} />
+                      Delete Selected
+                    </button>
+                    <select
+                      onChange={(e) => { if (e.target.value) { handleBulkUpdateUserRole(selectedUsers, e.target.value); e.target.value = ''; } }}
+                      className="px-3 py-2 border border-slate-200 rounded-lg text-xs text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-slate-300"
+                    >
+                      <option value="">Change Role…</option>
+                      <option value="super-admin">Super Admin</option>
+                      <option value="admin">Admin</option>
+                      <option value="editor">Editor</option>
+                      <option value="viewer">Viewer</option>
+                    </select>
+                    <select
+                      onChange={(e) => { if (e.target.value) { handleBulkUpdateUserStatus(selectedUsers, e.target.value); e.target.value = ''; } }}
+                      className="px-3 py-2 border border-slate-200 rounded-lg text-xs text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-slate-300"
+                    >
+                      <option value="">Change Status…</option>
+                      <option value="active">Active</option>
+                      <option value="pending">Pending</option>
+                      <option value="inactive">Inactive</option>
+                      <option value="suspended">Suspended</option>
+                    </select>
+                    <button
+                      onClick={() => setSelectedUsers([])}
+                      className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-slate-600 bg-white hover:bg-slate-100 border border-slate-200 rounded-lg transition-colors"
+                    >
+                      <X size={13} />
+                      Clear
+                    </button>
                   </div>
                 )}
 
+                {/* User cards grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
                   {getFilteredUsers().map((user) => (
-                    <div key={user.key} className="bg-white border border-gray-200 relative border-t-4 border-l-0 overflow-hidden border-l-slate-400 rounded-2xl p-5 hover:shadow-lg transition-all duration-200 cursor-pointer group" onClick={() => {
-                              setViewingItem(user);
-                              setShowPasswordResetDialog(true);
-                            }}>
-                      <div className="flex flex-col h-full gap-5">
+                    <div
+                      key={user.key}
+                      className="bg-white border border-gray-200 border-l-4 border-l-slate-400 rounded-2xl p-6 hover:shadow-xl hover:-translate-y-1 hover:border-slate-300 transition-all duration-300 shadow-sm cursor-pointer group flex flex-col"
+                      onClick={() => { setViewingItem(user); setShowPasswordResetDialog(true); }}
+                    >
+                      {/* Avatar + name + badges */}
+                      <div className="flex items-start gap-3 mb-4">
                         <input
                           type="checkbox"
                           checked={selectedUsers.includes(user.key)}
-                           onClick={(e) => e.stopPropagation()} onChange={(e) => {
+                          onClick={(e) => e.stopPropagation()}
+                          onChange={(e) => {
                             if (e.target.checked) {
                               setSelectedUsers([...selectedUsers, user.key]);
                             } else {
                               setSelectedUsers(selectedUsers.filter(id => id !== user.key));
                             }
                           }}
-                          className="absolute top-4 left-4 z-10 w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500"
+                          className="mt-1 w-4 h-4 rounded flex-shrink-0 text-slate-600 focus:ring-slate-500"
                         />
-                        <Avatar className="h-16 w-16 mb-2 shadow-sm border-2 border-white">
-                          <AvatarFallback className="bg-gradient-to-br from-emerald-500 to-teal-600 text-white">
+                        <Avatar className="h-12 w-12 flex-shrink-0 shadow-sm border-2 border-white">
+                          <AvatarFallback className="bg-gradient-to-br from-slate-500 to-slate-700 text-white text-sm font-semibold">
                             {getUserInitials(user.value.name)}
                           </AvatarFallback>
                         </Avatar>
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <h4 className="text-lg text-slate-800 tracking-tight">{user.value.name}</h4>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="text-sm font-semibold text-slate-800 truncate mb-1.5">{user.value.name}</h4>
+                          <div className="flex flex-wrap gap-1">
                             <Badge className={getRoleBadgeColor(user.value.role)}>
                               {USER_ROLES.find(r => r.value === user.value.role)?.label}
                             </Badge>
                             <Badge className={
                               user.value.status === 'active'
-                                ? 'bg-green-100 text-green-700 border-green-300'
+                                ? 'bg-green-100 text-green-700 border-green-200'
                                 : user.value.status === 'pending'
-                                ? 'bg-yellow-100 text-yellow-700 border-yellow-300'
+                                ? 'bg-amber-100 text-amber-700 border-amber-200'
                                 : user.value.status === 'suspended'
-                                ? 'bg-red-100 text-red-700 border-red-300'
-                                : 'bg-gray-100 text-slate-700 leading-relaxed border-gray-300'
+                                ? 'bg-red-100 text-red-700 border-red-200'
+                                : 'bg-gray-100 text-slate-600 border-gray-200'
                             }>
                               {user.value.status}
                             </Badge>
                           </div>
-                          <p className="text-sm text-slate-600 mb-1">{user.value.email}</p>
-                          <p className="text-xs text-gray-400">
-                            Created: {new Date(user.value.created_at || user.value.createdAt).toLocaleDateString()}
-                          </p>
                         </div>
-                        <div className="flex flex-wrap gap-2 mt-auto pt-4 border-t border-slate-100 w-full relative z-20" onClick={(e) => e.stopPropagation()}>
-                          <button
-                            onClick={() => {
-                              setEditingItem(user);
-                              setUserFormData({
-                                name: user.value.name,
-                                email: user.value.email,
-                                password: '',
-                                role: user.value.role,
-                                status: user.value.status
-                              });
-                              setShowUserForm(true);
-                            }}
-                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors"
-                          >
-                            <Edit size={13} />
-                            Edit
-                          </button>
-                          <button
-                            onClick={() => {
-                              setViewingItem(user);
-                              setShowPasswordResetDialog(true);
-                            }}
-                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-lg transition-colors"
-                          >
-                            <Shield size={13} />
-                            Reset PW
-                          </button>
-                          <button
-                            onClick={() => handleDeleteUser(user.value.id)}
-                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-colors"
-                          >
-                            <Trash2 size={13} />
-                          </button>
-                        </div>
+                      </div>
+
+                      {/* Details */}
+                      <div className="flex-1 space-y-1.5 pl-7">
+                        <p className="text-sm text-slate-600 truncate">{user.value.email}</p>
+                        <p className="text-xs text-gray-400">
+                          Created: {new Date(user.value.created_at || user.value.createdAt).toLocaleDateString()}
+                        </p>
+                      </div>
+
+                      {/* Action buttons */}
+                      <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-slate-100 relative z-20" onClick={(e) => e.stopPropagation()}>
+                        <button
+                          onClick={() => {
+                            setEditingItem(user);
+                            setUserFormData({
+                              name: user.value.name,
+                              email: user.value.email,
+                              password: '',
+                              role: user.value.role,
+                              status: user.value.status
+                            });
+                            setShowUserForm(true);
+                          }}
+                          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors"
+                        >
+                          <Edit size={13} />
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => { setViewingItem(user); setShowPasswordResetDialog(true); }}
+                          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-lg transition-colors"
+                        >
+                          <Shield size={13} />
+                          Reset PW
+                        </button>
+                        <button
+                          onClick={() => handleDeleteUser(user.value.id)}
+                          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-colors"
+                        >
+                          <Trash2 size={13} />
+                          Delete
+                        </button>
                       </div>
                     </div>
                   ))}
                   {getFilteredUsers().length === 0 && (
-                    <div className="text-center py-24">
+                    <div className="col-span-3 text-center py-16">
                       <div className="w-14 h-14 rounded-2xl bg-slate-100 border border-slate-200 flex items-center justify-center mx-auto mb-4">
                         <Shield size={26} className="text-slate-400" />
                       </div>
                       <p className="text-sm font-semibold text-slate-600 mb-1">No users found</p>
-                      <p className="text-xs text-gray-400">Add your first admin user to get started</p>
+                      <p className="text-xs text-gray-400">
+                        {searchQuery || userFilter !== 'all' || userRoleFilter !== 'all' ? 'Try adjusting your filters' : 'Add your first admin user to get started'}
+                      </p>
                     </div>
                   )}
                 </div>
@@ -3951,34 +4266,51 @@ export function EnhancedAdminDashboard() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
                   {reports.map((report) => (
-                    <div key={report.id} className="bg-white border border-gray-200 relative border-t-4 border-l-0 overflow-hidden border-l-slate-500 rounded-2xl p-6 md:p-7 hover:shadow-xl hover:-translate-y-2 hover:shadow-2xl hover:border-slate-400 transition-all duration-300 shadow-sm cursor-pointer group" onClick={() => {
+                    <div key={report.id} className="bg-white border border-gray-200 border-l-4 border-l-slate-500 relative rounded-2xl p-6 md:p-7 hover:shadow-xl hover:-translate-y-1 hover:border-slate-400 transition-all duration-300 shadow-sm cursor-pointer group flex flex-col" onClick={() => {
                       setEditingItem(report);
                       setShowReportForm(true);
                     }}>
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <h4 className="text-base font-semibold text-slate-800 tracking-tight">{report.title}</h4>
-                            <span className="px-2 py-0.5 text-xs font-semibold text-slate-600 bg-gray-100 border border-gray-200 rounded-lg">{report.year}</span>
-                            {report.fileSize && <span className="px-2 py-0.5 text-xs text-gray-500 bg-gray-50 border border-gray-200 rounded-lg">{report.fileSize}</span>}
-                          </div>
-                          <p className="text-sm text-slate-600 mb-2">{report.description}</p>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2 flex-wrap">
+                          <h4 className="text-base font-semibold text-slate-800 tracking-tight">{report.title}</h4>
+                          {report.year && (
+                            <span className="px-2 py-0.5 text-xs font-semibold text-slate-600 bg-slate-100 border border-slate-200 rounded-lg">{report.year}</span>
+                          )}
+                          {report.fileSize && (
+                            <span className="px-2 py-0.5 text-xs text-gray-500 bg-gray-50 border border-gray-200 rounded-lg">{report.fileSize}</span>
+                          )}
                         </div>
-                        <div className="flex flex-wrap gap-2 mt-auto pt-4 border-t border-slate-100 w-full relative z-20" onClick={(e) => e.stopPropagation()}>
+                        {report.description && (
+                          <p className="text-sm text-slate-500 line-clamp-2">{report.description}</p>
+                        )}
+                      </div>
+                      <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-slate-100 relative z-20" onClick={(e) => e.stopPropagation()}>
+                        <button
+                          onClick={() => {
+                            setEditingItem(report);
+                            setShowReportForm(true);
+                          }}
+                          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors"
+                        >
+                          <Edit size={13} />
+                          Edit
+                        </button>
+                        {report.fileUrl && (
                           <button
                             onClick={() => window.open(report.fileUrl, '_blank')}
-                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-700 leading-relaxed bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg transition-colors"
+                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-700 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg transition-colors"
                           >
                             <Download size={13} />
                             Download
                           </button>
-                          <button
-                            onClick={() => handleDeleteReport(report.id)}
-                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-colors"
-                          >
-                            <Trash2 size={13} />
-                          </button>
-                        </div>
+                        )}
+                        <button
+                          onClick={() => handleDeleteReport(report.id)}
+                          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-colors"
+                        >
+                          <Trash2 size={13} />
+                          Delete
+                        </button>
                       </div>
                     </div>
                   ))}
@@ -4022,7 +4354,7 @@ export function EnhancedAdminDashboard() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
                   {events.map((event) => (
-                    <div key={event.id} className="bg-white border border-gray-200 relative border-t-4 border-l-0 overflow-hidden border-l-indigo-500 rounded-2xl p-6 md:p-7 hover:shadow-xl hover:-translate-y-2 hover:shadow-2xl hover:border-indigo-300 transition-all duration-300 shadow-sm cursor-pointer group" onClick={() => {
+                    <div key={event.id} className="bg-white border border-gray-200 border-l-4 border-l-indigo-500 relative rounded-2xl p-6 md:p-7 hover:shadow-xl hover:-translate-y-1 hover:border-indigo-300 transition-all duration-300 shadow-sm cursor-pointer group flex flex-col" onClick={() => {
                               setEditingItem(event);
                               setShowEventForm(true);
                             }}>
@@ -4066,6 +4398,7 @@ export function EnhancedAdminDashboard() {
                             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-colors"
                           >
                             <Trash2 size={13} />
+                            Delete
                           </button>
                         </div>
                       </div>
@@ -4109,32 +4442,41 @@ export function EnhancedAdminDashboard() {
                   </Button>
                 </div>
 
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
                   {partners.map((partner) => (
-                    <div key={partner.id} className="bg-white border border-gray-200 border-t-4 border-t-amber-500 rounded-2xl p-6 md:p-7 hover:shadow-xl hover:-translate-y-2 hover:shadow-2xl hover:border-amber-300 transition-all duration-200 text-center shadow-sm cursor-pointer group" onClick={() => {
-                            setEditingItem(partner);
-                            setShowPartnerForm(true);
-                          }}>
-                      {partner.logo && (
-                        <img src={partner.logo} alt={partner.name} className="h-16 w-auto mx-auto mb-3 object-contain" />
-                      )}
-                      <h4 className="text-sm text-slate-800 tracking-tight mb-1">{partner.name}</h4>
-                      <p className="text-xs text-slate-600 mb-3 line-clamp-2">{partner.description}</p>
-                      <div className="flex gap-2 justify-center">
+                    <div key={partner.id} className="bg-white border border-gray-200 border-l-4 border-l-amber-500 relative rounded-2xl p-6 md:p-7 hover:shadow-xl hover:-translate-y-1 hover:border-amber-400 transition-all duration-300 shadow-sm cursor-pointer group flex flex-col" onClick={() => {
+                      setEditingItem(partner);
+                      setShowPartnerForm(true);
+                    }}>
+                      <div className="flex-1">
+                        {partner.logo && (
+                          <img src={partner.logo} alt={partner.name} className="h-14 w-auto mb-3 object-contain" />
+                        )}
+                        <h4 className="text-base font-semibold text-slate-800 tracking-tight mb-1">{partner.name}</h4>
+                        {partner.description && (
+                          <p className="text-sm text-slate-500 line-clamp-2">{partner.description}</p>
+                        )}
+                        {partner.website && (
+                          <span className="text-xs text-amber-600 mt-1 block truncate">{partner.website}</span>
+                        )}
+                      </div>
+                      <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-slate-100 relative z-20" onClick={(e) => e.stopPropagation()}>
                         <button
                           onClick={() => {
                             setEditingItem(partner);
                             setShowPartnerForm(true);
                           }}
-                          className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors"
+                          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors"
                         >
-                          <Edit size={12} />
+                          <Edit size={13} />
+                          Edit
                         </button>
                         <button
                           onClick={() => handleDeletePartner(partner.id)}
-                          className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-colors"
+                          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-colors"
                         >
-                          <Trash2 size={12} />
+                          <Trash2 size={13} />
+                          Delete
                         </button>
                       </div>
                     </div>
@@ -4155,6 +4497,8 @@ export function EnhancedAdminDashboard() {
             {/* Opportunities Management */}
             {activeTab === 'opportunities' && (
               <div className="bg-white/95 backdrop-blur-xl rounded-[2rem] shadow-sm border border-slate-100/80 p-8 md:p-10 space-y-8">
+
+                {/* Header */}
                 <div className="flex flex-row items-center justify-between gap-4 bg-gradient-to-r from-purple-600 to-purple-700 rounded-2xl px-6 py-5 md:px-8 md:py-6 shadow-md">
                   <div className="flex items-center gap-3">
                     <div className="p-3 md:p-3.5 rounded-xl bg-white/20 border border-white/30 shadow-sm flex-shrink-0">
@@ -4165,61 +4509,104 @@ export function EnhancedAdminDashboard() {
                       <p className="text-sm text-purple-100 mt-1.5 opacity-80 font-medium">Manage volunteer opportunities</p>
                     </div>
                   </div>
-                  <Button
-                    onClick={() => {
-                      setEditingItem(null);
-                      setShowOpportunityForm(true);
-                    }}
-                    className="bg-white text-purple-700 hover:bg-purple-50 shadow-md font-semibold px-4 py-2 md:px-5 md:py-2.5 rounded-xl transition-all whitespace-nowrap flex-shrink-0"
+                  <button
+                    onClick={() => { setEditingItem(null); setShowOpportunityForm(true); }}
+                    className="flex items-center gap-2 px-4 py-2 md:px-5 md:py-2.5 bg-white text-purple-700 hover:bg-purple-50 shadow-md font-semibold rounded-xl transition-all whitespace-nowrap flex-shrink-0 text-sm"
                   >
-                    <Plus size={16} className="mr-2" />
+                    <Plus size={16} />
                     Add Opportunity
-                  </Button>
+                  </button>
                 </div>
 
+                {/* Cards grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
                   {opportunities.map((opp) => (
-                    <div key={opp.id} className="bg-white border border-gray-200 relative border-t-4 border-l-0 overflow-hidden border-l-purple-500 rounded-2xl p-6 md:p-7 hover:shadow-xl hover:-translate-y-2 hover:shadow-2xl hover:border-purple-300 transition-all duration-300 shadow-sm cursor-pointer group" onClick={() => {
-                              setEditingItem(opp);
-                              setShowOpportunityForm(true);
-                            }}>
-                      <div className="flex flex-col h-full gap-5">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <h4 className="text-base font-semibold text-slate-800 tracking-tight">{opp.title}</h4>
-                            <Badge className="bg-purple-50 text-purple-700 border-purple-100">{opp.type}</Badge>
-                            {opp.urgent && <span className="px-2 py-0.5 text-xs font-semibold text-red-700 bg-red-50 border border-red-200 rounded-full">Urgent</span>}
-                          </div>
-                          <p className="text-sm text-slate-600 mb-2">{opp.description}</p>
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span className="text-xs text-gray-500 bg-gray-50 border border-gray-200 rounded-lg px-2 py-1">📍 {opp.location}</span>
-                            <span className="text-xs text-gray-500 bg-gray-50 border border-gray-200 rounded-lg px-2 py-1">🕐 {opp.commitment}</span>
-                            {opp.spotsAvailable && <span className="flex items-center gap-1 text-xs text-gray-500 bg-gray-50 border border-gray-200 rounded-lg px-2 py-1"><Users size={11} /> {opp.spotsAvailable} spots</span>}
+                    <div
+                      key={opp.id}
+                      className="bg-white border border-gray-200 border-l-4 border-l-purple-500 rounded-2xl p-6 hover:shadow-xl hover:-translate-y-1 hover:border-purple-300 transition-all duration-300 shadow-sm cursor-pointer group flex flex-col"
+                      onClick={() => { setEditingItem(opp); setShowOpportunityForm(true); }}
+                    >
+                      {/* Title + category */}
+                      <div className="flex items-start gap-2 mb-2">
+                        <h4 className="text-sm font-semibold text-slate-800 flex-1">{opp.title}</h4>
+                        {opp.category && (
+                          <Badge className="bg-purple-50 text-purple-700 border-purple-200 whitespace-nowrap flex-shrink-0">{opp.category}</Badge>
+                        )}
+                      </div>
+
+                      {/* Description */}
+                      <p className="text-sm text-slate-600 line-clamp-2 mb-3 flex-shrink-0">{opp.description}</p>
+
+                      {/* Metadata pills */}
+                      <div className="flex flex-wrap gap-1.5 mb-3">
+                        {opp.location && (
+                          <span className="flex items-center gap-1 text-xs text-slate-600 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1">
+                            <Globe size={11} className="text-slate-400" /> {opp.location}
+                          </span>
+                        )}
+                        {opp.timeCommitment && (
+                          <span className="flex items-center gap-1 text-xs text-slate-600 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1">
+                            <Clock size={11} className="text-slate-400" /> {opp.timeCommitment}
+                          </span>
+                        )}
+                        {opp.openPositions != null && (
+                          <span className="flex items-center gap-1 text-xs text-slate-600 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1">
+                            <Users size={11} className="text-slate-400" /> {opp.openPositions} spot{opp.openPositions !== 1 ? 's' : ''}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Requirements */}
+                      {opp.requirements?.length > 0 && (
+                        <div className="mb-3">
+                          <p className="text-xs font-medium text-slate-500 mb-1.5">Requirements</p>
+                          <div className="flex flex-wrap gap-1">
+                            {opp.requirements.slice(0, 3).map((req: string, i: number) => (
+                              <span key={i} className="text-xs bg-purple-50 text-purple-700 border border-purple-100 rounded-md px-2 py-0.5">{req}</span>
+                            ))}
+                            {opp.requirements.length > 3 && (
+                              <span className="text-xs text-slate-400">+{opp.requirements.length - 3} more</span>
+                            )}
                           </div>
                         </div>
-                        <div className="flex flex-wrap gap-2 mt-auto pt-4 border-t border-slate-100 w-full relative z-20" onClick={(e) => e.stopPropagation()}>
-                          <button
-                            onClick={() => {
-                              setEditingItem(opp);
-                              setShowOpportunityForm(true);
-                            }}
-                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors"
-                          >
-                            <Edit size={13} />
-                            Edit
-                          </button>
-                          <button
-                            onClick={() => handleDeleteOpportunity(opp.id)}
-                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-colors"
-                          >
-                            <Trash2 size={13} />
-                          </button>
+                      )}
+
+                      {/* Benefits */}
+                      {opp.benefits?.length > 0 && (
+                        <div className="mb-3">
+                          <p className="text-xs font-medium text-slate-500 mb-1.5">Benefits</p>
+                          <div className="flex flex-wrap gap-1">
+                            {opp.benefits.slice(0, 3).map((b: string, i: number) => (
+                              <span key={i} className="text-xs bg-emerald-50 text-emerald-700 border border-emerald-100 rounded-md px-2 py-0.5">{b}</span>
+                            ))}
+                            {opp.benefits.length > 3 && (
+                              <span className="text-xs text-slate-400">+{opp.benefits.length - 3} more</span>
+                            )}
+                          </div>
                         </div>
+                      )}
+
+                      {/* Action buttons */}
+                      <div className="flex flex-wrap gap-2 mt-auto pt-4 border-t border-slate-100 relative z-20" onClick={(e) => e.stopPropagation()}>
+                        <button
+                          onClick={() => { setEditingItem(opp); setShowOpportunityForm(true); }}
+                          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors"
+                        >
+                          <Edit size={13} />
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDeleteOpportunity(opp.id)}
+                          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-colors"
+                        >
+                          <Trash2 size={13} />
+                          Delete
+                        </button>
                       </div>
                     </div>
                   ))}
                   {opportunities.length === 0 && (
-                    <div className="text-center py-24">
+                    <div className="col-span-3 text-center py-16">
                       <div className="w-14 h-14 rounded-2xl bg-purple-50 border border-purple-100 flex items-center justify-center mx-auto mb-4">
                         <Target size={26} className="text-purple-400" />
                       </div>
@@ -4258,7 +4645,7 @@ export function EnhancedAdminDashboard() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
                   {faqs.map((faq) => (
-                    <div key={faq.id} className="bg-white border border-gray-200 relative border-t-4 border-l-0 overflow-hidden border-l-cyan-500 rounded-2xl p-6 md:p-7 hover:shadow-xl hover:-translate-y-2 hover:shadow-2xl hover:border-cyan-300 transition-all duration-300 shadow-sm cursor-pointer group" onClick={() => {
+                    <div key={faq.id} className="bg-white border border-gray-200 border-l-4 border-l-cyan-500 relative rounded-2xl p-6 md:p-7 hover:shadow-xl hover:-translate-y-1 hover:border-cyan-300 transition-all duration-300 shadow-sm cursor-pointer group flex flex-col" onClick={() => {
                               setEditingItem(faq);
                               setShowFAQForm(true);
                             }}>
@@ -4286,6 +4673,7 @@ export function EnhancedAdminDashboard() {
                             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-colors"
                           >
                             <Trash2 size={13} />
+                            Delete
                           </button>
                         </div>
                       </div>
@@ -4331,20 +4719,19 @@ export function EnhancedAdminDashboard() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
                   {resources.map((resource) => (
-                    <div key={resource.id} className="bg-white border border-gray-200 relative border-t-4 border-l-0 overflow-hidden border-l-green-500 rounded-2xl p-6 md:p-7 hover:shadow-xl hover:-translate-y-2 hover:shadow-2xl hover:border-green-300 transition-all duration-300 shadow-sm cursor-pointer group" onClick={() => {
+                    <div key={resource.id} className="bg-white border border-gray-200 border-l-4 border-l-green-500 rounded-2xl p-6 md:p-7 hover:shadow-xl hover:-translate-y-1 hover:border-green-300 transition-all duration-300 shadow-sm cursor-pointer group flex flex-col" onClick={() => {
                               setEditingItem(resource);
                               setShowResourceForm(true);
                             }}>
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
+                      <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1 flex-wrap">
                             <h4 className="text-base font-semibold text-slate-800 tracking-tight">{resource.title}</h4>
-                            <Badge className="bg-green-50 text-green-700 border-green-100">{resource.type}</Badge>
+                            {resource.fileType && <Badge className="bg-green-50 text-green-700 border-green-100">{resource.fileType}</Badge>}
                             {resource.fileSize && <span className="px-2 py-0.5 text-xs text-gray-500 bg-gray-50 border border-gray-200 rounded-lg">{resource.fileSize}</span>}
                           </div>
-                          <p className="text-sm text-slate-600 mb-2">{resource.description}</p>
-                        </div>
-                        <div className="flex flex-wrap gap-2 mt-auto pt-4 border-t border-slate-100 w-full relative z-20" onClick={(e) => e.stopPropagation()}>
+                          <p className="text-sm text-slate-600">{resource.description}</p>
+                      </div>
+                      <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-slate-100 relative z-20" onClick={(e) => e.stopPropagation()}>
                           <button
                             onClick={() => window.open(resource.fileUrl, '_blank')}
                             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-700 leading-relaxed bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg transition-colors"
@@ -4368,7 +4755,6 @@ export function EnhancedAdminDashboard() {
                           >
                             <Trash2 size={13} />
                           </button>
-                        </div>
                       </div>
                     </div>
                   ))}
@@ -4379,6 +4765,111 @@ export function EnhancedAdminDashboard() {
                       </div>
                       <p className="text-sm font-semibold text-slate-600 mb-1">No resources yet</p>
                       <p className="text-xs text-gray-400">Add your first downloadable resource!</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Pages Tab */}
+            {activeTab === 'pages' && (
+              <div className="bg-white/95 backdrop-blur-xl rounded-[2rem] shadow-sm border border-slate-100/80 p-8 md:p-10 space-y-8">
+                <div className="flex flex-row items-center justify-between gap-4 bg-gradient-to-r from-sky-600 to-sky-700 rounded-2xl px-6 py-5 md:px-8 md:py-6 shadow-md">
+                  <div className="flex items-center gap-3">
+                    <div className="p-3 md:p-3.5 rounded-xl bg-white/20 border border-white/30 shadow-sm flex-shrink-0">
+                      <Globe size={32} className="text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl md:text-2xl font-bold text-white tracking-tight">Pages <span className="text-sm font-normal text-sky-200">({pages.length})</span></h3>
+                      <p className="text-sm text-sky-100 mt-1.5 opacity-80 font-medium">Create and manage dynamic custom pages</p>
+                    </div>
+                  </div>
+                  <Button
+                    onClick={() => {
+                      setEditingItem(null);
+                      setShowPageForm(true);
+                    }}
+                    className="bg-white text-sky-700 hover:bg-sky-50 shadow-md font-semibold px-4 py-2 md:px-5 md:py-2.5 rounded-xl transition-all whitespace-nowrap flex-shrink-0"
+                  >
+                    <Plus size={16} className="mr-2" />
+                    Add Page
+                  </Button>
+                </div>
+
+                {/* Pages Table */}
+                <div className="overflow-x-auto rounded-2xl border border-slate-100">
+                  <table className="w-full text-sm">
+                    <thead className="bg-slate-50 border-b border-slate-100">
+                      <tr>
+                        <th className="text-left px-6 py-4 font-semibold text-slate-700">Title</th>
+                        <th className="text-left px-6 py-4 font-semibold text-slate-700">Slug / URL</th>
+                        <th className="text-left px-6 py-4 font-semibold text-slate-700">Status</th>
+                        <th className="text-left px-6 py-4 font-semibold text-slate-700">Last Updated</th>
+                        <th className="text-right px-6 py-4 font-semibold text-slate-700">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-50">
+                      {pages.map(page => (
+                        <tr key={page.id} className="hover:bg-slate-50/60 transition-colors">
+                          <td className="px-6 py-4 font-medium text-slate-800">{page.title}</td>
+                          <td className="px-6 py-4">
+                            <a
+                              href={`/pages/${page.slug}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-sky-600 hover:text-sky-700 hover:underline font-mono text-xs flex items-center gap-1"
+                            >
+                              /pages/{page.slug}
+                              <ExternalLink size={11} />
+                            </a>
+                          </td>
+                          <td className="px-6 py-4">
+                            {page.published ? (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-100">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                Published
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 border border-slate-200">
+                                <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+                                Draft
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-6 py-4 text-slate-500 text-xs">
+                            {new Date(page.updatedAt || page.createdAt).toLocaleDateString()}
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex items-center justify-end gap-2">
+                              <button
+                                onClick={() => {
+                                  setEditingItem(page);
+                                  setShowPageForm(true);
+                                }}
+                                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors"
+                              >
+                                <Edit size={13} />
+                                Edit
+                              </button>
+                              <button
+                                onClick={() => handleDeletePage(page.id)}
+                                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-colors"
+                              >
+                                <Trash2 size={13} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  {pages.length === 0 && (
+                    <div className="text-center py-20">
+                      <div className="w-14 h-14 rounded-2xl bg-sky-50 border border-sky-100 flex items-center justify-center mx-auto mb-4">
+                        <Globe size={26} className="text-sky-400" />
+                      </div>
+                      <p className="text-sm font-semibold text-slate-600 mb-1">No pages yet</p>
+                      <p className="text-xs text-gray-400">Click "Add Page" to create your first custom page.</p>
                     </div>
                   )}
                 </div>
@@ -4452,11 +4943,7 @@ export function EnhancedAdminDashboard() {
       )}
 
       {/* Program Form Dialog */}
-      <Dialog open={showProgramForm} onOpenChange={setShowProgramForm}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white/95 backdrop-blur-2xl rounded-[2rem] p-8 border-0 shadow-2xl overflow-hidden">
-          <DialogHeader className="mb-2">
-            <DialogTitle>{editingItem ? 'Edit Program' : 'Add Program'}</DialogTitle>
-          </DialogHeader>
+      <DraggableDialog open={showProgramForm} onClose={() => setShowProgramForm(false)} title={editingItem ? 'Edit Program' : 'Add Program'} headerColor="#2f5496">
           <form onSubmit={handleSubmitProgram} className="space-y-6">
             <div>
               <label className="block text-sm mb-2">Title</label>
@@ -4526,15 +5013,10 @@ export function EnhancedAdminDashboard() {
               </Button>
             </div>
           </form>
-        </DialogContent>
-      </Dialog>
+      </DraggableDialog>
 
       {/* News Form Dialog */}
-      <Dialog open={showNewsForm} onOpenChange={setShowNewsForm}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white/95 backdrop-blur-2xl rounded-[2rem] p-8 border-0 shadow-2xl overflow-hidden">
-          <DialogHeader className="mb-2">
-            <DialogTitle>{editingItem ? 'Edit News' : 'Add News'}</DialogTitle>
-          </DialogHeader>
+      <DraggableDialog open={showNewsForm} onClose={() => setShowNewsForm(false)} title={editingItem ? 'Edit News' : 'Add News'} headerColor="#2f5496">
           <form onSubmit={handleSubmitNews} className="space-y-6">
             <div>
               <label className="block text-sm mb-2">Title</label>
@@ -4604,15 +5086,10 @@ export function EnhancedAdminDashboard() {
               </Button>
             </div>
           </form>
-        </DialogContent>
-      </Dialog>
+      </DraggableDialog>
 
       {/* Gallery Form Dialog */}
-      <Dialog open={showGalleryForm} onOpenChange={setShowGalleryForm}>
-        <DialogContent className="max-w-2xl bg-white/95 backdrop-blur-2xl rounded-[2rem] p-8 border-0 shadow-2xl overflow-hidden">
-          <DialogHeader className="mb-2">
-            <DialogTitle>{editingItem ? 'Edit Image' : 'Add Image'}</DialogTitle>
-          </DialogHeader>
+      <DraggableDialog open={showGalleryForm} onClose={() => setShowGalleryForm(false)} title={editingItem ? 'Edit Image' : 'Add Image'} headerColor="#2f5496">
           <form onSubmit={handleSubmitGallery} className="space-y-6">
             <div>
               <label className="block text-sm mb-2">Title</label>
@@ -4674,19 +5151,11 @@ export function EnhancedAdminDashboard() {
               </Button>
             </div>
           </form>
-        </DialogContent>
-      </Dialog>
+      </DraggableDialog>
 
       {/* Contact View/Reply Dialog */}
       {viewingItem && activeTab === 'contacts' && (
-        <Dialog open={!!viewingItem} onOpenChange={() => {
-          setViewingItem(null);
-          setReplyMessage('');
-        }}>
-          <DialogContent className="max-w-2xl bg-white/95 backdrop-blur-2xl rounded-[2rem] p-8 border-0 shadow-2xl overflow-hidden">
-            <DialogHeader className="mb-2">
-              <DialogTitle>Contact Message</DialogTitle>
-            </DialogHeader>
+        <DraggableDialog open={!!viewingItem} onClose={() => { setViewingItem(null); setReplyMessage(''); }} title="Contact Message" headerColor="#2f5496">
             <div className="space-y-6">
               <div>
                 <p className="text-sm text-slate-600 mb-1">From</p>
@@ -4727,16 +5196,11 @@ export function EnhancedAdminDashboard() {
                 </Button>
               </div>
             </div>
-          </DialogContent>
-        </Dialog>
+        </DraggableDialog>
       )}
 
       {/* User Form Dialog */}
-      <Dialog open={showUserForm} onOpenChange={setShowUserForm}>
-        <DialogContent className="max-w-2xl bg-white/95 backdrop-blur-2xl rounded-[2rem] p-8 border-0 shadow-2xl overflow-hidden">
-          <DialogHeader className="mb-2">
-            <DialogTitle>{editingItem ? 'Edit User' : 'Add User'}</DialogTitle>
-          </DialogHeader>
+      <DraggableDialog open={showUserForm} onClose={() => setShowUserForm(false)} title={editingItem ? 'Edit User' : 'Add User'} headerColor="#2f5496">
           <form onSubmit={handleSubmitUser} className="space-y-6">
             <div>
               <label className="block text-sm mb-2">Full Name</label>
@@ -4827,15 +5291,10 @@ export function EnhancedAdminDashboard() {
               </Button>
             </div>
           </form>
-        </DialogContent>
-      </Dialog>
+      </DraggableDialog>
 
       {/* Password Reset Dialog */}
-      <Dialog open={showPasswordResetDialog} onOpenChange={setShowPasswordResetDialog}>
-        <DialogContent className="max-w-xl bg-white/95 backdrop-blur-2xl rounded-[2rem] p-8 border-0 shadow-2xl overflow-hidden">
-          <DialogHeader className="mb-2">
-            <DialogTitle>Reset Password</DialogTitle>
-          </DialogHeader>
+      <DraggableDialog open={showPasswordResetDialog} onClose={() => setShowPasswordResetDialog(false)} title="Reset Password" headerColor="#2f5496">
           {viewingItem && (
             <div className="space-y-6">
               <div className="p-4 bg-gray-50 rounded-lg">
@@ -4889,8 +5348,7 @@ export function EnhancedAdminDashboard() {
               </div>
             </div>
           )}
-        </DialogContent>
-      </Dialog>
+      </DraggableDialog>
 
       {/* Form Dialogs from AdminFormDialogs */}
       {showTeamForm && (
@@ -5006,20 +5464,33 @@ export function EnhancedAdminDashboard() {
           userRole={userRole}
         />
       )}
+
+      {showPageForm && (
+        <PageFormDialog
+          show={showPageForm}
+          onClose={() => {
+            setShowPageForm(false);
+            setEditingItem(null);
+          }}
+          editingItem={editingItem}
+          onSuccess={() => {
+            loadData();
+            logActivity(editingItem ? 'updated' : 'created', 'Pages', editingItem ? `Updated page: ${editingItem.title}` : 'Created new page');
+          }}
+          userRole={userRole}
+        />
+      )}
       {showResetModal && (
-        <Dialog open={showResetModal} onOpenChange={setShowResetModal}>
-          <DialogContent className="max-w-md bg-white rounded-2xl p-6 border border-slate-100 shadow-xl">
-            <DialogHeader className="space-y-3">
-              <div className="w-12 h-12 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center mx-auto mb-2 animate-bounce">
-                <RotateCcw size={24} />
+        <DraggableDialog open={showResetModal} onClose={() => setShowResetModal(false)} title="Factory Defaults Reset" defaultWidth={480} headerColor="#2f5496">
+            <div className="space-y-4">
+              <div className="flex flex-col items-center mb-2">
+                <div className="w-12 h-12 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center mb-2 animate-bounce">
+                  <RotateCcw size={24} />
+                </div>
               </div>
-              <DialogTitle className="text-xl font-bold text-center text-slate-800 tracking-tight">
-                Factory Defaults Reset
-              </DialogTitle>
               <p className="text-sm text-gray-500 text-center leading-relaxed">
                 Are you absolutely sure you want to restore the website CMS to factory seed defaults? This action will overwrite existing configuration settings.
               </p>
-            </DialogHeader>
 
             <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex gap-3 mt-4">
               <div className="text-amber-600 text-sm font-semibold shrink-0">⚠️ Warning</div>
@@ -5053,8 +5524,8 @@ export function EnhancedAdminDashboard() {
                 )}
               </Button>
             </div>
-          </DialogContent>
-        </Dialog>
+            </div>
+        </DraggableDialog>
       )}
     </div>
   );

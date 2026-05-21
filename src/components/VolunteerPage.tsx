@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Heart, Send, CheckCircle2, User, Mail, Phone, MessageSquare, Briefcase, Calendar, Cake, MapPin, GraduationCap, Globe, Shield, Users, ChevronDown, Upload, FileText } from 'lucide-react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { toast } from 'sonner';
@@ -115,7 +116,7 @@ export function VolunteerPage() {
         <div className="relative z-30 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           {/* Breadcrumbs */}
           <nav className="flex justify-center items-center gap-2 mb-10 text-emerald-400 text-sm font-bold tracking-wide animate-[fadeIn_1s_ease-out]">
-            <a href="/" className="hover:text-emerald-300 transition-colors uppercase">Home</a>
+            <Link to="/" className="hover:text-emerald-300 transition-colors uppercase">Home</Link>
             <span className="text-emerald-500">/</span>
             <span className="text-white uppercase">Volunteer</span>
           </nav>

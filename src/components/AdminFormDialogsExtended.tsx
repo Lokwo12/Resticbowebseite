@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
+import { DraggableDialog } from './DraggableDialog';
 import { Button } from './ui/button';
 import { Upload, X } from 'lucide-react';
 import { toast } from 'sonner';
@@ -75,11 +75,7 @@ export function ReportFormDialog({ show, onClose, editingItem, onSuccess, userRo
   };
 
   return (
-    <Dialog open={show} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl bg-white/95 backdrop-blur-2xl rounded-[2rem] p-8 border-0 shadow-2xl overflow-hidden">
-        <DialogHeader className="mb-2">
-          <DialogTitle>{editingItem ? 'Edit Annual Report' : 'Add Annual Report'}</DialogTitle>
-        </DialogHeader>
+    <DraggableDialog open={show} onClose={onClose} title={editingItem ? 'Edit Annual Report' : 'Add Annual Report'} headerColor="#2f5496">
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <label className="block text-sm mb-2">Report Title *</label>
@@ -141,8 +137,7 @@ export function ReportFormDialog({ show, onClose, editingItem, onSuccess, userRo
             </Button>
           </div>
         </form>
-      </DialogContent>
-    </Dialog>
+    </DraggableDialog>
   );
 }
 
@@ -241,11 +236,7 @@ export function EventFormDialog({ show, onClose, editingItem, onSuccess, userRol
   };
 
   return (
-    <Dialog open={show} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white/95 backdrop-blur-2xl rounded-[2rem] p-8 border-0 shadow-2xl overflow-hidden">
-        <DialogHeader className="mb-2">
-          <DialogTitle>{editingItem ? 'Edit Event' : 'Add Event'}</DialogTitle>
-        </DialogHeader>
+    <DraggableDialog open={show} onClose={onClose} title={editingItem ? 'Edit Event' : 'Add Event'} headerColor="#2f5496">
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <label className="block text-sm mb-2">Event Title *</label>
@@ -370,8 +361,7 @@ export function EventFormDialog({ show, onClose, editingItem, onSuccess, userRol
             </Button>
           </div>
         </form>
-      </DialogContent>
-    </Dialog>
+    </DraggableDialog>
   );
 }
 
@@ -461,11 +451,7 @@ export function PartnerFormDialog({ show, onClose, editingItem, onSuccess, userR
   };
 
   return (
-    <Dialog open={show} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white/95 backdrop-blur-2xl rounded-[2rem] p-8 border-0 shadow-2xl overflow-hidden">
-        <DialogHeader className="mb-2">
-          <DialogTitle>{editingItem ? 'Edit Partner' : 'Add Partner'}</DialogTitle>
-        </DialogHeader>
+    <DraggableDialog open={show} onClose={onClose} title={editingItem ? 'Edit Partner' : 'Add Partner'} headerColor="#2f5496">
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <label className="block text-sm mb-2">Partner Name *</label>
@@ -555,7 +541,6 @@ export function PartnerFormDialog({ show, onClose, editingItem, onSuccess, userR
             </Button>
           </div>
         </form>
-      </DialogContent>
-    </Dialog>
+    </DraggableDialog>
   );
 }

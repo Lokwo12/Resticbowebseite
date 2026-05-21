@@ -69,9 +69,9 @@ export function ProgramDetail() {
 
   if (!program) {
     return (
-      <div className="bg-gray-50 min-h-screen pb-24">
-        <div className="container mx-auto px-4 text-center">
-          <h2 className="text-2xl text-gray-900 mb-4">Program Not Found</h2>
+      <div className="bg-gray-50 min-h-screen pb-24 flex items-center justify-center" style={{ paddingTop: '120px' }}>
+        <div className="max-w-md mx-auto px-4 text-center">
+          <h2 className="text-2xl text-gray-900 mb-4 font-bold">Program Not Found</h2>
           <p className="text-gray-600 mb-8">The program you are looking for does not exist or has been removed.</p>
           <Link to="/">
             <Button>
@@ -85,10 +85,10 @@ export function ProgramDetail() {
   }
 
   return (
-    <div className="bg-gray-50 min-h-screen pb-24">
-      <div className="container mx-auto px-4 max-w-5xl">
+    <div className="bg-gray-50 min-h-screen pb-24" style={{ paddingTop: '120px' }}>
+      <div className="max-w-6xl mx-auto px-4">
         {/* Navigation */}
-        <Link to="/" className="inline-flex items-center text-emerald-600 hover:text-emerald-700 mb-8 transition-colors">
+        <Link to="/#programs" className="inline-flex items-center text-emerald-600 hover:text-emerald-700 mb-8 transition-colors">
           <ArrowLeft size={20} className="mr-2" />
           Back to Programs
         </Link>

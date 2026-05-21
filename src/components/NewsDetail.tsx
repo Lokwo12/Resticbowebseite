@@ -83,7 +83,7 @@ export function NewsDetail() {
 
   if (!article) {
     return (
-      <div className="bg-gray-50 min-h-screen pb-24">
+      <div className="bg-gray-50 min-h-screen pt-28 sm:pt-36 pb-24">
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-2xl text-gray-900 mb-4">Article Not Found</h2>
           <p className="text-gray-600 mb-8">The news article you are looking for does not exist or has been removed.</p>
@@ -98,7 +98,7 @@ export function NewsDetail() {
   }
 
   return (
-    <div className="bg-gray-50 min-h-screen py-24">
+    <div className="bg-gray-50 min-h-screen pt-28 sm:pt-36 pb-24">
       <div className="container mx-auto px-4 max-w-4xl">
         {/* Navigation */}
         <Link to="/news" className="inline-flex items-center text-emerald-600 hover:text-emerald-700 mb-8 transition-colors">

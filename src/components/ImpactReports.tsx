@@ -93,7 +93,7 @@ export function ImpactReports() {
   return (
     <div className="bg-gray-50 min-h-screen">
       {/* Premium Hero Banner */}
-      <div className="bg-gradient-to-r from-emerald-600 to-emerald-800 text-white pt-12 sm:pt-20 pb-12 sm:pb-24">
+      <div className="bg-gradient-to-r from-emerald-600 to-emerald-800 text-white pt-32 sm:pt-40 pb-12 sm:pb-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-white/10 backdrop-blur-md rounded-full mb-6">
             <FileText className="text-white" size={32} />

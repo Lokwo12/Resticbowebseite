@@ -30,7 +30,7 @@ export function BackToTop() {
       {isVisible && (
         <button
           onClick={scrollToTop}
-          className="fixed bottom-8 right-8 z-40 bg-emerald-600 text-white p-3 rounded-full shadow-lg hover:bg-emerald-700 hover:shadow-xl hover:scale-110 transition-all duration-300 group"
+          className="fixed bottom-4 right-4 sm:bottom-8 sm:right-8 z-40 bg-emerald-600 text-white p-3 rounded-full shadow-lg hover:bg-emerald-700 hover:shadow-xl hover:scale-110 transition-all duration-300 group"
           aria-label="Back to top"
         >
           <ArrowUp size={24} className="group-hover:-translate-y-1 transition-transform duration-300" />

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
+import { DraggableDialog } from './DraggableDialog';
 import { Button } from './ui/button';
 import { toast } from 'sonner';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
@@ -118,11 +118,7 @@ export function OpportunityFormDialog({ show, onClose, editingItem, onSuccess, u
   };
 
   return (
-    <Dialog open={show} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white/95 backdrop-blur-2xl rounded-[2rem] p-8 border-0 shadow-2xl overflow-hidden">
-        <DialogHeader className="mb-2">
-          <DialogTitle>{editingItem ? 'Edit Opportunity' : 'Add Opportunity'}</DialogTitle>
-        </DialogHeader>
+    <DraggableDialog open={show} onClose={onClose} title={editingItem ? 'Edit Opportunity' : 'Add Opportunity'} headerColor="#2f5496">
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <label className="block text-sm mb-2">Opportunity Title *</label>
@@ -244,8 +240,7 @@ export function OpportunityFormDialog({ show, onClose, editingItem, onSuccess, u
             </Button>
           </div>
         </form>
-      </DialogContent>
-    </Dialog>
+    </DraggableDialog>
   );
 }
 
@@ -306,11 +301,7 @@ export function FAQFormDialog({ show, onClose, editingItem, onSuccess, userRole 
   };
 
   return (
-    <Dialog open={show} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white/95 backdrop-blur-2xl rounded-[2rem] p-8 border-0 shadow-2xl overflow-hidden">
-        <DialogHeader className="mb-2">
-          <DialogTitle>{editingItem ? 'Edit FAQ' : 'Add FAQ'}</DialogTitle>
-        </DialogHeader>
+    <DraggableDialog open={show} onClose={onClose} title={editingItem ? 'Edit FAQ' : 'Add FAQ'} headerColor="#2f5496">
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <label className="block text-sm mb-2">Question *</label>
@@ -370,8 +361,7 @@ export function FAQFormDialog({ show, onClose, editingItem, onSuccess, userRole 
             </Button>
           </div>
         </form>
-      </DialogContent>
-    </Dialog>
+    </DraggableDialog>
   );
 }
 
@@ -438,11 +428,7 @@ export function ResourceFormDialog({ show, onClose, editingItem, onSuccess, user
   };
 
   return (
-    <Dialog open={show} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white/95 backdrop-blur-2xl rounded-[2rem] p-8 border-0 shadow-2xl overflow-hidden">
-        <DialogHeader className="mb-2">
-          <DialogTitle>{editingItem ? 'Edit Resource' : 'Add Resource'}</DialogTitle>
-        </DialogHeader>
+    <DraggableDialog open={show} onClose={onClose} title={editingItem ? 'Edit Resource' : 'Add Resource'} headerColor="#2f5496">
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <label className="block text-sm mb-2">Resource Title *</label>
@@ -523,7 +509,6 @@ export function ResourceFormDialog({ show, onClose, editingItem, onSuccess, user
             </Button>
           </div>
         </form>
-      </DialogContent>
-    </Dialog>
+    </DraggableDialog>
   );
 }

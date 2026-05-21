@@ -39,6 +39,7 @@ import { projectId, publicAnonKey } from './utils/supabase/info';
 import { DonationModalProvider, DonationModal } from './components/DonationModal';
 import { CardPaymentPage } from './components/CardPaymentPage';
 import { ContactPage } from './components/ContactPage';
+import { CustomPage } from './components/CustomPage';
 
 function PageTitleManager() {
   const { pathname } = useLocation();
@@ -66,6 +67,9 @@ function PageTitleManager() {
       document.title = 'News Article | Resti Kiryandongo';
     } else if (pathname.startsWith('/programs/')) {
       document.title = 'Program Details | Resti Kiryandongo';
+    } else if (pathname.startsWith('/pages/')) {
+      // Title will be set by CustomPage once it loads
+      document.title = 'Page | Resti Kiryandongo';
     } else {
       document.title = titleMap[pathname] || 'Resti Kiryandongo CBO';
     }
@@ -168,6 +172,7 @@ export default function App() {
         <Route path="/opportunities" element={<MainLayout><OpportunitiesPage /></MainLayout>} />
         <Route path="/donate" element={<MainLayout><CardPaymentPage /></MainLayout>} />
         <Route path="/contact" element={<ContactPage />} />
+        <Route path="/pages/:slug" element={<MainLayout><CustomPage /></MainLayout>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       <Toaster position="top-right" />

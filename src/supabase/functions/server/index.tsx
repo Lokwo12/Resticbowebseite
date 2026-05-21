@@ -2110,9 +2110,9 @@ app.get('/make-server-2a4be611/site-settings', async (c) => {
           phone: '+256 XXX XXX XXX',
           whatsappNumber: '+256700000000',
           socialLinks: {
-            facebook: '#',
-            twitter: '#',
-            instagram: '#'
+            facebook: 'https://www.facebook.com/restikiryandongo',
+            twitter: 'https://x.com/restikirya',
+            instagram: 'https://www.instagram.com/restikiryandongo'
           },
           supportItems: [
             'Volunteer your time and skills',
@@ -2277,9 +2277,9 @@ app.post('/make-server-2a4be611/site-settings/initialize', async (c) => {
         email: 'info@restikirya.org',
         phone: '+256 XXX XXX XXX',
         socialLinks: {
-          facebook: '#',
-          twitter: '#',
-          instagram: '#'
+          facebook: 'https://www.facebook.com/restikiryandongo',
+          twitter: 'https://x.com/restikirya',
+          instagram: 'https://www.instagram.com/restikiryandongo'
         },
         supportItems: [
           'Volunteer your time and skills',
@@ -2682,5 +2682,145 @@ app.post('/make-server-2a4be611/admin/users/:id/track-login', async (c) => {
 })
 
 // Note: The primary image upload route is defined above at line ~449. This duplicate is removed.
+
+// --- Pages (Custom dynamic pages) management ---
+
+// List all pages
+app.get('/make-server-2a4be611/pages', async (c) => {
+  try {
+    const list = await kv.getByPrefix('page:')
+    const pages = list.map(item => item.value)
+    // Sort by createdAt descending
+    pages.sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    return c.json({ pages })
+  } catch (error) {
+    console.error('Error fetching pages:', error)
+    return c.json({ error: 'Failed to fetch pages', details: String(error) }, 500)
+  }
+})
+
+// Get a page by slug
+app.get('/make-server-2a4be611/pages/:slug', async (c) => {
+  try {
+    const slug = c.req.param('slug')
+    const list = await kv.getByPrefix('page:')
+    const pageItem = list.find(item => item.value.slug === slug)
+    if (!pageItem) {
+      return c.json({ error: 'Page not found' }, 404)
+    }
+    return c.json({ page: pageItem.value })
+  } catch (error) {
+    console.error('Error fetching page:', error)
+    return c.json({ error: 'Failed to fetch page', details: String(error) }, 500)
+  }
+})
+
+// Create page
+app.post('/make-server-2a4be611/pages', async (c) => {
+  try {
+    const body = await c.req.json()
+    const { title, slug, content, published } = body
+
+    if (!title || !slug) {
+      return c.json({ error: 'Title and Slug are required' }, 400)
+    }
+
+    // Check if slug is unique
+    const list = await kv.getByPrefix('page:')
+    const exists = list.some(item => item.value.slug === slug)
+    if (exists) {
+      return c.json({ error: 'A page with this slug already exists' }, 400)
+    }
+
+    const id = `page:${Date.now()}`
+    const pageData = {
+      id,
+      title,
+      slug,
+      content: content || '',
+      published: published ?? true,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    }
+
+    await kv.set(id, pageData)
+    return c.json({ success: true, page: pageData })
+  } catch (error) {
+    console.error('Error creating page:', error)
+    return c.json({ error: 'Failed to create page', details: String(error) }, 500)
+  }
+})
+
+// Update page
+app.put('/make-server-2a4be611/pages/:id', async (c) => {
+  try {
+    const id = c.req.param('id')
+    const body = await c.req.json()
+    const { title, slug, content, published } = body
+
+    const existingPage = await kv.get(id)
+    if (!existingPage) {
+      return c.json({ error: 'Page not found' }, 404)
+    }
+
+    // Check if slug is unique (if slug changed)
+    if (slug && slug !== existingPage.slug) {
+      const list = await kv.getByPrefix('page:')
+      const exists = list.some(item => item.value.slug === slug && item.value.id !== id)
+      if (exists) {
+        return c.json({ error: 'A page with this slug already exists' }, 400)
+      }
+    }
+
+    const updatedPage = {
+      ...existingPage,
+      title: title ?? existingPage.title,
+      slug: slug ?? existingPage.slug,
+      content: content ?? existingPage.content,
+      published: published ?? existingPage.published,
+      updatedAt: new Date().toISOString()
+    }
+
+    await kv.set(id, updatedPage)
+    return c.json({ success: true, page: updatedPage })
+  } catch (error) {
+    console.error('Error updating page:', error)
+    return c.json({ error: 'Failed to update page', details: String(error) }, 500)
+  }
+})
+
+// Delete page
+app.delete('/make-server-2a4be611/pages/:id', async (c) => {
+  try {
+    const id = c.req.param('id')
+    const existingPage = await kv.get(id)
+    if (!existingPage) {
+      return c.json({ error: 'Page not found' }, 404)
+    }
+    await kv.del(id)
+    return c.json({ success: true })
+  } catch (error) {
+    console.error('Error deleting page:', error)
+    return c.json({ error: 'Failed to delete page', details: String(error) }, 500)
+  }
+})
+
+// Bulk delete pages
+app.post('/make-server-2a4be611/pages/bulk-delete', async (c) => {
+  try {
+    const body = await c.req.json()
+    const { ids } = body
+
+    if (!ids || !Array.isArray(ids)) {
+      return c.json({ error: 'Page IDs must be provided in an array' }, 400)
+    }
+
+    await kv.mdel(ids)
+    return c.json({ success: true })
+  } catch (error) {
+    console.error('Error bulk deleting pages:', error)
+    return c.json({ error: 'Failed to bulk delete pages', details: String(error) }, 500)
+  }
+})
 
 Deno.serve(app.fetch)
