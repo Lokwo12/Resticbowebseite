@@ -189,20 +189,20 @@ function StripeCardForm({ donorData, setDonorData, finalAmount, freq, setDone, s
           <p className="text-gray-400 text-xs mt-0.5">End-to-end encrypted · Powered by Stripe</p>
         </div>
         <div className="flex items-center gap-2">
-          <span className="rounded-md px-2 py-1 text-[10px] font-black italic tracking-tight text-white min-w-[32px] text-center" style={{ background: '#1434CB' }}>VISA</span>
-          <span className="rounded-md px-2 py-1 text-[10px] font-black text-white min-w-[32px] text-center" style={{ background: '#EB001B' }}>MC</span>
-          <span className="rounded-md px-2 py-1 text-[10px] font-black text-white min-w-[36px] text-center" style={{ background: '#007BC1' }}>AMEX</span>
+          <span className="rounded-md px-2 py-1 text-xs font-black italic tracking-tight text-white min-w-[32px] text-center" style={{ background: '#1434CB' }}>VISA</span>
+          <span className="rounded-md px-2 py-1 text-xs font-black text-white min-w-[32px] text-center" style={{ background: '#EB001B' }}>MC</span>
+          <span className="rounded-md px-2 py-1 text-xs font-black text-white min-w-[36px] text-center" style={{ background: '#007BC1' }}>AMEX</span>
         </div>
       </div>
 
       {/* ── Amount summary ── */}
       <div className="mx-6 mt-5 bg-emerald-50 border border-emerald-100 rounded-xl px-4 py-3 flex items-center justify-between">
         <div>
-          <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-0.5">Donation Amount</p>
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-0.5">Donation Amount</p>
           <p className="text-lg font-bold text-emerald-700">{formatUSD(finalAmount)}</p>
         </div>
         <div className="text-right">
-          <p className="text-[10px] text-gray-400 uppercase tracking-wider mb-0.5">Frequency</p>
+          <p className="text-xs text-gray-400 uppercase tracking-wider mb-0.5">Frequency</p>
           <p className="text-xs font-semibold text-gray-700">{freq === 'once' ? 'One-time' : 'Monthly'}</p>
         </div>
       </div>
@@ -235,7 +235,7 @@ function StripeCardForm({ donorData, setDonorData, finalAmount, freq, setDone, s
               options={{
                 style: {
                   base: {
-                    fontSize: '12px',
+                    fontSize: '14px',
                     color: '#374151',
                     fontFamily: 'Arial, Helvetica, sans-serif',
                     '::placeholder': { color: '#9ca3af' },
@@ -258,7 +258,7 @@ function StripeCardForm({ donorData, setDonorData, finalAmount, freq, setDone, s
         <button
           type="submit"
           disabled={submitting || finalAmount < 1 || !stripe}
-          className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 rounded-xl text-sm shadow-md shadow-emerald-100 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3.5 rounded-xl text-sm shadow-md shadow-emerald-100 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
         >
           {submitting
             ? <><span className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" /> Processing…</>
@@ -481,8 +481,8 @@ export function DonationModal() {
     }
   };
 
-  const inp = 'w-full border border-gray-200 rounded-xl px-4 py-3 text-xs font-normal outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-50 transition-all placeholder:text-gray-400 bg-white';
-  const lbl = 'block text-xs font-semibold text-gray-600 mb-1';
+  const inp = 'w-full border border-gray-200 rounded-xl px-4 py-3.5 text-sm font-normal outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-50 transition-all placeholder:text-gray-400 bg-white text-gray-800';
+  const lbl = 'block text-xs font-semibold text-gray-700 mb-1.5 tracking-wide';
 
   if (!isOpen) return null;
 

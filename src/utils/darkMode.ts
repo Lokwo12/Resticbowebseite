@@ -1,30 +1,27 @@
 /**
  * Dark mode utilities — class-based strategy (adds/removes `dark` on <html>).
- * Preference is persisted in localStorage under the key "theme".
+ * Dark mode has been disabled per user request, forcing light mode across the site.
  */
 
 export function initDarkMode(): void {
   try {
-    const saved = localStorage.getItem('theme');
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    if (saved === 'dark' || (!saved && prefersDark)) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
+    // Always force light mode
+    document.documentElement.classList.remove('dark');
+    localStorage.setItem('theme', 'light');
   } catch {
-    // localStorage may be unavailable (private mode, SSR, etc.)
+    // localStorage may be unavailable
   }
 }
 
 export function toggleDarkMode(): boolean {
-  const isDark = document.documentElement.classList.toggle('dark');
+  // Always enforce light mode
+  document.documentElement.classList.remove('dark');
   try {
-    localStorage.setItem('theme', isDark ? 'dark' : 'light');
+    localStorage.setItem('theme', 'light');
   } catch { /* noop */ }
-  return isDark;
+  return false;
 }
 
 export function getIsDark(): boolean {
-  return document.documentElement.classList.contains('dark');
+  return false;
 }

@@ -1,4 +1,4 @@
-import { Menu, X, Heart, ChevronRight, ChevronDown, Sun, Moon } from 'lucide-react';
+import { Menu, X, Heart, ChevronRight, ChevronDown } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 const logo = '/logo.png';
@@ -23,13 +23,6 @@ export function Header() {
   const [activeSection, setActiveSection] = useState('home');
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [customPages, setCustomPages] = useState<Array<{slug: string; title: string}>>([]);
-  const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains('dark'));
-
-  const handleToggleDark = () => {
-    const newDark = document.documentElement.classList.toggle('dark');
-    try { localStorage.setItem('theme', newDark ? 'dark' : 'light'); } catch { /* noop */ }
-    setIsDark(newDark);
-  };
 
   useEffect(() => {
     const handleScroll = () => {
@@ -423,15 +416,6 @@ export function Header() {
               Contact
             </Link>
             <button
-              onClick={handleToggleDark}
-              title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-              className={`p-2 rounded-lg transition-all duration-300 ${
-                isSolid ? 'hover:bg-gray-100 text-gray-600' : 'hover:bg-white/20 text-white'
-              }`}
-            >
-              {isDark ? <Sun size={18} /> : <Moon size={18} />}
-            </button>
-            <button
               onClick={() => { openDonationModal(); setActiveDropdown(null); }}
               className={`px-6 py-2 rounded-lg transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 ${
                 isSolid
@@ -443,17 +427,8 @@ export function Header() {
             </button>
           </div>
 
-          {/* Mobile right actions: dark toggle + hamburger */}
+          {/* Mobile right actions: hamburger */}
           <div className="lg:hidden flex items-center gap-1">
-            <button
-              onClick={handleToggleDark}
-              title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-              className={`p-2 rounded-lg transition-all duration-300 ${
-                isSolid ? 'hover:bg-gray-100 text-gray-600' : 'hover:bg-white/20 text-white'
-              }`}
-            >
-              {isDark ? <Sun size={18} /> : <Moon size={18} />}
-            </button>
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className={`p-2 rounded-lg transition-colors ${

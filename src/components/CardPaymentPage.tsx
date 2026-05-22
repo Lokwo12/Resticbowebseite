@@ -6,7 +6,7 @@ import { Lock, Heart, ArrowLeft, CreditCard, Phone, Building2, ExternalLink } fr
 import { toast } from 'sonner';
 import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
 import { projectId, publicAnonKey } from '../utils/supabase/info';
-import { STRIPE_PK, PAYPAL_CLIENT_ID } from '../utils/env';
+import { STRIPE_PK, PAYPAL_CLIENT_ID, PAYPAL_MERCHANT_EMAIL } from '../utils/env';
 
 const stripePromise = STRIPE_PK ? loadStripe(STRIPE_PK) : null;
 
@@ -132,11 +132,49 @@ export function CardPaymentPage() {
                   <div className="space-y-4">
                      <div className="bg-blue-50 rounded-xl p-4 border border-blue-100 text-blue-800 text-sm">Secure checkout via PayPal</div>
                      {PAYPAL_CLIENT_ID ? (
-                       <PayPalScriptProvider options={{ clientId: PAYPAL_CLIENT_ID }}>
-                         <PayPalButtons 
-                           style={{ layout: 'vertical' }}
-                           createOrder={(d, a) => a.order.create({ purchase_units: [{ amount: { value: finalAmount.toString(), currency_code: 'USD' } }] })}
-                           onApprove={async (d, a) => { await a.order?.capture(); setDone(true); }}
+                       <PayPalScriptProvider options={{ clientId: PAYPAL_CLIENT_ID, currency: 'USD', intent: 'capture' }}>
+                         <PayPalButtons
+                           style={{ layout: 'vertical', color: 'gold', shape: 'rect', label: 'donate', height: 48 }}
+                           forceReRender={[finalAmount]}
+                           createOrder={(_d, a) => {
+                             const purchaseUnit: any = {
+                               amount: { value: finalAmount.toFixed(2), currency_code: 'USD' },
+                               description: 'Resti Kiryandongo CBO – Donation',
+                             };
+                             if (PAYPAL_MERCHANT_EMAIL) purchaseUnit.payee = { email_address: PAYPAL_MERCHANT_EMAIL };
+                             return a.order.create({ intent: 'CAPTURE', purchase_units: [purchaseUnit] });
+                           }}
+                           onApprove={async (_d, a) => {
+                             if (a.order) {
+                               const captureResult = await a.order.capture();
+                               try {
+                                 const payerName = captureResult.payer?.name
+                                   ? `${captureResult.payer.name.given_name ?? ''} ${captureResult.payer.name.surname ?? ''}`.trim()
+                                   : '';
+                                 const payerEmail = (captureResult.payer as any)?.email_address ?? '';
+                                 await fetch(
+                                   `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/donations`,
+                                   {
+                                     method: 'POST',
+                                     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${publicAnonKey}` },
+                                     body: JSON.stringify({
+                                       amount: finalAmount,
+                                       currency: 'USD',
+                                       paymentMethod: 'paypal',
+                                       donorName: payerName,
+                                       donorEmail: payerEmail,
+                                       transactionId: captureResult.id,
+                                       status: 'completed',
+                                     }),
+                                   },
+                                 );
+                               } catch { /* non-blocking */ }
+                               toast.success('Thank you! Your donation has been confirmed.');
+                               setDone(true);
+                             }
+                           }}
+                           onError={() => toast.error('PayPal payment failed. Please try again.')}
+                           onCancel={() => toast.info('Payment cancelled.')}
                          />
                        </PayPalScriptProvider>
                      ) : <button onClick={() => window.open('https://paypal.com/donate', '_blank')} className="w-full bg-[#FFC439] py-3 rounded-xl font-bold">Continue to PayPal</button>}
