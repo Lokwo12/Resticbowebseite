@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import React, { useEffect } from 'react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from './components/ui/sonner';
 import { Header } from './components/Header';
 import { Hero } from './components/Hero';
@@ -128,8 +129,46 @@ function HomePage() {
   );
 }
 
+class AdminErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { error: Error | null }
+> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { error: null };
+  }
+  static getDerivedStateFromError(error: Error) {
+    return { error };
+  }
+  render() {
+    if (this.state.error) {
+      return (
+        <div style={{ padding: '2rem', fontFamily: 'monospace' }}>
+          <h2 style={{ color: 'red' }}>Dashboard render error</h2>
+          <pre style={{ background: '#fee', padding: '1rem', borderRadius: '8px', overflowX: 'auto' }}>
+            {this.state.error.message}
+            {'\n'}
+            {this.state.error.stack}
+          </pre>
+          <button
+            onClick={() => this.setState({ error: null })}
+            style={{ marginTop: '1rem', padding: '0.5rem 1rem', cursor: 'pointer' }}
+          >
+            Retry
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 function AdminPage() {
-  return <EnhancedAdminDashboard />;
+  return (
+    <AdminErrorBoundary>
+      <EnhancedAdminDashboard />
+    </AdminErrorBoundary>
+  );
 }
 
 function MainLayout({ children }: { children: React.ReactNode }) {
@@ -147,8 +186,11 @@ function MainLayout({ children }: { children: React.ReactNode }) {
   );
 }
 
+const queryClient = new QueryClient();
+
 export default function App() {
   return (
+    <QueryClientProvider client={queryClient}>
     <DonationModalProvider>
     <BrowserRouter>
     <ScrollToTop />
@@ -180,5 +222,6 @@ export default function App() {
     <DonationModal />
     </BrowserRouter>
     </DonationModalProvider>
+    </QueryClientProvider>
   );
 }

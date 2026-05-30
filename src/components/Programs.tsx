@@ -137,7 +137,7 @@ export function Programs() {
 
 
   return (
-    <section id="programs" className="py-20 bg-gray-50" ref={ref}>
+    <section id="programs" className="section-spacing-lg bg-white" ref={ref}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className={`max-w-3xl mx-auto text-center mb-16 transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
@@ -165,7 +165,7 @@ export function Programs() {
           {programs.filter(p => p && p.value).map((program, index) => (
             <div
               key={program.key}
-              className={`card-lift group bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-500 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
+              className={`card-lift group bg-slate-50 border border-slate-100 rounded-3xl overflow-hidden shadow-premium-soft transition-all duration-300 hover:shadow-premium-soft hover:shadow-2xl transition-all duration-300 transition-all duration-500 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
               style={{ transitionDelay: isVisible ? getStaggerDelay(index, 100) : '0ms' }}
             >
               {program.value.image && (

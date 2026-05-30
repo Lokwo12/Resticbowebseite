@@ -1,22 +1,31 @@
 import React, { useState } from 'react';
-import { Mail, Send, Check } from 'lucide-react';
+import { Mail, Send, Check, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
+import { z } from 'zod';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+
+const formSchema = z.object({
+  name: z.string().optional(),
+  email: z.string().email('Invalid email address'),
+});
+
+type FormData = z.infer<typeof formSchema>;
 
 export function Newsletter() {
-  const [email, setEmail] = useState('');
-  const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
   const [subscribed, setSubscribed] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!email) {
-      toast.error('Please enter your email address');
-      return;
+  const { register, handleSubmit, reset, formState: { errors } } = useForm<FormData>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      name: '',
+      email: '',
     }
+  });
 
+  const onSubmit = async (data: FormData) => {
     setLoading(true);
 
     try {
@@ -28,20 +37,19 @@ export function Newsletter() {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${publicAnonKey}`,
           },
-          body: JSON.stringify({ email, name }),
+          body: JSON.stringify(data),
         }
       );
 
-      const data = await response.json();
+      const resData = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to subscribe');
+        throw new Error(resData.error || 'Failed to subscribe');
       }
 
       toast.success('Successfully subscribed to our newsletter! 🎉');
       setSubscribed(true);
-      setEmail('');
-      setName('');
+      reset();
 
       // Reset after 5 seconds
       setTimeout(() => setSubscribed(false), 5000);
@@ -68,24 +76,27 @@ export function Newsletter() {
           </p>
 
           {!subscribed ? (
-            <form onSubmit={handleSubmit} className="max-w-2xl mx-auto">
+            <form onSubmit={handleSubmit(onSubmit)} className="max-w-2xl mx-auto">
               <div className="bg-white rounded-2xl p-6 shadow-xl">
                 <div className="grid md:grid-cols-2 gap-4 mb-4">
-                  <input
-                    type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="Your Name (optional)"
-                    className="px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  />
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="Your Email *"
-                    required
-                    className="px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  />
+                  <div>
+                    <input
+                      type="text"
+                      {...register('name')}
+                      placeholder="Your Name (optional)"
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    />
+                    {errors.name && <p className="text-red-500 text-xs mt-1 text-left flex items-center"><AlertCircle size={12} className="mr-1"/>{errors.name.message}</p>}
+                  </div>
+                  <div>
+                    <input
+                      type="email"
+                      {...register('email')}
+                      placeholder="Your Email *"
+                      className={`w-full px-4 py-3 border-2 ${errors.email ? 'border-red-300' : 'border-gray-200'} rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500`}
+                    />
+                    {errors.email && <p className="text-red-500 text-xs mt-1 text-left flex items-center"><AlertCircle size={12} className="mr-1"/>{errors.email.message}</p>}
+                  </div>
                 </div>
                 <button
                   type="submit"

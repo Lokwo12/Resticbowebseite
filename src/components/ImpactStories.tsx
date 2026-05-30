@@ -78,7 +78,7 @@ export function ImpactStories() {
 
   if (loading) {
     return (
-      <section id="impact" className="py-16 bg-white">
+      <section id="impact" className="section-spacing-lg bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <div className="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto" />
@@ -89,7 +89,7 @@ export function ImpactStories() {
   }
 
   return (
-    <section id="impact" className="py-16 bg-white">
+    <section id="impact" className="section-spacing-lg bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="text-center mb-12">
@@ -111,7 +111,7 @@ export function ImpactStories() {
                 onClick={() => setSelectedCategory(category)}
                 className={`px-6 py-2 rounded-full transition-all ${
                   selectedCategory === category
-                    ? 'bg-emerald-600 text-white shadow-lg'
+                    ? 'bg-emerald-600 text-white shadow-premium-soft hover:shadow-2xl transition-all duration-300'
                     : 'bg-gray-100 text-gray-700 hover:bg-emerald-50 border border-gray-200'
                 }`}
               >
@@ -125,7 +125,7 @@ export function ImpactStories() {
         {filteredStories.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {filteredStories.map((story) => (
-              <Card key={story.id} className="overflow-hidden hover:shadow-xl transition-shadow duration-300 group flex flex-col">
+              <Card key={story.id} className="overflow-hidden hover:shadow-premium-soft hover:shadow-2xl transition-all duration-300 transition-shadow duration-300 group flex flex-col">
                 {/* Uniform image area */}
                 <div className="relative h-52 overflow-hidden bg-slate-50 border-b border-slate-100 flex-shrink-0 flex items-center justify-center">
                   {story.image ? (
@@ -186,7 +186,7 @@ export function ImpactStories() {
         {/* View All Stories Button */}
         <div className="text-center mt-12">
           <Link to="/stories">
-            <button className="bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-3 rounded-lg transition-all duration-300 shadow-md hover:shadow-xl inline-flex items-center gap-2">
+            <button className="bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-3 rounded-lg transition-all duration-300 shadow-premium-soft transition-all duration-300 hover:shadow-premium-soft hover:shadow-2xl transition-all duration-300 inline-flex items-center gap-2">
               <span>View All Stories</span>
               <Heart size={20} />
             </button>

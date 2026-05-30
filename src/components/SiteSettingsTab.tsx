@@ -32,7 +32,7 @@ export function SiteSettingsTab({ settings: initialSettings, onUpdate }: SiteSet
       formDataObj.append('file', file);
       const response = await fetch(
         `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/upload-image`,
-        { method: 'POST', headers: { Authorization: `Bearer ${publicAnonKey}` }, body: formDataObj }
+        { method: 'POST', headers: { Authorization: `Bearer ${accessToken || publicAnonKey}` }, body: formDataObj }
       );
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Upload failed');
@@ -55,7 +55,7 @@ export function SiteSettingsTab({ settings: initialSettings, onUpdate }: SiteSet
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${publicAnonKey}`,
+            Authorization: `Bearer ${accessToken || publicAnonKey}`,
           },
           body: JSON.stringify({ settings }),
         }
@@ -84,7 +84,7 @@ export function SiteSettingsTab({ settings: initialSettings, onUpdate }: SiteSet
         {
           method: 'POST',
           headers: {
-            Authorization: `Bearer ${publicAnonKey}`,
+            Authorization: `Bearer ${accessToken || publicAnonKey}`,
           },
         }
       );

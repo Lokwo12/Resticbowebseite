@@ -13,6 +13,7 @@ interface FormDialogProps {
   editingItem: any | null;
   onSuccess: () => void;
   userRole: string;
+  accessToken?: string;
 }
 
 interface PageFormData {
@@ -31,7 +32,7 @@ function slugify(text: string): string {
     .replace(/^-+|-+$/g, '');
 }
 
-export function PageFormDialog({ show, onClose, editingItem, onSuccess, userRole }: FormDialogProps) {
+export function PageFormDialog({ show, onClose, editingItem, onSuccess, userRole, accessToken }: FormDialogProps) {
   const [loading, setLoading] = useState(false);
   const [autoSlug, setAutoSlug] = useState(true);
   const [formData, setFormData] = useState<PageFormData>({
@@ -91,7 +92,7 @@ export function PageFormDialog({ show, onClose, editingItem, onSuccess, userRole
         method: id ? 'PUT' : 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${publicAnonKey}`,
+          Authorization: `Bearer ${accessToken || publicAnonKey}`,
         },
         body: JSON.stringify({
           title: formData.title.trim(),

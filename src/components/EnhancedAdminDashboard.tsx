@@ -137,7 +137,7 @@ export function EnhancedAdminDashboard() {
   const [userRole, setUserRole] = useState('');
   const [userName, setUserName] = useState('');
   const [userEmail, setUserEmail] = useState('');
-  const [stats, setStats] = useState<any>(null);
+  const [stats, setStats] = useState<any>({ programs: 0, news: 0, volunteers: 0, totalDonations: 0 });
   const [activeTab, setActiveTab] = useState('overview');
   const [analytics, setAnalytics] = useState<Analytics | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -780,8 +780,10 @@ export function EnhancedAdminDashboard() {
         const statsData = await statsRes.json();
         const analyticsData = await analyticsRes.json();
         
-        setStats(statsData.stats);
-        setAnalytics(analyticsData);
+        if (statsData?.stats) {
+          setStats(prev => ({ ...prev, ...statsData.stats }));
+        }
+        if (analyticsData) setAnalytics(analyticsData);
       } else if (activeTab === 'programs') {
         const response = await fetch(
           `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/programs`,
@@ -1714,17 +1716,17 @@ export function EnhancedAdminDashboard() {
 
   // Filter functions
   const getFilteredContacts = () => {
-    if (contactFilter === 'all') return contacts;
-    return contacts.filter(c => c.value?.status === contactFilter);
+    if (contactFilter === 'all') return contacts || [];
+    return (contacts || []).filter(c => c.value?.status === contactFilter);
   };
 
   const getFilteredVolunteers = () => {
-    if (volunteerFilter === 'all') return volunteers;
-    return volunteers.filter(v => v.value?.status === volunteerFilter);
+    if (volunteerFilter === 'all') return volunteers || [];
+    return (volunteers || []).filter(v => v.value?.status === volunteerFilter);
   };
 
   const getFilteredUsers = () => {
-    let filtered = adminUsers;
+    let filtered = adminUsers || [];
 
     // Filter by status
     if (userFilter !== 'all') {
@@ -1996,7 +1998,7 @@ export function EnhancedAdminDashboard() {
                         type={showPassword ? "text" : "password"}
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        placeholder="••••••••"
+                        placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
                         required
                         className="w-full pl-12 pr-12 py-3 bg-slate-50/50 border border-slate-200/80 rounded-xl focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all duration-300 placeholder:text-slate-400 font-semibold text-slate-700 text-sm focus:bg-white"
                       />
@@ -2449,7 +2451,7 @@ export function EnhancedAdminDashboard() {
           {/* Content */}
           <div className="p-6 lg:p-8">
           <div className="space-y-6">
-            {activeTab === 'overview' && stats && (
+            {activeTab === 'overview' && (
               <div className="space-y-6">
                 {/* Stats Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
@@ -2460,7 +2462,7 @@ export function EnhancedAdminDashboard() {
                       </div>
                       <span className="text-xs font-semibold text-white bg-white/20 border border-white/30 rounded-lg px-2.5 py-1">Active</span>
                     </div>
-                    <p className="text-3xl font-bold text-white mb-1">{stats.programs}</p>
+                    <p className="text-3xl font-bold text-white mb-1">{stats?.programs ?? 0}</p>
                     <p className="text-sm font-medium text-blue-100">Total Programs</p>
                     <div className="mt-4 pt-4 border-t border-white/20 flex items-center gap-1.5 text-xs text-blue-200 font-medium">
                       <TrendingUp size={12} />
@@ -2475,7 +2477,7 @@ export function EnhancedAdminDashboard() {
                       </div>
                       <span className="text-xs font-semibold text-white bg-white/20 border border-white/30 rounded-lg px-2.5 py-1">Published</span>
                     </div>
-                    <p className="text-3xl font-bold text-white mb-1">{stats.news}</p>
+                    <p className="text-3xl font-bold text-white mb-1">{stats?.news ?? 0}</p>
                     <p className="text-sm font-medium text-violet-100">News Articles</p>
                     <div className="mt-4 pt-4 border-t border-white/20 flex items-center gap-1.5 text-xs text-violet-200 font-medium">
                       <TrendingUp size={12} />
@@ -2490,7 +2492,7 @@ export function EnhancedAdminDashboard() {
                       </div>
                       <span className="text-xs font-semibold text-white bg-white/20 border border-white/30 rounded-lg px-2.5 py-1">Registered</span>
                     </div>
-                    <p className="text-3xl font-bold text-white mb-1">{stats.volunteers}</p>
+                    <p className="text-3xl font-bold text-white mb-1">{stats?.volunteers ?? 0}</p>
                     <p className="text-sm font-medium text-rose-100">Volunteers</p>
                     <div className="mt-4 pt-4 border-t border-white/20 flex items-center gap-1.5 text-xs text-rose-200 font-medium">
                       <TrendingUp size={12} />
@@ -2505,7 +2507,7 @@ export function EnhancedAdminDashboard() {
                       </div>
                       <span className="text-xs font-semibold text-white bg-white/20 border border-white/30 rounded-lg px-2.5 py-1">Raised</span>
                     </div>
-                    <p className="text-3xl font-bold text-white mb-1">${stats.totalDonations}</p>
+                    <p className="text-3xl font-bold text-white mb-1">${stats?.totalDonations ?? 0}</p>
                     <p className="text-sm font-medium text-emerald-100">Total Donations</p>
                     <div className="mt-4 pt-4 border-t border-white/20 flex items-center gap-1.5 text-xs text-emerald-200 font-medium">
                       <TrendingUp size={12} />
@@ -2566,7 +2568,7 @@ export function EnhancedAdminDashboard() {
                             fill="#8884d8"
                             dataKey="value"
                           >
-                            {analytics.contactStatusData.map((entry, index) => (
+                            {(analytics?.contactStatusData || []).map((entry, index) => (
                               <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                             ))}
                           </Pie>
@@ -2738,7 +2740,7 @@ export function EnhancedAdminDashboard() {
                       <h4 className="text-sm font-bold text-slate-800 mb-1">Database Health Check</h4>
                       <p className="text-xs text-gray-400 leading-normal">Ping Supabase, inspect response times, and count all active table entries.</p>
                       <span className="text-[10px] font-bold text-emerald-600 mt-3 group-hover:translate-x-1 transition-transform inline-flex items-center gap-1">
-                        {diagnosing ? "Running check..." : "Run Diagnostics →"}
+                        {diagnosing ? "Running check..." : "Run Diagnostics â†’"}
                       </span>
                     </button>
 
@@ -2754,7 +2756,7 @@ export function EnhancedAdminDashboard() {
                       <h4 className="text-sm font-bold text-slate-800 mb-1">Global CMS Backup</h4>
                       <p className="text-xs text-gray-400 leading-normal">Compile and export all table content into a single downloadable JSON backup file.</p>
                       <span className="text-[10px] font-bold text-blue-600 mt-3 group-hover:translate-x-1 transition-transform inline-flex items-center gap-1">
-                        {exporting ? "Compiling payload..." : "Download Backup →"}
+                        {exporting ? "Compiling payload..." : "Download Backup â†’"}
                       </span>
                     </button>
 
@@ -2769,7 +2771,7 @@ export function EnhancedAdminDashboard() {
                       <h4 className="text-sm font-bold text-slate-800 mb-1">Factory Seed Reset</h4>
                       <p className="text-xs text-gray-400 leading-normal">Emergency operation to re-seed fallback default CMS records to Supabase.</p>
                       <span className="text-[10px] font-bold text-rose-600 mt-3 group-hover:translate-x-1 transition-transform inline-flex items-center gap-1">
-                        Restore Factory Defaults →
+                        Restore Factory Defaults â†’
                       </span>
                     </button>
                   </div>
@@ -2852,7 +2854,7 @@ export function EnhancedAdminDashboard() {
 
                 {/* Cards grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
-                  {programs.map((program) => (
+                  {(programs || []).map((program) => (
                     <div
                       key={program.key}
                       className="bg-white border border-gray-200 border-l-4 border-l-blue-500 rounded-2xl hover:shadow-xl hover:-translate-y-1 hover:border-blue-300 transition-all duration-300 shadow-sm cursor-pointer group flex flex-col overflow-hidden"
@@ -2959,7 +2961,7 @@ export function EnhancedAdminDashboard() {
                 )}
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
-                  {news.map((item) => (
+                  {(news || []).map((item) => (
                     <div key={item.key} className="bg-white border border-gray-200 border-l-4 border-l-violet-500 relative rounded-2xl p-6 md:p-7 hover:shadow-xl hover:-translate-y-1 hover:border-violet-300 transition-all duration-300 shadow-sm cursor-pointer group flex flex-col" onClick={() => {
                               setEditingItem(item);
                               setFormData(item.value);
@@ -3080,7 +3082,7 @@ export function EnhancedAdminDashboard() {
 
                 {/* Image grid */}
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                  {gallery.map((item) => (
+                  {(gallery || []).map((item) => (
                     <div
                       key={item.key}
                       className="bg-white border border-gray-200 border-l-4 border-l-amber-400 rounded-xl hover:shadow-md hover:-translate-y-0.5 hover:border-amber-300 transition-all duration-300 shadow-sm cursor-pointer group flex flex-col overflow-hidden"
@@ -3163,7 +3165,7 @@ export function EnhancedAdminDashboard() {
 
                 {/* Cards grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
-                  {team.map((member) => (
+                  {(team || []).map((member) => (
                     <div
                       key={member.id}
                       className="bg-white border border-gray-200 border-l-4 border-l-teal-500 rounded-2xl p-6 hover:shadow-xl hover:-translate-y-1 hover:border-teal-300 transition-all duration-300 shadow-sm cursor-pointer group flex flex-col"
@@ -3562,7 +3564,7 @@ export function EnhancedAdminDashboard() {
                       </p>
                     </div>
                     <button
-                      onClick={() => exportToCSV(donations.map(d => d.value), 'donations.csv')}
+                      onClick={() => exportToCSV((donations || []).map(d => d.value), 'donations.csv')}
                       className="flex items-center gap-1.5 px-3 py-2 bg-white/20 hover:bg-white/30 border border-white/30 rounded-lg text-sm text-white font-medium transition-colors"
                     >
                       <Download size={14} />
@@ -3596,7 +3598,7 @@ export function EnhancedAdminDashboard() {
                 })()}
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
-                  {donations.map((donation) => (
+                  {(donations || []).map((donation) => (
                     <div key={donation.key} className="bg-white border border-gray-200 relative border-t-4 border-l-0 overflow-hidden border-l-emerald-500 rounded-2xl p-6 md:p-7 hover:shadow-xl hover:-translate-y-2 hover:shadow-2xl hover:border-emerald-300 transition-all duration-300 shadow-sm">
                       <div className="flex items-center justify-between">
                         <div className="flex-1">
@@ -3644,7 +3646,7 @@ export function EnhancedAdminDashboard() {
                     </div>
                   </div>
                   <button
-                    onClick={() => exportToCSV(subscribers.map(s => s.value), 'subscribers.csv')}
+                    onClick={() => exportToCSV((subscribers || []).map(s => s.value), 'subscribers.csv')}
                     className="flex items-center gap-1.5 px-4 py-2 bg-white/20 hover:bg-white/30 border border-white/30 rounded-xl text-sm text-white font-semibold transition-colors whitespace-nowrap flex-shrink-0"
                   >
                     <Download size={16} />
@@ -3679,8 +3681,8 @@ export function EnhancedAdminDashboard() {
                     <div>
                       <p className="text-2xl font-bold text-violet-700">
                         {subscribers.length > 0
-                          ? new Date(Math.max(...subscribers.map(s => new Date(s.value.created_at || 0).getTime()))).toLocaleDateString()
-                          : '—'}
+                          ? new Date(Math.max(...(subscribers || []).map(s => new Date(s.value.created_at || 0).getTime()))).toLocaleDateString()
+                          : 'â€”'}
                       </p>
                       <p className="text-xs text-violet-500 font-medium">Latest Signup</p>
                     </div>
@@ -3703,7 +3705,7 @@ export function EnhancedAdminDashboard() {
                       <label className="block text-xs font-medium text-slate-600 mb-1">Subject Line *</label>
                       <input
                         type="text"
-                        placeholder="e.g. Monthly Update — May 2026"
+                        placeholder="e.g. Monthly Update â€” May 2026"
                         value={newsletterSubject}
                         onChange={e => setNewsletterSubject(e.target.value)}
                         className="w-full px-4 py-2.5 text-sm bg-white border border-indigo-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-300 transition-all"
@@ -3952,7 +3954,7 @@ export function EnhancedAdminDashboard() {
                       onChange={(e) => { if (e.target.value) { handleBulkUpdateUserRole(selectedUsers, e.target.value); e.target.value = ''; } }}
                       className="px-3 py-2 border border-slate-200 rounded-lg text-xs text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-slate-300"
                     >
-                      <option value="">Change Role…</option>
+                      <option value="">Change Roleâ€¦</option>
                       <option value="super-admin">Super Admin</option>
                       <option value="admin">Admin</option>
                       <option value="editor">Editor</option>
@@ -3962,7 +3964,7 @@ export function EnhancedAdminDashboard() {
                       onChange={(e) => { if (e.target.value) { handleBulkUpdateUserStatus(selectedUsers, e.target.value); e.target.value = ''; } }}
                       className="px-3 py-2 border border-slate-200 rounded-lg text-xs text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-slate-300"
                     >
-                      <option value="">Change Status…</option>
+                      <option value="">Change Statusâ€¦</option>
                       <option value="active">Active</option>
                       <option value="pending">Pending</option>
                       <option value="inactive">Inactive</option>
@@ -3980,7 +3982,7 @@ export function EnhancedAdminDashboard() {
 
                 {/* User cards grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
-                  {getFilteredUsers().map((user) => (
+                  {(getFilteredUsers() || []).map((user) => (
                     <div
                       key={user.key}
                       className="bg-white border border-gray-200 border-l-4 border-l-slate-400 rounded-2xl p-6 hover:shadow-xl hover:-translate-y-1 hover:border-slate-300 transition-all duration-300 shadow-sm cursor-pointer group flex flex-col"
@@ -4117,7 +4119,7 @@ export function EnhancedAdminDashboard() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
-                  {stories.map((story) => (
+                  {(stories || []).map((story) => (
                     <div key={story.id} className="bg-white border border-gray-200 relative border-t-4 border-l-0 overflow-hidden border-l-orange-500 rounded-2xl p-6 md:p-7 hover:shadow-xl hover:-translate-y-2 hover:shadow-2xl hover:border-orange-300 transition-all duration-300 shadow-sm cursor-pointer group" onClick={() => {
                               setEditingItem(story);
                               setShowStoryForm(true);
@@ -4265,7 +4267,7 @@ export function EnhancedAdminDashboard() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
-                  {reports.map((report) => (
+                  {(reports || []).map((report) => (
                     <div key={report.id} className="bg-white border border-gray-200 border-l-4 border-l-slate-500 relative rounded-2xl p-6 md:p-7 hover:shadow-xl hover:-translate-y-1 hover:border-slate-400 transition-all duration-300 shadow-sm cursor-pointer group flex flex-col" onClick={() => {
                       setEditingItem(report);
                       setShowReportForm(true);
@@ -4353,7 +4355,7 @@ export function EnhancedAdminDashboard() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
-                  {events.map((event) => (
+                  {(events || []).map((event) => (
                     <div key={event.id} className="bg-white border border-gray-200 border-l-4 border-l-indigo-500 relative rounded-2xl p-6 md:p-7 hover:shadow-xl hover:-translate-y-1 hover:border-indigo-300 transition-all duration-300 shadow-sm cursor-pointer group flex flex-col" onClick={() => {
                               setEditingItem(event);
                               setShowEventForm(true);
@@ -4377,8 +4379,8 @@ export function EnhancedAdminDashboard() {
                           <p className="text-sm text-slate-600 mb-2">{event.description}</p>
                           <div className="flex flex-wrap items-center gap-2">
                             <span className="flex items-center gap-1 text-xs text-gray-500 bg-gray-50 border border-gray-200 rounded-lg px-2 py-1"><Calendar size={11} /> {event.date}</span>
-                            <span className="text-xs text-gray-500 bg-gray-50 border border-gray-200 rounded-lg px-2 py-1">🕐 {event.time}</span>
-                            <span className="text-xs text-gray-500 bg-gray-50 border border-gray-200 rounded-lg px-2 py-1">📍 {event.location}</span>
+                            <span className="text-xs text-gray-500 bg-gray-50 border border-gray-200 rounded-lg px-2 py-1">ðŸ• {event.time}</span>
+                            <span className="text-xs text-gray-500 bg-gray-50 border border-gray-200 rounded-lg px-2 py-1">ðŸ“ {event.location}</span>
                             <span className="flex items-center gap-1 text-xs text-gray-500 bg-gray-50 border border-gray-200 rounded-lg px-2 py-1"><Users size={11} /> {event.capacity}</span>
                           </div>
                         </div>
@@ -4443,7 +4445,7 @@ export function EnhancedAdminDashboard() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
-                  {partners.map((partner) => (
+                  {(partners || []).map((partner) => (
                     <div key={partner.id} className="bg-white border border-gray-200 border-l-4 border-l-amber-500 relative rounded-2xl p-6 md:p-7 hover:shadow-xl hover:-translate-y-1 hover:border-amber-400 transition-all duration-300 shadow-sm cursor-pointer group flex flex-col" onClick={() => {
                       setEditingItem(partner);
                       setShowPartnerForm(true);
@@ -4520,7 +4522,7 @@ export function EnhancedAdminDashboard() {
 
                 {/* Cards grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
-                  {opportunities.map((opp) => (
+                  {(opportunities || []).map((opp) => (
                     <div
                       key={opp.id}
                       className="bg-white border border-gray-200 border-l-4 border-l-purple-500 rounded-2xl p-6 hover:shadow-xl hover:-translate-y-1 hover:border-purple-300 transition-all duration-300 shadow-sm cursor-pointer group flex flex-col"
@@ -4644,7 +4646,7 @@ export function EnhancedAdminDashboard() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
-                  {faqs.map((faq) => (
+                  {(faqs || []).map((faq) => (
                     <div key={faq.id} className="bg-white border border-gray-200 border-l-4 border-l-cyan-500 relative rounded-2xl p-6 md:p-7 hover:shadow-xl hover:-translate-y-1 hover:border-cyan-300 transition-all duration-300 shadow-sm cursor-pointer group flex flex-col" onClick={() => {
                               setEditingItem(faq);
                               setShowFAQForm(true);
@@ -4718,7 +4720,7 @@ export function EnhancedAdminDashboard() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
-                  {resources.map((resource) => (
+                  {(resources || []).map((resource) => (
                     <div key={resource.id} className="bg-white border border-gray-200 border-l-4 border-l-green-500 rounded-2xl p-6 md:p-7 hover:shadow-xl hover:-translate-y-1 hover:border-green-300 transition-all duration-300 shadow-sm cursor-pointer group flex flex-col" onClick={() => {
                               setEditingItem(resource);
                               setShowResourceForm(true);
@@ -4809,7 +4811,7 @@ export function EnhancedAdminDashboard() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-50">
-                      {pages.map(page => (
+                      {(pages || []).map(page => (
                         <tr key={page.id} className="hover:bg-slate-50/60 transition-colors">
                           <td className="px-6 py-4 font-medium text-slate-800">{page.title}</td>
                           <td className="px-6 py-4">
@@ -4910,7 +4912,7 @@ export function EnhancedAdminDashboard() {
                       <p className="text-xs text-gray-400 mt-1">Actions will appear here as you use the dashboard</p>
                     </div>
                   ) : (
-                    activityLog.map(entry => (
+                    (activityLog || []).map(entry => (
                       <div key={entry.id} className="flex items-start gap-4 px-6 py-3 hover:bg-gray-50/50 transition-colors">
                         <span className={`mt-0.5 text-xs font-semibold px-2 py-0.5 rounded-full uppercase tracking-wide whitespace-nowrap ${
                           entry.action === 'deleted' ? 'bg-red-100 text-red-600' :
@@ -4920,7 +4922,7 @@ export function EnhancedAdminDashboard() {
                         }`}>{entry.action}</span>
                         <div className="flex-1 min-w-0">
                           <p className="text-xs font-medium text-slate-700 truncate">{entry.description}</p>
-                          <p className="text-xs text-gray-400 mt-0.5">{entry.section} · {entry.user} · {new Date(entry.timestamp).toLocaleString()}</p>
+                          <p className="text-xs text-gray-400 mt-0.5">{entry.section} Â· {entry.user} Â· {new Date(entry.timestamp).toLocaleString()}</p>
                         </div>
                       </div>
                     ))
@@ -5493,7 +5495,7 @@ export function EnhancedAdminDashboard() {
               </p>
 
             <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex gap-3 mt-4">
-              <div className="text-amber-600 text-sm font-semibold shrink-0">⚠️ Warning</div>
+              <div className="text-amber-600 text-sm font-semibold shrink-0">âš ï¸ Warning</div>
               <p className="text-xs text-amber-800 leading-normal">
                 This will reset all main dashboard pages to their initial mock data. Make sure you have downloaded a **Global CMS Backup** before proceeding.
               </p>

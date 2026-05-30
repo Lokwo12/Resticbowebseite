@@ -4,7 +4,7 @@ import React, {
 } from 'react';
 import { PayPalScriptProvider, PayPalButtons } from '@paypal/react-paypal-js';
 import { loadStripe } from '@stripe/stripe-js';
-import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
+import { Elements, CardNumberElement, CardExpiryElement, CardCvcElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import {
   X, Heart, Lock, Copy, CheckCircle, ChevronRight,
   Phone, CreditCard, Info, Building2,
@@ -154,7 +154,7 @@ function StripeCardForm({ donorData, setDonorData, finalAmount, freq, setDone, s
         toast.error(data.error || 'Could not initialise payment. Please try again.');
         return;
       }
-      const cardEl = elements.getElement(CardElement);
+      const cardEl = elements.getElement(CardNumberElement);
       const { error, paymentIntent } = await stripe.confirmCardPayment(data.clientSecret, {
         payment_method: {
           card: cardEl!,
@@ -212,27 +212,29 @@ function StripeCardForm({ donorData, setDonorData, finalAmount, freq, setDone, s
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1.5">
             <label className={lbl}>First Name</label>
-            <input required className={inp} placeholder="John"
+            <input required className={inp} style={{ height: 52 }} placeholder="John"
               value={donorData.firstName} onChange={e => setDonorData(p => ({ ...p, firstName: e.target.value }))} />
           </div>
           <div className="space-y-1.5">
             <label className={lbl}>Last Name</label>
-            <input required className={inp} placeholder="Smith"
+            <input required className={inp} style={{ height: 52 }} placeholder="Smith"
               value={donorData.lastName} onChange={e => setDonorData(p => ({ ...p, lastName: e.target.value }))} />
           </div>
         </div>
 
         <div className="space-y-1.5">
           <label className={lbl}>Email Address</label>
-          <input required type="email" className={inp} placeholder="you@example.com"
+          <input required type="email" className={inp} style={{ height: 52 }} placeholder="you@example.com"
             value={donorData.email} onChange={e => setDonorData(p => ({ ...p, email: e.target.value }))} />
         </div>
 
         <div className="space-y-1.5">
-          <label className={lbl}>Card Number · Expiry · CVC</label>
-          <div className="w-full border border-gray-200 rounded-xl px-4 py-3 bg-white focus-within:border-emerald-400 focus-within:ring-2 focus-within:ring-emerald-50 transition-all">
-            <CardElement
+          <label className={lbl}>Card Number</label>
+          <div className="w-full border border-gray-200 rounded-xl px-4 bg-white focus-within:border-emerald-400 focus-within:ring-2 focus-within:ring-emerald-50 transition-all flex items-center" style={{ height: 52 }}>
+            <CardNumberElement
+              className="w-full"
               options={{
+                placeholder: '0000 0000 0000 0000',
                 style: {
                   base: {
                     fontSize: '14px',
@@ -242,9 +244,52 @@ function StripeCardForm({ donorData, setDonorData, finalAmount, freq, setDone, s
                   },
                   invalid: { color: '#ef4444', iconColor: '#ef4444' },
                 },
-                hidePostalCode: true,
+                showIcon: true,
               }}
             />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1.5">
+            <label className={lbl}>Expiry Date</label>
+            <div className="w-full border border-gray-200 rounded-xl px-4 bg-white focus-within:border-emerald-400 focus-within:ring-2 focus-within:ring-emerald-50 transition-all flex items-center" style={{ height: 52 }}>
+              <CardExpiryElement
+                className="w-full"
+                options={{
+                  placeholder: 'MM / YY',
+                  style: {
+                    base: {
+                      fontSize: '14px',
+                      color: '#374151',
+                      fontFamily: 'Arial, Helvetica, sans-serif',
+                      '::placeholder': { color: '#9ca3af' },
+                    },
+                    invalid: { color: '#ef4444', iconColor: '#ef4444' },
+                  },
+                }}
+              />
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <label className={lbl}>CVC</label>
+            <div className="w-full border border-gray-200 rounded-xl px-4 bg-white focus-within:border-emerald-400 focus-within:ring-2 focus-within:ring-emerald-50 transition-all flex items-center" style={{ height: 52 }}>
+              <CardCvcElement
+                className="w-full"
+                options={{
+                  placeholder: 'CVC',
+                  style: {
+                    base: {
+                      fontSize: '14px',
+                      color: '#374151',
+                      fontFamily: 'Arial, Helvetica, sans-serif',
+                      '::placeholder': { color: '#9ca3af' },
+                    },
+                    invalid: { color: '#ef4444', iconColor: '#ef4444' },
+                  },
+                }}
+              />
+            </div>
           </div>
         </div>
 
@@ -258,7 +303,8 @@ function StripeCardForm({ donorData, setDonorData, finalAmount, freq, setDone, s
         <button
           type="submit"
           disabled={submitting || finalAmount < 1 || !stripe}
-          className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3.5 rounded-xl text-sm shadow-md shadow-emerald-100 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl text-sm shadow-lg shadow-emerald-200/50 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 hover:shadow-xl hover:scale-[1.01] active:scale-[0.99]"
+          style={{ height: 52 }}
         >
           {submitting
             ? <><span className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" /> Processing…</>
@@ -481,15 +527,17 @@ export function DonationModal() {
     }
   };
 
-  const inp = 'w-full border border-gray-200 rounded-xl px-4 py-3.5 text-sm font-normal outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-50 transition-all placeholder:text-gray-400 bg-white text-gray-800';
-  const lbl = 'block text-xs font-semibold text-gray-700 mb-1.5 tracking-wide';
+  const inp = 'w-full border border-gray-200 rounded-xl px-4 text-sm font-normal outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-50 transition-all placeholder:text-gray-400 bg-white text-gray-800';
+  const inpStyle = { height: 52 };
+  const btnStyle = { height: 52 };
+  const lbl = 'block text-xs font-semibold text-gray-600 mb-1.5 tracking-wide uppercase';
 
   if (!isOpen) return null;
 
   // ── RENDER ──────────────────────────────────────────────────────────────────
   return (
     <div
-      className="fixed inset-0 z-[300] flex items-center justify-center overflow-y-auto overflow-x-hidden p-4"
+      className="fixed inset-0 z-[300] flex items-center justify-center overflow-hidden p-4"
       role="dialog"
       aria-modal="true"
       aria-label="Donation dialog"
@@ -522,23 +570,42 @@ export function DonationModal() {
 
 
 
-      {/* Dialog panel — Strict 9:16 portrait ratio (450x800) */}
-      <div
-        className="elegant-modal relative rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-gray-200"
-        style={{
-          width: 'min(95vw, calc(95vh * 9 / 16), 520px)',
-          aspectRatio: '9 / 16',
-          fontFamily: 'Arial, Helvetica, sans-serif',
-          fontWeight: 400,
-          fontSize: '10px',
-        }}
-      >
+      {/* Premium Desktop Split-Screen Modal */}
+      <div className="elegant-modal relative rounded-3xl shadow-premium-soft flex flex-col md:flex-row overflow-hidden border border-slate-100 bg-white w-[95vw] max-w-5xl" style={{ height: 'min(90vh, 680px)' }}>
+        
+        {/* Left Side: Impact Image (Hidden on mobile) */}
+        <div className="hidden md:flex md:w-5/12 relative bg-[#0A192F] overflow-hidden flex-col justify-between p-10">
+          {/* Background image with overlay */}
+          <div className="absolute inset-0 z-0">
+            <img 
+              src="https://images.unsplash.com/photo-1641569707854-c80945fb4719?w=800&q=80" 
+              alt="Community impact" 
+              className="w-full h-full object-cover opacity-30 mix-blend-overlay"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#0A192F] via-[#0A192F]/80 to-transparent"></div>
+          </div>
+          
+          <div className="relative z-10">
+            {/* Elegant clean logo, no borders */}
+            <img src={logoUrl} alt="Logo" className="h-14 w-auto max-w-[140px] object-contain drop-shadow-md brightness-0 invert" onError={(e) => { e.currentTarget.src = '/logo.png'; }} />
+          </div>
+          
+          <div className="relative z-10 space-y-4">
+            <h3 className="text-3xl font-heading font-bold text-white leading-tight drop-shadow-md">Your support transforms lives.</h3>
+            <p className="text-emerald-100/90 text-sm font-medium leading-relaxed">
+              90% of your gift goes directly to community programs in Kiryandongo District, funding education, healthcare, and sustainable agriculture.
+            </p>
+          </div>
+        </div>
+
+        {/* Right Side: Form Content */}
+        <div className="w-full md:w-7/12 flex flex-col relative bg-white" style={{ height: '100%', overflow: 'hidden' }}>
 
 
 
         {/* ── HEADER ───────────────────────────────────────────── */}
          <div
-          className="shrink-0 px-6 pt-10 pb-8 flex flex-col items-center relative overflow-hidden bg-white border-b border-gray-100"
+          className="shrink-0 px-6 pt-8 pb-6 flex flex-col items-center relative overflow-hidden bg-white border-b border-slate-100"
         >
           {/* Subtle background pattern/glow */}
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-500"></div>
@@ -554,19 +621,11 @@ export function DonationModal() {
           </button>
 
           <div className="flex flex-col items-center gap-4 text-center">
-            <div className="relative">
-              <div className="absolute inset-0 bg-emerald-500/10 rounded-full scale-150"></div>
-              <img 
-                src={logoUrl} 
-                alt="Company Logo" 
-                className="h-16 w-16 rounded-full object-cover shadow-sm border border-emerald-500/20 relative z-10"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src = '/logo.png';
-                }}
-              />
+            <div className="relative md:hidden mb-2">
+              <img src={logoUrl} alt="Company Logo" className="h-14 w-auto max-w-[140px] object-contain drop-shadow-sm relative z-10" onError={(e) => { (e.target as HTMLImageElement).src = '/logo.png'; }} />
             </div>
             <div className="space-y-1">
-              <h2 className="text-base font-bold text-gray-900 tracking-tight">Support Our Mission</h2>
+              <h2 className="font-heading text-xl font-bold text-[#0A192F] tracking-tight">Support Our Mission</h2>
               <p className="text-[10px] text-gray-500 font-medium uppercase tracking-[0.2em] opacity-70">Resti Kiryandongo District</p>
             </div>
           </div>
@@ -830,7 +889,8 @@ export function DonationModal() {
               <button
                 type="button"
                 onClick={() => { if (finalAmount >= 1) setStep(2); else toast.error('Minimum donation is $1'); }}
-                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl py-3 text-sm transition-colors shadow-md shadow-emerald-100 flex items-center justify-center gap-2"
+                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl text-sm transition-all duration-200 shadow-lg shadow-emerald-200/50 flex items-center justify-center gap-2 hover:shadow-xl hover:scale-[1.01] active:scale-[0.99]"
+                style={btnStyle}
               >
                 Continue to Payment <ChevronRight size={15} />
               </button>
@@ -965,7 +1025,8 @@ export function DonationModal() {
                   if (!method) { toast.error('Please select a payment method'); return; }
                   setStep(3);
                 }}
-                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl py-3 text-sm transition-colors shadow-md shadow-emerald-100 flex items-center justify-center gap-2"
+                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl text-sm transition-all duration-200 shadow-lg shadow-emerald-200/50 flex items-center justify-center gap-2 hover:shadow-xl hover:scale-[1.01] active:scale-[0.99]"
+                style={btnStyle}
               >
                 Continue <ChevronRight size={15} />
               </button>
@@ -1028,29 +1089,43 @@ export function DonationModal() {
                       <div className="grid grid-cols-2 gap-3">
                         <div className="space-y-1.5">
                           <label className={lbl}>First Name</label>
-                          <input className={inp} placeholder="John"
+                          <input className={inp} style={inpStyle} placeholder="John"
                             value={donorData.firstName} onChange={e => setDonorData(p => ({ ...p, firstName: e.target.value }))} />
                         </div>
                         <div className="space-y-1.5">
                           <label className={lbl}>Last Name</label>
-                          <input className={inp} placeholder="Smith"
+                          <input className={inp} style={inpStyle} placeholder="Smith"
                             value={donorData.lastName} onChange={e => setDonorData(p => ({ ...p, lastName: e.target.value }))} />
                         </div>
                       </div>
 
                       <div className="space-y-1.5">
                         <label className={lbl}>Email Address</label>
-                        <input type="email" className={inp} placeholder="you@example.com"
+                        <input type="email" className={inp} style={inpStyle} placeholder="you@example.com"
                           value={donorData.email} onChange={e => setDonorData(p => ({ ...p, email: e.target.value }))} />
                       </div>
 
-                      {/* Card field placeholder */}
+                      {/* Card field placeholders */}
                       <div className="space-y-1.5">
-                        <label className={lbl}>Card Number · Expiry · CVC</label>
-                        <div className="w-full border border-amber-200 rounded-xl px-4 py-3 bg-amber-50">
+                        <label className={lbl}>Card Number</label>
+                        <div className="w-full border border-amber-200 rounded-xl px-4 bg-amber-50 flex items-center" style={{ height: 52 }}>
                           <p className="text-xs text-amber-700 font-medium">
                             Add <code className="font-mono bg-amber-100 px-1 py-0.5 rounded">VITE_STRIPE_PUBLISHABLE_KEY</code> to your <code className="font-mono bg-amber-100 px-1 py-0.5 rounded">.env</code> file to enable card input.
                           </p>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1.5">
+                          <label className={lbl}>Expiry Date</label>
+                          <div className="w-full border border-amber-200 rounded-xl px-4 bg-amber-50 flex items-center" style={{ height: 52 }}>
+                            <p className="text-xs text-amber-400">MM / YY</p>
+                          </div>
+                        </div>
+                        <div className="space-y-1.5">
+                          <label className={lbl}>CVC</label>
+                          <div className="w-full border border-amber-200 rounded-xl px-4 bg-amber-50 flex items-center" style={{ height: 52 }}>
+                            <p className="text-xs text-amber-400">CVC</p>
+                          </div>
                         </div>
                       </div>
 
@@ -1064,7 +1139,8 @@ export function DonationModal() {
                       <button
                         type="button"
                         disabled
-                        className="w-full bg-emerald-600 text-white font-semibold py-3 rounded-xl text-sm shadow-md shadow-emerald-100 flex items-center justify-center gap-2 opacity-40 cursor-not-allowed"
+                        className="w-full bg-emerald-600 text-white font-semibold rounded-xl text-sm shadow-lg shadow-emerald-200/50 flex items-center justify-center gap-2 opacity-40 cursor-not-allowed"
+                        style={btnStyle}
                       >
                         <Lock size={14} /> Donate {formatUSD(finalAmount)}
                       </button>
@@ -1281,6 +1357,7 @@ export function DonationModal() {
                               <label className={lbl}>First Name</label>
                               <input
                                 className={inp}
+                                style={inpStyle}
                                 placeholder="First name"
                                 value={donorData.firstName}
                                 onChange={e => setDonorData(d => ({ ...d, firstName: e.target.value }))}
@@ -1291,6 +1368,7 @@ export function DonationModal() {
                               <label className={lbl}>Last Name</label>
                               <input
                                 className={inp}
+                                style={inpStyle}
                                 placeholder="Last name"
                                 value={donorData.lastName}
                                 onChange={e => setDonorData(d => ({ ...d, lastName: e.target.value }))}
@@ -1302,6 +1380,7 @@ export function DonationModal() {
                             <input
                               type="email"
                               className={inp}
+                              style={inpStyle}
                               placeholder="you@example.com"
                               value={donorData.email}
                               onChange={e => setDonorData(d => ({ ...d, email: e.target.value }))}
@@ -1314,6 +1393,7 @@ export function DonationModal() {
                             <input
                               type="tel"
                               className={inp}
+                              style={inpStyle}
                               placeholder={method === 'mtn' ? '256771234567' : '256751234567'}
                               value={donorData.phone}
                               onChange={e => {
@@ -1337,12 +1417,12 @@ export function DonationModal() {
                         <button
                           type="submit"
                           disabled={submitting}
-                          className="w-full font-semibold rounded-xl flex items-center justify-center gap-2 transition-all shadow-md hover:shadow-lg active:scale-[0.98] disabled:opacity-60"
+                          className="w-full font-semibold rounded-xl flex items-center justify-center gap-2 transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-[1.01] active:scale-[0.99] disabled:opacity-60"
                           style={{
                             backgroundColor: method === 'mtn' ? '#FFCC00' : '#e40000',
                             color: method === 'mtn' ? '#1a1a1a' : 'white',
-                            padding: '14px 0',
                             fontSize: '13px',
+                            height: 52,
                           }}
                         >
                           {submitting
@@ -1396,18 +1476,18 @@ export function DonationModal() {
                       <div className="grid grid-cols-2 gap-3">
                         <div className="space-y-1.5">
                           <label className={lbl}>First Name</label>
-                          <input required className={inp} placeholder="John"
+                          <input required className={inp} style={inpStyle} placeholder="John"
                             value={donorData.firstName} onChange={e => setDonorData(p => ({ ...p, firstName: e.target.value }))} />
                         </div>
                         <div className="space-y-1.5">
                           <label className={lbl}>Last Name</label>
-                          <input required className={inp} placeholder="Smith"
+                          <input required className={inp} style={inpStyle} placeholder="Smith"
                             value={donorData.lastName} onChange={e => setDonorData(p => ({ ...p, lastName: e.target.value }))} />
                         </div>
                       </div>
                       <div className="space-y-1.5">
                         <label className={lbl}>Email Address</label>
-                        <input required type="email" className={inp} placeholder="you@example.com"
+                        <input required type="email" className={inp} style={inpStyle} placeholder="you@example.com"
                           value={donorData.email} onChange={e => setDonorData(p => ({ ...p, email: e.target.value }))} />
                       </div>
                     </div>
@@ -1455,7 +1535,8 @@ export function DonationModal() {
                     <button
                       type="submit"
                       disabled={submitting || finalAmount < 1}
-                      className="w-full bg-gray-900 hover:bg-black text-white font-semibold py-4 rounded-xl text-[13px] tracking-wide transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2.5"
+                      className="w-full bg-gray-900 hover:bg-black text-white font-semibold rounded-xl text-[13px] tracking-wide transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2.5 shadow-lg hover:shadow-xl hover:scale-[1.01] active:scale-[0.99]"
+                      style={btnStyle}
                     >
                       {submitting
                         ? <><span className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" /> Processing…</>
@@ -1470,7 +1551,7 @@ export function DonationModal() {
         </div>
 
         {/* ── FOOTER ─────────────────────────────────────────────── */}
-        {!done && (
+        {!done ? (
           <div className="shrink-0 border-t border-gray-100 bg-white px-6 py-4 flex items-center justify-between">
             {finalAmount > 0 && (
               <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-100 rounded-full px-3 py-1.5 shrink-0">
@@ -1490,7 +1571,8 @@ export function DonationModal() {
               )}
             </div>
           </div>
-        )}
+        ) : null}
+        </div>
       </div>
     </div>
   );

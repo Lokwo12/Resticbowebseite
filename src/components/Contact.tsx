@@ -1,9 +1,30 @@
 import React, { useState, useEffect } from 'react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
-import { Mail, Phone, MapPin, Send, Loader2, MessageCircle, Clock, User, Briefcase, Calendar, MessageSquare } from 'lucide-react';
+import { Mail, Phone, MapPin, Send, Loader2, MessageCircle, Clock, User, Briefcase, Calendar, MessageSquare, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { useScrollAnimation, getStaggerDelay } from '../utils/animations';
 import { Card } from './ui/card';
+import { z } from 'zod';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+
+const formSchema = z.object({
+  name: z.string().min(2, 'Name is required'),
+  email: z.string().email('Invalid email address'),
+  phone: z.string().optional().or(z.literal('')),
+  message: z.string().min(10, 'Message must be at least 10 characters'),
+  type: z.enum(['contact', 'volunteer']),
+}).superRefine((data, ctx) => {
+  if (data.type === 'volunteer' && (!data.phone || data.phone.length < 5)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Phone number is required for volunteers',
+      path: ['phone'],
+    });
+  }
+});
+
+type FormData = z.infer<typeof formSchema>;
 
 interface ContactSettings {
   title: string;
@@ -33,14 +54,20 @@ interface ContactSettings {
 export function Contact() {
   const [settings, setSettings] = useState<ContactSettings | null>(null);
   const [loading, setLoading] = useState(true);
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    message: '',
-    type: 'contact', // contact or volunteer
-  });
   const [submitting, setSubmitting] = useState(false);
+
+  const { register, handleSubmit, watch, setValue, reset, formState: { errors } } = useForm<FormData>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      type: 'contact',
+      name: '',
+      email: '',
+      phone: '',
+      message: '',
+    }
+  });
+
+  const formType = watch('type');
 
   useEffect(() => {
     fetchSettings();
@@ -102,25 +129,24 @@ export function Contact() {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const onSubmit = async (data: FormData) => {
     setSubmitting(true);
 
     try {
-      const endpoint = formData.type === 'volunteer' ? 'volunteer' : 'contact';
-      const payload = formData.type === 'volunteer'
+      const endpoint = data.type === 'volunteer' ? 'volunteer' : 'contact';
+      const payload = data.type === 'volunteer'
         ? {
-            name: formData.name,
-            email: formData.email,
-            phone: formData.phone,
+            name: data.name,
+            email: data.email,
+            phone: data.phone,
             skills: '',
-            message: formData.message,
+            message: data.message,
           }
         : {
-            name: formData.name,
-            email: formData.email,
-            phone: formData.phone,
-            message: formData.message,
+            name: data.name,
+            email: data.email,
+            phone: data.phone,
+            message: data.message,
           };
 
       const response = await fetch(
@@ -141,19 +167,12 @@ export function Contact() {
       }
 
       toast.success(
-        formData.type === 'volunteer'
+        data.type === 'volunteer'
           ? 'Volunteer application submitted successfully! We will contact you soon.'
           : 'Message sent successfully! We will get back to you soon.'
       );
 
-      // Reset form
-      setFormData({
-        name: '',
-        email: '',
-        phone: '',
-        message: '',
-        type: 'contact',
-      });
+      reset();
     } catch (err) {
       console.error('Error submitting form:', err);
       toast.error(err instanceof Error ? err.message : 'Failed to submit form. Please try again.');
@@ -303,15 +322,14 @@ export function Contact() {
 
           {/* Contact Form */}
           <div className="bg-white p-8 rounded-2xl shadow-lg">
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Form Type Selection */}
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
               {/* Form Type Selection - Tabbed Style */}
               <div className="bg-gray-100 p-1.5 rounded-xl flex mb-8">
                 <button
                   type="button"
-                  onClick={() => setFormData({ ...formData, type: 'contact' })}
+                  onClick={() => setValue('type', 'contact')}
                   className={`flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all ${
-                    formData.type === 'contact' 
+                    formType === 'contact' 
                       ? 'bg-white text-emerald-600 shadow-sm' 
                       : 'text-gray-500 hover:text-gray-700'
                   }`}
@@ -320,9 +338,9 @@ export function Contact() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setFormData({ ...formData, type: 'volunteer' })}
+                  onClick={() => setValue('type', 'volunteer')}
                   className={`flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all ${
-                    formData.type === 'volunteer' 
+                    formType === 'volunteer' 
                       ? 'bg-white text-emerald-600 shadow-sm' 
                       : 'text-gray-500 hover:text-gray-700'
                   }`}
@@ -335,20 +353,19 @@ export function Contact() {
                 <label htmlFor="name" className="text-xs font-bold text-slate-500 mb-2 ml-1 block uppercase tracking-wider">
                   Full Name <span className="text-emerald-500">*</span>
                 </label>
-                <div className="relative flex items-center group rounded-xl border border-slate-200 bg-slate-50/40 hover:bg-slate-50/80 focus-within:bg-white focus-within:border-emerald-500 focus-within:ring-4 focus-within:ring-emerald-500/10 transition-all duration-300 shadow-sm">
+                <div className={`relative flex items-center group rounded-xl border ${errors.name ? 'border-red-300 bg-red-50/40' : 'border-slate-200 bg-slate-50/40 hover:bg-slate-50/80 focus-within:bg-white focus-within:border-emerald-500'} focus-within:ring-4 focus-within:ring-emerald-500/10 transition-all duration-300 shadow-sm`}>
                   <div className="absolute left-4 text-slate-400 group-focus-within:text-emerald-600 transition-colors duration-300 pointer-events-none">
                     <User size={20} />
                   </div>
                   <input
                     type="text"
                     id="name"
-                    required
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    {...register('name')}
                     className="w-full pl-12 pr-5 py-2.5 bg-transparent outline-none text-slate-800 font-medium placeholder:text-slate-400/70 text-sm"
                     placeholder="Your name"
                   />
                 </div>
+                {errors.name && <p className="text-red-500 text-xs mt-1 flex items-center"><AlertCircle size={12} className="mr-1"/>{errors.name.message}</p>}
               </div>
 
               <div className="grid md:grid-cols-2 gap-6">
@@ -356,55 +373,52 @@ export function Contact() {
                   <label htmlFor="email" className="text-xs font-bold text-slate-500 mb-2 ml-1 block uppercase tracking-wider">
                     Email Address <span className="text-emerald-500">*</span>
                   </label>
-                  <div className="relative flex items-center group rounded-xl border border-slate-200 bg-slate-50/40 hover:bg-slate-50/80 focus-within:bg-white focus-within:border-emerald-500 focus-within:ring-4 focus-within:ring-emerald-500/10 transition-all duration-300 shadow-sm">
+                  <div className={`relative flex items-center group rounded-xl border ${errors.email ? 'border-red-300 bg-red-50/40' : 'border-slate-200 bg-slate-50/40 hover:bg-slate-50/80 focus-within:bg-white focus-within:border-emerald-500'} focus-within:ring-4 focus-within:ring-emerald-500/10 transition-all duration-300 shadow-sm`}>
                     <div className="absolute left-4 text-slate-400 group-focus-within:text-emerald-600 transition-colors duration-300 pointer-events-none">
                       <Mail size={20} />
                     </div>
                     <input
                       type="email"
                       id="email"
-                      required
-                      value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      {...register('email')}
                       className="w-full pl-12 pr-5 py-2.5 bg-transparent outline-none text-slate-800 font-medium placeholder:text-slate-400/70 text-sm"
                       placeholder="your@email.com"
                     />
                   </div>
+                  {errors.email && <p className="text-red-500 text-xs mt-1 flex items-center"><AlertCircle size={12} className="mr-1"/>{errors.email.message}</p>}
                 </div>
 
                 <div>
                   <label htmlFor="phone" className="text-xs font-bold text-slate-500 mb-2 ml-1 block uppercase tracking-wider">
-                    Phone Number {formData.type === 'volunteer' && <span className="text-emerald-500">*</span>}
+                    Phone Number {formType === 'volunteer' && <span className="text-emerald-500">*</span>}
                   </label>
-                  <div className="relative flex items-center group rounded-xl border border-slate-200 bg-slate-50/40 hover:bg-slate-50/80 focus-within:bg-white focus-within:border-emerald-500 focus-within:ring-4 focus-within:ring-emerald-500/10 transition-all duration-300 shadow-sm">
+                  <div className={`relative flex items-center group rounded-xl border ${errors.phone ? 'border-red-300 bg-red-50/40' : 'border-slate-200 bg-slate-50/40 hover:bg-slate-50/80 focus-within:bg-white focus-within:border-emerald-500'} focus-within:ring-4 focus-within:ring-emerald-500/10 transition-all duration-300 shadow-sm`}>
                     <div className="absolute left-4 text-slate-400 group-focus-within:text-emerald-600 transition-colors duration-300 pointer-events-none">
                       <Phone size={20} />
                     </div>
                     <input
                       type="tel"
                       id="phone"
-                      required={formData.type === 'volunteer'}
-                      value={formData.phone}
-                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                      {...register('phone')}
                       className="w-full pl-12 pr-5 py-2.5 bg-transparent outline-none text-slate-800 font-medium placeholder:text-slate-400/70 text-sm"
                       placeholder="+256 ..."
                     />
                   </div>
+                  {errors.phone && <p className="text-red-500 text-xs mt-1 flex items-center"><AlertCircle size={12} className="mr-1"/>{errors.phone.message}</p>}
                 </div>
               </div>
 
-              {formData.type === 'volunteer' && (
+              {formType === 'volunteer' && (
                 <div className="grid md:grid-cols-2 gap-6 animate-[fadeIn_0.5s_ease-out]">
                   <div>
                     <label className="text-xs font-bold text-slate-500 mb-2 ml-1 block uppercase tracking-wider">
-                      Area of Interest <span className="text-emerald-500">*</span>
+                      Area of Interest
                     </label>
                     <div className="relative flex items-center group rounded-xl border border-slate-200 bg-slate-50/40 hover:bg-slate-50/80 focus-within:bg-white focus-within:border-emerald-500 focus-within:ring-4 focus-within:ring-emerald-500/10 transition-all duration-300 shadow-sm">
                       <div className="absolute left-4 text-slate-400 group-focus-within:text-emerald-600 transition-colors duration-300 pointer-events-none">
                         <Briefcase size={20} />
                       </div>
                       <select 
-                        required
                         className="w-full pl-12 pr-10 py-2.5 bg-transparent outline-none text-slate-800 font-medium appearance-none cursor-pointer text-sm"
                       >
                         <option value="">Select Area</option>
@@ -421,14 +435,13 @@ export function Contact() {
                   </div>
                   <div>
                     <label className="text-xs font-bold text-slate-500 mb-2 ml-1 block uppercase tracking-wider">
-                      Availability <span className="text-emerald-500">*</span>
+                      Availability
                     </label>
                     <div className="relative flex items-center group rounded-xl border border-slate-200 bg-slate-50/40 hover:bg-slate-50/80 focus-within:bg-white focus-within:border-emerald-500 focus-within:ring-4 focus-within:ring-emerald-500/10 transition-all duration-300 shadow-sm">
                       <div className="absolute left-4 text-slate-400 group-focus-within:text-emerald-600 transition-colors duration-300 pointer-events-none">
                         <Calendar size={20} />
                       </div>
                       <select 
-                        required
                         className="w-full pl-12 pr-10 py-2.5 bg-transparent outline-none text-slate-800 font-medium appearance-none cursor-pointer text-sm"
                       >
                         <option value="">Select Availability</option>
@@ -447,26 +460,25 @@ export function Contact() {
 
               <div>
                 <label htmlFor="message" className="text-xs font-bold text-slate-500 mb-2 ml-1 block uppercase tracking-wider">
-                  {formData.type === 'volunteer' ? 'Why do you want to join us?' : 'Message'} <span className="text-emerald-500">*</span>
+                  {formType === 'volunteer' ? 'Why do you want to join us?' : 'Message'} <span className="text-emerald-500">*</span>
                 </label>
-                <div className="relative flex items-start group rounded-xl border border-slate-200 bg-slate-50/40 hover:bg-slate-50/80 focus-within:bg-white focus-within:border-emerald-500 focus-within:ring-4 focus-within:ring-emerald-500/10 transition-all duration-300 shadow-sm">
+                <div className={`relative flex items-start group rounded-xl border ${errors.message ? 'border-red-300 bg-red-50/40' : 'border-slate-200 bg-slate-50/40 hover:bg-slate-50/80 focus-within:bg-white focus-within:border-emerald-500'} focus-within:ring-4 focus-within:ring-emerald-500/10 transition-all duration-300 shadow-sm`}>
                   <div className="absolute left-4 top-4 text-slate-400 group-focus-within:text-emerald-600 transition-colors duration-300 pointer-events-none">
                     <MessageSquare size={20} />
                   </div>
                   <textarea
                     id="message"
-                    required
                     rows={5}
-                    value={formData.message}
-                    onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                    {...register('message')}
                     className="w-full pl-12 pr-5 py-2.5 bg-transparent outline-none text-slate-800 font-medium placeholder:text-slate-400/70 text-sm resize-none"
                     placeholder={
-                      formData.type === 'volunteer'
+                      formType === 'volunteer'
                         ? 'Tell us about your background, skills, and what motivates you to volunteer...'
                         : 'How can we help you?'
                     }
                   />
                 </div>
+                {errors.message && <p className="text-red-500 text-xs mt-1 flex items-center"><AlertCircle size={12} className="mr-1"/>{errors.message.message}</p>}
               </div>
 
               <button
@@ -482,7 +494,7 @@ export function Contact() {
                 ) : (
                   <>
                     <Send size={16} />
-                    <span>{formData.type === 'volunteer' ? 'Submit Application' : 'Send Message'}</span>
+                    <span>{formType === 'volunteer' ? 'Submit Application' : 'Send Message'}</span>
                   </>
                 )}
               </button>

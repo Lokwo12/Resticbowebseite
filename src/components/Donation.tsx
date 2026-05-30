@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Heart, Lock, Phone, CreditCard, ChevronRight, Building2, Shield, Star, ExternalLink, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 import { loadStripe } from '@stripe/stripe-js';
-import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
+import { Elements, CardNumberElement, CardExpiryElement, CardCvcElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 
@@ -134,8 +134,10 @@ export function Donation() {
     setDone(true);
   };
 
-  const inp = 'w-full border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-50 transition-all placeholder:text-gray-400 bg-white';
-  const lbl = 'block text-xs font-semibold text-gray-600 mb-1';
+  const inp = 'w-full border border-gray-200 rounded-xl px-4 text-sm outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-50 transition-all placeholder:text-gray-400 bg-white text-gray-800';
+  const inpStyle: React.CSSProperties = { height: 52 };
+  const btnStyle: React.CSSProperties = { height: 52 };
+  const lbl = 'block text-xs font-semibold text-gray-600 mb-1.5 tracking-wide uppercase';
 
   const IMPACT_HINTS: Record<number, string> = {
     5: 'Provides a hot meal for a child every day for a week',
@@ -251,7 +253,8 @@ export function Donation() {
 
                   <button type="button"
                     onClick={() => { if (finalAmount >= 1) setStep(2); else toast.error('Minimum donation is $1'); }}
-                    className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold py-4 rounded-xl text-base flex items-center justify-center gap-2 shadow-lg shadow-emerald-200 hover:from-emerald-700 hover:to-teal-700 active:scale-[0.99] transition-all">
+                    className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold rounded-xl text-base flex items-center justify-center gap-2 shadow-lg shadow-emerald-200/50 hover:from-emerald-700 hover:to-teal-700 hover:shadow-xl hover:scale-[1.01] active:scale-[0.99] transition-all duration-200"
+                    style={btnStyle}>
                     <Heart size={18} fill="currentColor" />
                     Continue{finalAmount > 0 ? ` — ${formatUSD(finalAmount)}` : ''}
                     <ChevronRight size={18} />
@@ -302,7 +305,7 @@ export function Donation() {
                       </div>
                       <h3 className="text-2xl font-bold">Thank You!</h3>
                       <p className="text-gray-600">Your donation of <span className="font-bold text-emerald-700">{formatUSD(finalAmount)}</span> is confirmed.</p>
-                      <button onClick={resetState} className="w-full bg-emerald-600 text-white font-bold py-4 rounded-xl shadow-lg">Donate Again</button>
+                      <button onClick={resetState} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-lg shadow-emerald-200/50 hover:shadow-xl hover:scale-[1.01] active:scale-[0.99] transition-all duration-200" style={btnStyle}>Donate Again</button>
                     </div>
                   ) : mobileWaiting ? (
                     <div className="py-12 px-6 text-center space-y-8 animate-fade-in-up">
@@ -318,10 +321,10 @@ export function Donation() {
                       {method === 'card' && (
                         <div className="space-y-6">
                           <div className="grid grid-cols-2 gap-3">
-                            <div><label className={lbl}>First Name</label><input required className={inp} value={donorData.firstName} onChange={e => setDonorData(p => ({ ...p, firstName: e.target.value }))} /></div>
-                            <div><label className={lbl}>Last Name</label><input required className={inp} value={donorData.lastName} onChange={e => setDonorData(p => ({ ...p, lastName: e.target.value }))} /></div>
+                            <div><label className={lbl}>First Name</label><input required className={inp} style={inpStyle} value={donorData.firstName} onChange={e => setDonorData(p => ({ ...p, firstName: e.target.value }))} /></div>
+                            <div><label className={lbl}>Last Name</label><input required className={inp} style={inpStyle} value={donorData.lastName} onChange={e => setDonorData(p => ({ ...p, lastName: e.target.value }))} /></div>
                           </div>
-                          <div><label className={lbl}>Email</label><input required type="email" className={inp} value={donorData.email} onChange={e => setDonorData(p => ({ ...p, email: e.target.value }))} /></div>
+                          <div><label className={lbl}>Email</label><input required type="email" className={inp} style={inpStyle} value={donorData.email} onChange={e => setDonorData(p => ({ ...p, email: e.target.value }))} /></div>
                           <div className="bg-white border border-gray-100 rounded-2xl p-6">
                             {stripePromise ? (
                               <Elements stripe={stripePromise}>
@@ -344,7 +347,7 @@ export function Donation() {
                               />
                             </PayPalScriptProvider>
                           ) : (
-                            <button onClick={() => window.open('https://paypal.com/donate', '_blank')} className="w-full bg-[#FFC439] py-4 rounded-xl font-bold flex items-center justify-center gap-2">
+                            <button onClick={() => window.open('https://paypal.com/donate', '_blank')} className="w-full bg-[#FFC439] rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg hover:shadow-xl hover:scale-[1.01] active:scale-[0.99] transition-all duration-200" style={btnStyle}>
                               <ExternalLink size={18} /> Continue to PayPal
                             </button>
                           )}
@@ -356,22 +359,22 @@ export function Donation() {
                           <div className="grid grid-cols-2 gap-3">
                             <div>
                               <label className={lbl}>First Name</label>
-                              <input required className={inp} value={donorData.firstName} onChange={e => setDonorData(p => ({ ...p, firstName: e.target.value }))} />
+                              <input required className={inp} style={inpStyle} value={donorData.firstName} onChange={e => setDonorData(p => ({ ...p, firstName: e.target.value }))} />
                             </div>
                             <div>
                               <label className={lbl}>Last Name</label>
-                              <input required className={inp} value={donorData.lastName} onChange={e => setDonorData(p => ({ ...p, lastName: e.target.value }))} />
+                              <input required className={inp} style={inpStyle} value={donorData.lastName} onChange={e => setDonorData(p => ({ ...p, lastName: e.target.value }))} />
                             </div>
                           </div>
                           <div>
                             <label className={lbl}>Email</label>
-                            <input required type="email" className={inp} value={donorData.email} onChange={e => setDonorData(p => ({ ...p, email: e.target.value }))} />
+                            <input required type="email" className={inp} style={inpStyle} value={donorData.email} onChange={e => setDonorData(p => ({ ...p, email: e.target.value }))} />
                           </div>
                           <div>
                             <label className={lbl}>Phone Number</label>
-                            <input required className={inp} placeholder="256 700 000 000" value={donorData.phone} onChange={e => setDonorData(p => ({ ...p, phone: e.target.value }))} />
+                            <input required className={inp} style={inpStyle} placeholder="256 700 000 000" value={donorData.phone} onChange={e => setDonorData(p => ({ ...p, phone: e.target.value }))} />
                           </div>
-                          <button type="submit" disabled={submitting} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2 transition-all active:scale-[0.99]">
+                          <button type="submit" disabled={submitting} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-emerald-200/50 hover:shadow-xl hover:scale-[1.01] active:scale-[0.99] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed" style={btnStyle}>
                             {submitting ? <span className="animate-spin w-5 h-5 border-2 border-white border-t-transparent rounded-full" /> : <><Phone size={18} /> Pay {formatUSD(finalAmount)}</>}
                           </button>
                         </form>
@@ -382,16 +385,16 @@ export function Donation() {
                           <div className="grid grid-cols-2 gap-3">
                             <div>
                               <label className={lbl}>First Name</label>
-                              <input required className={inp} value={donorData.firstName} onChange={e => setDonorData(p => ({ ...p, firstName: e.target.value }))} />
+                              <input required className={inp} style={inpStyle} value={donorData.firstName} onChange={e => setDonorData(p => ({ ...p, firstName: e.target.value }))} />
                             </div>
                             <div>
                               <label className={lbl}>Last Name</label>
-                              <input required className={inp} value={donorData.lastName} onChange={e => setDonorData(p => ({ ...p, lastName: e.target.value }))} />
+                              <input required className={inp} style={inpStyle} value={donorData.lastName} onChange={e => setDonorData(p => ({ ...p, lastName: e.target.value }))} />
                             </div>
                           </div>
                           <div>
                             <label className={lbl}>Email</label>
-                            <input required type="email" className={inp} value={donorData.email} onChange={e => setDonorData(p => ({ ...p, email: e.target.value }))} />
+                            <input required type="email" className={inp} style={inpStyle} value={donorData.email} onChange={e => setDonorData(p => ({ ...p, email: e.target.value }))} />
                           </div>
                           
                           <div className="bg-gray-50 border border-gray-100 rounded-2xl p-5 space-y-3.5 text-xs text-gray-700">
@@ -406,7 +409,7 @@ export function Donation() {
                             <div className="flex justify-between"><span className="text-gray-500">SWIFT Code:</span> <strong>{donationConfig.swiftCode}</strong></div>
                           </div>
                           
-                          <button type="submit" disabled={submitting} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded-xl shadow-lg transition-all active:scale-[0.99] flex items-center justify-center gap-2">
+                          <button type="submit" disabled={submitting} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-lg shadow-emerald-200/50 hover:shadow-xl hover:scale-[1.01] active:scale-[0.99] transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed" style={btnStyle}>
                             {submitting ? <span className="animate-spin w-5 h-5 border-2 border-white border-t-transparent rounded-full" /> : <><Heart size={18} fill="currentColor" /> Register Transfer</>}
                           </button>
                         </form>
@@ -441,7 +444,7 @@ function StripeCardForm({ amount, donorData, onSuccess }: { amount: number, dono
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
       const { error, paymentIntent } = await stripe.confirmCardPayment(data.clientSecret, {
-        payment_method: { card: elements.getElement(CardElement)!, billing_details: { name: `${donorData.firstName} ${donorData.lastName}`.trim(), email: donorData.email } }
+        payment_method: { card: elements.getElement(CardNumberElement)!, billing_details: { name: `${donorData.firstName} ${donorData.lastName}`.trim(), email: donorData.email } }
       });
       if (error) toast.error(error.message);
       else if (paymentIntent?.status === 'succeeded') onSuccess();
@@ -451,10 +454,27 @@ function StripeCardForm({ amount, donorData, onSuccess }: { amount: number, dono
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="border border-gray-200 rounded-xl px-4 py-3 bg-white">
-        <CardElement options={{ style: { base: { fontSize: '16px', color: '#374151', '::placeholder': { color: '#9ca3af' } } } }} />
+      <div className="space-y-1.5">
+        <label className="block text-xs font-semibold text-gray-600 mb-1.5 tracking-wide uppercase">Card Number</label>
+        <div className="border border-gray-200 rounded-xl px-4 bg-white focus-within:border-emerald-400 focus-within:ring-2 focus-within:ring-emerald-50 transition-all flex items-center" style={{ height: 52 }}>
+          <CardNumberElement className="w-full" options={{ placeholder: '0000 0000 0000 0000', style: { base: { fontSize: '14px', color: '#374151', fontFamily: 'Arial, Helvetica, sans-serif', '::placeholder': { color: '#9ca3af' } }, invalid: { color: '#ef4444', iconColor: '#ef4444' } }, showIcon: true }} />
+        </div>
       </div>
-      <button type="submit" disabled={loading || !stripe} className="w-full bg-emerald-600 text-white font-bold py-4 rounded-xl shadow-lg hover:bg-emerald-700 transition-all flex items-center justify-center gap-2">
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-1.5">
+          <label className="block text-xs font-semibold text-gray-600 mb-1.5 tracking-wide uppercase">Expiry Date</label>
+          <div className="border border-gray-200 rounded-xl px-4 bg-white focus-within:border-emerald-400 focus-within:ring-2 focus-within:ring-emerald-50 transition-all flex items-center" style={{ height: 52 }}>
+            <CardExpiryElement className="w-full" options={{ placeholder: 'MM / YY', style: { base: { fontSize: '14px', color: '#374151', fontFamily: 'Arial, Helvetica, sans-serif', '::placeholder': { color: '#9ca3af' } }, invalid: { color: '#ef4444', iconColor: '#ef4444' } } }} />
+          </div>
+        </div>
+        <div className="space-y-1.5">
+          <label className="block text-xs font-semibold text-gray-600 mb-1.5 tracking-wide uppercase">CVC</label>
+          <div className="border border-gray-200 rounded-xl px-4 bg-white focus-within:border-emerald-400 focus-within:ring-2 focus-within:ring-emerald-50 transition-all flex items-center" style={{ height: 52 }}>
+            <CardCvcElement className="w-full" options={{ placeholder: 'CVC', style: { base: { fontSize: '14px', color: '#374151', fontFamily: 'Arial, Helvetica, sans-serif', '::placeholder': { color: '#9ca3af' } }, invalid: { color: '#ef4444', iconColor: '#ef4444' } } }} />
+          </div>
+        </div>
+      </div>
+      <button type="submit" disabled={loading || !stripe} className="w-full bg-emerald-600 text-white font-bold rounded-xl shadow-lg shadow-emerald-200/50 hover:bg-emerald-700 hover:shadow-xl hover:scale-[1.01] active:scale-[0.99] transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed" style={{ height: 52 }}>
         {loading ? <span className="animate-spin w-5 h-5 border-2 border-white border-t-transparent rounded-full" /> : <><Lock size={18} /> Confirm Donation — {formatUSD(amount)}</>}
       </button>
     </form>

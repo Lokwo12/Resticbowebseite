@@ -12,6 +12,7 @@ interface FormDialogProps {
   editingItem: any | null;
   onSuccess: () => void;
   userRole: string;
+  accessToken?: string;
 }
 
 interface OpportunityFormData {
@@ -26,7 +27,7 @@ interface OpportunityFormData {
 }
 
 // Volunteer Opportunity Form Dialog
-export function OpportunityFormDialog({ show, onClose, editingItem, onSuccess, userRole }: FormDialogProps) {
+export function OpportunityFormDialog({ show, onClose, editingItem, onSuccess, userRole, accessToken }: FormDialogProps) {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState<OpportunityFormData>({
     title: '',
@@ -103,7 +104,7 @@ export function OpportunityFormDialog({ show, onClose, editingItem, onSuccess, u
         : `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/opportunities`;
       const response = await fetch(url, {
         method: editingItem ? 'PUT' : 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${publicAnonKey}` },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken || publicAnonKey}` },
         body: JSON.stringify(formData)
       });
       if (!response.ok) throw new Error('Failed to save');
@@ -245,7 +246,7 @@ export function OpportunityFormDialog({ show, onClose, editingItem, onSuccess, u
 }
 
 // FAQ Form Dialog
-export function FAQFormDialog({ show, onClose, editingItem, onSuccess, userRole }: FormDialogProps) {
+export function FAQFormDialog({ show, onClose, editingItem, onSuccess, userRole, accessToken }: FormDialogProps) {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     question: '',
@@ -286,7 +287,7 @@ export function FAQFormDialog({ show, onClose, editingItem, onSuccess, userRole 
         : `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/faqs`;
       const response = await fetch(url, {
         method: editingItem ? 'PUT' : 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${publicAnonKey}` },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken || publicAnonKey}` },
         body: JSON.stringify(formData)
       });
       if (!response.ok) throw new Error('Failed to save');
@@ -366,7 +367,7 @@ export function FAQFormDialog({ show, onClose, editingItem, onSuccess, userRole 
 }
 
 // Resource Form Dialog
-export function ResourceFormDialog({ show, onClose, editingItem, onSuccess, userRole }: FormDialogProps) {
+export function ResourceFormDialog({ show, onClose, editingItem, onSuccess, userRole, accessToken }: FormDialogProps) {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
@@ -413,7 +414,7 @@ export function ResourceFormDialog({ show, onClose, editingItem, onSuccess, user
         : `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/resources`;
       const response = await fetch(url, {
         method: editingItem ? 'PUT' : 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${publicAnonKey}` },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken || publicAnonKey}` },
         body: JSON.stringify(formData)
       });
       if (!response.ok) throw new Error('Failed to save');

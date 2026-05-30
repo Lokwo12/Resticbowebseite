@@ -85,7 +85,7 @@ export function Gallery() {
 
   if (loading) {
     return (
-      <section id="gallery" className="py-16 bg-gray-50">
+      <section id="gallery" className="section-spacing-lg bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <div className="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto" />
@@ -96,7 +96,7 @@ export function Gallery() {
   }
 
   return (
-    <section id="gallery" className="py-16 bg-gray-50">
+    <section id="gallery" className="section-spacing-lg bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="text-center mb-12">
@@ -115,7 +115,7 @@ export function Gallery() {
                 onClick={() => setSelectedCategory(category)}
                 className={`px-6 py-2 rounded-full transition-all ${
                   selectedCategory === category
-                    ? 'bg-emerald-600 text-white shadow-lg'
+                    ? 'bg-emerald-600 text-white shadow-premium-soft hover:shadow-2xl transition-all duration-300'
                     : 'bg-white text-gray-700 hover:bg-emerald-50 border border-gray-200'
                 }`}
               >
@@ -132,7 +132,7 @@ export function Gallery() {
               {filteredImages.map((image) => (
                 <div
                   key={image.id}
-                  className="group relative overflow-hidden rounded-lg shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer bg-white"
+                  className="group relative overflow-hidden rounded-lg shadow-premium-soft transition-all duration-300 hover:shadow-premium-soft hover:shadow-2xl transition-all duration-300 transition-all duration-300 cursor-pointer bg-white"
                   onClick={() => setSelectedImage(image)}
                 >
                   <img

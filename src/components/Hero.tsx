@@ -32,10 +32,10 @@ function StatCounter({ num, suffix, label, visible, delay }: { num: number; suff
   const count = useCountUp(num, 1800, visible);
   return (
     <div
-      className="group hover:scale-105 transition-all duration-500 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-emerald-500/30 p-2.5 sm:p-4 rounded-xl sm:rounded-2xl shadow-xl backdrop-blur-md"
+      className="group hover:scale-105 transition-all duration-500 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-emerald-500/30 p-2.5 sm:p-4 rounded-xl sm:rounded-2xl shadow-premium-soft hover:shadow-2xl transition-all duration-300 backdrop-blur-md"
       style={{ animationDelay: `${delay}ms` }}
     >
-      <div className={`text-2xl sm:text-3xl font-extrabold text-emerald-400 group-hover:text-emerald-300 transition-colors duration-300 drop-shadow-md ${visible ? 'counter-animated' : ''}`}>
+      <div className={`text-2xl sm:text-3xl font-extrabold font-heading tracking-tight text-emerald-400 group-hover:text-emerald-300 transition-colors duration-300 drop-shadow-premium-soft transition-all duration-300 ${visible ? 'counter-animated' : ''}`}>
         {visible ? count : 0}{suffix}
       </div>
       <div className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-white/80 group-hover:text-white transition-colors duration-300 mt-1 break-words leading-tight">{label}</div>
@@ -165,7 +165,7 @@ export function Hero() {
 
   if (loading || !settings) {
     return (
-      <section id="home" className="relative pt-16 min-h-screen">
+      <section id="home" className="relative pt-32 lg:pt-40 pb-24 min-h-screen">
         {/* Background Image Carousel */}
         <div className="absolute inset-0 z-0">
           {backgroundImages.map((image: string, index: number) => (
@@ -188,7 +188,7 @@ export function Hero() {
         </div>
 
         {/* Loading skeleton */}
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-32">
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 section-spacing-lg lg:py-32">
           <div className="animate-pulse">
             <div className="h-8 bg-white/20 rounded w-1/2 mb-4"></div>
             <div className="h-12 bg-white/20 rounded w-3/4 mb-4"></div>
@@ -200,7 +200,7 @@ export function Hero() {
   }
 
   return (
-    <section id="home" className="relative pt-16 min-h-screen overflow-hidden">
+    <section id="home" className="relative pt-32 lg:pt-40 pb-24 min-h-screen overflow-hidden">
       {/* Background Image Carousel */}
       <div className="absolute inset-0 z-0">
         {backgroundImages.map((image: string, index: number) => (
@@ -254,33 +254,33 @@ export function Hero() {
 
       {/* Content */}
       <div 
-        className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-32"
+        className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 section-spacing-lg lg:py-32"
         onMouseEnter={() => setIsPaused(true)}
         onMouseLeave={() => setIsPaused(false)}
       >
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           {/* Text Content */}
           <div className="space-y-6 animate-[fadeInUp_0.8s_ease-out]">
-            <div className="inline-block bg-emerald-500/90 backdrop-blur-sm text-white px-4 py-2 rounded-full text-sm animate-[fadeIn_0.5s_ease-out] hover:scale-105 transition-transform duration-300 shadow-lg">
+            <div className="inline-block bg-emerald-500/90 backdrop-blur-sm text-white px-4 py-2 rounded-full text-sm animate-[fadeIn_0.5s_ease-out] hover:scale-105 transition-transform duration-300 shadow-premium-soft hover:shadow-2xl transition-all duration-300">
               {settings.badgeText}
             </div>
             <h1 className="text-3xl sm:text-4xl lg:text-6xl text-white drop-shadow-2xl animate-[fadeInUp_0.8s_ease-out_0.2s_both]">
               {settings.title}
             </h1>
-            <p className="text-base sm:text-xl text-white/95 drop-shadow-lg animate-[fadeInUp_0.8s_ease-out_0.4s_both]">
+            <p className="text-base sm:text-xl text-white/95 drop-shadow-premium-soft hover:shadow-2xl transition-all duration-300 animate-[fadeInUp_0.8s_ease-out_0.4s_both]">
               {settings.subtitle}
             </p>
             <div className="flex flex-col sm:flex-row gap-4 animate-[fadeInUp_0.8s_ease-out_0.6s_both]">
               <button
                 onClick={openDonationModal}
-                className="group bg-emerald-600 text-white px-8 py-4 rounded-lg hover:bg-emerald-700 transition-all duration-300 flex items-center justify-center gap-2 hover:shadow-2xl hover:-translate-y-0.5 shadow-lg"
+                className="group bg-emerald-600 text-white px-8 py-4 rounded-lg hover:bg-emerald-700 transition-all duration-300 flex items-center justify-center gap-2 hover:shadow-2xl hover:-translate-y-0.5 shadow-premium-soft hover:shadow-2xl transition-all duration-300"
               >
                 {settings.primaryButtonText}
                 <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform duration-300" />
               </button>
               <button
                 onClick={scrollToAbout}
-                className="border-2 border-white bg-white/10 backdrop-blur-sm text-white px-8 py-4 rounded-lg hover:bg-white/20 transition-all duration-300 hover:shadow-2xl hover:-translate-y-0.5 shadow-lg"
+                className="border-2 border-white bg-white/10 backdrop-blur-sm text-white px-8 py-4 rounded-lg hover:bg-white/20 transition-all duration-300 hover:shadow-2xl hover:-translate-y-0.5 shadow-premium-soft hover:shadow-2xl transition-all duration-300"
               >
                 {settings.secondaryButtonText}
               </button>

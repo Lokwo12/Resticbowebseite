@@ -156,7 +156,7 @@ export function Header() {
         <span className="flex items-center gap-1.5"><span className="animate-pulse text-emerald-400">🌍</span> {announcementText}</span>
         <Link
           to="/volunteer"
-          className="inline-flex items-center gap-1 bg-emerald-500/20 hover:bg-emerald-500/40 text-emerald-200 border border-emerald-500/30 hover:border-emerald-500/50 px-3 py-0.5 rounded-full transition-all duration-300 font-bold text-[10px] tracking-wide"
+          className="inline-flex items-center gap-1 bg-emerald-500/20 hover:bg-emerald-500/40 text-emerald-200 border border-emerald-500/30 hover:border-emerald-500/50 px-3 py-0.5 rounded-full transition-all duration-300 font-bold font-heading tracking-tight text-[10px] tracking-wide"
         >
           Apply now <ChevronRight size={10} />
         </Link>
@@ -186,7 +186,7 @@ export function Header() {
                 }`} 
               />
               <div className="hidden sm:block">
-                <h1 className={`text-lg font-bold tracking-tight transition-colors ${
+                <h1 className={`text-lg font-bold font-heading tracking-tight tracking-tight transition-colors ${
                   isSolid ? 'text-gray-800' : 'text-white'
                 }`}>{settings.general?.siteName || 'Resti Kiryandongo'}</h1>
                 <p className={`text-xs transition-colors ${

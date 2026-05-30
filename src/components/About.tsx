@@ -93,7 +93,7 @@ export function About() {
 
   if (loading) {
     return (
-      <section id="about" className="py-20 bg-white">
+      <section id="about" className="section-spacing-lg bg-slate-50/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="animate-pulse">
             <div className="h-12 bg-gray-200 rounded w-1/2 mx-auto mb-8"></div>
@@ -116,7 +116,7 @@ export function About() {
   };
 
   return (
-    <section id="about" className="py-20 bg-white" ref={ref}>
+    <section id="about" className="section-spacing-lg bg-slate-50/50" ref={ref}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Intro */}
         <div className={`max-w-3xl mx-auto text-center mb-16 transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
@@ -134,13 +134,13 @@ export function About() {
 
         {/* Mission & Vision */}
         <div className="grid md:grid-cols-2 gap-8 mb-16">
-          <div className={`group bg-gradient-to-br from-emerald-50 to-teal-50 p-8 rounded-2xl hover:shadow-xl transition-all duration-500 ${isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-8'}`} style={{ transitionDelay: '200ms' }}>
+          <div className={`group bg-gradient-to-br from-emerald-50 to-teal-50 p-8 rounded-2xl hover:shadow-premium-soft hover:shadow-2xl transition-all duration-300 transition-all duration-500 ${isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-8'}`} style={{ transitionDelay: '200ms' }}>
             <h3 className="text-2xl text-gray-900 mb-4 group-hover:text-emerald-600 transition-colors">Our Mission</h3>
             <p className="text-gray-700 leading-relaxed">
               {displaySettings.mission}
             </p>
           </div>
-          <div className={`group bg-gradient-to-br from-blue-50 to-indigo-50 p-8 rounded-2xl hover:shadow-xl transition-all duration-500 ${isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-8'}`} style={{ transitionDelay: '300ms' }}>
+          <div className={`group bg-gradient-to-br from-blue-50 to-indigo-50 p-8 rounded-2xl hover:shadow-premium-soft hover:shadow-2xl transition-all duration-300 transition-all duration-500 ${isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-8'}`} style={{ transitionDelay: '300ms' }}>
             <h3 className="text-2xl text-gray-900 mb-4 group-hover:text-blue-600 transition-colors">Our Vision</h3>
             <p className="text-gray-700 leading-relaxed">
               {displaySettings.vision}
@@ -158,13 +158,13 @@ export function About() {
               return (
                 <div
                   key={index}
-                  className={`group p-6 border border-slate-100 rounded-2xl hover:shadow-xl hover:border-emerald-500/20 hover:-translate-y-2 transition-all duration-500 bg-gradient-to-b from-white to-slate-50/50 hover:to-emerald-50/10 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
+                  className={`group p-6 border border-slate-100 rounded-2xl hover:shadow-premium-soft hover:shadow-2xl transition-all duration-300 hover:border-emerald-500/20 hover:-translate-y-2 transition-all duration-500 bg-gradient-to-b from-white to-slate-50/50 hover:to-emerald-50/10 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
                   style={{ transitionDelay: isVisible ? getStaggerDelay(index, 100) : '0ms' }}
                 >
                   <div className="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center mb-5 group-hover:bg-emerald-600 group-hover:scale-110 transition-all duration-300 shadow-sm border border-emerald-500/10">
                     <IconComponent className="text-emerald-600 group-hover:text-white transition-colors" size={24} />
                   </div>
-                  <h4 className="text-lg text-gray-900 mb-2 group-hover:text-emerald-600 transition-colors duration-300 font-bold">{value.title}</h4>
+                  <h4 className="text-lg text-gray-900 mb-2 group-hover:text-emerald-600 transition-colors duration-300 font-bold font-heading tracking-tight">{value.title}</h4>
                   <p className="text-sm text-gray-600 leading-relaxed">{value.description}</p>
                 </div>
               );
@@ -175,10 +175,10 @@ export function About() {
 
         {/* Story */}
         {displaySettings.story && displaySettings.story.length > 0 && (
-          <div className={`relative overflow-hidden bg-gradient-to-br from-slate-50 to-emerald-50/20 p-8 lg:p-12 rounded-3xl border border-slate-100 hover:shadow-xl transition-all duration-500 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`} style={{ transitionDelay: '800ms' }}>
+          <div className={`relative overflow-hidden bg-gradient-to-br from-slate-50 to-emerald-50/20 p-8 lg:p-12 rounded-3xl border border-slate-100 hover:shadow-premium-soft hover:shadow-2xl transition-all duration-300 transition-all duration-500 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`} style={{ transitionDelay: '800ms' }}>
             <div className="absolute top-0 left-0 w-1.5 h-full bg-emerald-600"></div>
             <div className="max-w-3xl mx-auto">
-              <h3 className="text-2xl font-bold text-gray-900 mb-6 tracking-tight flex items-center gap-2">
+              <h3 className="text-2xl font-bold font-heading tracking-tight text-gray-900 mb-6 tracking-tight flex items-center gap-2">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
                 Our Story
               </h3>
@@ -203,7 +203,7 @@ export function About() {
           ].map((item) => (
             <div key={item.label} className="flex flex-col items-center text-center bg-emerald-50 border border-emerald-100 rounded-2xl py-5 px-4">
               <span className="text-3xl mb-2">{item.icon}</span>
-              <span className="text-sm font-bold text-emerald-800">{item.label}</span>
+              <span className="text-sm font-bold font-heading tracking-tight text-emerald-800">{item.label}</span>
               <span className="text-xs text-emerald-600 mt-0.5">{item.sub}</span>
             </div>
           ))}

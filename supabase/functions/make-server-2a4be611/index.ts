@@ -148,6 +148,15 @@ app.post('/make-server-2a4be611/contact', async (c) => {
 // Get all programs
 app.get('/make-server-2a4be611/programs', async (c) => {
   try {
+    const limit = parseInt(c.req.query('limit') || '100');
+    const offset = parseInt(c.req.query('offset') || '0');
+    
+    if (c.req.query('limit') !== undefined) {
+      const { data, count } = await kv.getPaginatedByPrefix('program:', limit, offset);
+      data.sort((a, b) => new Date(b.value?.timestamp || b.value?.created_at || 0).getTime() - new Date(a.value?.timestamp || a.value?.created_at || 0).getTime());
+      return c.json({ programs: data, count, limit, offset });
+    }
+    
     const programs = await kv.getByPrefix('program:')
     // Filter out any invalid entries
     const validPrograms = programs.filter(p => p && p.value && p.value.title)
@@ -188,6 +197,15 @@ app.post('/make-server-2a4be611/programs', async (c) => {
 // Get all news/updates
 app.get('/make-server-2a4be611/news', async (c) => {
   try {
+    const limit = parseInt(c.req.query('limit') || '100');
+    const offset = parseInt(c.req.query('offset') || '0');
+    
+    if (c.req.query('limit') !== undefined) {
+      const { data, count } = await kv.getPaginatedByPrefix('news:', limit, offset);
+      data.sort((a, b) => new Date(b.value?.timestamp || b.value?.created_at || 0).getTime() - new Date(a.value?.timestamp || a.value?.created_at || 0).getTime());
+      return c.json({ news: data, count, limit, offset });
+    }
+    
     const news = await kv.getByPrefix('news:')
     // Filter out any invalid entries
     const validNews = news.filter(n => n && n.value && n.value.timestamp)
@@ -680,6 +698,15 @@ app.post('/make-server-2a4be611/newsletter', async (c) => {
 // Get all newsletter subscribers (admin)
 app.get('/make-server-2a4be611/newsletter', async (c) => {
   try {
+    const limit = parseInt(c.req.query('limit') || '100');
+    const offset = parseInt(c.req.query('offset') || '0');
+    
+    if (c.req.query('limit') !== undefined) {
+      const { data, count } = await kv.getPaginatedByPrefix('newsletter:', limit, offset);
+      data.sort((a, b) => new Date(b.value?.timestamp || b.value?.created_at || 0).getTime() - new Date(a.value?.timestamp || a.value?.created_at || 0).getTime());
+      return c.json({ subscribers: data, count, limit, offset });
+    }
+    
     const subscribers = await kv.getByPrefix('newsletter:')
     return c.json({ subscribers })
   } catch (error) {
@@ -921,6 +948,15 @@ app.patch('/make-server-2a4be611/admin/users/:userId/role', async (c) => {
 // Get all contact submissions (admin)
 app.get('/make-server-2a4be611/admin/contacts', async (c) => {
   try {
+    const limit = parseInt(c.req.query('limit') || '100');
+    const offset = parseInt(c.req.query('offset') || '0');
+    
+    if (c.req.query('limit') !== undefined) {
+      const { data, count } = await kv.getPaginatedByPrefix('contact:', limit, offset);
+      data.sort((a, b) => new Date(b.value?.timestamp || b.value?.created_at || 0).getTime() - new Date(a.value?.timestamp || a.value?.created_at || 0).getTime());
+      return c.json({ contacts: data, count, limit, offset });
+    }
+    
     const contacts = await kv.getByPrefix('contact:')
     // Sort by timestamp descending
     contacts.sort((a, b) => new Date(b.value.timestamp).getTime() - new Date(a.value.timestamp).getTime())
@@ -958,6 +994,15 @@ app.patch('/make-server-2a4be611/admin/contacts/:id', async (c) => {
 // Get all volunteers (admin)
 app.get('/make-server-2a4be611/admin/volunteers', async (c) => {
   try {
+    const limit = parseInt(c.req.query('limit') || '100');
+    const offset = parseInt(c.req.query('offset') || '0');
+    
+    if (c.req.query('limit') !== undefined) {
+      const { data, count } = await kv.getPaginatedByPrefix('volunteer:', limit, offset);
+      data.sort((a, b) => new Date(b.value?.timestamp || b.value?.created_at || 0).getTime() - new Date(a.value?.timestamp || a.value?.created_at || 0).getTime());
+      return c.json({ volunteers: data, count, limit, offset });
+    }
+    
     const volunteers = await kv.getByPrefix('volunteer:')
     // Sort by timestamp descending
     volunteers.sort((a, b) => new Date(b.value.timestamp).getTime() - new Date(a.value.timestamp).getTime())
@@ -995,6 +1040,15 @@ app.patch('/make-server-2a4be611/admin/volunteers/:id', async (c) => {
 // Get all donations (admin)
 app.get('/make-server-2a4be611/admin/donations', async (c) => {
   try {
+    const limit = parseInt(c.req.query('limit') || '100');
+    const offset = parseInt(c.req.query('offset') || '0');
+    
+    if (c.req.query('limit') !== undefined) {
+      const { data, count } = await kv.getPaginatedByPrefix('donation:', limit, offset);
+      data.sort((a: any, b: any) => new Date(b.value?.timestamp || b.value?.created_at || 0).getTime() - new Date(a.value?.timestamp || a.value?.created_at || 0).getTime());
+      return c.json({ donations: data, count, limit, offset });
+    }
+    
     const donations = await kv.getByPrefix('donation:')
     // Sort by timestamp descending
     donations.sort((a, b) => new Date(b.value.timestamp).getTime() - new Date(a.value.timestamp).getTime())
@@ -1549,6 +1603,15 @@ app.get('/make-server-2a4be611/admin/analytics', async (c) => {
 // Get all gallery images (public)
 app.get('/make-server-2a4be611/gallery', async (c) => {
   try {
+    const limit = parseInt(c.req.query('limit') || '100');
+    const offset = parseInt(c.req.query('offset') || '0');
+    
+    if (c.req.query('limit') !== undefined) {
+      const { data, count } = await kv.getPaginatedByPrefix('gallery:', limit, offset);
+      data.sort((a, b) => new Date(b.value?.timestamp || b.value?.created_at || 0).getTime() - new Date(a.value?.timestamp || a.value?.created_at || 0).getTime());
+      return c.json({ images: data, count, limit, offset });
+    }
+    
     const images = await kv.getByPrefix('gallery:')
     // Sort by date descending
     images.sort((a, b) => new Date(b.value.date).getTime() - new Date(a.value.date).getTime())
@@ -1568,6 +1631,15 @@ app.get('/make-server-2a4be611/gallery', async (c) => {
 // Get all gallery images (admin)
 app.get('/make-server-2a4be611/admin/gallery', async (c) => {
   try {
+    const limit = parseInt(c.req.query('limit') || '100');
+    const offset = parseInt(c.req.query('offset') || '0');
+    
+    if (c.req.query('limit') !== undefined) {
+      const { data, count } = await kv.getPaginatedByPrefix('gallery:', limit, offset);
+      data.sort((a, b) => new Date(b.value?.timestamp || b.value?.created_at || 0).getTime() - new Date(a.value?.timestamp || a.value?.created_at || 0).getTime());
+      return c.json({ images: data, count, limit, offset });
+    }
+    
     const images = await kv.getByPrefix('gallery:')
     images.sort((a, b) => new Date(b.value.date).getTime() - new Date(a.value.date).getTime())
     return c.json({ images })
@@ -1676,6 +1748,15 @@ app.post('/make-server-2a4be611/admin/gallery/bulk-delete', async (c) => {
 // Impact Stories routes
 app.get('/make-server-2a4be611/stories', async (c) => {
   try {
+    const limit = parseInt(c.req.query('limit') || '100');
+    const offset = parseInt(c.req.query('offset') || '0');
+    
+    if (c.req.query('limit') !== undefined) {
+      const { data, count } = await kv.getPaginatedByPrefix('story:', limit, offset);
+      data.sort((a, b) => new Date(b.value?.timestamp || b.value?.created_at || 0).getTime() - new Date(a.value?.timestamp || a.value?.created_at || 0).getTime());
+      return c.json({ stories: data, count, limit, offset });
+    }
+    
     const stories = await kv.getByPrefix('story:')
     stories.sort((a, b) => new Date(b.value.date).getTime() - new Date(a.value.date).getTime())
     return c.json({ stories: stories.map(s => ({ id: s.key, ...s.value })) })
@@ -1726,6 +1807,15 @@ app.delete('/make-server-2a4be611/admin/stories/:id', async (c) => {
 // Team routes
 app.get('/make-server-2a4be611/team', async (c) => {
   try {
+    const limit = parseInt(c.req.query('limit') || '100');
+    const offset = parseInt(c.req.query('offset') || '0');
+    
+    if (c.req.query('limit') !== undefined) {
+      const { data, count } = await kv.getPaginatedByPrefix('team:', limit, offset);
+      data.sort((a, b) => new Date(b.value?.timestamp || b.value?.created_at || 0).getTime() - new Date(a.value?.timestamp || a.value?.created_at || 0).getTime());
+      return c.json({ team: data, count, limit, offset });
+    }
+    
     const team = await kv.getByPrefix('team:')
     team.sort((a, b) => (a.value.order || 999) - (b.value.order || 999))
     return c.json({ team: team.map(t => ({ id: t.key, ...t.value })) })
@@ -1776,6 +1866,15 @@ app.delete('/make-server-2a4be611/admin/team/:id', async (c) => {
 // Events routes
 app.get('/make-server-2a4be611/events', async (c) => {
   try {
+    const limit = parseInt(c.req.query('limit') || '100');
+    const offset = parseInt(c.req.query('offset') || '0');
+    
+    if (c.req.query('limit') !== undefined) {
+      const { data, count } = await kv.getPaginatedByPrefix('event:', limit, offset);
+      data.sort((a, b) => new Date(b.value?.timestamp || b.value?.created_at || 0).getTime() - new Date(a.value?.timestamp || a.value?.created_at || 0).getTime());
+      return c.json({ events: data, count, limit, offset });
+    }
+    
     const events = await kv.getByPrefix('event:')
     events.sort((a, b) => new Date(b.value.date).getTime() - new Date(a.value.date).getTime())
     return c.json({ events: events.map(e => ({ id: e.key, ...e.value })) })
@@ -1826,6 +1925,15 @@ app.delete('/make-server-2a4be611/admin/events/:id', async (c) => {
 // Partners routes
 app.get('/make-server-2a4be611/partners', async (c) => {
   try {
+    const limit = parseInt(c.req.query('limit') || '100');
+    const offset = parseInt(c.req.query('offset') || '0');
+    
+    if (c.req.query('limit') !== undefined) {
+      const { data, count } = await kv.getPaginatedByPrefix('partner:', limit, offset);
+      data.sort((a, b) => new Date(b.value?.timestamp || b.value?.created_at || 0).getTime() - new Date(a.value?.timestamp || a.value?.created_at || 0).getTime());
+      return c.json({ partners: data, count, limit, offset });
+    }
+    
     const partners = await kv.getByPrefix('partner:')
     return c.json({ partners: partners.map(p => ({ id: p.key, ...p.value })) })
   } catch (error) {
@@ -1896,6 +2004,15 @@ app.put('/make-server-2a4be611/admin/impact-stats', async (c) => {
 
 app.get('/make-server-2a4be611/reports', async (c) => {
   try {
+    const limit = parseInt(c.req.query('limit') || '100');
+    const offset = parseInt(c.req.query('offset') || '0');
+    
+    if (c.req.query('limit') !== undefined) {
+      const { data, count } = await kv.getPaginatedByPrefix('report:', limit, offset);
+      data.sort((a, b) => new Date(b.value?.timestamp || b.value?.created_at || 0).getTime() - new Date(a.value?.timestamp || a.value?.created_at || 0).getTime());
+      return c.json({ reports: data, count, limit, offset });
+    }
+    
     const reports = await kv.getByPrefix('report:')
     reports.sort((a, b) => parseInt(b.value.year) - parseInt(a.value.year))
     return c.json({ reports: reports.map(r => ({ id: r.key, ...r.value })) })
@@ -1946,6 +2063,15 @@ app.delete('/make-server-2a4be611/admin/reports/:id', async (c) => {
 // Volunteer Opportunities routes
 app.get('/make-server-2a4be611/opportunities', async (c) => {
   try {
+    const limit = parseInt(c.req.query('limit') || '100');
+    const offset = parseInt(c.req.query('offset') || '0');
+    
+    if (c.req.query('limit') !== undefined) {
+      const { data, count } = await kv.getPaginatedByPrefix('opportunity:', limit, offset);
+      data.sort((a, b) => new Date(b.value?.timestamp || b.value?.created_at || 0).getTime() - new Date(a.value?.timestamp || a.value?.created_at || 0).getTime());
+      return c.json({ opportunities: data, count, limit, offset });
+    }
+    
     const opportunities = await kv.getByPrefix('opportunity:')
     return c.json({ opportunities: opportunities.map(o => ({ id: o.key, ...o.value })) })
   } catch (error) {
@@ -1995,6 +2121,15 @@ app.delete('/make-server-2a4be611/admin/opportunities/:id', async (c) => {
 // FAQ routes
 app.get('/make-server-2a4be611/faqs', async (c) => {
   try {
+    const limit = parseInt(c.req.query('limit') || '100');
+    const offset = parseInt(c.req.query('offset') || '0');
+    
+    if (c.req.query('limit') !== undefined) {
+      const { data, count } = await kv.getPaginatedByPrefix('faq:', limit, offset);
+      data.sort((a, b) => new Date(b.value?.timestamp || b.value?.created_at || 0).getTime() - new Date(a.value?.timestamp || a.value?.created_at || 0).getTime());
+      return c.json({ faqs: data, count, limit, offset });
+    }
+    
     const faqs = await kv.getByPrefix('faq:')
     faqs.sort((a, b) => (a.value.order || 999) - (b.value.order || 999))
     return c.json({ faqs: faqs.map(f => ({ id: f.key, ...f.value })) })
@@ -2045,6 +2180,15 @@ app.delete('/make-server-2a4be611/admin/faqs/:id', async (c) => {
 // Resources routes
 app.get('/make-server-2a4be611/resources', async (c) => {
   try {
+    const limit = parseInt(c.req.query('limit') || '100');
+    const offset = parseInt(c.req.query('offset') || '0');
+    
+    if (c.req.query('limit') !== undefined) {
+      const { data, count } = await kv.getPaginatedByPrefix('resource:', limit, offset);
+      data.sort((a, b) => new Date(b.value?.timestamp || b.value?.created_at || 0).getTime() - new Date(a.value?.timestamp || a.value?.created_at || 0).getTime());
+      return c.json({ resources: data, count, limit, offset });
+    }
+    
     const resources = await kv.getByPrefix('resource:')
     resources.sort((a, b) => new Date(b.value.date).getTime() - new Date(a.value.date).getTime())
     return c.json({ resources: resources.map(r => ({ id: r.key, ...r.value })) })
@@ -2095,6 +2239,15 @@ app.delete('/make-server-2a4be611/admin/resources/:id', async (c) => {
 // Pages routes
 app.get('/make-server-2a4be611/pages', async (c) => {
   try {
+    const limit = parseInt(c.req.query('limit') || '100');
+    const offset = parseInt(c.req.query('offset') || '0');
+    
+    if (c.req.query('limit') !== undefined) {
+      const { data, count } = await kv.getPaginatedByPrefix('page:', limit, offset);
+      data.sort((a, b) => new Date(b.value?.timestamp || b.value?.created_at || 0).getTime() - new Date(a.value?.timestamp || a.value?.created_at || 0).getTime());
+      return c.json({ pages: data, count, limit, offset });
+    }
+    
     const pages = await kv.getByPrefix('page:')
 
     // Seed default pages if none exist (first-run for existing installations)
@@ -2713,6 +2866,15 @@ app.post('/make-server-2a4be611/site-settings/initialize', async (c) => {
 // Get all users
 app.get('/make-server-2a4be611/admin/users', async (c) => {
   try {
+    const limit = parseInt(c.req.query('limit') || '100');
+    const offset = parseInt(c.req.query('offset') || '0');
+    
+    if (c.req.query('limit') !== undefined) {
+      const { data, count } = await kv.getPaginatedByPrefix('admin_user:', limit, offset);
+      data.sort((a, b) => new Date(b.value?.timestamp || b.value?.created_at || 0).getTime() - new Date(a.value?.timestamp || a.value?.created_at || 0).getTime());
+      return c.json({ users: data, count, limit, offset });
+    }
+    
     const users = await kv.getByPrefix('admin_user:')
     return c.json({ success: true, users: users || [] })
   } catch (error) {

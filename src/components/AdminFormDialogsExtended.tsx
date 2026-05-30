@@ -13,10 +13,11 @@ interface FormDialogProps {
   editingItem: any;
   onSuccess: () => void;
   userRole: string;
+  accessToken?: string;
 }
 
 // Annual Report Form Dialog
-export function ReportFormDialog({ show, onClose, editingItem, onSuccess, userRole }: FormDialogProps) {
+export function ReportFormDialog({ show, onClose, editingItem, onSuccess, userRole, accessToken }: FormDialogProps) {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
@@ -60,7 +61,7 @@ export function ReportFormDialog({ show, onClose, editingItem, onSuccess, userRo
         : `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/reports`;
       const response = await fetch(url, {
         method: editingItem ? 'PUT' : 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${publicAnonKey}` },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken || publicAnonKey}` },
         body: JSON.stringify(formData)
       });
       if (!response.ok) throw new Error('Failed to save');
@@ -142,7 +143,7 @@ export function ReportFormDialog({ show, onClose, editingItem, onSuccess, userRo
 }
 
 // Event Form Dialog
-export function EventFormDialog({ show, onClose, editingItem, onSuccess, userRole }: FormDialogProps) {
+export function EventFormDialog({ show, onClose, editingItem, onSuccess, userRole, accessToken }: FormDialogProps) {
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [formData, setFormData] = useState({
@@ -195,7 +196,7 @@ export function EventFormDialog({ show, onClose, editingItem, onSuccess, userRol
       formDataObj.append('file', file);
       const response = await fetch(
         `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/upload-image`,
-        { method: 'POST', headers: { Authorization: `Bearer ${publicAnonKey}` }, body: formDataObj }
+        { method: 'POST', headers: { Authorization: `Bearer ${accessToken || publicAnonKey}` }, body: formDataObj }
       );
       const data = await response.json();
       if (!response.ok) throw new Error(data.error);
@@ -221,7 +222,7 @@ export function EventFormDialog({ show, onClose, editingItem, onSuccess, userRol
         : `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/events`;
       const response = await fetch(url, {
         method: editingItem ? 'PUT' : 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${publicAnonKey}` },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken || publicAnonKey}` },
         body: JSON.stringify(formData)
       });
       if (!response.ok) throw new Error('Failed to save');
@@ -366,7 +367,7 @@ export function EventFormDialog({ show, onClose, editingItem, onSuccess, userRol
 }
 
 // Partner Form Dialog
-export function PartnerFormDialog({ show, onClose, editingItem, onSuccess, userRole }: FormDialogProps) {
+export function PartnerFormDialog({ show, onClose, editingItem, onSuccess, userRole, accessToken }: FormDialogProps) {
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [formData, setFormData] = useState({
@@ -410,7 +411,7 @@ export function PartnerFormDialog({ show, onClose, editingItem, onSuccess, userR
       formDataObj.append('file', file);
       const response = await fetch(
         `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/upload-image`,
-        { method: 'POST', headers: { Authorization: `Bearer ${publicAnonKey}` }, body: formDataObj }
+        { method: 'POST', headers: { Authorization: `Bearer ${accessToken || publicAnonKey}` }, body: formDataObj }
       );
       const data = await response.json();
       if (!response.ok) throw new Error(data.error);
@@ -436,7 +437,7 @@ export function PartnerFormDialog({ show, onClose, editingItem, onSuccess, userR
         : `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/partners`;
       const response = await fetch(url, {
         method: editingItem ? 'PUT' : 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${publicAnonKey}` },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken || publicAnonKey}` },
         body: JSON.stringify(formData)
       });
       if (!response.ok) throw new Error('Failed to save');

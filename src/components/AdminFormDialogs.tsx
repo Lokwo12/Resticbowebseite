@@ -15,10 +15,11 @@ interface FormDialogProps {
   editingItem: any;
   onSuccess: () => void;
   userRole: string;
+  accessToken?: string;
 }
 
 // Team Member Form Dialog
-export function TeamFormDialog({ show, onClose, editingItem, onSuccess, userRole }: FormDialogProps) {
+export function TeamFormDialog({ show, onClose, editingItem, onSuccess, userRole, accessToken }: FormDialogProps) {
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [formData, setFormData] = useState({
@@ -71,7 +72,7 @@ export function TeamFormDialog({ show, onClose, editingItem, onSuccess, userRole
       formDataObj.append('file', file);
       const response = await fetch(
         `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/upload-image`,
-        { method: 'POST', headers: { Authorization: `Bearer ${publicAnonKey}` }, body: formDataObj }
+        { method: 'POST', headers: { Authorization: `Bearer ${accessToken || publicAnonKey}` }, body: formDataObj }
       );
       const data = await response.json();
       if (!response.ok) throw new Error(data.error);
@@ -97,7 +98,7 @@ export function TeamFormDialog({ show, onClose, editingItem, onSuccess, userRole
         : `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/team`;
       const response = await fetch(url, {
         method: editingItem ? 'PUT' : 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${publicAnonKey}` },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken || publicAnonKey}` },
         body: JSON.stringify(formData)
       });
       if (!response.ok) throw new Error('Failed to save');
@@ -262,7 +263,7 @@ export function TeamFormDialog({ show, onClose, editingItem, onSuccess, userRole
 }
 
 // Impact Story Form Dialog
-export function StoryFormDialog({ show, onClose, editingItem, onSuccess, userRole }: FormDialogProps) {
+export function StoryFormDialog({ show, onClose, editingItem, onSuccess, userRole, accessToken }: FormDialogProps) {
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [formData, setFormData] = useState({
@@ -306,7 +307,7 @@ export function StoryFormDialog({ show, onClose, editingItem, onSuccess, userRol
       formDataObj.append('file', file);
       const response = await fetch(
         `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/upload-image`,
-        { method: 'POST', headers: { Authorization: `Bearer ${publicAnonKey}` }, body: formDataObj }
+        { method: 'POST', headers: { Authorization: `Bearer ${accessToken || publicAnonKey}` }, body: formDataObj }
       );
       const data = await response.json();
       if (!response.ok) throw new Error(data.error);
@@ -332,7 +333,7 @@ export function StoryFormDialog({ show, onClose, editingItem, onSuccess, userRol
         : `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/stories`;
       const response = await fetch(url, {
         method: editingItem ? 'PUT' : 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${publicAnonKey}` },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken || publicAnonKey}` },
         body: JSON.stringify(formData)
       });
       if (!response.ok) throw new Error('Failed to save');
@@ -463,7 +464,7 @@ export function StoryFormDialog({ show, onClose, editingItem, onSuccess, userRol
 }
 
 // Impact Stats Form Dialog
-export function ImpactStatsFormDialog({ show, onClose, currentStats, onSuccess, userRole }: any) {
+export function ImpactStatsFormDialog({ show, onClose, currentStats, onSuccess, userRole, accessToken }: any) {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     peopleServed: 5000,
@@ -502,7 +503,7 @@ export function ImpactStatsFormDialog({ show, onClose, currentStats, onSuccess, 
         `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/impact-stats`,
         {
           method: 'PUT',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${publicAnonKey}` },
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken || publicAnonKey}` },
           body: JSON.stringify(formData)
         }
       );
