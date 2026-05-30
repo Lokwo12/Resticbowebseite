@@ -571,7 +571,7 @@ export function DonationModal() {
 
 
       {/* Premium Desktop Split-Screen Modal */}
-      <div className="elegant-modal relative rounded-3xl shadow-premium-soft flex flex-col md:flex-row overflow-hidden border border-slate-100 bg-white w-[95vw] max-w-5xl" style={{ height: 'min(90vh, 680px)' }}>
+      <div className="elegant-modal relative rounded-3xl shadow-premium-soft flex flex-col md:flex-row overflow-hidden border border-slate-100 bg-white w-[95vw] max-w-5xl max-h-[95vh]">
         
         {/* Left Side: Impact Image (Hidden on mobile) */}
         <div className="hidden md:flex md:w-5/12 relative bg-[#0A192F] overflow-hidden flex-col justify-between p-10">
@@ -599,13 +599,13 @@ export function DonationModal() {
         </div>
 
         {/* Right Side: Form Content */}
-        <div className="w-full md:w-7/12 flex flex-col relative bg-white" style={{ height: '100%', overflow: 'hidden' }}>
+        <div className="w-full md:w-7/12 flex flex-col relative bg-white overflow-hidden">
 
 
 
         {/* ── HEADER ───────────────────────────────────────────── */}
          <div
-          className="shrink-0 px-6 pt-8 pb-6 flex flex-col items-center relative overflow-hidden bg-white border-b border-slate-100"
+          className="shrink-0 px-4 pt-6 pb-4 flex flex-col items-center relative overflow-hidden bg-white border-b border-slate-100"
         >
           {/* Subtle background pattern/glow */}
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-500"></div>
@@ -643,8 +643,8 @@ export function DonationModal() {
           )}
         </div>
 
-        {/* ── SCROLLABLE BODY ─────────────────────────────────────── */}
-        <div className="flex-1 overflow-y-auto">
+        {/* ── NO-SCROLL BODY ─────────────────────────────────────── */}
+        <div className="flex-1 flex flex-col">
 
           {/* ── SUCCESS SCREEN ───────────────────────────────────── */}
           {done && method !== 'bank' && method !== 'mtn' && method !== 'airtel' && (

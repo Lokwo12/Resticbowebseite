@@ -25,9 +25,25 @@ const iconMap: Record<string, typeof Heart> = {
   Award
 };
 
+const DEFAULT_ABOUT_SETTINGS: AboutSettings = {
+  title: 'About Resti Kiryandongo CBO',
+  intro: 'Founded with a mission to empower and uplift communities in Kiryandongo District, we are a community-based organization dedicated to creating sustainable positive change through collaborative action and locally-driven solutions.',
+  mission: 'To empower communities in Kiryandongo through sustainable development programs in education, healthcare, and economic empowerment, fostering self-reliance and improved quality of life for all.',
+  vision: 'A thriving, self-sustaining community where every individual has access to quality education, healthcare, and opportunities for economic prosperity.',
+  values: [
+    { icon: 'Heart', title: 'Compassion', description: 'We approach every initiative with empathy and understanding for community needs.' },
+    { icon: 'Users', title: 'Community', description: 'Working together with local leaders and residents to create lasting change.' },
+    { icon: 'Target', title: 'Impact', description: 'Focused on measurable outcomes that improve quality of life.' },
+    { icon: 'Award', title: 'Excellence', description: 'Committed to delivering high-quality programs and services.' }
+  ],
+  story: [
+    'Resti Kiryandongo CBO was born from a shared vision among community members who recognized the need for organized, sustainable development initiatives in our district. What started as small-scale educational support has grown into a comprehensive community development organization.',
+    'Today, we work closely with local government, international partners, and most importantly, the communities we serve, to identify needs, develop solutions, and implement programs that create lasting positive change. Our grassroots approach ensures that every initiative is community-driven and culturally appropriate.'
+  ]
+};
+
 export function About() {
-  const [settings, setSettings] = useState<AboutSettings | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [settings, setSettings] = useState<AboutSettings>(DEFAULT_ABOUT_SETTINGS);
   // Start visible since About is near top of page
   const { ref, isVisible } = useScrollAnimation({ startVisible: true });
 
@@ -36,23 +52,6 @@ export function About() {
   }, []);
 
   const fetchSettings = async () => {
-    const defaultSettings = {
-      title: 'About Resti Kiryandongo CBO',
-      intro: 'Founded with a mission to empower and uplift communities in Kiryandongo District, we are a community-based organization dedicated to creating sustainable positive change through collaborative action and locally-driven solutions.',
-      mission: 'To empower communities in Kiryandongo through sustainable development programs in education, healthcare, and economic empowerment, fostering self-reliance and improved quality of life for all.',
-      vision: 'A thriving, self-sustaining community where every individual has access to quality education, healthcare, and opportunities for economic prosperity.',
-      values: [
-        { icon: 'Heart', title: 'Compassion', description: 'We approach every initiative with empathy and understanding for community needs.' },
-        { icon: 'Users', title: 'Community', description: 'Working together with local leaders and residents to create lasting change.' },
-        { icon: 'Target', title: 'Impact', description: 'Focused on measurable outcomes that improve quality of life.' },
-        { icon: 'Award', title: 'Excellence', description: 'Committed to delivering high-quality programs and services.' }
-      ],
-      story: [
-        'Resti Kiryandongo CBO was born from a shared vision among community members who recognized the need for organized, sustainable development initiatives in our district. What started as small-scale educational support has grown into a comprehensive community development organization.',
-        'Today, we work closely with local government, international partners, and most importantly, the communities we serve, to identify needs, develop solutions, and implement programs that create lasting positive change. Our grassroots approach ensures that every initiative is community-driven and culturally appropriate.'
-      ]
-    };
-
     try {
       const response = await fetch(
         `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/site-settings`,
@@ -60,60 +59,31 @@ export function About() {
           headers: {
             Authorization: `Bearer ${publicAnonKey}`,
           },
+          signal: AbortSignal.timeout(6000),
         }
       );
 
-      if (!response.ok) {
-        throw new Error('Failed to fetch settings');
-      }
+      if (!response.ok) return;
 
       const data = await response.json();
       
       if (data.settings?.about) {
         const aboutData = data.settings.about;
-        const mergedSettings = {
-          title: aboutData.title || defaultSettings.title,
-          intro: aboutData.intro || defaultSettings.intro,
-          mission: aboutData.mission || defaultSettings.mission,
-          vision: aboutData.vision || defaultSettings.vision,
-          values: (aboutData.values && aboutData.values.length > 0) ? aboutData.values : defaultSettings.values,
-          story: (aboutData.story && aboutData.story.length > 0) ? aboutData.story : defaultSettings.story
-        };
-        setSettings(mergedSettings);
-      } else {
-        setSettings(defaultSettings);
+        setSettings({
+          title: aboutData.title || DEFAULT_ABOUT_SETTINGS.title,
+          intro: aboutData.intro || DEFAULT_ABOUT_SETTINGS.intro,
+          mission: aboutData.mission || DEFAULT_ABOUT_SETTINGS.mission,
+          vision: aboutData.vision || DEFAULT_ABOUT_SETTINGS.vision,
+          values: (aboutData.values && aboutData.values.length > 0) ? aboutData.values : DEFAULT_ABOUT_SETTINGS.values,
+          story: (aboutData.story && aboutData.story.length > 0) ? aboutData.story : DEFAULT_ABOUT_SETTINGS.story
+        });
       }
-    } catch (error) {
-      console.error('Error fetching about settings:', error);
-      setSettings(defaultSettings);
-    } finally {
-      setLoading(false);
+    } catch {
+      // Default settings already in state — no action needed
     }
   };
 
-  if (loading) {
-    return (
-      <section id="about" className="section-spacing-lg bg-slate-50/50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="animate-pulse">
-            <div className="h-12 bg-gray-200 rounded w-1/2 mx-auto mb-8"></div>
-            <div className="h-6 bg-gray-200 rounded w-full mb-4"></div>
-            <div className="h-6 bg-gray-200 rounded w-3/4 mx-auto mb-4"></div>
-          </div>
-        </div>
-      </section>
-    );
-  }
-  
-  // Ensure settings exists (fallback to defaults if somehow null)
-  const displaySettings = settings || {
-    title: 'About Resti Kiryandongo CBO',
-    intro: 'Founded with a mission to empower and uplift communities in Kiryandongo District.',
-    mission: 'To empower communities in Kiryandongo through sustainable development programs.',
-    vision: 'A thriving, self-sustaining community.',
-    values: [],
-    story: []
-  };
+  const displaySettings = settings;
 
   return (
     <section id="about" className="section-spacing-lg bg-slate-50/50" ref={ref}>

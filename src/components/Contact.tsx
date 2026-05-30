@@ -89,7 +89,11 @@ export function Contact() {
       }
 
       const data = await response.json();
-      setSettings(data.settings.contact);
+      if (data?.settings?.contact) {
+        setSettings(data.settings.contact);
+      } else {
+        throw new Error('Contact settings not found in database');
+      }
     } catch (error) {
       console.error('Error fetching contact settings:', error);
       // Set default settings if fetch fails
@@ -257,7 +261,7 @@ export function Contact() {
             <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
               <h3 className="text-xl text-gray-900 mb-4">Ways to Support</h3>
               <ul className="space-y-3 text-gray-700 mb-6">
-                {settings.supportItems.map((item, index) => (
+                {(settings.supportItems || []).map((item, index) => (
                   <li key={index} className="flex items-start gap-2">
                     <span className="text-emerald-600 mt-1">✓</span>
                     <span>{item}</span>

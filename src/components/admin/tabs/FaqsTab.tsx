@@ -23,7 +23,7 @@ export function FaqsTab(props: any) {
                       <HelpCircle size={32} className="text-white" />
                     </div>
                     <div>
-                      <h3 className="text-xl md:text-2xl font-bold text-white tracking-tight">FAQs <span className="text-sm font-normal text-cyan-200">({faqs.length})</span></h3>
+                      <h3 className="text-xl md:text-2xl font-bold text-white tracking-tight">FAQs <span className="text-sm font-normal text-cyan-200">({totalCount})</span></h3>
                       <p className="text-sm text-cyan-100 mt-1.5 opacity-80 font-medium">Manage frequently asked questions</p>
                     </div>
                   </div>
@@ -75,7 +75,7 @@ export function FaqsTab(props: any) {
                       </div>
                     </div>
                   ))}
-                  {faqs.length === 0 && (
+                  {totalCount === 0 && (
                     <div className="text-center py-24">
                       <div className="w-14 h-14 rounded-2xl bg-cyan-50 border border-cyan-100 flex items-center justify-center mx-auto mb-4">
                         <HelpCircle size={26} className="text-cyan-400" />

@@ -8,7 +8,7 @@ import { exportToCSV } from '../../../utils/csv';
 
 export function VolunteersTab(props: any) {
   const [volunteerFilter, setVolunteerFilter] = useState('all');
-  const getFilteredVolunteers = () => { if (volunteerFilter === 'all') return props.volunteers; return props.volunteers.filter((v:any) => v.value?.status === volunteerFilter); };
+  const getFilteredVolunteers = () => { if (volunteerFilter === 'all') return volunteers; return volunteers.filter((v:any) => v.value?.status === volunteerFilter); };
   const { activeTab, projectId, accessToken, setViewingItem, setFormData, setEditingItem, handleUpdateVolunteerStatus } = props;
   const [selectedVolunteers, setSelectedVolunteers] = useState<string[]>([]);
   const { items: volunteers, totalCount, totalPages, page, setPage, isLoading, deleteItems: handleBulkDeleteVolunteers, limit } = useAdminData('volunteers', 'volunteers', accessToken, projectId);
@@ -28,7 +28,7 @@ export function VolunteersTab(props: any) {
                       <Heart size={32} className="text-white" />
                     </div>
                     <div>
-                      <h3 className="text-xl md:text-2xl font-bold text-white tracking-tight">Volunteer Applications <span className="text-sm font-normal text-rose-200">({((volunteerFilter === 'all') ? volunteers : volunteers.filter((v:any) => v.value?.status === volunteerFilter)).length})</span></h3>
+                      <h3 className="text-xl md:text-2xl font-bold text-white tracking-tight">Volunteer Applications <span className="text-sm font-normal text-rose-200">({volunteerFilter === 'all' ? totalCount : volunteers.filter((v:any) => v.value?.status === volunteerFilter).length})</span></h3>
                       <p className="text-sm text-rose-100 mt-1.5 opacity-80 font-medium">Manage volunteer registrations</p>
                     </div>
                   </div>
@@ -48,7 +48,7 @@ export function VolunteersTab(props: any) {
                       <Heart size={18} className="text-rose-600" />
                     </div>
                     <div>
-                      <p className="text-2xl font-bold text-rose-700">{volunteers.length}</p>
+                      <p className="text-2xl font-bold text-rose-700">{totalCount}</p>
                       <p className="text-xs text-rose-500 font-medium">Total</p>
                     </div>
                   </div>

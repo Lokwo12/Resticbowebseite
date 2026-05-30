@@ -496,6 +496,39 @@ export function SiteSettingsTab({ settings: initialSettings, onUpdate }: SiteSet
                 />
               </div>
 
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm text-gray-700 mb-2">Hero Video URL</label>
+                  <input
+                    type="text"
+                    value={settings.about?.heroVideoUrl || ''}
+                    onChange={(e) =>
+                      setSettings({
+                        ...settings,
+                        about: { ...settings.about, heroVideoUrl: e.target.value },
+                      })
+                    }
+                    placeholder="https://example.com/video.mp4"
+                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-700 mb-2">Mission Video URL</label>
+                  <input
+                    type="text"
+                    value={settings.about?.missionVideoUrl || ''}
+                    onChange={(e) =>
+                      setSettings({
+                        ...settings,
+                        about: { ...settings.about, missionVideoUrl: e.target.value },
+                      })
+                    }
+                    placeholder="https://example.com/video2.mp4"
+                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
+                  />
+                </div>
+              </div>
+
               <div>
                 <label className="block text-sm text-gray-700 mb-2">Introduction</label>
                 <textarea
@@ -559,6 +592,77 @@ export function SiteSettingsTab({ settings: initialSettings, onUpdate }: SiteSet
                     className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 mb-2"
                   />
                 ))}
+              </div>
+
+              <div className="pt-4 border-t">
+                <div className="flex justify-between items-center mb-4">
+                  <label className="block text-sm font-medium text-gray-900">Timeline / Milestones</label>
+                  <button
+                    onClick={() => {
+                      const newTimeline = [...(settings.about?.timeline || []), { year: '', title: '', desc: '' }];
+                      setSettings({ ...settings, about: { ...settings.about, timeline: newTimeline } });
+                    }}
+                    className="flex items-center gap-1 text-sm text-emerald-600 hover:text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-full transition-colors"
+                  >
+                    <Plus size={16} /> Add Event
+                  </button>
+                </div>
+                <div className="space-y-4">
+                  {(settings.about?.timeline || []).map((item: any, index: number) => (
+                    <div key={index} className="flex gap-4 items-start p-4 bg-gray-50 rounded-lg border border-gray-100">
+                      <div className="flex-1 space-y-3">
+                        <div className="flex gap-4">
+                          <input
+                            type="text"
+                            value={item.year}
+                            onChange={(e) => {
+                              const newTimeline = [...(settings.about?.timeline || [])];
+                              newTimeline[index] = { ...newTimeline[index], year: e.target.value };
+                              setSettings({ ...settings, about: { ...settings.about, timeline: newTimeline } });
+                            }}
+                            placeholder="Year (e.g. 2023)"
+                            className="w-1/3 px-3 py-1.5 text-sm border rounded-md focus:ring-2 focus:ring-emerald-500"
+                          />
+                          <input
+                            type="text"
+                            value={item.title}
+                            onChange={(e) => {
+                              const newTimeline = [...(settings.about?.timeline || [])];
+                              newTimeline[index] = { ...newTimeline[index], title: e.target.value };
+                              setSettings({ ...settings, about: { ...settings.about, timeline: newTimeline } });
+                            }}
+                            placeholder="Milestone Title"
+                            className="flex-1 px-3 py-1.5 text-sm border rounded-md focus:ring-2 focus:ring-emerald-500"
+                          />
+                        </div>
+                        <textarea
+                          value={item.desc}
+                          onChange={(e) => {
+                            const newTimeline = [...(settings.about?.timeline || [])];
+                            newTimeline[index] = { ...newTimeline[index], desc: e.target.value };
+                            setSettings({ ...settings, about: { ...settings.about, timeline: newTimeline } });
+                          }}
+                          placeholder="Description of the milestone..."
+                          rows={2}
+                          className="w-full px-3 py-1.5 text-sm border rounded-md focus:ring-2 focus:ring-emerald-500"
+                        />
+                      </div>
+                      <button
+                        onClick={() => {
+                          const newTimeline = settings.about.timeline.filter((_: any, i: number) => i !== index);
+                          setSettings({ ...settings, about: { ...settings.about, timeline: newTimeline } });
+                        }}
+                        className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                        title="Remove Event"
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                    </div>
+                  ))}
+                  {(!settings.about?.timeline || settings.about.timeline.length === 0) && (
+                    <p className="text-sm text-gray-500 text-center py-4">No timeline events added yet.</p>
+                  )}
+                </div>
               </div>
             </div>
           </Card>

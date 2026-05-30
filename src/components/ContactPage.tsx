@@ -27,7 +27,9 @@ export function ContactPage() {
       );
       if (!response.ok) throw new Error('Failed to fetch settings');
       const data = await response.json();
-      setSettings(data.settings.contact);
+      if (data?.settings?.contact) {
+        setSettings(data.settings.contact);
+      }
     } catch (error) {
       console.error('Error fetching settings:', error);
     }

@@ -1,6 +1,7 @@
 import React from 'react';
-import { Newspaper, Plus, Trash2, Edit, X, Eye, FileText, Image as ImageIcon, Users, MessageSquare, Calendar, Handshake, Target, HelpCircle, BookOpen, Globe, Mail, Heart, Send, Clock, Badge, ChevronRight, TrendingUp, Download, Shield, EyeOff, User, RotateCcw, BarChart3, Award } from 'lucide-react';
+import { Newspaper, Plus, Trash2, Edit, X, Eye, FileText, Image as ImageIcon, Users, MessageSquare, Calendar, Handshake, Target, HelpCircle, BookOpen, Globe, Mail, Heart, Send, Clock, ChevronRight, TrendingUp, Download, Shield, EyeOff, User, RotateCcw, BarChart3, Award } from 'lucide-react';
 import { Button } from '../../ui/button';
+import { Badge } from '../../ui/badge';
 
 export function ImpactStatsTab(props: any) {
   const { 
@@ -34,7 +35,7 @@ export function ImpactStatsTab(props: any) {
                 <div className="flex flex-row items-center justify-between gap-4 bg-gradient-to-r from-emerald-600 to-green-700 rounded-2xl px-6 py-5 md:px-8 md:py-6 shadow-md">
                   <div className="flex items-center gap-3">
                     <div className="p-3 md:p-3.5 rounded-xl bg-white/20 border border-white/30 shadow-sm flex-shrink-0">
-                      <BarChart3 size={18} className="text-white" />
+                      <BarChart3 size={32} className="text-white" />
                     </div>
                     <div>
                       <h3 className="text-xl md:text-2xl font-bold text-white tracking-tight">Impact Statistics</h3>

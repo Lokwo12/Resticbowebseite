@@ -4,8 +4,18 @@ import { projectId, publicAnonKey } from '../utils/supabase/info';
 
 export function FloatingContact() {
   const [isOpen, setIsOpen] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
   const [phone, setPhone] = useState('');
   const [whatsapp, setWhatsapp] = useState('');
+
+  useEffect(() => {
+    const handleScroll = () => {
+      // Only show after scrolling past the hero section (~600px)
+      setIsVisible(window.scrollY > 600);
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   useEffect(() => {
     fetch(`https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/site-settings`, {
@@ -43,7 +53,9 @@ export function FloatingContact() {
   ];
 
   return (
-    <div className="fixed bottom-4 left-4 sm:bottom-8 sm:left-8 z-40">
+    <div className={`fixed bottom-4 left-4 sm:bottom-8 sm:left-8 z-40 transition-all duration-300 ${
+      isVisible ? 'opacity-100 translate-y-0 pointer-events-auto' : 'opacity-0 translate-y-4 pointer-events-none'
+    }`}>
       {/* Contact Options */}
       <div
         className={`flex flex-col gap-3 mb-3 transition-all duration-300 ${

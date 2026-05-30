@@ -1,6 +1,7 @@
 import React from 'react';
-import { Newspaper, Plus, Trash2, Edit, X, Eye, FileText, Image as ImageIcon, Users, MessageSquare, Calendar, Handshake, Target, HelpCircle, BookOpen, Globe, Mail, Heart, Send, Clock, Badge, ChevronRight, TrendingUp, Download, Shield, EyeOff, User, RotateCcw } from 'lucide-react';
+import { Newspaper, Plus, Trash2, Edit, X, Eye, FileText, Image as ImageIcon, Users, MessageSquare, Calendar, Handshake, Target, HelpCircle, BookOpen, Globe, Mail, Heart, Send, Clock, ChevronRight, TrendingUp, Download, Shield, EyeOff, User, RotateCcw } from 'lucide-react';
 import { Button } from '../../ui/button';
+import { Badge } from '../../ui/badge';
 import { useAdminData } from '../../../hooks/useAdminData';
 import { useState } from 'react';
 
@@ -22,7 +23,7 @@ export function ReportsTab(props: any) {
                       <Download size={32} className="text-white" />
                     </div>
                     <div>
-                      <h3 className="text-xl md:text-2xl font-bold text-white tracking-tight">Annual Reports <span className="text-sm font-normal text-slate-300">({reports.length})</span></h3>
+                      <h3 className="text-xl md:text-2xl font-bold text-white tracking-tight">Annual Reports <span className="text-sm font-normal text-slate-300">({totalCount})</span></h3>
                       <p className="text-sm text-slate-300 mt-1.5 opacity-80 font-medium">Manage annual and financial reports</p>
                     </div>
                   </div>
@@ -88,7 +89,7 @@ export function ReportsTab(props: any) {
                       </div>
                     </div>
                   ))}
-                  {reports.length === 0 && (
+                  {totalCount === 0 && (
                     <div className="text-center py-24">
                       <div className="w-14 h-14 rounded-2xl bg-gray-100 border border-gray-200 flex items-center justify-center mx-auto mb-4">
                         <Download size={26} className="text-gray-400" />

@@ -109,6 +109,11 @@ h1, h2, h3, h4, h5, h6, .font-heading {
 /* --- Smooth Scrolling --- */
 html {
   scroll-behavior: smooth;
+  overflow-x: hidden;
+}
+
+body {
+  overflow-x: hidden;
 }
 
 /* --- Custom Scrollbar --- */
@@ -417,17 +422,6 @@ html {
    ============================================================ */
 
 /* Custom Animations for Premium Feel */
-
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
 
 @keyframes float {
   0% {

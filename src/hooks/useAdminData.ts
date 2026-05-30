@@ -49,10 +49,36 @@ export function useAdminData(endpoint: string, queryKey: string, accessToken: st
     }
   };
 
+  const saveMutation = useMutation({
+    mutationFn: async (payload: any) => {
+      const basePath = ['programs', 'news', 'gallery', 'stories', 'team', 'events', 'partners', 'reports', 'opportunities', 'faqs', 'resources', 'pages', 'newsletter'].includes(endpoint) ? '' : '/admin';
+      const id = payload.id || payload.key?.split(':')[1];
+      const url = id
+        ? `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611${basePath}/${endpoint}/${id}`
+        : `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611${basePath}/${endpoint}`;
+      const res = await fetch(url, {
+        method: id ? 'PUT' : 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) throw new Error(`Failed to save ${queryKey}`);
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [queryKey] });
+      toast.success(`${queryKey} saved successfully`);
+    },
+    onError: (err) => {
+      toast.error((err as Error).message);
+    }
+  });
+
+  const saveItem = (payload: any) => saveMutation.mutate(payload);
+
   // The backend might return { contacts: [] } or { images: [] } etc.
   const items = data[queryKey] || data.images || data.team || data.donations || data.subscribers || data.users || [];
   const totalCount = data.count || 0;
   const totalPages = Math.ceil(totalCount / limit);
 
-  return { items, totalCount, totalPages, page, setPage, isLoading, deleteItems, limit };
+  return { items, totalCount, totalPages, page, setPage, isLoading, deleteItems, saveItem, limit };
 }

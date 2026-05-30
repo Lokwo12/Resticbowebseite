@@ -131,12 +131,13 @@ export function Footer() {
   };
 
   if (!footerSettings || !generalSettings || !contactSettings) {
-    return <footer className="bg-gray-900 text-white py-12"></footer>;
+    return <footer className="text-white py-12" style={{ background: 'linear-gradient(135deg, #0A192F 0%, #112240 50%, #0A192F 100%)' }}></footer>;
   }
 
   return (
     <>
-    <footer className="bg-gray-900 text-white">
+    <footer className="text-white relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #0A192F 0%, #112240 50%, #0A192F 100%)' }}>
+      <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-emerald-500/50 to-transparent"></div>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-8 mb-8">
           {/* About */}
@@ -156,7 +157,7 @@ export function Footer() {
             <h4 className="mb-4">Quick Links</h4>
             <ul className="space-y-2 text-sm text-gray-400">
               <li><Link to="/#home" className="block hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Home</Link></li>
-              <li><Link to="/#about" className="block hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">About Us</Link></li>
+              <li><Link to="/about" className="block hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">About Us</Link></li>
               <li><Link to="/#programs" className="block hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Programs</Link></li>
               <li><Link to="/team" className="block hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Our Team</Link></li>
               <li><Link to="/stories" className="block hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Impact Stories</Link></li>
@@ -184,6 +185,7 @@ export function Footer() {
               <li><Link to="/news" className="block hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">News</Link></li>
               <li><Link to="/faqs" className="block hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">FAQ</Link></li>
               <li><Link to="/reports" className="block hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Impact Reports</Link></li>
+              <li><Link to="/financials" className="block hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Financials</Link></li>
               <li><Link to="/#impact-dashboard" className="block hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Impact Dashboard</Link></li>
               {customPages.map(page => (
                 <li key={page.slug}>
@@ -215,7 +217,7 @@ export function Footer() {
             <div className="flex gap-3">
               <a
                 href={contactSettings.socialLinks.facebook}
-                className="w-10 h-10 bg-gray-800 rounded-lg flex items-center justify-center hover:bg-emerald-600 hover:scale-110 hover:-translate-y-1 transition-all duration-300"
+                className="w-10 h-10 bg-white/10 rounded-lg backdrop-blur-sm flex items-center justify-center hover:bg-emerald-600 hover:scale-110 hover:-translate-y-1 transition-all duration-300"
                 aria-label="Facebook"
                 target="_blank"
                 rel="noopener noreferrer"
@@ -224,7 +226,7 @@ export function Footer() {
               </a>
               <a
                 href={contactSettings.socialLinks.twitter}
-                className="w-10 h-10 bg-gray-800 rounded-lg flex items-center justify-center hover:bg-emerald-600 hover:scale-110 hover:-translate-y-1 transition-all duration-300"
+                className="w-10 h-10 bg-white/10 rounded-lg backdrop-blur-sm flex items-center justify-center hover:bg-emerald-600 hover:scale-110 hover:-translate-y-1 transition-all duration-300"
                 aria-label="Twitter"
                 target="_blank"
                 rel="noopener noreferrer"
@@ -233,7 +235,7 @@ export function Footer() {
               </a>
               <a
                 href={contactSettings.socialLinks.instagram}
-                className="w-10 h-10 bg-gray-800 rounded-lg flex items-center justify-center hover:bg-emerald-600 hover:scale-110 hover:-translate-y-1 transition-all duration-300"
+                className="w-10 h-10 bg-white/10 rounded-lg backdrop-blur-sm flex items-center justify-center hover:bg-emerald-600 hover:scale-110 hover:-translate-y-1 transition-all duration-300"
                 aria-label="Instagram"
                 target="_blank"
                 rel="noopener noreferrer"
@@ -242,7 +244,7 @@ export function Footer() {
               </a>
               <a
                 href={`mailto:${contactSettings.email}`}
-                className="w-10 h-10 bg-gray-800 rounded-lg flex items-center justify-center hover:bg-emerald-600 transition-colors"
+                className="w-10 h-10 bg-white/10 rounded-lg backdrop-blur-sm flex items-center justify-center hover:bg-emerald-600 transition-colors"
                 aria-label="Email"
               >
                 <Mail size={20} />
@@ -252,7 +254,7 @@ export function Footer() {
         </div>
 
         {/* Bottom bar */}
-        <div className="border-t border-gray-800 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
+        <div className="border-t border-white/10 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
           <div className="flex items-center gap-3">
             <p className="text-sm text-gray-400">
               © {new Date().getFullYear()} {footerSettings.copyrightText}

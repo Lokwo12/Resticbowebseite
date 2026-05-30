@@ -25,7 +25,7 @@ export function OpportunitiesTab(props: any) {
                       <Target size={32} className="text-white" />
                     </div>
                     <div>
-                      <h3 className="text-xl md:text-2xl font-bold text-white tracking-tight">Opportunities <span className="text-sm font-normal text-purple-200">({opportunities.length})</span></h3>
+                      <h3 className="text-xl md:text-2xl font-bold text-white tracking-tight">Opportunities <span className="text-sm font-normal text-purple-200">({totalCount})</span></h3>
                       <p className="text-sm text-purple-100 mt-1.5 opacity-80 font-medium">Manage volunteer opportunities</p>
                     </div>
                   </div>
@@ -125,7 +125,7 @@ export function OpportunitiesTab(props: any) {
                       </div>
                     </div>
                   ))}
-                  {opportunities.length === 0 && (
+                  {totalCount === 0 && (
                     <div className="col-span-3 text-center py-16">
                       <div className="w-14 h-14 rounded-2xl bg-purple-50 border border-purple-100 flex items-center justify-center mx-auto mb-4">
                         <Target size={26} className="text-purple-400" />

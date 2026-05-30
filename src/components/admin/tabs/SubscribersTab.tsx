@@ -46,7 +46,7 @@ export function SubscribersTab(props: any) {
   const { items: subscribers, totalCount, totalPages, page, setPage, isLoading, deleteItems: handleBulkDeleteSubscribers, limit } = useAdminData('newsletter', 'subscribers', accessToken, projectId);
 
   const handleSendNewsletter = async () => {
-    if (subscribers.length === 0) { toast.error('Cannot send newsletter: You have 0 subscribers currently.'); return; }
+    if (totalCount === 0) { toast.error('Cannot send newsletter: You have 0 subscribers currently.'); return; }
     if (!newsletterSubject.trim()) { toast.error('Please enter a subject line for your newsletter.'); return; }
     if (!newsletterBody.trim()) { toast.error('Please enter the email body content.'); return; }
     setSendingNewsletter(true);
@@ -89,7 +89,7 @@ export function SubscribersTab(props: any) {
                       <Send size={32} className="text-white" />
                     </div>
                     <div>
-                      <h3 className="text-xl md:text-2xl font-bold text-white tracking-tight">Newsletter Subscribers <span className="text-sm font-normal text-indigo-200">({subscribers.length})</span></h3>
+                      <h3 className="text-xl md:text-2xl font-bold text-white tracking-tight">Newsletter Subscribers <span className="text-sm font-normal text-indigo-200">({totalCount})</span></h3>
                       <p className="text-sm text-indigo-100 mt-1.5 opacity-80 font-medium">Manage newsletter subscribers and send blasts</p>
                     </div>
                   </div>
@@ -109,7 +109,7 @@ export function SubscribersTab(props: any) {
                       <Users size={18} className="text-indigo-600" />
                     </div>
                     <div>
-                      <p className="text-2xl font-bold text-indigo-700">{subscribers.length}</p>
+                      <p className="text-2xl font-bold text-indigo-700">{totalCount}</p>
                       <p className="text-xs text-indigo-500 font-medium">Total Subscribers</p>
                     </div>
                   </div>
@@ -118,7 +118,7 @@ export function SubscribersTab(props: any) {
                       <Check size={18} className="text-emerald-600" />
                     </div>
                     <div>
-                      <p className="text-2xl font-bold text-emerald-700">{subscribers.length}</p>
+                      <p className="text-2xl font-bold text-emerald-700">{totalCount}</p>
                       <p className="text-xs text-emerald-500 font-medium">Active</p>
                     </div>
                   </div>
@@ -128,7 +128,7 @@ export function SubscribersTab(props: any) {
                     </div>
                     <div>
                       <p className="text-2xl font-bold text-violet-700">
-                        {subscribers.length > 0
+                        {totalCount > 0
                           ? new Date(Math.max(...subscribers.map(s => new Date(s.value.created_at || 0).getTime()))).toLocaleDateString()
                           : '—'}
                       </p>
@@ -145,7 +145,7 @@ export function SubscribersTab(props: any) {
                     </div>
                     <div>
                       <h4 className="text-sm font-semibold text-slate-800">Send Newsletter Blast</h4>
-                      <p className="text-xs text-gray-500">Compose and send to all {subscribers.length} subscriber{subscribers.length !== 1 ? 's' : ''}</p>
+                      <p className="text-xs text-gray-500">Compose and send to all {totalCount} subscriber{totalCount !== 1 ? 's' : ''}</p>
                     </div>
                   </div>
                   <div className="space-y-3">
@@ -174,11 +174,11 @@ export function SubscribersTab(props: any) {
                     </div>
                     <button
                       onClick={handleSendNewsletter}
-                      disabled={sendingNewsletter || subscribers.length === 0}
+                      disabled={sendingNewsletter || totalCount === 0}
                       className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-xl transition-all shadow-md hover:shadow-lg transform hover:scale-[1.01]"
                     >
                       <Send size={15} />
-                      {sendingNewsletter ? 'Sending...' : `Send to ${subscribers.length} subscriber${subscribers.length !== 1 ? 's' : ''}`}
+                      {sendingNewsletter ? 'Sending...' : `Send to ${totalCount} subscriber${totalCount !== 1 ? 's' : ''}`}
                     </button>
                   </div>
                 </div>
@@ -434,7 +434,7 @@ export function SubscribersTab(props: any) {
                     <div
                       key={user.key}
                       className="bg-white border border-gray-200 border-l-4 border-l-slate-400 rounded-2xl p-6 hover:shadow-xl hover:-translate-y-1 hover:border-slate-300 transition-all duration-300 shadow-sm cursor-pointer group flex flex-col"
-                      onClick={() => { setViewingItem(user); setShowPasswordResetDialog(true); }}
+                      onClick={() => { setViewingItem(user); if (props.setShowPasswordResetDialog) props.setShowPasswordResetDialog(true); }}
                     >
                       {/* Avatar + name + badges */}
                       <div className="flex items-start gap-3 mb-4">
@@ -505,14 +505,14 @@ export function SubscribersTab(props: any) {
                           Edit
                         </button>
                         <button
-                          onClick={() => { setViewingItem(user); setShowPasswordResetDialog(true); }}
+                          onClick={() => { setViewingItem(user); if (props.setShowPasswordResetDialog) props.setShowPasswordResetDialog(true); }}
                           className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-lg transition-colors"
                         >
                           <Shield size={13} />
                           Reset PW
                         </button>
                         <button
-                          onClick={() => handleBulkDeleteSubscribers([user.value.id])}
+                          onClick={() => handleBulkDeleteUsers([user.value.id])}
                           className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-colors"
                         >
                           <Trash2 size={13} />

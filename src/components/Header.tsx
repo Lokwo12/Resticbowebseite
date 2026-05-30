@@ -234,7 +234,7 @@ export function Header() {
                 <div className="bg-white rounded-lg shadow-xl border border-gray-100 overflow-hidden mt-1">
                   <div className="py-1">
                     <Link 
-                      to="/#about"
+                      to="/about"
                       onClick={() => setActiveDropdown(null)} 
                       className="w-full text-left block px-4 py-2.5 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-600 transition-colors"
                     >
@@ -363,46 +363,6 @@ export function Header() {
               </div>
             </div>
 
-            {/* Pages Dropdown — only when published custom pages exist */}
-            {customPages.length > 0 && (
-              <div
-                className="nav-dropdown-container relative"
-                onMouseLeave={() => setActiveDropdown(null)}
-              >
-                <button
-                  onMouseEnter={() => setActiveDropdown('pages')}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setActiveDropdown(activeDropdown === 'pages' ? null : 'pages');
-                  }}
-                  className={`transition-all duration-300 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-emerald-600 hover:after:w-full after:transition-all flex items-center gap-1 py-4 ${
-                    isSolid
-                      ? 'text-gray-700 hover:text-emerald-600'
-                      : 'text-white hover:text-emerald-300 drop-shadow'
-                  }`}
-                >
-                  Pages <ChevronDown size={14} />
-                </button>
-                <div className={`absolute left-0 top-full w-52 transition-all duration-300 z-50 pt-0 ${
-                  activeDropdown === 'pages' ? 'opacity-100 visible translate-y-0' : 'opacity-0 invisible translate-y-2'
-                }`}>
-                  <div className="bg-white rounded-lg shadow-xl border border-gray-100 overflow-hidden mt-1">
-                    <div className="py-1">
-                      {customPages.map(page => (
-                        <Link
-                          key={page.slug}
-                          to={`/pages/${page.slug}`}
-                          onClick={() => setActiveDropdown(null)}
-                          className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-600 transition-colors"
-                        >
-                          {page.title}
-                        </Link>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
 
             <Link
               to="/contact"
@@ -453,7 +413,7 @@ export function Header() {
               <Link to="/#home" onClick={() => setMobileMenuOpen(false)} className="text-gray-700 hover:text-emerald-600 transition-colors text-left px-2 py-1">
                 Home
               </Link>
-              <Link to="/#about" onClick={() => setMobileMenuOpen(false)} className="text-gray-700 hover:text-emerald-600 transition-colors text-left px-2 py-1">
+              <Link to="/about" onClick={() => setMobileMenuOpen(false)} className="text-gray-700 hover:text-emerald-600 transition-colors text-left px-2 py-1">
                 About Us
               </Link>
               <Link to="/#programs" onClick={() => setMobileMenuOpen(false)} className="text-gray-700 hover:text-emerald-600 transition-colors text-left px-2 py-1">
@@ -492,16 +452,7 @@ export function Header() {
               <Link to="/contact" className="text-gray-700 hover:text-emerald-600 transition-colors text-left px-2 py-1" onClick={() => setMobileMenuOpen(false)}>
                 Contact
               </Link>
-              {customPages.map(page => (
-                <Link
-                  key={page.slug}
-                  to={`/pages/${page.slug}`}
-                  className="text-gray-700 hover:text-emerald-600 transition-colors text-left px-2 py-1"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  {page.title}
-                </Link>
-              ))}
+
               <button onClick={openDonationModal} className="bg-emerald-600 text-white px-6 py-2 rounded-lg hover:bg-emerald-700 transition-colors mt-2">
                 Donate Now
               </button>

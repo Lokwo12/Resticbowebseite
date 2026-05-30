@@ -190,7 +190,7 @@ export function EnhancedAdminDashboard() {
 
   // Form states
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [password, setPassword] = useState('password');
   const [name, setName] = useState('');
   const [isSignup, setIsSignup] = useState(false);
   const [showSignupSuccessDialog, setShowSignupSuccessDialog] = useState(false);
@@ -2784,7 +2784,7 @@ export function EnhancedAdminDashboard() {
                         <span className="text-[10px] text-gray-400">Checked at {diagResults.checkedAt}</span>
                       </div>
                       <div className="bg-slate-950 font-mono text-[11px] leading-relaxed text-emerald-400 p-4 rounded-xl border border-slate-900 max-h-48 overflow-y-auto space-y-1 shadow-inner scrollbar-thin scrollbar-thumb-slate-800">
-                        {diagResults.logs.map((log: string, idx: number) => {
+                        {(diagResults.logs || []).map((log: string, idx: number) => {
                           let color = "text-emerald-400";
                           if (log.includes("[ERROR]")) color = "text-rose-400 font-bold";
                           else if (log.includes("[WARNING]")) color = "text-amber-400 font-bold";

@@ -41,12 +41,15 @@ import { DonationModalProvider, DonationModal } from './components/DonationModal
 import { CardPaymentPage } from './components/CardPaymentPage';
 import { ContactPage } from './components/ContactPage';
 import { CustomPage } from './components/CustomPage';
+import { HelmetProvider } from 'react-helmet-async';
+import { SEO } from './components/SEO';
+import { FinancialReports } from './components/FinancialReports';
+import { AboutPage } from './components/AboutPage';
 
 function PageTitleManager() {
   const { pathname } = useLocation();
 
-  useEffect(() => {
-    const titleMap: Record<string, string> = {
+  const titleMap: Record<string, string> = {
       '/': 'Home | Resti Kiryandongo CBO',
       '/super-secret-admin-route': 'Admin Dashboard | Resti Kiryandongo',
       '/privacy': 'Privacy Policy | Resti Kiryandongo',
@@ -62,21 +65,16 @@ function PageTitleManager() {
       '/opportunities': 'Opportunities | Resti Kiryandongo',
       '/donate': 'Donate | Support Our Mission',
       '/contact': 'Contact Us | Resti Kiryandongo',
+      '/financials': 'Financial Transparency | Resti Kiryandongo',
+      '/about': 'About Us | Resti Kiryandongo',
     };
 
-    if (pathname.startsWith('/news/')) {
-      document.title = 'News Article | Resti Kiryandongo';
-    } else if (pathname.startsWith('/programs/')) {
-      document.title = 'Program Details | Resti Kiryandongo';
-    } else if (pathname.startsWith('/pages/')) {
-      // Title will be set by CustomPage once it loads
-      document.title = 'Page | Resti Kiryandongo';
-    } else {
-      document.title = titleMap[pathname] || 'Resti Kiryandongo CBO';
-    }
-  }, [pathname]);
+    let title = titleMap[pathname] || 'Resti Kiryandongo CBO';
+    if (pathname.startsWith('/news/')) title = 'News Article | Resti Kiryandongo';
+    else if (pathname.startsWith('/programs/')) title = 'Program Details | Resti Kiryandongo';
+    else if (pathname.startsWith('/pages/')) title = 'Page | Resti Kiryandongo';
 
-  return null;
+  return <SEO title={title} />;
 }
 
 function HomePage() {
@@ -190,6 +188,7 @@ const queryClient = new QueryClient();
 
 export default function App() {
   return (
+    <HelmetProvider>
     <QueryClientProvider client={queryClient}>
     <DonationModalProvider>
     <BrowserRouter>
@@ -207,6 +206,7 @@ export default function App() {
         <Route path="/stories" element={<MainLayout><StoriesArchive /></MainLayout>} />
         <Route path="/programs/:id" element={<MainLayout><ProgramDetail /></MainLayout>} />
         <Route path="/team" element={<MainLayout><TeamPage /></MainLayout>} />
+        <Route path="/about" element={<MainLayout><AdminErrorBoundary><AboutPage /></AdminErrorBoundary></MainLayout>} />
         <Route path="/reports" element={<MainLayout><ImpactReports /></MainLayout>} />
         <Route path="/volunteer" element={<MainLayout><VolunteerPage /></MainLayout>} />
         <Route path="/faqs" element={<MainLayout><FAQPage /></MainLayout>} />
@@ -214,6 +214,7 @@ export default function App() {
         <Route path="/opportunities" element={<MainLayout><OpportunitiesPage /></MainLayout>} />
         <Route path="/donate" element={<MainLayout><CardPaymentPage /></MainLayout>} />
         <Route path="/contact" element={<ContactPage />} />
+        <Route path="/financials" element={<MainLayout><FinancialReports /></MainLayout>} />
         <Route path="/pages/:slug" element={<MainLayout><CustomPage /></MainLayout>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
@@ -223,5 +224,6 @@ export default function App() {
     </BrowserRouter>
     </DonationModalProvider>
     </QueryClientProvider>
+    </HelmetProvider>
   );
 }

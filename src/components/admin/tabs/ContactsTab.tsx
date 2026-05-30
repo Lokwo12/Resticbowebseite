@@ -8,7 +8,7 @@ import { exportToCSV } from '../../../utils/csv';
 
 export function ContactsTab(props: any) {
   const [contactFilter, setContactFilter] = useState('all');
-  const getFilteredContacts = () => { if (contactFilter === 'all') return props.contacts; return props.contacts.filter((c:any) => c.value?.status === contactFilter); };
+  const getFilteredContacts = () => { if (contactFilter === 'all') return contacts; return contacts.filter((c:any) => c.value?.status === contactFilter); };
   const { activeTab, projectId, accessToken, setViewingItem, setFormData, setEditingItem, handleUpdateContactStatus } = props;
   const [selectedContacts, setSelectedContacts] = useState<string[]>([]);
   const { items: contacts, totalCount, totalPages, page, setPage, isLoading, deleteItems: handleBulkDeleteContacts, limit } = useAdminData('contacts', 'contacts', accessToken, projectId);
@@ -26,7 +26,7 @@ export function ContactsTab(props: any) {
                       <Mail size={32} className="text-white" />
                     </div>
                     <div>
-                      <h3 className="text-xl md:text-2xl font-bold text-white tracking-tight">Contact Messages <span className="text-sm font-normal text-sky-200">({((contactFilter === 'all') ? contacts : contacts.filter((c:any) => c.value?.status === contactFilter)).length})</span></h3>
+                      <h3 className="text-xl md:text-2xl font-bold text-white tracking-tight">Contact Messages <span className="text-sm font-normal text-sky-200">({contactFilter === 'all' ? totalCount : contacts.filter((c:any) => c.value?.status === contactFilter).length})</span></h3>
                       <p className="text-sm text-sky-100 mt-1.5 opacity-80 font-medium">Manage incoming messages</p>
                     </div>
                   </div>

@@ -4,6 +4,7 @@ import { Quote, Heart } from 'lucide-react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { Card } from './ui/card';
 import { Badge } from './ui/badge';
+import { useScrollAnimation, getStaggerDelay } from '../utils/animations';
 
 interface Story {
   id: string;
@@ -21,6 +22,7 @@ export function ImpactStories() {
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [sectionSettings, setSectionSettings] = useState({ title: 'Impact Stories', description: 'Read inspiring stories from the lives we\'ve touched and the communities we\'ve transformed.' });
+  const { ref, isVisible } = useScrollAnimation({ startVisible: true });
 
   useEffect(() => {
     fetchStories();
@@ -89,15 +91,33 @@ export function ImpactStories() {
   }
 
   return (
-    <section id="impact" className="section-spacing-lg bg-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section id="impact" ref={ref} className={`relative section-spacing-lg transition-all duration-700 overflow-hidden ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+      
+      {/* Background Video */}
+      <div className="absolute inset-0 z-0">
+        <video 
+          autoPlay 
+          loop 
+          muted 
+          playsInline
+          className="w-full h-full object-cover scale-105 opacity-40 mix-blend-luminosity"
+        >
+          <source src="https://assets.mixkit.co/videos/preview/mixkit-group-of-friends-partying-happily-4640-large.mp4" type="video/mp4" />
+        </video>
+        <div className="absolute inset-0 bg-[#0A192F]/80"></div>
+      </div>
+
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
-        <div className="text-center mb-12">
-          <div className="flex items-center justify-center gap-2 mb-4">
-            <Heart className="text-emerald-600" size={32} />
-            <h2 className="text-emerald-600">{sectionSettings.title}</h2>
-          </div>
-          <p className="text-gray-600 max-w-3xl mx-auto">
+        <div className="text-center mb-16">
+          <span className="inline-flex items-center gap-2 bg-emerald-100 text-emerald-700 text-xs font-semibold px-4 py-1.5 rounded-full mb-6 uppercase tracking-wider">
+            <Heart size={14} fill="currentColor" />
+            Real Stories
+          </span>
+          <h2 className="text-3xl md:text-5xl font-bold font-heading text-white mb-6">
+            {sectionSettings.title}
+          </h2>
+          <p className="text-lg text-gray-300 max-w-3xl mx-auto leading-relaxed">
             {sectionSettings.description}
           </p>
         </div>
@@ -111,8 +131,8 @@ export function ImpactStories() {
                 onClick={() => setSelectedCategory(category)}
                 className={`px-6 py-2 rounded-full transition-all ${
                   selectedCategory === category
-                    ? 'bg-emerald-600 text-white shadow-premium-soft hover:shadow-2xl transition-all duration-300'
-                    : 'bg-gray-100 text-gray-700 hover:bg-emerald-50 border border-gray-200'
+                    ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/30 transition-all duration-300'
+                    : 'bg-white/10 backdrop-blur-md text-white hover:bg-white/20 border border-white/20'
                 }`}
               >
                 {category.charAt(0).toUpperCase() + category.slice(1)}
@@ -125,14 +145,14 @@ export function ImpactStories() {
         {filteredStories.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {filteredStories.map((story) => (
-              <Card key={story.id} className="overflow-hidden hover:shadow-premium-soft hover:shadow-2xl transition-all duration-300 transition-shadow duration-300 group flex flex-col">
+              <Card key={story.id} className="overflow-hidden hover:shadow-premium-soft hover:-translate-y-1 transition-all duration-300 group flex flex-col border-0 shadow-md rounded-2xl" style={{ transitionDelay: getStaggerDelay(filteredStories.indexOf(story)) }}>
                 {/* Uniform image area */}
                 <div className="relative h-52 overflow-hidden bg-slate-50 border-b border-slate-100 flex-shrink-0 flex items-center justify-center">
                   {story.image ? (
                     <img
                       src={story.image}
                       alt={story.name}
-                      className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                     />
                   ) : (
                     <div className="absolute inset-0 flex items-center justify-center">
@@ -186,7 +206,7 @@ export function ImpactStories() {
         {/* View All Stories Button */}
         <div className="text-center mt-12">
           <Link to="/stories">
-            <button className="bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-3 rounded-lg transition-all duration-300 shadow-premium-soft transition-all duration-300 hover:shadow-premium-soft hover:shadow-2xl transition-all duration-300 inline-flex items-center gap-2">
+            <button className="bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-3.5 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] inline-flex items-center gap-2 font-semibold">
               <span>View All Stories</span>
               <Heart size={20} />
             </button>

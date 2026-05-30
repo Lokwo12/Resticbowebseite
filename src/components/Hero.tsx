@@ -53,7 +53,6 @@ interface HeroSettings {
   stats: Array<{ value: string; label: string }>;
 }
 
-// Professional background images for the carousel
 const FALLBACK_BACKGROUND_IMAGES = [
   'https://images.unsplash.com/photo-1761039808159-f02b58f07032?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxhZnJpY2FuJTIwY29tbXVuaXR5JTIwZGV2ZWxvcG1lbnR8ZW58MXx8fHwxNzY1MjMyNzc0fDA&ixlib=rb-4.1.0&q=80&w=1080',
   'https://images.unsplash.com/photo-1641569707854-c80945fb4719?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx2b2x1bnRlZXIlMjBoZWxwaW5nJTIwY2hpbGRyZW58ZW58MXx8fHwxNzY1MTk3NzkwfDA&ixlib=rb-4.1.0&q=80&w=1080',
@@ -62,10 +61,23 @@ const FALLBACK_BACKGROUND_IMAGES = [
   'https://images.unsplash.com/photo-1761466977752-de51b3ecce84?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxhZ3JpY3VsdHVyYWwlMjBkZXZlbG9wbWVudHxlbnwxfHx8fDE3NjUyMzI3NzV8MA&ixlib=rb-4.1.0&q=80&w=1080',
 ];
 
+const DEFAULT_HERO_SETTINGS: HeroSettings = {
+  badgeText: 'Making a Difference in Kiryandongo',
+  title: 'Empowering Communities Through Action',
+  subtitle: 'Resti Kiryandongo CBO is dedicated to improving lives through education, healthcare, and community development initiatives in Kiryandongo District, Uganda.',
+  primaryButtonText: 'Donate Now',
+  secondaryButtonText: 'Learn More',
+  imageUrl: 'https://images.unsplash.com/photo-1606471015285-85fa1288aa4e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxhZnJpY2FuJTIwY29tbXVuaXR5JTIwZW1wb3dlcm1lbnR8ZW58MXx8fHwxNzYyNDU3NTkyfDA&ixlib=rb-4.1.0&q=80&w=1080',
+  stats: [
+    { value: '500+', label: 'Families Supported' },
+    { value: '10+', label: 'Active Programs' },
+    { value: '50+', label: 'Volunteers' }
+  ]
+};
+
 export function Hero() {
   const { open: openDonationModal } = useDonationModal();
-  const [settings, setSettings] = useState<HeroSettings | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [settings, setSettings] = useState<HeroSettings>(DEFAULT_HERO_SETTINGS);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   
@@ -134,25 +146,12 @@ export function Hero() {
       }
 
       const data = await response.json();
-      setSettings(data.settings.hero);
+      if (data?.settings?.hero) {
+        setSettings(data.settings.hero);
+      }
     } catch (error) {
       console.error('Error fetching hero settings:', error);
-      // Set default settings if fetch fails
-      setSettings({
-        badgeText: 'Making a Difference in Kiryandongo',
-        title: 'Empowering Communities Through Action',
-        subtitle: 'Resti Kiryandongo CBO is dedicated to improving lives through education, healthcare, and community development initiatives in Kiryandongo District, Uganda.',
-        primaryButtonText: 'Donate Now',
-        secondaryButtonText: 'Learn More',
-        imageUrl: 'https://images.unsplash.com/photo-1606471015285-85fa1288aa4e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxhZnJpY2FuJTIwY29tbXVuaXR5JTIwZW1wb3dlcm1lbnR8ZW58MXx8fHwxNzYyNDU3NTkyfDA&ixlib=rb-4.1.0&q=80&w=1080',
-        stats: [
-          { value: '500+', label: 'Families Supported' },
-          { value: '10+', label: 'Active Programs' },
-          { value: '50+', label: 'Volunteers' }
-        ]
-      });
-    } finally {
-      setLoading(false);
+      // Default settings already in state — no action needed
     }
   };
 
@@ -162,42 +161,6 @@ export function Hero() {
       element.scrollIntoView({ behavior: 'smooth' });
     }
   };
-
-  if (loading || !settings) {
-    return (
-      <section id="home" className="relative pt-32 lg:pt-40 pb-24 min-h-screen">
-        {/* Background Image Carousel */}
-        <div className="absolute inset-0 z-0">
-          {backgroundImages.map((image: string, index: number) => (
-            <div
-              key={index}
-              className={`absolute inset-0 transition-opacity duration-2000 ${
-                index === currentImageIndex ? 'opacity-100' : 'opacity-0'
-              }`}
-              style={{
-                backgroundImage: `url(${image})`,
-                backgroundSize: 'cover',
-                backgroundPosition: 'center',
-                backgroundRepeat: 'no-repeat',
-              }}
-            >
-              {/* Dark overlay for better text readability */}
-              <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/50 to-black/30"></div>
-            </div>
-          ))}
-        </div>
-
-        {/* Loading skeleton */}
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 section-spacing-lg lg:py-32">
-          <div className="animate-pulse">
-            <div className="h-8 bg-white/20 rounded w-1/2 mb-4"></div>
-            <div className="h-12 bg-white/20 rounded w-3/4 mb-4"></div>
-            <div className="h-6 bg-white/20 rounded w-full mb-4"></div>
-          </div>
-        </div>
-      </section>
-    );
-  }
 
   return (
     <section id="home" className="relative pt-32 lg:pt-40 pb-24 min-h-screen overflow-hidden">
@@ -288,8 +251,8 @@ export function Hero() {
 
             {/* Stats with animated counters */}
             <div ref={statsRef} className="grid grid-cols-3 gap-3 sm:gap-6 pt-8 animate-[fadeInUp_0.8s_ease-out_0.8s_both]">
-              {settings.stats.map((stat, index) => {
-                const { num, suffix } = parseStatValue(stat.value);
+              {(settings.stats || []).map((stat, index) => {
+                const { num, suffix } = parseStatValue(stat.value || '');
                 return (
                   <StatCounter key={index} num={num} suffix={suffix} label={stat.label} visible={statsVisible} delay={index * 200} />
                 );
