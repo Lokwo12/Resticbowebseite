@@ -140,7 +140,7 @@ export function AboutPage() {
             <div className="relative group">
               <div className="absolute inset-0 bg-emerald-500 rounded-3xl translate-x-4 translate-y-4 -z-10 transition-transform group-hover:translate-x-6 group-hover:translate-y-6"></div>
               <img 
-                src="https://images.unsplash.com/photo-1593113589914-07553282245b?q=80&w=1200" 
+                src="https://images.unsplash.com/photo-1529070538774-1843cb3265df?w=1200&q=80" 
                 alt="Community meeting" 
                 className="w-full h-[500px] object-cover rounded-3xl shadow-xl"
               />
