@@ -124,9 +124,10 @@ interface StripeFormProps {
   setSubmitting: React.Dispatch<React.SetStateAction<boolean>>;
   inp: string;
   lbl: string;
+  onBack: () => void;
 }
 
-function StripeCardForm({ donorData, setDonorData, finalAmount, freq, setDone, submitting, setSubmitting, inp, lbl }: StripeFormProps) {
+function StripeCardForm({ donorData, setDonorData, finalAmount, freq, setDone, submitting, setSubmitting, inp, lbl, onBack }: StripeFormProps) {
   const stripe = useStripe();
   const elements = useElements();
 
@@ -212,25 +213,25 @@ function StripeCardForm({ donorData, setDonorData, finalAmount, freq, setDone, s
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1.5">
             <label className={lbl}>First Name</label>
-            <input required className={inp} style={{ height: 52 }} placeholder="John"
+            <input required className={inp} style={{ height: 44 }} placeholder="John"
               value={donorData.firstName} onChange={e => setDonorData(p => ({ ...p, firstName: e.target.value }))} />
           </div>
           <div className="space-y-1.5">
             <label className={lbl}>Last Name</label>
-            <input required className={inp} style={{ height: 52 }} placeholder="Smith"
+            <input required className={inp} style={{ height: 44 }} placeholder="Smith"
               value={donorData.lastName} onChange={e => setDonorData(p => ({ ...p, lastName: e.target.value }))} />
           </div>
         </div>
 
         <div className="space-y-1.5">
           <label className={lbl}>Email Address</label>
-          <input required type="email" className={inp} style={{ height: 52 }} placeholder="you@example.com"
+          <input required type="email" className={inp} style={{ height: 44 }} placeholder="you@example.com"
             value={donorData.email} onChange={e => setDonorData(p => ({ ...p, email: e.target.value }))} />
         </div>
 
         <div className="space-y-1.5">
           <label className={lbl}>Card Number</label>
-          <div className="w-full border border-gray-200 rounded-xl px-4 bg-white focus-within:border-emerald-400 focus-within:ring-2 focus-within:ring-emerald-50 transition-all flex items-center" style={{ height: 52 }}>
+          <div className="w-full border border-gray-200 rounded-xl px-4 bg-white focus-within:border-emerald-400 focus-within:ring-2 focus-within:ring-emerald-50 transition-all flex items-center" style={{ height: 44 }}>
             <CardNumberElement
               className="w-full"
               options={{
@@ -253,7 +254,7 @@ function StripeCardForm({ donorData, setDonorData, finalAmount, freq, setDone, s
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1.5">
             <label className={lbl}>Expiry Date</label>
-            <div className="w-full border border-gray-200 rounded-xl px-4 bg-white focus-within:border-emerald-400 focus-within:ring-2 focus-within:ring-emerald-50 transition-all flex items-center" style={{ height: 52 }}>
+            <div className="w-full border border-gray-200 rounded-xl px-4 bg-white focus-within:border-emerald-400 focus-within:ring-2 focus-within:ring-emerald-50 transition-all flex items-center" style={{ height: 44 }}>
               <CardExpiryElement
                 className="w-full"
                 options={{
@@ -273,7 +274,7 @@ function StripeCardForm({ donorData, setDonorData, finalAmount, freq, setDone, s
           </div>
           <div className="space-y-1.5">
             <label className={lbl}>CVC</label>
-            <div className="w-full border border-gray-200 rounded-xl px-4 bg-white focus-within:border-emerald-400 focus-within:ring-2 focus-within:ring-emerald-50 transition-all flex items-center" style={{ height: 52 }}>
+            <div className="w-full border border-gray-200 rounded-xl px-4 bg-white focus-within:border-emerald-400 focus-within:ring-2 focus-within:ring-emerald-50 transition-all flex items-center" style={{ height: 44 }}>
               <CardCvcElement
                 className="w-full"
                 options={{
@@ -300,17 +301,27 @@ function StripeCardForm({ donorData, setDonorData, finalAmount, freq, setDone, s
           </p>
         </div>
 
-        <button
-          type="submit"
-          disabled={submitting || finalAmount < 1 || !stripe}
-          className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl text-sm shadow-lg shadow-emerald-200/50 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 hover:shadow-xl hover:scale-[1.01] active:scale-[0.99]"
-          style={{ height: 52 }}
-        >
-          {submitting
-            ? <><span className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" /> Processing…</>
-            : <><Lock size={14} /> Donate {formatUSD(finalAmount)}</>
-          }
-        </button>
+        <div className="flex gap-3">
+          <button
+            type="button"
+            onClick={onBack}
+            className="w-1/3 bg-white border border-gray-200 hover:bg-gray-50 hover:border-gray-300 text-gray-600 font-semibold rounded-xl text-sm transition-all duration-200 flex items-center justify-center"
+            style={{ height: 44 }}
+          >
+            Back
+          </button>
+          <button
+            type="submit"
+            disabled={submitting || finalAmount < 1 || !stripe}
+            className="w-2/3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl text-sm shadow-lg shadow-emerald-200/50 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 hover:shadow-xl hover:scale-[1.01] active:scale-[0.99]"
+            style={{ height: 44 }}
+          >
+            {submitting
+              ? <><span className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" /> Processing…</>
+              : <><Lock size={14} /> Donate {formatUSD(finalAmount)}</>
+            }
+          </button>
+        </div>
       </div>
     </form>
   );
@@ -528,8 +539,8 @@ export function DonationModal() {
   };
 
   const inp = 'w-full border border-gray-200 rounded-xl px-4 text-sm font-normal outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-50 transition-all placeholder:text-gray-400 bg-white text-gray-800';
-  const inpStyle = { height: 52 };
-  const btnStyle = { height: 52 };
+  const inpStyle = { height: 44 };
+  const btnStyle = { height: 44 };
   const lbl = 'block text-xs font-semibold text-gray-600 mb-1.5 tracking-wide uppercase';
 
   if (!isOpen) return null;
@@ -643,8 +654,8 @@ export function DonationModal() {
           )}
         </div>
 
-        {/* ── NO-SCROLL BODY ─────────────────────────────────────── */}
-        <div className="flex-1 flex flex-col">
+        {/* ── SCROLLABLE BODY ─────────────────────────────────────── */}
+        <div className="flex-1 overflow-y-auto min-h-0">
 
           {/* ── SUCCESS SCREEN ───────────────────────────────────── */}
           {done && method !== 'bank' && method !== 'mtn' && method !== 'airtel' && (
@@ -832,7 +843,7 @@ export function DonationModal() {
 
           {/* ── STEP 1: Amount & Frequency ───────────────────────── */}
           {!done && step === 1 && (
-            <div className="px-6 py-6 space-y-6 animate-fade-in-up">
+            <div className="px-6 py-4 space-y-4 animate-fade-in-up">
               {/* Frequency toggle */}
               <div className="flex gap-1 p-1 bg-gray-100 rounded-full">
                 {(['once', 'monthly'] as FreqOption[]).map(f => (
@@ -943,7 +954,7 @@ export function DonationModal() {
 
           {/* ── STEP 2: Payment Method ───────────────────────────── */}
           {!done && step === 2 && (
-            <div className="px-6 py-7 space-y-6 animate-fade-in-up">
+            <div className="px-6 py-4 space-y-4 animate-fade-in-up">
               <div className="text-center space-y-1">
                 <h3 className="text-sm font-semibold text-gray-900">Choose Payment Method</h3>
                 <p className="text-xs text-gray-400">Select how you'd like to donate</p>
@@ -1018,18 +1029,28 @@ export function DonationModal() {
                 ))}
               </div>
 
-              {/* Continue button */}
-              <button
-                type="button"
-                onClick={() => {
-                  if (!method) { toast.error('Please select a payment method'); return; }
-                  setStep(3);
-                }}
-                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl text-sm transition-all duration-200 shadow-lg shadow-emerald-200/50 flex items-center justify-center gap-2 hover:shadow-xl hover:scale-[1.01] active:scale-[0.99]"
-                style={btnStyle}
-              >
-                Continue <ChevronRight size={15} />
-              </button>
+              {/* Action buttons */}
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setStep(s => (s - 1) as ModalStep)}
+                  className="w-1/3 bg-white border border-gray-200 hover:bg-gray-50 hover:border-gray-300 text-gray-600 font-semibold rounded-xl text-sm transition-all duration-200 flex items-center justify-center"
+                  style={btnStyle}
+                >
+                  Back
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!method) { toast.error('Please select a payment method'); return; }
+                    setStep(3);
+                  }}
+                  className="w-2/3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl text-sm transition-all duration-200 shadow-lg shadow-emerald-200/50 flex items-center justify-center gap-2 hover:shadow-xl hover:scale-[1.01] active:scale-[0.99]"
+                  style={btnStyle}
+                >
+                  Continue <ChevronRight size={15} />
+                </button>
+              </div>
             </div>
           )}
 
@@ -1041,17 +1062,20 @@ export function DonationModal() {
               {method === 'card' && (
                 stripePromise ? (
                   <Elements stripe={stripePromise}>
-                    <StripeCardForm
-                      donorData={donorData}
-                      setDonorData={setDonorData}
-                      finalAmount={finalAmount}
-                      freq={freq}
-                      setDone={setDone}
-                      submitting={submitting}
-                      setSubmitting={setSubmitting}
-                      inp={inp}
-                      lbl={lbl}
-                    />
+                    <div className="space-y-3">
+                      <StripeCardForm
+                        donorData={donorData}
+                        setDonorData={setDonorData}
+                        finalAmount={finalAmount}
+                        freq={freq}
+                        setDone={setDone}
+                        submitting={submitting}
+                        setSubmitting={setSubmitting}
+                        inp={inp}
+                        lbl={lbl}
+                        onBack={() => setStep(2)}
+                      />
+                    </div>
                   </Elements>
                 ) : (
                   /* Full card form layout — Stripe key not yet configured */
@@ -1108,7 +1132,7 @@ export function DonationModal() {
                       {/* Card field placeholders */}
                       <div className="space-y-1.5">
                         <label className={lbl}>Card Number</label>
-                        <div className="w-full border border-amber-200 rounded-xl px-4 bg-amber-50 flex items-center" style={{ height: 52 }}>
+                        <div className="w-full border border-amber-200 rounded-xl px-4 bg-amber-50 flex items-center" style={{ height: 44 }}>
                           <p className="text-xs text-amber-700 font-medium">
                             Add <code className="font-mono bg-amber-100 px-1 py-0.5 rounded">VITE_STRIPE_PUBLISHABLE_KEY</code> to your <code className="font-mono bg-amber-100 px-1 py-0.5 rounded">.env</code> file to enable card input.
                           </p>
@@ -1117,13 +1141,13 @@ export function DonationModal() {
                       <div className="grid grid-cols-2 gap-3">
                         <div className="space-y-1.5">
                           <label className={lbl}>Expiry Date</label>
-                          <div className="w-full border border-amber-200 rounded-xl px-4 bg-amber-50 flex items-center" style={{ height: 52 }}>
+                          <div className="w-full border border-amber-200 rounded-xl px-4 bg-amber-50 flex items-center" style={{ height: 44 }}>
                             <p className="text-xs text-amber-400">MM / YY</p>
                           </div>
                         </div>
                         <div className="space-y-1.5">
                           <label className={lbl}>CVC</label>
-                          <div className="w-full border border-amber-200 rounded-xl px-4 bg-amber-50 flex items-center" style={{ height: 52 }}>
+                          <div className="w-full border border-amber-200 rounded-xl px-4 bg-amber-50 flex items-center" style={{ height: 44 }}>
                             <p className="text-xs text-amber-400">CVC</p>
                           </div>
                         </div>
@@ -1136,14 +1160,24 @@ export function DonationModal() {
                         </p>
                       </div>
 
-                      <button
-                        type="button"
-                        disabled
-                        className="w-full bg-emerald-600 text-white font-semibold rounded-xl text-sm shadow-lg shadow-emerald-200/50 flex items-center justify-center gap-2 opacity-40 cursor-not-allowed"
-                        style={btnStyle}
-                      >
-                        <Lock size={14} /> Donate {formatUSD(finalAmount)}
-                      </button>
+                      <div className="flex gap-3">
+                        <button
+                          type="button"
+                          onClick={() => setStep(2)}
+                          className="w-1/3 bg-white border border-gray-200 hover:bg-gray-50 hover:border-gray-300 text-gray-600 font-semibold rounded-xl text-sm transition-all duration-200 flex items-center justify-center"
+                          style={btnStyle}
+                        >
+                          Back
+                        </button>
+                        <button
+                          type="button"
+                          disabled
+                          className="w-2/3 bg-emerald-600 text-white font-semibold rounded-xl text-sm shadow-lg shadow-emerald-200/50 flex items-center justify-center gap-2 opacity-40 cursor-not-allowed"
+                          style={btnStyle}
+                        >
+                          <Lock size={14} /> Donate {formatUSD(finalAmount)}
+                        </button>
+                      </div>
                     </div>
                   </div>
                 )
@@ -1151,7 +1185,7 @@ export function DonationModal() {
 
               {/* ── PAYPAL ──────────────────────────────────────── */}
               {method === 'paypal' && (
-                <div className="px-6 py-8 space-y-6">
+                <div className="px-6 py-4 space-y-4">
                   {/* Header card */}
                   <div className="rounded-xl overflow-hidden border border-gray-100 shadow-md">
                     <div className="px-6 py-5 flex items-center justify-between" style={{ backgroundColor: '#003087' }}>
@@ -1185,57 +1219,72 @@ export function DonationModal() {
                         intent: 'capture',
                       }}
                     >
-                      <div className="rounded-xl overflow-hidden border border-[#ffc439] shadow-sm">
-                        <PayPalButtons
-                          style={{ layout: 'vertical', color: 'gold', shape: 'rect', label: 'donate', height: 48 }}
-                          forceReRender={[finalAmount]}
-                          createOrder={(_data, actions) => {
-                            const merchantEmail = PAYPAL_MERCHANT_EMAIL;
-                            const purchaseUnit: any = {
-                              amount: { value: finalAmount.toFixed(2), currency_code: 'USD' },
-                              description: `Resti Kiryandongo CBO – ${freq === 'once' ? 'One-time' : 'Monthly'} donation`,
-                            };
-                            
-                            // Only add payee if merchant email is configured to avoid API errors
-                            if (merchantEmail) {
-                              purchaseUnit.payee = { email_address: merchantEmail };
-                            }
+                      <div className="flex gap-3">
+                        <button
+                          type="button"
+                          onClick={() => setStep(2)}
+                          className="w-1/3 bg-white border border-gray-200 hover:bg-gray-50 hover:border-gray-300 text-gray-600 font-semibold rounded-xl text-sm transition-all duration-200 flex items-center justify-center"
+                          style={{ height: 48 }}
+                        >
+                          Back
+                        </button>
+                        <div className="w-2/3 rounded-xl overflow-hidden border border-[#ffc439] shadow-sm">
+                          <PayPalButtons
+                            style={{ layout: 'vertical', color: 'gold', shape: 'rect', label: 'donate', height: 48 }}
+                            forceReRender={[finalAmount]}
+                            createOrder={(_data, actions) => {
+                              const merchantEmail = PAYPAL_MERCHANT_EMAIL;
+                              const purchaseUnit: any = {
+                                amount: { value: finalAmount.toFixed(2), currency_code: 'USD' },
+                                description: `Resti Kiryandongo CBO – ${freq === 'once' ? 'One-time' : 'Monthly'} donation`,
+                              };
+                              
+                              if (merchantEmail) {
+                                purchaseUnit.payee = { email_address: merchantEmail };
+                              }
 
-                            return actions.order.create({
-                              intent: 'CAPTURE',
-                              purchase_units: [purchaseUnit],
-                            });
-                          }}
-                          onApprove={async (_data, actions) => {
-                            if (actions.order) {
-                              await actions.order.capture();
-                              toast.success('Payment confirmed! Thank you for your generosity.');
-                              setDone(true);
-                            }
-                          }}
-                          onError={() => toast.error('PayPal payment failed. Please try again.')}
-                          onCancel={() => toast.info('Payment cancelled.')}
-                        />
+                              return actions.order.create({
+                                intent: 'CAPTURE',
+                                purchase_units: [purchaseUnit],
+                              });
+                            }}
+                            onApprove={async (_data, actions) => {
+                              if (actions.order) {
+                                await actions.order.capture();
+                                toast.success('Payment confirmed! Thank you for your generosity.');
+                                setDone(true);
+                              }
+                            }}
+                            onError={() => toast.error('PayPal payment failed. Please try again.')}
+                            onCancel={() => toast.info('Payment cancelled.')}
+                          />
+                        </div>
                       </div>
                     </PayPalScriptProvider>
                   ) : (
                     /* Fallback styled button — shown until VITE_PAYPAL_CLIENT_ID is configured */
                     <div className="space-y-3">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          toast.info('Redirecting to PayPal…', { duration: 2000 });
-                          setTimeout(() => window.open('https://www.paypal.com/donate', '_blank'), 1000);
-                        }}
-                        className="w-full py-3.5 rounded-xl font-semibold text-sm transition-all flex items-center justify-center gap-2.5 shadow-md hover:shadow-lg hover:opacity-90 active:scale-[0.98]"
-                        style={{ backgroundColor: '#FFC439' }}
-                      >
-                        <span className="text-xl font-black italic" style={{ color: '#003087' }}>Pay</span>
-                        <span className="text-xl font-black italic" style={{ color: '#009CDE' }}>Pal</span>
-                        <span className="text-sm font-semibold ml-1" style={{ color: '#003087' }}>
-                          — Donate {formatUSD(finalAmount)}
-                        </span>
-                      </button>
+                      <div className="flex gap-3 mt-1">
+                        <button
+                          type="button"
+                          onClick={() => setStep(2)}
+                          className="w-1/3 bg-white border border-gray-200 hover:bg-gray-50 hover:border-gray-300 text-gray-600 font-semibold rounded-xl text-sm transition-all duration-200 flex items-center justify-center"
+                          style={btnStyle}
+                        >
+                          Back
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            toast.info('Redirecting to PayPal…', { duration: 2000 });
+                            setTimeout(() => window.open('https://www.paypal.com/donate', '_blank'), 1000);
+                          }}
+                          className="w-2/3 rounded-xl font-semibold text-sm transition-all flex items-center justify-center gap-2 shadow-md hover:shadow-lg hover:opacity-90 active:scale-[0.98]"
+                          style={{ backgroundColor: '#FFC439', height: 44 }}
+                        >
+                          <span className="text-xl font-black italic" style={{ color: '#003087' }}>Pay</span><span className="text-xl font-black italic" style={{ color: '#009CDE' }}>Pal</span>
+                        </button>
+                      </div>
                       <p className="text-[10px] text-amber-600 text-center font-medium bg-amber-50 rounded-lg px-3 py-2 border border-amber-100">
                         Set <code className="font-mono">VITE_PAYPAL_CLIENT_ID</code> in .env to enable direct payment confirmation. See PAYPAL_SETUP.md.
                       </p>
@@ -1414,21 +1463,31 @@ export function DonationModal() {
                         </div>
 
                         {/* Pay button */}
-                        <button
-                          type="submit"
-                          disabled={submitting}
-                          className="w-full font-semibold rounded-xl flex items-center justify-center gap-2 transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-[1.01] active:scale-[0.99] disabled:opacity-60"
-                          style={{
-                            backgroundColor: method === 'mtn' ? '#FFCC00' : '#e40000',
-                            color: method === 'mtn' ? '#1a1a1a' : 'white',
-                            fontSize: '13px',
-                            height: 52,
-                          }}
-                        >
-                          {submitting
-                            ? <span className="animate-spin w-4 h-4 border-2 border-current border-t-transparent rounded-full" />
-                            : <><Phone size={15} /> Pay Now — {formatUSD(finalAmount)}</>}
-                        </button>
+                        <div className="flex gap-3">
+                          <button
+                            type="button"
+                            onClick={() => setStep(2)}
+                            className="w-1/3 bg-white border border-gray-200 hover:bg-gray-50 hover:border-gray-300 text-gray-600 font-semibold rounded-xl text-sm transition-all duration-200 flex items-center justify-center"
+                            style={btnStyle}
+                          >
+                            Back
+                          </button>
+                          <button
+                            type="submit"
+                            disabled={submitting}
+                            className="w-2/3 rounded-xl font-semibold shadow-md transition-all flex items-center justify-center gap-2 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                            style={{
+                              backgroundColor: method === 'mtn' ? '#FFCC00' : '#e40000',
+                              color: method === 'mtn' ? '#1a1a1a' : 'white',
+                              fontSize: '13px',
+                              height: 44,
+                            }}
+                          >
+                            {submitting
+                              ? <span className="animate-spin w-4 h-4 border-2 border-current border-t-transparent rounded-full" />
+                              : <><Phone size={15} /> Pay Now — {formatUSD(finalAmount)}</>}
+                          </button>
+                        </div>
                       </div>
                     </form>
                   )}
@@ -1454,7 +1513,7 @@ export function DonationModal() {
                   </div>
 
                   {/* ── Body ── */}
-                  <div className="px-6 pt-10 pb-7 space-y-6">
+                  <div className="px-6 pt-5 pb-5 space-y-4">
 
                     {/* Amount summary */}
                     <div className="flex items-center justify-between bg-emerald-50 border border-emerald-100 rounded-xl px-5 py-4">
@@ -1532,17 +1591,27 @@ export function DonationModal() {
                     </div>
 
                     {/* ── Submit ── */}
-                    <button
-                      type="submit"
-                      disabled={submitting || finalAmount < 1}
-                      className="w-full bg-gray-900 hover:bg-black text-white font-semibold rounded-xl text-[13px] tracking-wide transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2.5 shadow-lg hover:shadow-xl hover:scale-[1.01] active:scale-[0.99]"
-                      style={btnStyle}
-                    >
-                      {submitting
-                        ? <><span className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" /> Processing…</>
-                        : <><CheckCircle size={15} /> Confirm &amp; Get Reference Number</>
-                      }
-                    </button>
+                    <div className="flex gap-3 mt-1">
+                      <button
+                        type="button"
+                        onClick={() => setStep(2)}
+                        className="w-1/3 bg-white border border-gray-200 hover:bg-gray-50 hover:border-gray-300 text-gray-600 font-semibold rounded-xl text-sm transition-all duration-200 flex items-center justify-center"
+                        style={btnStyle}
+                      >
+                        Back
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={submitting || finalAmount < 1}
+                        className="w-2/3 bg-gray-900 hover:bg-black text-white font-semibold rounded-xl text-[13px] tracking-wide transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2.5 shadow-lg hover:shadow-xl hover:scale-[1.01] active:scale-[0.99]"
+                        style={btnStyle}
+                      >
+                        {submitting
+                          ? <><span className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" /> Processing…</>
+                          : <><CheckCircle size={15} /> Confirm &amp; Get Reference Number</>
+                        }
+                      </button>
+                    </div>
                   </div>
                 </form>
               )}
@@ -1552,24 +1621,13 @@ export function DonationModal() {
 
         {/* ── FOOTER ─────────────────────────────────────────────── */}
         {!done ? (
-          <div className="shrink-0 border-t border-gray-100 bg-white px-6 py-4 flex items-center justify-between">
+          <div className="shrink-0 border-t border-gray-100 bg-white px-6 py-4 flex items-center justify-center">
             {finalAmount > 0 && (
               <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-100 rounded-full px-3 py-1.5 shrink-0">
                 <Heart size={11} fill="#059669" className="text-emerald-600" />
                 <span className="text-sm font-semibold text-gray-800">{formatUSD(finalAmount)}</span>
               </div>
             )}
-            <div className="flex gap-5 items-center ml-auto">
-              {step > 1 && (
-                <button
-                  type="button"
-                  onClick={() => setStep(s => (s - 1) as ModalStep)}
-                  className="text-xs font-semibold text-gray-500 uppercase tracking-wider hover:text-gray-900 transition-colors"
-                >
-                  Back
-                </button>
-              )}
-            </div>
           </div>
         ) : null}
         </div>
