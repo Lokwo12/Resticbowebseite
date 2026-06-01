@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { toast } from 'sonner';
-import { Save, RefreshCw, Plus, Trash2, Upload } from 'lucide-react';
+import { Save, RefreshCw, Plus, Trash2, Upload, BarChart, Code } from 'lucide-react';
 import { Card } from './ui/card';
 import { Button } from './ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
@@ -32,7 +32,7 @@ export function SiteSettingsTab({ settings: initialSettings, onUpdate }: SiteSet
       formDataObj.append('file', file);
       const response = await fetch(
         `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/upload-image`,
-        { method: 'POST', headers: { Authorization: `Bearer ${accessToken || publicAnonKey}` }, body: formDataObj }
+        { method: 'POST', headers: { Authorization: `Bearer ${publicAnonKey}` }, body: formDataObj }
       );
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Upload failed');
@@ -55,7 +55,7 @@ export function SiteSettingsTab({ settings: initialSettings, onUpdate }: SiteSet
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${accessToken || publicAnonKey}`,
+            Authorization: `Bearer ${publicAnonKey}`,
           },
           body: JSON.stringify({ settings }),
         }
@@ -84,7 +84,7 @@ export function SiteSettingsTab({ settings: initialSettings, onUpdate }: SiteSet
         {
           method: 'POST',
           headers: {
-            Authorization: `Bearer ${accessToken || publicAnonKey}`,
+            Authorization: `Bearer ${publicAnonKey}`,
           },
         }
       );
@@ -144,6 +144,7 @@ export function SiteSettingsTab({ settings: initialSettings, onUpdate }: SiteSet
           <TabsTrigger value="footer">Footer</TabsTrigger>
           <TabsTrigger value="legal">Legal Pages</TabsTrigger>
           <TabsTrigger value="sections">Section Headers</TabsTrigger>
+          <TabsTrigger value="analytics" className="flex items-center gap-2"><Code size={16}/> Analytics</TabsTrigger>
         </TabsList>
 
         {/* ===== HEADER & ANNOUNCEMENT BAR ===== */}
@@ -1566,6 +1567,129 @@ export function SiteSettingsTab({ settings: initialSettings, onUpdate }: SiteSet
                   </div>
                 </div>
               </div>
+
+              {/* Resources Section */}
+              <div className="p-4 bg-gray-50 rounded-lg">
+                <h4 className="text-sm text-gray-900 mb-3">Resources Section</h4>
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-sm text-gray-700 mb-1">Title</label>
+                    <input
+                      type="text"
+                      value={settings.sections?.resources?.title || ''}
+                      onChange={(e) =>
+                        setSettings({
+                          ...settings,
+                          sections: {
+                            ...settings.sections,
+                            resources: { ...settings.sections?.resources, title: e.target.value },
+                          },
+                        })
+                      }
+                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-700 mb-1">Description</label>
+                    <textarea
+                      value={settings.sections?.resources?.description || ''}
+                      onChange={(e) =>
+                        setSettings({
+                          ...settings,
+                          sections: {
+                            ...settings.sections,
+                            resources: { ...settings.sections?.resources, description: e.target.value },
+                          },
+                        })
+                      }
+                      rows={2}
+                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Opportunities Section */}
+              <div className="p-4 bg-gray-50 rounded-lg">
+                <h4 className="text-sm text-gray-900 mb-3">Opportunities Section</h4>
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-sm text-gray-700 mb-1">Title</label>
+                    <input
+                      type="text"
+                      value={settings.sections?.opportunities?.title || ''}
+                      onChange={(e) =>
+                        setSettings({
+                          ...settings,
+                          sections: {
+                            ...settings.sections,
+                            opportunities: { ...settings.sections?.opportunities, title: e.target.value },
+                          },
+                        })
+                      }
+                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-700 mb-1">Description</label>
+                    <textarea
+                      value={settings.sections?.opportunities?.description || ''}
+                      onChange={(e) =>
+                        setSettings({
+                          ...settings,
+                          sections: {
+                            ...settings.sections,
+                            opportunities: { ...settings.sections?.opportunities, description: e.target.value },
+                          },
+                        })
+                      }
+                      rows={2}
+                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Impact Dashboard Section */}
+              <div className="p-4 bg-gray-50 rounded-lg">
+                <h4 className="text-sm text-gray-900 mb-3">Impact Dashboard Section</h4>
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-sm text-gray-700 mb-1">Title</label>
+                    <input
+                      type="text"
+                      value={settings.sections?.impact?.title || ''}
+                      onChange={(e) =>
+                        setSettings({
+                          ...settings,
+                          sections: {
+                            ...settings.sections,
+                            impact: { ...settings.sections?.impact, title: e.target.value },
+                          },
+                        })
+                      }
+                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-700 mb-1">Description</label>
+                    <textarea
+                      value={settings.sections?.impact?.description || ''}
+                      onChange={(e) =>
+                        setSettings({
+                          ...settings,
+                          sections: {
+                            ...settings.sections,
+                            impact: { ...settings.sections?.impact, description: e.target.value },
+                          },
+                        })
+                      }
+                      rows={2}
+                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
           </Card>
         </TabsContent>
@@ -1632,6 +1756,84 @@ export function SiteSettingsTab({ settings: initialSettings, onUpdate }: SiteSet
                     </div>
                   ))}
                 </div>
+              </div>
+            </div>
+          </Card>
+        </TabsContent>
+
+        {/* Quiz Settings */}
+        <TabsContent value="quiz">
+          <Card className="p-6">
+            <h3 className="text-lg text-gray-900 mb-4">Volunteer Match Quiz</h3>
+            <p className="text-sm text-gray-500 mb-6">Customize the texts for the Volunteer Matching Quiz.</p>
+            <div className="space-y-6">
+              <div>
+                <label className="block text-sm text-gray-700 mb-2">Quiz Modal Title</label>
+                <input
+                  type="text"
+                  value={settings.quiz?.title || 'Find Your Perfect Volunteer Role'}
+                  onChange={(e) => setSettings({ ...settings, quiz: { ...settings.quiz, title: e.target.value } })}
+                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-gray-700 mb-2">Quiz Modal Subtitle</label>
+                <textarea
+                  value={settings.quiz?.subtitle || 'Take our quick 3-question quiz to see where you can make the biggest impact.'}
+                  onChange={(e) => setSettings({ ...settings, quiz: { ...settings.quiz, subtitle: e.target.value } })}
+                  rows={2}
+                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+              <div className="pt-4 border-t border-slate-100">
+                <label className="block text-sm font-bold text-gray-900 mb-2">Question 1: Impact Area</label>
+                <input
+                  type="text"
+                  value={settings.quiz?.q1Text || 'What type of impact are you looking to make?'}
+                  onChange={(e) => setSettings({ ...settings, quiz: { ...settings.quiz, q1Text: e.target.value } })}
+                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 mb-2"
+                />
+                <p className="text-xs text-gray-500">Matches against the Opportunity "Category" (e.g. Healthcare, Education)</p>
+              </div>
+              <div className="pt-4 border-t border-slate-100">
+                <label className="block text-sm font-bold text-gray-900 mb-2">Question 2: Time Commitment</label>
+                <input
+                  type="text"
+                  value={settings.quiz?.q2Text || 'How much time can you commit?'}
+                  onChange={(e) => setSettings({ ...settings, quiz: { ...settings.quiz, q2Text: e.target.value } })}
+                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 mb-2"
+                />
+                <p className="text-xs text-gray-500">Helps filter roles by commitment level</p>
+              </div>
+              <div className="pt-4 border-t border-slate-100">
+                <label className="block text-sm font-bold text-gray-900 mb-2">Question 3: Core Skills</label>
+                <input
+                  type="text"
+                  value={settings.quiz?.q3Text || 'What are your primary skills?'}
+                  onChange={(e) => setSettings({ ...settings, quiz: { ...settings.quiz, q3Text: e.target.value } })}
+                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 mb-2"
+                />
+              </div>
+            </div>
+          </Card>
+        </TabsContent>
+
+        {/* Analytics Settings */}
+        <TabsContent value="analytics">
+          <Card className="p-6">
+            <h3 className="text-lg text-gray-900 mb-4">Analytics Configuration</h3>
+            <p className="text-sm text-gray-500 mb-6">Manage tracking and SEO analytics tools for your website.</p>
+            <div className="space-y-6">
+              <div>
+                <label className="block text-sm text-gray-700 mb-2">Google Analytics Measurement ID</label>
+                <input
+                  type="text"
+                  value={settings.analytics?.gaMeasurementId || ''}
+                  onChange={(e) => setSettings({ ...settings, analytics: { ...settings.analytics, gaMeasurementId: e.target.value } })}
+                  placeholder="G-XXXXXXXXXX"
+                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
+                />
+                <p className="text-xs text-gray-500 mt-2">Starts with 'G-'. Leave blank to disable Google Analytics.</p>
               </div>
             </div>
           </Card>

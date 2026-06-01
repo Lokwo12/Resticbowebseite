@@ -138,10 +138,48 @@ app.post('/make-server-2a4be611/contact', async (c) => {
     )
 
     console.log(`Contact form submitted: ${contactId}`)
-    return c.json({ success: true, message: 'Contact form submitted successfully' })
+    return c.json({ success: true, contactId })
   } catch (error) {
-    console.error('Error submitting contact form:', error)
-    return c.json({ error: 'Failed to submit contact form', details: String(error) }, 500)
+    console.error('Contact submission error:', error)
+    return c.json({ error: 'Failed to submit contact form' }, 500)
+  }
+})
+
+// Live Chat submission with email notification
+app.post('/make-server-2a4be611/livechat', async (c) => {
+  try {
+    const body = await c.req.json()
+    const { email, message } = body
+
+    if (!email || !message) {
+      return c.json({ error: 'Email and message are required' }, 400)
+    }
+
+    const chatId = `livechat:${Date.now()}`
+    await kv.set(chatId, {
+      email,
+      message,
+      timestamp: new Date().toISOString(),
+      status: 'new'
+    })
+
+    // Send email notification to admin
+    await sendEmail(
+      'admin@restikiryandongo.org', // Replace with actual admin email if needed
+      'New Live Chat Message',
+      `
+        <h2>New Live Chat Message</h2>
+        <p><strong>From:</strong> ${email}</p>
+        <h3>Chat History:</h3>
+        <pre style="background: #f4f4f5; padding: 15px; border-radius: 8px; white-space: pre-wrap; font-family: monospace;">${message}</pre>
+        <p><small>Stored via Supabase Edge Function</small></p>
+      `
+    )
+
+    return c.json({ success: true, chatId })
+  } catch (error) {
+    console.error('Live chat submission error:', error)
+    return c.json({ error: 'Failed to submit live chat message' }, 500)
   }
 })
 
@@ -275,12 +313,14 @@ app.post('/make-server-2a4be611/create-payment-intent', async (c) => {
     const paymentIntent = await stripe.paymentIntents.create({
       amount: Math.round(amount * 100), // Stripe expects amount in cents
       currency: currency || 'usd',
+      automatic_payment_methods: { enabled: true },
       metadata: {
         donorName: donorName || 'Anonymous',
         donorEmail: donorEmail || '',
       },
     })
 
+    console.log(`Payment intent created: ${paymentIntent.id}`)
     console.log(`Payment intent created: ${paymentIntent.id}`)
     return c.json({ 
       clientSecret: paymentIntent.client_secret,
@@ -289,6 +329,141 @@ app.post('/make-server-2a4be611/create-payment-intent', async (c) => {
   } catch (error) {
     console.error('Error creating payment intent:', error)
     return c.json({ error: 'Failed to create payment intent', details: String(error) }, 500)
+  }
+})
+
+// Create Stripe Checkout Session (for Subscriptions)
+app.post('/make-server-2a4be611/create-checkout-session', async (c) => {
+  try {
+    if (!stripe) {
+      return c.json({ error: 'Stripe is not configured. Please add your STRIPE_SECRET_KEY.' }, 400)
+    }
+
+    const body = await c.req.json()
+    const { amount, currency, donorName, donorEmail, isRecurring, successUrl, cancelUrl } = body
+
+    if (!amount || amount < 1) {
+      return c.json({ error: 'Invalid amount' }, 400)
+    }
+
+    const sessionConfig: any = {
+      payment_method_types: ['card'],
+      success_url: successUrl || `${c.req.header('origin') || 'http://localhost:5173'}/donate?success=true`,
+      cancel_url: cancelUrl || `${c.req.header('origin') || 'http://localhost:5173'}/donate?canceled=true`,
+      customer_email: donorEmail || undefined,
+      line_items: [
+        {
+          price_data: {
+            currency: currency || 'usd',
+            product_data: {
+              name: 'Resti Kiryandongo CBO Donation',
+              description: isRecurring ? 'Monthly Recurring Donation' : 'One-time Donation',
+            },
+            unit_amount: Math.round(amount * 100),
+          },
+          quantity: 1,
+        },
+      ],
+      mode: isRecurring ? 'subscription' : 'payment',
+      metadata: {
+        donorName: donorName || 'Anonymous',
+        isRecurring: isRecurring ? 'true' : 'false'
+      }
+    }
+
+    if (isRecurring) {
+      sessionConfig.line_items[0].price_data.recurring = {
+        interval: 'month',
+      }
+    }
+
+    const session = await stripe.checkout.sessions.create(sessionConfig)
+
+    return c.json({ url: session.url })
+  } catch (error) {
+    console.error('Error creating checkout session:', error)
+    return c.json({ error: 'Failed to create checkout session', details: String(error) }, 500)
+  }
+})
+
+// Create Stripe Customer Portal Session (for managing subscriptions)
+app.post('/make-server-2a4be611/create-portal-session', async (c) => {
+  try {
+    if (!stripe) {
+      return c.json({ error: 'Stripe is not configured.' }, 400)
+    }
+
+    // Parse JSON body directly (Hono streaming)
+    const body = await c.req.json();
+    const { email, returnUrl } = body;
+
+    if (!email) {
+      return c.json({ error: 'Email is required' }, 400)
+    }
+
+    // Lookup customer by email
+    const customers = await stripe.customers.list({ email: email, limit: 1 })
+    
+    if (customers.data.length === 0) {
+      return c.json({ error: 'No Stripe customer found with this email. You may not have any active subscriptions yet.' }, 404)
+    }
+
+    const customerId = customers.data[0].id
+
+    const session = await stripe.billingPortal.sessions.create({
+      customer: customerId,
+      return_url: returnUrl || `${c.req.header('origin') || 'http://localhost:5173'}/donor/dashboard`,
+    })
+
+    return c.json({ url: session.url })
+  } catch (error) {
+    console.error('Error creating portal session:', error)
+    return c.json({ error: 'Failed to create portal session', details: String(error) }, 500)
+  }
+})
+
+// Fetch donation stats for public Donor Wall
+app.get('/make-server-2a4be611/donations/stats', async (c) => {
+  try {
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') || '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
+    )
+
+    const { data: donations, error } = await supabase
+      .from('donations')
+      .select('first_name, amount, currency, created_at')
+      .in('status', ['succeeded', 'completed', 'paid', 'pending']) // temporary pending included so tests show up
+      .order('created_at', { ascending: false })
+      .limit(100)
+
+    if (error) throw error
+
+    let totalUSD = 0;
+    const recentDonors = [];
+    const rates: Record<string, number> = { 'USD': 1, 'EUR': 1.08, 'GBP': 1.27, 'UGX': 0.00026 };
+
+    if (donations) {
+      for (const d of donations) {
+        const cCode = (d.currency || 'USD').toUpperCase();
+        const rate = rates[cCode] || 1;
+        totalUSD += (Number(d.amount) * rate);
+        
+        if (recentDonors.length < 20 && d.first_name && Number(d.amount) > 0) {
+          recentDonors.push({
+            name: d.first_name,
+            amount: Number(d.amount),
+            currency: cCode,
+            date: d.created_at
+          });
+        }
+      }
+    }
+
+    return c.json({ totalAmount: Math.round(totalUSD), recentDonors })
+  } catch (error) {
+    console.error('Error fetching donation stats:', error)
+    return c.json({ error: 'Failed to fetch stats', totalAmount: 0, recentDonors: [] }, 500)
   }
 })
 
@@ -328,6 +503,33 @@ app.post('/make-server-2a4be611/donations', async (c) => {
     }
     
     await kv.set(donationId, donationData)
+
+    // Save to PostgreSQL table 'donations'
+    try {
+      const supabase = createClient(
+        Deno.env.get('SUPABASE_URL') || '',
+        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
+      )
+      
+      const parts = (donorName || 'Anonymous').split(' ')
+      const firstName = parts[0]
+      const lastName = parts.slice(1).join(' ') || ''
+      
+      await supabase.from('donations').insert({
+        id: crypto.randomUUID(),
+        first_name: firstName,
+        last_name: lastName,
+        email: donorEmail || '',
+        amount: Number(amount),
+        currency: currency || 'USD',
+        frequency: 'once',
+        method: paymentMethod,
+        status: 'completed',
+        transaction_id: transactionId || paymentIntentId || donationId
+      })
+    } catch (dbErr) {
+      console.error('Failed to log to Postgres:', dbErr)
+    }
 
     // Send notification email to admin
     await sendEmail(
@@ -1608,6 +1810,55 @@ app.put('/make-server-2a4be611/admin/impact-stats', async (c) => {
   } catch (error) {
     console.error('Error updating impact stats:', error)
     return c.json({ error: 'Failed to update impact stats', details: String(error) }, 500)
+  }
+})
+
+// Map Locations routes
+app.get('/make-server-2a4be611/map-locations', async (c) => {
+  try {
+    const locations = await kv.getByPrefix('map-location:')
+    return c.json({ locations: locations.map(l => ({ id: l.key, ...l.value })) })
+  } catch (error) {
+    console.error('Error fetching map locations:', error)
+    return c.json({ error: 'Failed to fetch map locations', details: String(error) }, 500)
+  }
+})
+
+app.post('/make-server-2a4be611/admin/map-locations', async (c) => {
+  try {
+    const body = await c.req.json()
+    const { name, category, coordinates, description, impact } = body
+    const locationId = `map-location:${Date.now()}`
+    await kv.set(locationId, { name, category, coordinates, description, impact })
+    return c.json({ success: true, message: 'Location added successfully', id: locationId })
+  } catch (error) {
+    console.error('Error creating map location:', error)
+    return c.json({ error: 'Failed to create map location', details: String(error) }, 500)
+  }
+})
+
+app.put('/make-server-2a4be611/admin/map-locations/:id', async (c) => {
+  try {
+    const id = c.req.param('id')
+    const body = await c.req.json()
+    const existing = await kv.get(id)
+    if (!existing) return c.json({ error: 'Location not found' }, 404)
+    await kv.set(id, { ...existing, ...body, updatedAt: new Date().toISOString() })
+    return c.json({ success: true, message: 'Location updated successfully' })
+  } catch (error) {
+    console.error('Error updating map location:', error)
+    return c.json({ error: 'Failed to update map location', details: String(error) }, 500)
+  }
+})
+
+app.delete('/make-server-2a4be611/admin/map-locations/:id', async (c) => {
+  try {
+    const id = c.req.param('id')
+    await kv.del(id)
+    return c.json({ success: true, message: 'Location deleted successfully' })
+  } catch (error) {
+    console.error('Error deleting map location:', error)
+    return c.json({ error: 'Failed to delete map location', details: String(error) }, 500)
   }
 })
 

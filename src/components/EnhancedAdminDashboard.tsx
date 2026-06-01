@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useConfirm } from '../hooks/useConfirm';
 import { createClient } from '@supabase/supabase-js';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { toast } from 'sonner';
@@ -38,10 +39,10 @@ import {
   Target,
   Award,
   MessageSquare,
+  MessageCircle,
   Bell,
   Sun,
   Moon,
-
   Search,
   Menu,
   X as XIcon,
@@ -55,12 +56,14 @@ import {
   User,
   Lock,
   Globe,
-  Copy
+  Copy,
+  MapPin
 } from 'lucide-react';
 import { Card } from './ui/card';
 import { Badge } from './ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { DraggableDialog } from './DraggableDialog';
+
 import { Button } from './ui/button';
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import ReactQuill from 'react-quill';
@@ -82,6 +85,8 @@ import {
   ResourceFormDialog 
 } from './AdminFormDialogsFinal';
 import { PageFormDialog } from './AdminFormDialogsPages';
+import { MapLocationFormDialog } from './AdminMapLocationDialog';
+import { ImpactMap } from './ImpactMap';
 
 const supabase = createClient(
   `https://${projectId}.supabase.co`,
@@ -107,6 +112,7 @@ interface Analytics {
 
 // Navigation menu items
 const NAVIGATION_ITEMS = [
+  { id: 'live-chat',     label: 'Live Chat',        icon: MessageCircle,   color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496' },
   { id: 'overview',      label: 'Dashboard',      icon: LayoutDashboard, color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496' },
   { id: 'programs',      label: 'Programs',        icon: FileText,        color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496' },
   { id: 'news',          label: 'News',             icon: Newspaper,       color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496' },
@@ -118,6 +124,7 @@ const NAVIGATION_ITEMS = [
   { id: 'events',        label: 'Events',           icon: Calendar,        color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496' },
   { id: 'partners',      label: 'Partners',         icon: Handshake,       color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496' },
   { id: 'opportunities', label: 'Opportunities',    icon: Target,          color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496' },
+  { id: 'map',           label: 'Map Locations',    icon: MapPin,          color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496' },
   { id: 'faqs',          label: 'FAQs',             icon: HelpCircle,      color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496' },
   { id: 'resources',     label: 'Resources',        icon: BookOpen,        color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496' },
   { id: 'pages',         label: 'Pages',            icon: Globe,           color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496' },
@@ -130,6 +137,7 @@ const NAVIGATION_ITEMS = [
 ];
 
 export function EnhancedAdminDashboard() {
+  const confirmDialog = useConfirm();
   const [loginLogo, setLoginLogo] = useState('/logo.png');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -138,6 +146,11 @@ export function EnhancedAdminDashboard() {
   const [userName, setUserName] = useState('');
   const [userEmail, setUserEmail] = useState('');
   const [stats, setStats] = useState<any>({ programs: 0, news: 0, volunteers: 0, totalDonations: 0 });
+  const [liveChats, setLiveChats] = useState<any[]>([]);
+  const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
+  const [chatReply, setChatReply] = useState('');
+  const [isReplyingChat, setIsReplyingChat] = useState(false);
+
   const [activeTab, setActiveTab] = useState('overview');
   const [analytics, setAnalytics] = useState<Analytics | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -151,6 +164,7 @@ export function EnhancedAdminDashboard() {
   const [contacts, setContacts] = useState<any[]>([]);
   const [volunteers, setVolunteers] = useState<any[]>([]);
   const [donations, setDonations] = useState<any[]>([]);
+  const [selectedDonation, setSelectedDonation] = useState<any>(null);
   const [subscribers, setSubscribers] = useState<any[]>([]);
   const [adminUsers, setAdminUsers] = useState<any[]>([]);
   const [siteSettings, setSiteSettings] = useState<any>(null);
@@ -166,6 +180,7 @@ export function EnhancedAdminDashboard() {
   const [faqs, setFAQs] = useState<any[]>([]);
   const [resources, setResources] = useState<any[]>([]);
   const [pages, setPages] = useState<any[]>([]);
+  const [mapLocations, setMapLocations] = useState<any[]>([]);
 
   // Selection states for bulk actions
   const [selectedPrograms, setSelectedPrograms] = useState<string[]>([]);
@@ -179,6 +194,7 @@ export function EnhancedAdminDashboard() {
   const [selectedPartners, setSelectedPartners] = useState<string[]>([]);
   const [selectedFAQs, setSelectedFAQs] = useState<string[]>([]);
   const [selectedResources, setSelectedResources] = useState<string[]>([]);
+  const [selectedMapLocations, setSelectedMapLocations] = useState<string[]>([]);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
 
   // Filter states
@@ -211,6 +227,7 @@ export function EnhancedAdminDashboard() {
   const [showOpportunityForm, setShowOpportunityForm] = useState(false);
   const [showFAQForm, setShowFAQForm] = useState(false);
   const [showResourceForm, setShowResourceForm] = useState(false);
+  const [showMapLocationForm, setShowMapLocationForm] = useState(false);
   const [showPageForm, setShowPageForm] = useState(false);
   const [showUserForm, setShowUserForm] = useState(false);
   const [showPasswordResetDialog, setShowPasswordResetDialog] = useState(false);
@@ -262,7 +279,7 @@ export function EnhancedAdminDashboard() {
       return stored ? JSON.parse(stored) : [];
     } catch { return []; }
   });
-  const logActivity = (action: string, section: string, description: string) => {
+  const logActivity = async (action: string, section: string, description: string) => {
     const entry: ActivityEntry = {
       id: Date.now().toString(),
       action, section, description,
@@ -358,7 +375,7 @@ export function EnhancedAdminDashboard() {
     }
   };
 
-  const handleBackupJSON = () => {
+  const handleBackupJSON = async () => {
     setExporting(true);
     try {
       const backupPayload = {
@@ -912,15 +929,75 @@ export function EnhancedAdminDashboard() {
         setResources(data.resources || []);
       } else if (activeTab === 'pages') {
         const response = await fetch(
-          `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/pages`,
-          { headers: { Authorization: `Bearer ${publicAnonKey}` } }
+          `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/pages`,
+          { headers: { Authorization: `Bearer ${accessToken || publicAnonKey}` } }
         );
         const data = await response.json();
         setPages(data.pages || []);
+      } else if (activeTab === 'live-chat') {
+        const response = await fetch(
+          `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/livechats`,
+          { headers: { Authorization: `Bearer ${accessToken || publicAnonKey}` } }
+        );
+        const data = await response.json();
+        setLiveChats(data.sessions || []);
+      } else if (activeTab === 'map') {
+        const response = await fetch(
+          `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/map-locations`,
+          { headers: { Authorization: `Bearer ${publicAnonKey}` } }
+        );
+        const data = await response.json();
+        setMapLocations(data.locations || []);
       }
     } catch (err) {
       console.error('Error loading data:', err);
       toast.error('Failed to load data');
+    }
+  };
+
+  
+  useEffect(() => {
+    let intervalId: NodeJS.Timeout;
+    if (activeTab === 'live-chat') {
+      intervalId = setInterval(() => {
+        loadData();
+      }, 3000);
+    }
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [activeTab]);
+
+
+
+  const handleChatReply = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!chatReply.trim() || !selectedChatId) return;
+
+    setIsReplyingChat(true);
+    try {
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/livechats/${selectedChatId}/reply`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${accessToken || publicAnonKey}`
+          },
+          body: JSON.stringify({ message: chatReply.trim() })
+        }
+      );
+      if (response.ok) {
+        setChatReply('');
+        loadData(); // refresh chats immediately
+      } else {
+        toast.error('Failed to send reply');
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to send reply');
+    } finally {
+      setIsReplyingChat(false);
     }
   };
 
@@ -982,7 +1059,7 @@ export function EnhancedAdminDashboard() {
   };
 
   const handleDeleteProgram = async (id: string) => {
-    if (!confirm('Delete this program?')) return;
+    if (!(await confirmDialog({ title: 'Confirm Action', message: 'Delete this program?' }))) return;
 
     try {
       const response = await fetch(
@@ -1005,7 +1082,7 @@ export function EnhancedAdminDashboard() {
   };
 
   const handleBulkDeletePrograms = async (ids: string[]) => {
-    if (!confirm(`Delete ${ids.length} programs?`)) return;
+    if (!(await confirmDialog({ title: 'Confirm Action', message: `Delete ${ids.length} programs?` }))) return;
 
     try {
       await Promise.all(
@@ -1061,7 +1138,7 @@ export function EnhancedAdminDashboard() {
   };
 
   const handleDeleteNews = async (id: string) => {
-    if (!confirm('Delete this news item?')) return;
+    if (!(await confirmDialog({ title: 'Confirm Action', message: 'Delete this news item?' }))) return;
 
     try {
       const response = await fetch(
@@ -1084,7 +1161,7 @@ export function EnhancedAdminDashboard() {
   };
 
   const handleBulkDeleteNews = async (ids: string[]) => {
-    if (!confirm(`Delete ${ids.length} news items?`)) return;
+    if (!(await confirmDialog({ title: 'Confirm Action', message: `Delete ${ids.length} news items?` }))) return;
 
     try {
       await Promise.all(
@@ -1145,7 +1222,7 @@ export function EnhancedAdminDashboard() {
   };
 
   const handleDeleteGallery = async (id: string) => {
-    if (!confirm('Delete this gallery item?')) return;
+    if (!(await confirmDialog({ title: 'Confirm Action', message: 'Delete this gallery item?' }))) return;
 
     try {
       const response = await fetch(
@@ -1168,7 +1245,7 @@ export function EnhancedAdminDashboard() {
   };
 
   const handleBulkDeleteGallery = async (ids: string[]) => {
-    if (!confirm(`Delete ${ids.length} gallery items?`)) return;
+    if (!(await confirmDialog({ title: 'Confirm Action', message: `Delete ${ids.length} gallery items?` }))) return;
 
     try {
       await Promise.all(
@@ -1249,7 +1326,7 @@ export function EnhancedAdminDashboard() {
   };
 
   const handleDeleteContact = async (id: string) => {
-    if (!confirm('Delete this contact message?')) return;
+    if (!(await confirmDialog({ title: 'Confirm Action', message: 'Delete this contact message?' }))) return;
 
     try {
       const response = await fetch(
@@ -1272,7 +1349,7 @@ export function EnhancedAdminDashboard() {
   };
 
   const handleBulkDeleteContacts = async (ids: string[]) => {
-    if (!confirm(`Delete ${ids.length} contact messages?`)) return;
+    if (!(await confirmDialog({ title: 'Confirm Action', message: `Delete ${ids.length} contact messages?` }))) return;
 
     try {
       await Promise.all(
@@ -1322,7 +1399,7 @@ export function EnhancedAdminDashboard() {
   };
 
   const handleDeleteVolunteer = async (id: string) => {
-    if (!confirm('Delete this volunteer application?')) return;
+    if (!(await confirmDialog({ title: 'Confirm Action', message: 'Delete this volunteer application?' }))) return;
 
     try {
       const response = await fetch(
@@ -1345,7 +1422,7 @@ export function EnhancedAdminDashboard() {
   };
 
   const handleBulkDeleteVolunteers = async (ids: string[]) => {
-    if (!confirm(`Delete ${ids.length} volunteer applications?`)) return;
+    if (!(await confirmDialog({ title: 'Confirm Action', message: `Delete ${ids.length} volunteer applications?` }))) return;
 
     try {
       await Promise.all(
@@ -1370,7 +1447,7 @@ export function EnhancedAdminDashboard() {
   };
 
   const handleDeleteTeam = async (id: string) => {
-    if (!confirm('Delete this team member?')) return;
+    if (!(await confirmDialog({ title: 'Confirm Action', message: 'Delete this team member?' }))) return;
     try {
       const response = await fetch(
         `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/team/${id}`,
@@ -1387,7 +1464,7 @@ export function EnhancedAdminDashboard() {
   };
 
   const handleDeleteStory = async (id: string) => {
-    if (!confirm('Delete this story?')) return;
+    if (!(await confirmDialog({ title: 'Confirm Action', message: 'Delete this story?' }))) return;
     try {
       const response = await fetch(
         `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/stories/${id}`,
@@ -1404,7 +1481,7 @@ export function EnhancedAdminDashboard() {
   };
 
   const handleDeleteReport = async (id: string) => {
-    if (!confirm('Delete this report?')) return;
+    if (!(await confirmDialog({ title: 'Confirm Action', message: 'Delete this report?' }))) return;
     try {
       const response = await fetch(
         `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/reports/${id}`,
@@ -1421,7 +1498,7 @@ export function EnhancedAdminDashboard() {
   };
 
   const handleDeleteEvent = async (id: string) => {
-    if (!confirm('Delete this event?')) return;
+    if (!(await confirmDialog({ title: 'Confirm Action', message: 'Delete this event?' }))) return;
     try {
       const response = await fetch(
         `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/events/${id}`,
@@ -1438,7 +1515,7 @@ export function EnhancedAdminDashboard() {
   };
 
   const handleDeletePartner = async (id: string) => {
-    if (!confirm('Delete this partner?')) return;
+    if (!(await confirmDialog({ title: 'Confirm Action', message: 'Delete this partner?' }))) return;
     try {
       const response = await fetch(
         `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/partners/${id}`,
@@ -1455,7 +1532,7 @@ export function EnhancedAdminDashboard() {
   };
 
   const handleDeleteOpportunity = async (id: string) => {
-    if (!confirm('Delete this opportunity?')) return;
+    if (!(await confirmDialog({ title: 'Confirm Action', message: 'Delete this opportunity?' }))) return;
     try {
       const response = await fetch(
         `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/opportunities/${id}`,
@@ -1472,7 +1549,7 @@ export function EnhancedAdminDashboard() {
   };
 
   const handleDeleteFAQ = async (id: string) => {
-    if (!confirm('Delete this FAQ?')) return;
+    if (!(await confirmDialog({ title: 'Confirm Action', message: 'Delete this FAQ?' }))) return;
     try {
       const response = await fetch(
         `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/faqs/${id}`,
@@ -1489,7 +1566,7 @@ export function EnhancedAdminDashboard() {
   };
 
   const handleDeleteResource = async (id: string) => {
-    if (!confirm('Delete this resource?')) return;
+    if (!(await confirmDialog({ title: 'Confirm Action', message: 'Delete this resource?' }))) return;
     try {
       const response = await fetch(
         `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/resources/${id}`,
@@ -1505,8 +1582,61 @@ export function EnhancedAdminDashboard() {
     }
   };
 
+  
+  const handleDeleteMapLocation = async (id: string) => {
+    if (!(await confirmDialog({ title: 'Confirm Action', message: 'Delete this map location?' }))) return;
+    try {
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/map-locations/${id}`,
+        {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${accessToken || publicAnonKey}` },
+        }
+      );
+      if (!response.ok) throw new Error('Failed to delete map location');
+      toast.success('Map location deleted');
+      loadData();
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to delete map location');
+    }
+  };
+
+
+
+  const handleDeleteDonation = async (key: string) => {
+    if (!(await confirmDialog({ title: 'Confirm Action', message: 'Delete this donation? It will no longer appear in your dashboard.' }))) return;
+    try {
+      const donationId = key.replace('donation:', '');
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/donations/${encodeURIComponent(donationId)}`,
+        { method: 'DELETE', headers: { Authorization: `Bearer ${publicAnonKey}` } }
+      );
+      if (!response.ok) throw new Error('Failed to delete donation');
+      toast.success('Donation deleted successfully');
+      setSelectedDonation(null);
+      loadData();
+    } catch (err: any) {
+      toast.error(err.message);
+    }
+  };
+
+  const handleClearDonations = async () => {
+    if (!(await confirmDialog({ title: 'Confirm Action', message: 'Are you sure you want to delete ALL donations? This cannot be undone.' }))) return;
+    try {
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/donations/clear-all`,
+        { method: 'POST', headers: { Authorization: `Bearer ${publicAnonKey}` } }
+      );
+      if (!response.ok) throw new Error('Failed to clear donations');
+      toast.success('All donations cleared successfully');
+      loadData();
+    } catch (err: any) {
+      toast.error(err.message);
+    }
+  };
+
   const handleDeletePage = async (id: string) => {
-    if (!confirm('Delete this page? It will no longer be accessible on the website.')) return;
+    if (!(await confirmDialog({ title: 'Confirm Action', message: 'Delete this page? It will no longer be accessible on the website.' }))) return;
     try {
       const response = await fetch(
         `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/pages/${encodeURIComponent(id)}`,
@@ -1566,7 +1696,7 @@ export function EnhancedAdminDashboard() {
       toast.error('Only super admins can delete users');
       return;
     }
-    if (!confirm('Delete this user? This action cannot be undone.')) return;
+    if (!(await confirmDialog({ title: 'Confirm Action', message: 'Delete this user? This action cannot be undone.' }))) return;
 
     try {
       const response = await fetch(
@@ -1593,7 +1723,7 @@ export function EnhancedAdminDashboard() {
       toast.error('Only super admins can delete users');
       return;
     }
-    if (!confirm(`Delete ${ids.length} users? This action cannot be undone.`)) return;
+    if (!(await confirmDialog({ title: 'Confirm Action', message: `Delete ${ids.length} users? This action cannot be undone.` }))) return;
 
     try {
       const response = await fetch(
@@ -3565,7 +3695,7 @@ export function EnhancedAdminDashboard() {
                     </div>
                     <button
                       onClick={() => exportToCSV((donations || []).map(d => d.value), 'donations.csv')}
-                      className="flex items-center gap-1.5 px-3 py-2 bg-white/20 hover:bg-white/30 border border-white/30 rounded-lg text-sm text-white font-medium transition-colors"
+                    className="flex items-center gap-1.5 px-3 py-2 bg-white/20 hover:bg-white/30 border border-white/30 rounded-lg text-sm text-white font-medium transition-colors"
                     >
                       <Download size={14} />
                       CSV
@@ -3573,60 +3703,242 @@ export function EnhancedAdminDashboard() {
                   </div>
                 </div>
 
-                {/* Donation Analytics Chart */}
-                {donations.length > 0 && (() => {
+                {/* Donation Analytics Charts */}
+                {(() => {
+                  const isDummy = donations.length === 0;
+                  const displayDonations = isDummy ? [
+                    { value: { amount: 500, payment_method: 'Card', timestamp: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString() } },
+                    { value: { amount: 250, payment_method: 'Mobile Money', timestamp: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString() } },
+                    { value: { amount: 1000, payment_method: 'Bank Transfer', timestamp: new Date().toISOString() } },
+                    { value: { amount: 150, payment_method: 'Card', timestamp: new Date().toISOString() } }
+                  ] : donations;
+
                   const byMonth: Record<string, number> = {};
-                  donations.forEach(d => {
-                    const month = new Date(d.value.created_at).toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
-                    byMonth[month] = (byMonth[month] || 0) + (d.value.amount || 0);
+                  const byMethod: Record<string, number> = {
+                    'Stripe': 0,
+                    'Bank Transfer': 0,
+                    'MTN Mobile Money': 0,
+                    'Airtel Money': 0,
+                    'Mobile Money (Other)': 0,
+                    'Other': 0
+                  };
+                  let totalSum = 0;
+                  
+                  displayDonations.forEach(d => {
+                    const month = new Date(d.value.timestamp || d.value.created_at || new Date()).toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+                    const amt = d.value.amount || 0;
+                    byMonth[month] = (byMonth[month] || 0) + amt;
+                    totalSum += amt;
+                    
+                    const method = d.value.payment_method || d.value.paymentMethod || d.value.method || 'Other';
+                    const lowerMethod = method.toLowerCase();
+                    let methodKey = 'Other';
+                    
+                    if (lowerMethod.includes('stripe') || lowerMethod.includes('card')) methodKey = 'Stripe';
+                    else if (lowerMethod.includes('mtn')) methodKey = 'MTN Mobile Money';
+                    else if (lowerMethod.includes('airtel')) methodKey = 'Airtel Money';
+                    else if (lowerMethod.includes('bank')) methodKey = 'Bank Transfer';
+                    else if (lowerMethod.includes('mobile') || lowerMethod.includes('momo') || lowerMethod.includes('mpesa')) methodKey = 'Mobile Money (Other)';
+                    
+                    byMethod[methodKey] = (byMethod[methodKey] || 0) + amt;
                   });
-                  const chartData = Object.entries(byMonth).map(([month, total]) => ({ month, total: parseFloat(total.toFixed(2)) }));
+                  
+                  const monthChartData = Object.entries(byMonth).map(([month, total]) => ({ month, total: parseFloat(total.toFixed(2)) }));
+                  const methodChartData = Object.entries(byMethod).map(([method, total]) => ({ name: method, value: parseFloat(total.toFixed(2)) })).sort((a,b) => b.value - a.value);
+                  
+                  const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#8b5cf6', '#ec4899', '#6366f1'];
+
                   return (
-                    <div className="bg-white rounded-2xl border border-gray-100 p-6">
-                      <h4 className="text-sm font-semibold text-slate-700 mb-4">Donations by Month</h4>
-                      <ResponsiveContainer width="100%" height={220}>
-                        <BarChart data={chartData} margin={{ top: 4, right: 8, left: 0, bottom: 4 }}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                          <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#94a3b8' }} />
-                          <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} tickFormatter={v => `$${v}`} />
-                          <Tooltip formatter={(v: any) => [`$${v}`, 'Total']} contentStyle={{ borderRadius: '10px', border: '1px solid #e2e8f0' }} />
-                          <Bar dataKey="total" fill="#10b981" radius={[6, 6, 0, 0]} />
-                        </BarChart>
-                      </ResponsiveContainer>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                      <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
+                        <h4 className="text-sm font-semibold text-slate-700 mb-4">Donations by Month {isDummy && <span className="text-xs text-emerald-500 font-normal ml-2">(Sample Data)</span>}</h4>
+                        <ResponsiveContainer width="100%" height={260}>
+                          <BarChart data={monthChartData} margin={{ top: 4, right: 8, left: 0, bottom: 4 }}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                            <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#94a3b8' }} />
+                            <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} tickFormatter={v => `$${v}`} />
+                            <Tooltip formatter={(v: any) => [`$${v}`, 'Total']} contentStyle={{ borderRadius: '10px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }} />
+                            <Bar dataKey="total" fill="#10b981" radius={[6, 6, 0, 0]} />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+                      
+                      <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm flex flex-col">
+                        <h4 className="text-sm font-semibold text-slate-700 mb-4">Donations by Payment Method {isDummy && <span className="text-xs text-emerald-500 font-normal ml-2">(Sample Data)</span>}</h4>
+                        <div className="flex-1 flex flex-col xl:flex-row items-center gap-6">
+                          <div className="w-full xl:w-1/2 h-[220px] relative">
+                            <ResponsiveContainer width="100%" height="100%">
+                              <PieChart>
+                                <Pie
+                                  data={methodChartData}
+                                  cx="50%"
+                                  cy="50%"
+                                  innerRadius={50}
+                                  outerRadius={80}
+                                  paddingAngle={5}
+                                  dataKey="value"
+                                >
+                                  {methodChartData.map((entry, index) => (
+                                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                  ))}
+                                </Pie>
+                                <Tooltip formatter={(v: any) => [`$${v}`, 'Total']} contentStyle={{ borderRadius: '10px', border: '1px solid #e2e8f0' }} />
+                              </PieChart>
+                            </ResponsiveContainer>
+                          </div>
+                          
+                          <div className="w-full xl:w-1/2 flex flex-col justify-center">
+                            <div className="space-y-3 mb-4">
+                              {methodChartData.map((item, i) => (
+                                <div key={item.name} className="flex items-center justify-between">
+                                  <div className="flex items-center gap-2">
+                                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }}></div>
+                                    <span className="text-sm text-slate-600">{item.name}</span>
+                                  </div>
+                                  <span className="text-sm font-semibold text-slate-800">${(item.value || 0).toFixed(2)}</span>
+                                </div>
+                              ))}
+                            </div>
+                            <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
+                              <span className="text-sm font-bold text-slate-800">Total Sum</span>
+                              <span className="text-sm font-bold text-emerald-600">${totalSum.toFixed(2)}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   );
                 })()}
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
-                  {(donations || []).map((donation) => (
-                    <div key={donation.key} className="bg-white border border-gray-200 relative border-t-4 border-l-0 overflow-hidden border-l-emerald-500 rounded-2xl p-6 md:p-7 hover:shadow-xl hover:-translate-y-2 hover:shadow-2xl hover:border-emerald-300 transition-all duration-300 shadow-sm">
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <h4 className="text-base font-semibold text-slate-800 tracking-tight">{donation.value.name}</h4>
-                            <span className="px-2.5 py-0.5 text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full">
-                              ${donation.value.amount}
+                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-sm text-slate-600">
+                      <thead className="bg-slate-50 border-b border-gray-100 text-slate-500 uppercase text-xs font-semibold">
+                        <tr>
+                          <th className="px-6 py-4">Donor Info</th>
+                          <th className="px-6 py-4">Amount</th>
+                          <th className="px-6 py-4">Method</th>
+                          <th className="px-6 py-4">Date</th>
+                          <th className="px-6 py-4 text-right">Action</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100">
+                        {(donations || []).map((donation) => (
+                          <tr key={donation.key} className="hover:bg-slate-50/80 transition-colors duration-200 cursor-pointer" onClick={() => setSelectedDonation(donation)}>
+                            <td className="px-6 py-4">
+                              <div className="font-semibold text-slate-800">{donation.value.donorName || donation.value.name || 'Anonymous'}</div>
+                              <div className="text-xs text-slate-500 mt-0.5">{donation.value.donorEmail || donation.value.email || 'No email provided'}</div>
+                            </td>
+                            <td className="px-6 py-4">
+                              <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-100">
+                                {donation.value.currency || 'USD'} {donation.value.amount}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4">
+                              <span className="capitalize">{donation.value.paymentMethod || donation.value.payment_method || 'Other'}</span>
+                            </td>
+                            <td className="px-6 py-4 text-xs text-slate-500">
+                              {new Date(donation.value.timestamp || donation.value.created_at || new Date()).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                            </td>
+                            <td className="px-6 py-4 text-right">
+                              <button 
+                                onClick={(e) => { e.stopPropagation(); setSelectedDonation(donation); }}
+                                className="text-indigo-600 hover:text-indigo-800 font-medium text-xs bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg transition-colors"
+                              >
+                                View Details
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                        {donations.length === 0 && (
+                          <tr>
+                            <td colSpan={5}>
+                              <div className="text-center py-16">
+                                <div className="w-12 h-12 rounded-full bg-slate-50 flex items-center justify-center mx-auto mb-3">
+                                  <TrendingUp size={20} className="text-slate-400" />
+                                </div>
+                                <p className="text-sm font-medium text-slate-600">No donations found</p>
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* Donation Detail Modal */}
+                {selectedDonation && (
+                  <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setSelectedDonation(null)}>
+                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden border border-slate-100" onClick={e => e.stopPropagation()}>
+                      <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+                        <h3 className="text-lg font-semibold text-slate-800">Donation Details</h3>
+                        <button onClick={() => setSelectedDonation(null)} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl transition-colors">
+                          <X size={20} />
+                        </button>
+                      </div>
+                      <div className="p-6 space-y-4">
+                        <div className="flex items-center justify-between p-4 bg-emerald-50 rounded-xl border border-emerald-100/50">
+                          <div>
+                            <p className="text-xs font-medium text-emerald-600 uppercase tracking-wider mb-1">Total Amount</p>
+                            <p className="text-2xl font-bold text-emerald-700">{selectedDonation.value.currency || 'USD'} {selectedDonation.value.amount}</p>
+                          </div>
+                          <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600">
+                            <TrendingUp size={24} />
+                          </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
+                            <p className="text-xs font-medium text-slate-500 mb-1">Donor Name</p>
+                            <p className="text-sm font-semibold text-slate-800">{selectedDonation.value.donorName || selectedDonation.value.name || 'Anonymous'}</p>
+                          </div>
+                          <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
+                            <p className="text-xs font-medium text-slate-500 mb-1">Payment Method</p>
+                            <p className="text-sm font-semibold text-slate-800 capitalize">{selectedDonation.value.paymentMethod || selectedDonation.value.payment_method || 'Other'}</p>
+                          </div>
+                        </div>
+
+                        <div className="space-y-3">
+                          <div className="flex flex-col">
+                            <span className="text-xs text-slate-500 font-medium">Email Address</span>
+                            <span className="text-sm text-slate-800">{selectedDonation.value.donorEmail || selectedDonation.value.email || 'N/A'}</span>
+                          </div>
+                          {selectedDonation.value.donorPhone && (
+                            <div className="flex flex-col">
+                              <span className="text-xs text-slate-500 font-medium">Phone Number</span>
+                              <span className="text-sm text-slate-800">{selectedDonation.value.donorPhone}</span>
+                            </div>
+                          )}
+                          <div className="flex flex-col">
+                            <span className="text-xs text-slate-500 font-medium">Transaction ID</span>
+                            <span className="text-sm text-slate-800 font-mono break-all bg-slate-100 px-2 py-1 rounded mt-1 border border-slate-200 inline-block">{selectedDonation.value.transactionId || selectedDonation.value.paymentIntentId || selectedDonation.key.replace('donation:', '')}</span>
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="text-xs text-slate-500 font-medium">Date & Time</span>
+                            <span className="text-sm text-slate-800">
+                              {new Date(selectedDonation.value.timestamp || selectedDonation.value.created_at || new Date()).toLocaleString('en-US', { weekday: 'short', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                             </span>
                           </div>
-                          <p className="text-sm text-slate-600 mb-1">{donation.value.email}</p>
-                          <p className="text-sm text-slate-700 leading-relaxed">Payment: {donation.value.payment_method}</p>
-                          <span className="text-xs text-gray-400">
-                            {new Date(donation.value.created_at).toLocaleString()}
-                          </span>
+                          {selectedDonation.value.message && (
+                            <div className="flex flex-col mt-2 pt-2 border-t border-slate-100">
+                              <span className="text-xs text-slate-500 font-medium mb-1">Message / Notes</span>
+                              <p className="text-sm text-slate-700 italic bg-slate-50 p-3 rounded-lg border border-slate-100">"{selectedDonation.value.message}"</p>
+                            </div>
+                          )}
+                        </div>
+                        <div className="mt-6 pt-4 border-t border-slate-100 flex justify-end">
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); handleDeleteDonation(selectedDonation.key); }}
+                            className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-600 hover:bg-red-100 rounded-xl transition-colors font-medium text-sm"
+                          >
+                            <Trash2 size={16} /> Delete Donation
+                          </button>
                         </div>
                       </div>
                     </div>
-                  ))}
-                  {donations.length === 0 && (
-                    <div className="text-center py-24">
-                      <div className="w-14 h-14 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center mx-auto mb-4">
-                        <TrendingUp size={26} className="text-emerald-400" />
-                      </div>
-                      <p className="text-sm font-semibold text-slate-600 mb-1">No donations yet</p>
-                      <p className="text-xs text-gray-400">Donation records will appear here</p>
-                    </div>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
             )}
 
@@ -4878,6 +5190,232 @@ export function EnhancedAdminDashboard() {
               </div>
             )}
 
+          
+            {/* Map Locations Tab */}
+            
+            {activeTab === 'live-chat' && (
+              <div className="flex h-[calc(100vh-160px)] -m-6 mt-0 border-t border-slate-200">
+                {/* Left Sidebar - Chat List */}
+                <div className="w-80 bg-white border-r border-slate-200 flex flex-col">
+                  <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                    <h3 className="font-semibold text-slate-800 flex items-center gap-2">
+                      <MessageCircle size={18} className="text-emerald-600" /> Active Chats
+                    </h3>
+                    <span className="bg-emerald-100 text-emerald-700 py-0.5 px-2 rounded-full text-xs font-medium">
+                      {liveChats.length}
+                    </span>
+                  </div>
+                  <div className="flex-1 overflow-y-auto">
+                    {liveChats.length === 0 ? (
+                      <div className="p-8 text-center text-slate-500">
+                        <MessageCircle size={32} className="mx-auto mb-3 text-slate-300" />
+                        <p className="text-sm">No active chats right now.</p>
+                      </div>
+                    ) : (
+                      <div className="divide-y divide-slate-100">
+                        {liveChats.map((chat: any) => {
+                          const lastMessage = chat.messages[chat.messages.length - 1];
+                          const unreadCount = chat.messages.filter((m: any) => m.sender === 'user' && new Date(m.timestamp) > new Date(chat.updated_at || 0)).length; // Very basic unread indication
+                          
+                          return (
+                            <button
+                              key={chat.id}
+                              onClick={() => setSelectedChatId(chat.id)}
+                              className={`w-full text-left p-4 hover:bg-slate-50 transition-colors flex flex-col gap-1 relative ${selectedChatId === chat.id ? 'bg-emerald-50 border-l-4 border-l-emerald-500 pl-3' : 'border-l-4 border-transparent'}`}
+                            >
+                              <div className="flex justify-between items-start w-full">
+                                <span className="font-medium text-sm text-slate-800 truncate">
+                                  {chat.email || 'Anonymous User'}
+                                </span>
+                                <span className="text-[10px] text-slate-400 shrink-0">
+                                  {new Date(chat.updated_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                                </span>
+                              </div>
+                              <p className="text-xs text-slate-500 truncate w-full">
+                                {lastMessage ? (lastMessage.sender === 'bot' ? 'You: ' + lastMessage.text : lastMessage.text) : 'No messages'}
+                              </p>
+                              <div className="text-[10px] text-slate-400 mt-1">ID: {chat.id.substring(0, 15)}...</div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Right Area - Chat Window */}
+                <div className="flex-1 bg-slate-50 flex flex-col">
+                  {selectedChatId ? (() => {
+                    const activeChat = liveChats.find((c: any) => c.id === selectedChatId);
+                    if (!activeChat) return null;
+                    return (
+                      <>
+                        <div className="h-16 border-b border-slate-200 bg-white px-6 flex items-center justify-between shadow-sm z-10">
+                          <div>
+                            <h2 className="font-semibold text-slate-800 flex items-center gap-2">
+                              {activeChat.email || 'Anonymous User'}
+                            </h2>
+                            <p className="text-xs text-slate-500">Session ID: {activeChat.id}</p>
+                          </div>
+                          <button onClick={() => {
+                             if(confirm('Are you sure you want to end this chat? (Note: End chat is just a local reset for now)')) setSelectedChatId(null);
+                          }} className="text-xs text-rose-500 hover:text-rose-600 bg-rose-50 hover:bg-rose-100 px-3 py-1.5 rounded-lg transition-colors">
+                            Close Chat
+                          </button>
+                        </div>
+                        
+                        <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                          <div className="text-center text-xs text-slate-400 mb-6 bg-white py-1 px-3 rounded-full inline-block border border-slate-100 mx-auto w-max shadow-sm">
+                            Chat started at {new Date(activeChat.created_at).toLocaleString()}
+                          </div>
+                          {activeChat.messages.map((msg: any, idx: number) => (
+                            <div key={idx} className={`flex ${msg.sender === 'bot' ? 'justify-end' : 'justify-start'}`}>
+                              <div className={`max-w-[70%] rounded-2xl px-4 py-2.5 text-sm shadow-sm ${
+                                msg.sender === 'bot' 
+                                  ? 'bg-emerald-600 text-white rounded-tr-sm' 
+                                  : 'bg-white border border-slate-200 text-slate-700 rounded-tl-sm'
+                              }`}>
+                                {msg.text}
+                                <div className={`text-[10px] mt-1 text-right ${msg.sender === 'bot' ? 'text-emerald-200' : 'text-slate-400'}`}>
+                                  {new Date(msg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                        
+                        <div className="p-4 bg-white border-t border-slate-200">
+                          <form onSubmit={handleChatReply} className="flex gap-2">
+                            <input
+                              type="text"
+                              value={chatReply}
+                              onChange={(e) => setChatReply(e.target.value)}
+                              placeholder="Type your reply to the user..."
+                              className="flex-1 bg-slate-100 border-transparent focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 rounded-xl py-2.5 px-4 text-sm transition-all outline-none"
+                              disabled={isReplyingChat}
+                            />
+                            <button
+                              type="submit"
+                              disabled={!chatReply.trim() || isReplyingChat}
+                              className="bg-emerald-600 text-white px-5 rounded-xl font-medium flex items-center gap-2 hover:bg-emerald-700 disabled:opacity-50 transition-colors"
+                            >
+                              <Send size={16} />
+                              Send
+                            </button>
+                          </form>
+                        </div>
+                      </>
+                    );
+                  })() : (
+                    <div className="flex-1 flex flex-col items-center justify-center text-slate-400 h-full">
+                      <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-sm mb-4">
+                        <MessageCircle size={40} className="text-slate-300" />
+                      </div>
+                      <p className="text-lg font-medium text-slate-500">Select a chat to view</p>
+                      <p className="text-sm">Choose an active conversation from the sidebar to reply.</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+
+            {activeTab === 'map' && (
+              <div className="bg-white/95 backdrop-blur-xl rounded-[2rem] shadow-sm border border-slate-100/80 p-8 md:p-10 space-y-8">
+                <div className="flex flex-row items-center justify-between gap-4 bg-gradient-to-r from-blue-600 to-indigo-700 rounded-2xl px-6 py-5 md:px-8 md:py-6 shadow-md">
+                  <div className="flex items-center gap-3">
+                    <div className="p-3 md:p-3.5 rounded-xl bg-white/20 border border-white/30 shadow-sm flex-shrink-0">
+                      <MapPin size={32} className="text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl md:text-2xl font-bold text-white tracking-tight">Map Locations <span className="text-sm font-normal text-blue-200">({mapLocations.length})</span></h3>
+                      <p className="text-sm text-blue-100 mt-1.5 opacity-80 font-medium">Manage locations for the interactive impact map</p>
+                    </div>
+                  </div>
+                  <Button
+                    onClick={() => {
+                      setEditingItem(null);
+                      setShowMapLocationForm(true);
+                    }}
+                    className="bg-white text-blue-700 hover:bg-blue-50 shadow-md font-semibold px-4 py-2 md:px-5 md:py-2.5 rounded-xl transition-all whitespace-nowrap flex-shrink-0"
+                  >
+                    <Plus size={16} className="mr-2" />
+                    Add Location
+                  </Button>
+                </div>
+
+                {/* Visual Map Preview */}
+                <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden h-[400px] shadow-sm relative z-0">
+                  <div className="absolute top-4 left-4 z-10 bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm text-sm font-semibold text-slate-700">
+                    Live Map Preview
+                  </div>
+                  <ImpactMap onMarkerClick={(loc) => {
+                    setEditingItem(loc);
+                    setShowMapLocationForm(true);
+                  }} />
+                </div>
+                
+                <h4 className="text-lg font-bold text-slate-800 mt-8 mb-4">Manage Locations</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {mapLocations.map((loc: any) => (
+                    <div key={loc.id} className="bg-white border border-slate-100 rounded-2xl p-6 hover:shadow-md transition-all relative overflow-hidden">
+                      <div className="absolute top-0 right-0 p-4">
+                        <span className={`px-2.5 py-1 text-xs font-semibold rounded-full ${
+                          loc.category === 'health' ? 'bg-blue-50 text-blue-700 border border-blue-200' :
+                          loc.category === 'education' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
+                          loc.category === 'wash' ? 'bg-cyan-50 text-cyan-700 border border-cyan-200' :
+                          'bg-amber-50 text-amber-700 border border-amber-200'
+                        }`}>
+                          {loc.category.toUpperCase()}
+                        </span>
+                      </div>
+                      <div className="flex items-start gap-3 mb-4 pr-20">
+                        <div className="p-2.5 bg-slate-50 text-slate-400 rounded-xl">
+                          <MapPin size={20} />
+                        </div>
+                        <div>
+                          <h4 className="font-semibold text-slate-800 line-clamp-1">{loc.name}</h4>
+                          <p className="text-xs text-slate-500 mt-0.5">[{loc.coordinates?.[0]}, {loc.coordinates?.[1]}]</p>
+                        </div>
+                      </div>
+                      <p className="text-sm text-slate-600 line-clamp-2 mb-4 h-10">{loc.description}</p>
+                      {loc.impact && (
+                        <div className="mb-4 bg-slate-50 rounded-lg p-3 border border-slate-100">
+                          <p className="text-xs font-semibold text-slate-700 line-clamp-1">{loc.impact}</p>
+                        </div>
+                      )}
+                      <div className="flex justify-end gap-2 border-t border-slate-100 pt-4">
+                        <button
+                          onClick={() => {
+                            setEditingItem(loc);
+                            setShowMapLocationForm(true);
+                          }}
+                          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors"
+                        >
+                          <Edit size={13} /> Edit
+                        </button>
+                        <button
+                          onClick={() => handleDeleteMapLocation(loc.id)}
+                          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-colors"
+                        >
+                          <Trash2 size={13} /> Delete
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                  {mapLocations.length === 0 && (
+                    <div className="col-span-full text-center py-20">
+                      <div className="w-14 h-14 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-center mx-auto mb-4">
+                        <MapPin size={26} className="text-slate-400" />
+                      </div>
+                      <p className="text-sm font-semibold text-slate-600 mb-1">No map locations yet</p>
+                      <p className="text-xs text-gray-400">Add a location to display it on the impact map.</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
           {/* Activity Log Tab */}
           {activeTab === 'activity-log' && (
             <div className="p-6">
@@ -5480,6 +6018,20 @@ export function EnhancedAdminDashboard() {
             logActivity(editingItem ? 'updated' : 'created', 'Pages', editingItem ? `Updated page: ${editingItem.title}` : 'Created new page');
           }}
           userRole={userRole}
+        />
+      )}
+
+      {showMapLocationForm && (
+        <MapLocationFormDialog
+          show={showMapLocationForm}
+          onClose={() => {
+            setShowMapLocationForm(false);
+            setEditingItem(null);
+          }}
+          editingItem={editingItem}
+          onSuccess={loadData}
+          userRole={userRole}
+          accessToken={accessToken || publicAnonKey}
         />
       )}
       {showResetModal && (

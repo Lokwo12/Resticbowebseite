@@ -37,6 +37,29 @@ export function SEO({
       <meta name="twitter:title" content={title} />
       <meta name="twitter:description" content={description} />
       <meta name="twitter:image" content={image} />
+
+      {/* Structured Data (JSON-LD) */}
+      <script type="application/ld+json">
+        {JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "NGO",
+          "name": "Resti Kiryandongo CBO",
+          "url": "https://restikirya.org",
+          "logo": "https://restikirya.org/logo.png",
+          "description": description,
+          "image": image,
+          "address": {
+            "@type": "PostalAddress",
+            "addressLocality": "Kiryandongo",
+            "addressCountry": "UG"
+          },
+          "contactPoint": {
+            "@type": "ContactPoint",
+            "telephone": "+256-000-000000",
+            "contactType": "customer service"
+          }
+        })}
+      </script>
     </Helmet>
   );
 }

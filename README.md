@@ -119,6 +119,19 @@ Secret API keys are securely processed in Supabase Edge Functions (and never exp
    supabase functions deploy make-server-2a4be611
    ```
 
+### 3. Email Notifications (Resend API Key)
+The backend automatically sends HTML email receipts to donors and notifications to administrators using **Resend**.
+1. Create a free account at [resend.com](https://resend.com) and generate an **API Key**.
+2. Add the API Key to your Supabase Edge Functions environment:
+   ```bash
+   supabase secrets set RESEND_API_KEY="your_resend_api_key_here"
+   ```
+3. Deploy the Edge Functions:
+   ```bash
+   supabase functions deploy make-server-2a4be611
+   ```
+*(Note: Emails are sent from `onboarding@resend.dev` by default. Verify your own custom domain in Resend before going to production).*
+
 ---
 
 ## 🔒 Security & Optimization Recommendations

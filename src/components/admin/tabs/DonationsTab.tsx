@@ -1,3 +1,4 @@
+import { useConfirm } from '../../../hooks/useConfirm';
 import React, { useState } from 'react';
 import { TrendingUp, Download, Trash2, Eye } from 'lucide-react';
 import { Button } from '../../ui/button';
@@ -7,6 +8,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
 export function DonationsTab({ accessToken, projectId, setViewingItem }: any) {
+  const confirmDialog = useConfirm();
   const queryClient = useQueryClient();
   const [selectedDonations, setSelectedDonations] = useState<string[]>([]);
   const [page, setPage] = useState(1);
@@ -53,14 +55,14 @@ export function DonationsTab({ accessToken, projectId, setViewingItem }: any) {
     }
   });
 
-  const handleDeleteDonation = (key: string) => {
-    if (confirm('Are you sure you want to delete this donation record?')) {
+  const handleDeleteDonation = async (key: string) => {
+    if ((await confirmDialog({ title: 'Confirm Action', message: 'Are you sure you want to delete this donation record?' }))) {
       deleteMutation.mutate([key]);
     }
   };
 
-  const handleBulkDeleteDonations = () => {
-    if (confirm(`Are you sure you want to delete ${selectedDonations.length} donation records?`)) {
+  const handleBulkDeleteDonations = async () => {
+    if ((await confirmDialog({ title: 'Confirm Action', message: `Are you sure you want to delete ${selectedDonations.length} donation records?` }))) {
       deleteMutation.mutate(selectedDonations);
     }
   };

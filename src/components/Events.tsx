@@ -108,22 +108,22 @@ export function Events() {
         <div className="p-6 md:w-3/5">
           <div className="flex items-start justify-between mb-3">
             <Badge variant="secondary">{event.category}</Badge>
-            <span className="text-sm text-gray-500">
+            <span className="text-base text-gray-500">
               {event.status === 'completed' ? 'Past Event' : 'Upcoming'}
             </span>
           </div>
 
-          <h3 className="text-gray-900 mb-3 group-hover:text-emerald-600 transition-colors">
+          <h3 className="text-2xl text-gray-900 mb-3 group-hover:text-emerald-600 transition-colors">
             {event.title}
           </h3>
 
-          <p className="text-gray-600 text-sm mb-4 line-clamp-2">
+          <p className="text-gray-600 text-base mb-4 line-clamp-2">
             {event.description}
           </p>
 
           {/* Event Details */}
           <div className="space-y-2 mb-4">
-            <div className="flex items-center gap-2 text-sm text-gray-600">
+            <div className="flex items-center gap-2 text-base text-gray-600">
               <Calendar size={16} className="text-emerald-600 flex-shrink-0" />
               <span>{new Date(event.date).toLocaleDateString('en-US', { 
                 weekday: 'long', 
@@ -133,18 +133,18 @@ export function Events() {
               })}</span>
             </div>
             
-            <div className="flex items-center gap-2 text-sm text-gray-600">
+            <div className="flex items-center gap-2 text-base text-gray-600">
               <Clock size={16} className="text-emerald-600 flex-shrink-0" />
               <span>{event.time}</span>
             </div>
             
-            <div className="flex items-center gap-2 text-sm text-gray-600">
+            <div className="flex items-center gap-2 text-base text-gray-600">
               <MapPin size={16} className="text-emerald-600 flex-shrink-0" />
               <span>{event.location}</span>
             </div>
 
             {event.capacity && event.registered !== undefined && (
-              <div className="flex items-center gap-2 text-sm text-gray-600">
+              <div className="flex items-center gap-2 text-base text-gray-600">
                 <UsersIcon size={16} className="text-emerald-600 flex-shrink-0" />
                 <span>{event.registered} / {event.capacity} registered</span>
               </div>
@@ -185,9 +185,9 @@ export function Events() {
         <div className="text-center mb-12">
           <div className="flex items-center justify-center gap-2 mb-4">
             <Calendar className="text-emerald-600" size={32} />
-            <h2 className="text-emerald-600">{sectionSettings.title}</h2>
+            <h2 className="text-emerald-600 text-4xl mb-4">{sectionSettings.title}</h2>
           </div>
-          <p className="text-gray-600 max-w-3xl mx-auto">
+          <p className="text-gray-600 max-w-3xl mx-auto text-xl">
             {sectionSettings.description}
           </p>
         </div>
@@ -213,7 +213,7 @@ export function Events() {
             ) : (
               <div className="text-center py-12 bg-gray-50 rounded-lg">
                 <Calendar className="mx-auto text-gray-300 mb-4" size={48} />
-                <p className="text-gray-500">No upcoming events scheduled. Check back soon!</p>
+                <p className="text-gray-500 text-lg">No upcoming events scheduled. Check back soon!</p>
               </div>
             )}
           </TabsContent>
@@ -228,7 +228,7 @@ export function Events() {
             ) : (
               <div className="text-center py-12 bg-gray-50 rounded-lg">
                 <Calendar className="mx-auto text-gray-300 mb-4" size={48} />
-                <p className="text-gray-500">No past events to display.</p>
+                <p className="text-gray-500 text-lg">No past events to display.</p>
               </div>
             )}
           </TabsContent>
@@ -237,7 +237,7 @@ export function Events() {
         {/* Newsletter CTA */}
         <div className="mt-16 bg-gradient-to-r from-emerald-600 to-emerald-700 rounded-2xl p-8 md:p-12 text-center text-white">
           <h3 className="mb-4">Stay Updated</h3>
-          <p className="mb-6 text-emerald-50 max-w-2xl mx-auto">
+          <p className="mb-6 text-emerald-50 max-w-2xl mx-auto text-xl">
             Subscribe to our newsletter to receive notifications about upcoming events, 
             programs, and community activities.
           </p>

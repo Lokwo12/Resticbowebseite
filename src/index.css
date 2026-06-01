@@ -2,6 +2,45 @@
 @tailwind components;
 @tailwind utilities;
 
+/* --- Google Translate Overrides --- */
+body {
+  top: 0 !important;
+}
+.skiptranslate iframe,
+.goog-te-banner-frame {
+  display: none !important;
+}
+#goog-gt-tt,
+.goog-te-balloon-frame {
+  display: none !important;
+}
+.goog-text-highlight {
+  background: none !important;
+  box-shadow: none !important;
+}
+
+/* --- Leaflet Map Overrides --- */
+.leaflet-container {
+  font-family: inherit !important;
+}
+.leaflet-popup-content-wrapper {
+  border-radius: 12px !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1) !important;
+}
+.leaflet-popup-content {
+  margin: 12px 14px !important;
+}
+.leaflet-popup-tip-container {
+  overflow: visible !important;
+}
+.leaflet-popup-tip {
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1) !important;
+}
+.custom-leaflet-icon {
+  background: transparent;
+  border: none;
+}
+
 @layer base {
 :root {
   --font-size: 16px;
@@ -104,6 +143,10 @@ html, body, input, textarea, button, select {
 /* --- Premium Font: Outfit --- */
 h1, h2, h3, h4, h5, h6, .font-heading {
   font-family: 'Outfit', 'Inter', ui-sans-serif, system-ui, sans-serif !important;
+}
+
+h1, h2, h3 {
+  letter-spacing: -0.02em;
 }
 
 /* --- Smooth Scrolling --- */

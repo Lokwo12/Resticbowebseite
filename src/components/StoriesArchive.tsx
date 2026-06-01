@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { Quote, Heart, Tag } from 'lucide-react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { Card } from './ui/card';
@@ -121,7 +122,8 @@ export function StoriesArchive() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {filteredStories.map((story) => (
                 <Card key={story.id} className="overflow-hidden hover:shadow-xl transition-all duration-500 bg-white border border-gray-100 group flex flex-col">
-                  {/* Uniform image area */}
+                  <Link to={`/stories/${story.id}`} className="block flex-grow flex flex-col">
+                    {/* Uniform image area */}
                   <div className="relative h-52 overflow-hidden bg-slate-50 border-b border-slate-100 flex-shrink-0 flex items-center justify-center">
                     {story.image ? (
                       <img
@@ -159,19 +161,17 @@ export function StoriesArchive() {
                       </div>
                     )}
 
-                    <div className="flex items-center justify-between pt-4 border-t border-gray-100 mt-auto">
-                      <Badge variant="secondary" className="bg-emerald-50 text-emerald-700 hover:bg-emerald-100">
-                        <Tag size={12} className="mr-1" />
-                        {story.category.charAt(0).toUpperCase() + story.category.slice(1)}
-                      </Badge>
-                      <span className="text-xs text-gray-500">
-                        {(() => {
-                          const d = new Date(story.date);
-                          return isNaN(d.getTime()) ? 'No Date' : d.toLocaleDateString();
-                        })()}
-                      </span>
+                      <div className="flex items-center justify-between pt-4 border-t border-gray-100 mt-auto">
+                        <Badge variant="secondary" className="bg-emerald-50 text-emerald-700 hover:bg-emerald-100">
+                          <Tag size={12} className="mr-1" />
+                          {story.category.charAt(0).toUpperCase() + story.category.slice(1)}
+                        </Badge>
+                        <span className="text-emerald-600 font-semibold text-sm flex items-center group-hover:text-emerald-700 transition-colors">
+                          Read Story <Heart size={14} className="ml-1" fill="currentColor" />
+                        </span>
+                      </div>
                     </div>
-                  </div>
+                  </Link>
                 </Card>
               ))}
             </div>

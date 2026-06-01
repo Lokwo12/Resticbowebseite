@@ -308,6 +308,221 @@ app.post('/make-server-2a4be611/create-payment-intent', async (c) => {
   }
 })
 
+// Create Stripe Checkout Session (for subscriptions/recurring)
+app.post('/make-server-2a4be611/create-checkout-session', async (c) => {
+  try {
+    if (!stripe) {
+      return c.json({ error: 'Stripe is not configured.' }, 400)
+    }
+
+    const body = await c.req.json()
+    const { amount, currency, donorName, donorEmail, interval, successUrl, cancelUrl } = body
+
+    if (!amount || amount < 1 || !interval) {
+      return c.json({ error: 'Invalid amount or interval' }, 400)
+    }
+
+    const sessionConfig: Stripe.Checkout.SessionCreateParams = {
+      payment_method_types: ['card'],
+      mode: 'subscription',
+      line_items: [
+        {
+          price_data: {
+            currency: currency || 'usd',
+            recurring: { interval: interval },
+            unit_amount: Math.round(amount * 100),
+            product_data: {
+              name: `Recurring Donation to Resti Kiryandongo CBO`,
+              description: `A ${interval}ly donation. Thank you for your support!`,
+            },
+          },
+          quantity: 1,
+        },
+      ],
+      success_url: successUrl || `${c.req.header('origin') || 'http://localhost:5173'}/donor/dashboard?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: cancelUrl || `${c.req.header('origin') || 'http://localhost:5173'}/donate`,
+      customer_email: donorEmail || undefined,
+      metadata: {
+        donorName: donorName || 'Anonymous',
+        isRecurring: 'true'
+      }
+    }
+
+    const session = await stripe.checkout.sessions.create(sessionConfig)
+    return c.json({ url: session.url })
+  } catch (error) {
+    console.error('Error creating checkout session:', error)
+    return c.json({ error: 'Failed to create checkout session', details: String(error) }, 500)
+  }
+})
+
+// Verify Stripe Checkout Session and record donation
+app.post('/make-server-2a4be611/verify-session', async (c) => {
+  try {
+    if (!stripe) {
+      return c.json({ error: 'Stripe is not configured' }, 400)
+    }
+
+    const { sessionId } = await c.req.json()
+    if (!sessionId) {
+      return c.json({ error: 'Session ID is required' }, 400)
+    }
+
+    const session = await stripe.checkout.sessions.retrieve(sessionId)
+    
+    if (session.payment_status !== 'paid' && session.status !== 'complete') {
+      return c.json({ status: 'pending' })
+    }
+
+    const existing = await kv.get(['donations_by_tx', sessionId])
+    if (existing?.value) {
+      return c.json({ status: 'already_recorded' })
+    }
+
+    const donationId = `donation:${Date.now()}`
+    const donationData = {
+      amount: session.amount_total ? session.amount_total / 100 : 0,
+      currency: session.currency?.toUpperCase() || 'USD',
+      paymentMethod: session.mode === 'subscription' ? 'card_recurring' : 'card',
+      donorName: session.metadata?.donorName || session.customer_details?.name || 'Anonymous',
+      donorEmail: session.customer_details?.email || session.customer_email || '',
+      donorPhone: '',
+      message: session.mode === 'subscription' ? 'Monthly subscription setup' : 'One-time donation',
+      paymentIntentId: session.payment_intent?.toString() || session.subscription?.toString() || '',
+      transactionId: sessionId,
+      timestamp: new Date().toISOString(),
+      status: 'completed'
+    }
+
+    await kv.set(donationId, donationData)
+    await kv.set(['donations_by_tx', sessionId], true)
+    
+    return c.json({ status: 'success', donation: donationData })
+  } catch (error) {
+    console.error('Error verifying session:', error)
+    return c.json({ error: 'Failed to verify session', details: String(error) }, 500)
+  }
+})
+
+// Create Stripe Customer Portal Session
+app.post('/make-server-2a4be611/create-portal-session', async (c) => {
+  try {
+    if (!stripe) {
+      return c.json({ error: 'Stripe is not configured.' }, 400)
+    }
+
+    const body = await c.req.json()
+    const { email, returnUrl } = body
+
+    if (!email) {
+      return c.json({ error: 'Email is required' }, 400)
+    }
+
+    const customers = await stripe.customers.list({ email: email, limit: 1 })
+    
+    let customerId;
+    if (customers.data.length === 0) {
+      const newCustomer = await stripe.customers.create({ email: email });
+      customerId = newCustomer.id;
+    } else {
+      customerId = customers.data[0].id;
+    }
+
+    const session = await stripe.billingPortal.sessions.create({
+      customer: customerId,
+      return_url: returnUrl || `${c.req.header('origin') || 'http://localhost:5173'}/donor/dashboard`,
+    })
+
+    return c.json({ url: session.url })
+  } catch (error) {
+    return c.json({ error: 'Failed to create portal session', details: String(error) }, 500)
+  }
+})
+
+// Delete a specific donation (admin)
+app.delete('/make-server-2a4be611/admin/donations/:id', async (c) => {
+  try {
+    const id = c.req.param('id')
+    const key = id.includes(':') ? id : `donation:${id}`
+    await kv.del(key)
+    return c.json({ success: true, message: 'Donation deleted successfully' })
+  } catch (error) {
+    return c.json({ error: 'Failed to delete donation', details: String(error) }, 500)
+  }
+})
+
+// Clear all donations (admin)
+app.post('/make-server-2a4be611/admin/donations/clear-all', async (c) => {
+  try {
+    const donations = await kv.getByPrefix('donation:')
+    const keys = donations.map(d => d.key)
+    await kv.mdel(keys)
+    return c.json({ success: true, message: `Cleared ${keys.length} donations successfully` })
+  } catch (error) {
+    return c.json({ error: 'Failed to clear donations', details: String(error) }, 500)
+  }
+})
+
+// Sync Stripe historical payments to KV store
+app.post('/make-server-2a4be611/admin/sync-stripe', async (c) => {
+  try {
+    if (!stripe) return c.json({ error: 'Stripe is not configured' }, 400)
+
+    const paymentIntents = await stripe.paymentIntents.list({ limit: 100 })
+    let synced = 0;
+    
+    // Fetch existing donations to prevent duplicates
+    const existing = await kv.getByPrefix('donation:')
+    const existingTxIds = new Set(existing.map(d => d.value?.transactionId || d.value?.paymentIntentId))
+
+    for (const pi of paymentIntents.data) {
+      if (pi.status !== 'succeeded') continue;
+      
+      const txId = pi.id
+      if (existingTxIds.has(txId)) continue;
+      
+      let donorEmail = pi.receipt_email || ''
+      let donorName = pi.metadata?.donorName || 'Anonymous'
+      
+      // Attempt to fetch more info if there's a customer
+      if (!donorEmail && pi.customer && typeof pi.customer === 'string') {
+        try {
+          const customer = await stripe.customers.retrieve(pi.customer) as any
+          if (!customer.deleted) {
+            donorEmail = customer.email || donorEmail
+            if (customer.name) donorName = customer.name
+          }
+        } catch (e) {
+          // ignore customer fetch errors
+        }
+      }
+
+      const donationId = `donation:${Date.now() + synced}`
+      const donationData = {
+        amount: pi.amount ? pi.amount / 100 : 0,
+        currency: pi.currency?.toUpperCase() || 'USD',
+        paymentMethod: 'card',
+        donorName: donorName,
+        donorEmail: donorEmail,
+        donorPhone: '',
+        message: 'Historical Stripe payment sync',
+        paymentIntentId: pi.id,
+        transactionId: pi.id,
+        timestamp: new Date(pi.created * 1000).toISOString(),
+        status: 'completed'
+      }
+
+      await kv.set(donationId, donationData)
+      synced++
+    }
+
+    return c.json({ success: true, message: `Synced ${synced} historical payments from Stripe` })
+  } catch (error) {
+    console.error('Error syncing Stripe:', error)
+    return c.json({ error: 'Failed to sync Stripe', details: String(error) }, 500)
+  }
+})
+
 // Record donation with email notification
 app.post('/make-server-2a4be611/donations', async (c) => {
   try {
@@ -1509,7 +1724,7 @@ app.get('/make-server-2a4be611/admin/analytics', async (c) => {
     }).reverse()
 
     donations.forEach(donation => {
-      const donationDate = new Date(donation.value.timestamp)
+      const donationDate = new Date(donation.value.timestamp || donation.value.created_at || new Date().toISOString())
       const monthKey = donationDate.toLocaleString('default', { month: 'short', year: 'numeric' })
       const monthData = monthlyDonations.find(m => m.month === monthKey)
       if (monthData) {
@@ -1563,25 +1778,25 @@ app.get('/make-server-2a4be611/admin/analytics', async (c) => {
     }).reverse()
 
     donations.forEach(d => {
-      const date = d.value.timestamp.split('T')[0]
+      const date = (d.value.timestamp || d.value.created_at || new Date().toISOString()).split('T')[0]
       const day = last30Days.find(day => day.date === date)
       if (day) day.donations += 1
     })
 
     contacts.forEach(c => {
-      const date = c.value.timestamp.split('T')[0]
+      const date = (c.value.timestamp || c.value.created_at || new Date().toISOString()).split('T')[0]
       const day = last30Days.find(day => day.date === date)
       if (day) day.contacts += 1
     })
 
     volunteers.forEach(v => {
-      const date = v.value.timestamp.split('T')[0]
+      const date = (v.value.timestamp || v.value.created_at || new Date().toISOString()).split('T')[0]
       const day = last30Days.find(day => day.date === date)
       if (day) day.volunteers += 1
     })
 
     subscribers.forEach(s => {
-      const date = s.value.timestamp.split('T')[0]
+      const date = (s.value.timestamp || s.value.created_at || new Date().toISOString()).split('T')[0]
       const day = last30Days.find(day => day.date === date)
       if (day) day.subscribers += 1
     })
@@ -3169,5 +3384,173 @@ app.post('/make-server-2a4be611/admin/users/:id/track-login', async (c) => {
 })
 
 // Note: The primary image upload route is defined above at line ~449. This duplicate is removed.
+
+// Map Locations
+app.get('/make-server-2a4be611/map-locations', async (c) => {
+  try {
+    const data = await kv.getByPrefix('map-location:')
+    const locations = data.map((d: any) => ({
+      id: d.key.split(':')[1],
+      ...d.value
+    }))
+    return c.json({ locations, count: locations.length })
+  } catch (err: any) {
+    return c.json({ error: err.message }, 500)
+  }
+})
+
+app.post('/make-server-2a4be611/admin/map-locations', async (c) => {
+  try {
+    const authHeader = c.req.header('Authorization')
+    if (!authHeader) return c.json({ error: 'Unauthorized' }, 401)
+    
+    const body = await c.req.json()
+    const { name, category, coordinates, description, impact } = body
+    const id = `map-location:${Date.now()}`
+    
+    await kv.set(id, { name, category, coordinates, description, impact, created_at: new Date().toISOString() })
+    
+    return c.json({ message: 'Location created successfully', id })
+  } catch (err: any) {
+    return c.json({ error: err.message }, 500)
+  }
+})
+
+app.put('/make-server-2a4be611/admin/map-locations/:id', async (c) => {
+  try {
+    const authHeader = c.req.header('Authorization')
+    if (!authHeader) return c.json({ error: 'Unauthorized' }, 401)
+    
+    const id = c.req.param('id')
+    const body = await c.req.json()
+    const { name, category, coordinates, description, impact } = body
+    const key = `map-location:${id}`
+    
+    const existing = await kv.get(key)
+    await kv.set(key, { ...existing, name, category, coordinates, description, impact, updated_at: new Date().toISOString() })
+    
+    return c.json({ message: 'Location updated successfully' })
+  } catch (err: any) {
+    return c.json({ error: err.message }, 500)
+  }
+})
+
+app.delete('/make-server-2a4be611/admin/map-locations/:id', async (c) => {
+  try {
+    const authHeader = c.req.header('Authorization')
+    if (!authHeader) return c.json({ error: 'Unauthorized' }, 401)
+    
+    const id = c.req.param('id')
+    await kv.del(`map-location:${id}`)
+    return c.json({ message: 'Location deleted successfully' })
+  } catch (err: any) {
+    return c.json({ error: err.message }, 500)
+  }
+})
+
+
+// --- LIVE CHAT ENDPOINTS ---
+
+// User sends a message (creates or updates a session)
+app.post('/make-server-2a4be611/livechat/message', async (c) => {
+  try {
+    const body = await c.req.json()
+    const { sessionId, email, message } = body
+    
+    // If no sessionId, generate one
+    const actualSessionId = sessionId || `chat-${Date.now()}-${Math.floor(Math.random()*1000)}`
+    const key = `livechat:${actualSessionId}`
+    
+    // Get existing session
+    let session = await kv.get(key)
+    
+    if (!session) {
+      session = {
+        id: actualSessionId,
+        email: email || '',
+        messages: [],
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        status: 'active'
+      }
+    } else {
+      session.updated_at = new Date().toISOString()
+      if (email && !session.email) session.email = email
+    }
+    
+    // Add user message
+    session.messages.push({
+      sender: 'user',
+      text: message,
+      timestamp: new Date().toISOString()
+    })
+    
+    await kv.set(key, session)
+    
+    return c.json({ success: true, sessionId: actualSessionId })
+  } catch (err: any) {
+    return c.json({ error: err.message }, 500)
+  }
+})
+
+// User polls for session updates
+app.get('/make-server-2a4be611/livechat/session/:id', async (c) => {
+  try {
+    const id = c.req.param('id')
+    const session = await kv.get(`livechat:${id}`)
+    if (!session) return c.json({ error: 'Session not found' }, 404)
+    
+    return c.json({ session })
+  } catch (err: any) {
+    return c.json({ error: err.message }, 500)
+  }
+})
+
+// Admin lists all active chat sessions
+app.get('/make-server-2a4be611/admin/livechats', async (c) => {
+  try {
+    const authHeader = c.req.header('Authorization')
+    if (!authHeader) return c.json({ error: 'Unauthorized' }, 401)
+    
+    const data = await kv.getByPrefix('livechat:')
+    const sessions = data.map((d: any) => d.value)
+    
+    // Sort by updated_at descending
+    sessions.sort((a: any, b: any) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
+    
+    return c.json({ sessions })
+  } catch (err: any) {
+    return c.json({ error: err.message }, 500)
+  }
+})
+
+// Admin replies to a session
+app.post('/make-server-2a4be611/admin/livechats/:id/reply', async (c) => {
+  try {
+    const authHeader = c.req.header('Authorization')
+    if (!authHeader) return c.json({ error: 'Unauthorized' }, 401)
+    
+    const id = c.req.param('id')
+    const { message } = await c.req.json()
+    const key = `livechat:${id}`
+    
+    const session = await kv.get(key)
+    if (!session) return c.json({ error: 'Session not found' }, 404)
+    
+    session.updated_at = new Date().toISOString()
+    session.messages.push({
+      sender: 'bot',
+      text: message,
+      timestamp: new Date().toISOString()
+    })
+    
+    await kv.set(key, session)
+    
+    return c.json({ success: true, session })
+  } catch (err: any) {
+    return c.json({ error: err.message }, 500)
+  }
+})
+
 
 Deno.serve(app.fetch)

@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { useConfirm } from '../hooks/useConfirm';
 
 export function useAdminData(endpoint: string, queryKey: string, accessToken: string, projectId: string) {
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
   const limit = 10;
+  const confirmDialog = useConfirm();
 
   const fetchFn = async () => {
     const offset = (page - 1) * limit;
@@ -43,8 +45,8 @@ export function useAdminData(endpoint: string, queryKey: string, accessToken: st
     }
   });
 
-  const deleteItems = (keys: string[]) => {
-    if (confirm(`Are you sure you want to delete ${keys.length} items?`)) {
+  const deleteItems = async (keys: string[]) => {
+    if ((await confirmDialog({ title: 'Confirm Action', message: `Are you sure you want to delete ${keys.length} items?` }))) {
       deleteMutation.mutate(keys);
     }
   };

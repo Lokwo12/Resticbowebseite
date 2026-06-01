@@ -110,9 +110,9 @@ export function FAQ() {
         <div className="text-center mb-12">
           <div className="flex items-center justify-center gap-2 mb-4">
             <HelpCircle className="text-emerald-600" size={32} />
-            <h2 className="text-emerald-600">{sectionSettings.title}</h2>
+            <h2 className="text-emerald-600 text-4xl mb-4">{sectionSettings.title}</h2>
           </div>
-          <p className="text-gray-600 max-w-3xl mx-auto">
+          <p className="text-gray-600 max-w-3xl mx-auto text-xl">
             {sectionSettings.description}
           </p>
         </div>
@@ -156,7 +156,7 @@ export function FAQ() {
             <Accordion type="single" collapsible className="w-full">
               {filteredFaqs.map((faq, index) => (
                 <AccordionItem key={faq.id} value={`item-${index}`}>
-                  <AccordionTrigger className="text-left">
+                  <AccordionTrigger className="text-left text-xl">
                     <div className="flex items-start gap-3">
                       <Badge variant="outline" className="mt-1 flex-shrink-0">
                         {faq.category}
@@ -165,7 +165,7 @@ export function FAQ() {
                     </div>
                   </AccordionTrigger>
                   <AccordionContent>
-                    <div className="pl-20 text-gray-600 leading-relaxed">
+                    <div className="pl-20 text-gray-600 leading-relaxed text-lg">
                       {faq.answer}
                     </div>
                   </AccordionContent>
@@ -176,7 +176,7 @@ export function FAQ() {
         ) : (
           <Card className="p-6 sm:p-12 text-center bg-gray-50">
             <HelpCircle className="mx-auto text-gray-300 mb-4" size={48} />
-            <p className="text-gray-500">
+            <p className="text-gray-500 text-lg">
               {searchQuery ? 'No questions match your search.' : 'No FAQs available in this category.'}
             </p>
           </Card>
@@ -185,7 +185,7 @@ export function FAQ() {
         {/* Still Have Questions CTA */}
         <div className="mt-12 bg-gradient-to-r from-emerald-600 to-emerald-700 rounded-2xl p-8 text-center text-white">
           <h3 className="mb-4">Still Have Questions?</h3>
-          <p className="mb-6 text-emerald-50">
+          <p className="mb-6 text-emerald-50 text-xl">
             Can't find the answer you're looking for? Our team is here to help!
           </p>
           <button

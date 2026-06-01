@@ -10,8 +10,10 @@ import {
   Phone, CreditCard, Info, Building2,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { STRIPE_PK, PAYPAL_CLIENT_ID, PAYPAL_MERCHANT_EMAIL } from '../utils/env';
+import { supabase } from '../utils/supabase/client';
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 type PayMethod = 'card' | 'paypal' | 'mtn' | 'airtel' | 'bank';
@@ -44,6 +46,13 @@ export const useDonationModal = () => useContext(DonationModalContext);
 
 // ─── Constants ─────────────────────────────────────────────────────────────────
 const PRESET_AMOUNTS = [5, 10, 25, 50, 100, 250];
+
+const CURRENCIES = [
+  { code: 'USD', symbol: '$',   label: 'USD' },
+  { code: 'EUR', symbol: '€',   label: 'EUR' },
+  { code: 'GBP', symbol: '£',   label: 'GBP' },
+  { code: 'UGX', symbol: 'USh', label: 'UGX' },
+];
 
 const formatUSD = (n: number) =>
   new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(n);
@@ -330,6 +339,7 @@ function StripeCardForm({ donorData, setDonorData, finalAmount, freq, setDone, s
 // ─── Main Modal ────────────────────────────────────────────────────────────────
 export function DonationModal() {
   const { isOpen, close } = useDonationModal();
+  const navigate = useNavigate();
 
   const [step, setStep] = useState<ModalStep>(1);
   const [amount, setAmount] = useState(50);
@@ -345,10 +355,32 @@ export function DonationModal() {
    const [config, setConfig] = useState(DEFAULT_CONFIG);
   const [logoUrl, setLogoUrl] = useState('/logo.png');
   const [donorData, setDonorData] = useState({ firstName: '', lastName: '', email: '', phone: '' });
+  const [currency, setCurrency] = useState('USD');
   const shouldLockBackground = isOpen;
 
   const finalAmount = isCustom ? (parseInt(customAmount.replace(/\D/g, '')) || 0) : amount;
   const impactHint = !isCustom ? IMPACT_HINTS[amount] : null;
+  const formatAmt = (n: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency, minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(n);
+  const currencySymbol = CURRENCIES.find(c => c.code === currency)?.symbol ?? '$';
+
+  useEffect(() => {
+    if (isOpen) {
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session?.user) {
+          const fullName = session.user.user_metadata?.name || '';
+          const parts = fullName.split(' ');
+          const firstName = parts[0] || '';
+          const lastName = parts.slice(1).join(' ') || '';
+          setDonorData(prev => ({
+            ...prev,
+            email: session.user.email || '',
+            firstName: prev.firstName || firstName,
+            lastName: prev.lastName || lastName
+          }));
+        }
+      });
+    }
+  }, [isOpen]);
 
   // Fetch dynamic config once when modal opens
   useEffect(() => {
@@ -404,7 +436,18 @@ export function DonationModal() {
     };
   }, [shouldLockBackground]);
 
-  // Close on Escape key
+  // Auto redirect on success
+  useEffect(() => {
+    if (done && method !== 'bank') {
+      const timer = setTimeout(() => {
+        close();
+        navigate('/donor/dashboard');
+      }, 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [done, method, close, navigate]);
+
+  // Handle outside click
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') handleClose(); };
     window.addEventListener('keydown', onKey);
@@ -668,17 +711,20 @@ export function DonationModal() {
                   Thank You{donorData.firstName ? `, ${donorData.firstName}` : ''}!
                 </h3>
                 <p className="text-sm text-gray-500 leading-relaxed">
-                  Your <strong className="text-emerald-700">{formatUSD(finalAmount)}</strong>{' '}
+                  Your <strong className="text-emerald-700">{formatAmt(finalAmount)}</strong>{' '}
                   {freq === 'once' ? 'one-time' : freq} gift is making a real difference.
                   {donorData.email && <span className="block mt-1">Receipt sent to <strong>{donorData.email}</strong>.</span>}
                 </p>
               </div>
               <p className="text-xs text-gray-400 leading-relaxed">90% of your gift goes directly to community programs in Kiryandongo District, Uganda.</p>
               <button
-                onClick={handleClose}
-                className="w-full bg-gray-900 hover:bg-black text-white font-semibold py-3 rounded-xl text-sm transition-all"
+                onClick={() => {
+                  handleClose();
+                  navigate('/donor/dashboard');
+                }}
+                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 rounded-xl text-sm transition-all"
               >
-                Close
+                Go to Donor Portal Now
               </button>
             </div>
           )}
@@ -696,7 +742,7 @@ export function DonationModal() {
                   Transfer Registered{donorData.firstName ? `, ${donorData.firstName}` : ''}!
                 </h3>
                 <p className="text-xs text-gray-500 leading-relaxed">
-                  Your intent to donate <strong className="text-emerald-700">{formatUSD(finalAmount)}</strong> has been recorded.
+                  Your intent to donate <strong className="text-emerald-700">{formatAmt(finalAmount)}</strong> has been recorded.
                   Please complete the transfer using the details below.
                 </p>
               </div>
@@ -731,7 +777,7 @@ export function DonationModal() {
                     { label: 'Account Name', value: config.accountName },
                     { label: 'Account No.', value: config.accountNumber },
                     { label: 'Swift', value: config.swiftCode },
-                    { label: 'Amount', value: formatUSD(finalAmount) },
+                    { label: 'Amount', value: formatAmt(finalAmount) },
                   ].map(r => (
                     <div key={r.label} className="flex items-center justify-between px-4 py-2">
                       <span className="text-[10px] text-gray-400 uppercase tracking-wide font-semibold">{r.label}</span>
@@ -773,7 +819,7 @@ export function DonationModal() {
                   {method === 'mtn' ? 'MTN Mobile Money' : 'Airtel Money'} Registered{donorData.firstName ? `, ${donorData.firstName}` : ''}!
                 </h3>
                 <p className="text-xs text-gray-500 leading-relaxed">
-                  Your intent to donate <strong className="text-emerald-700">{formatUSD(finalAmount)}</strong> has been recorded.
+                  Your intent to donate <strong className="text-emerald-700">{formatAmt(finalAmount)}</strong> has been recorded.
                   Please complete the transfer using your phone.
                 </p>
               </div>
@@ -814,7 +860,7 @@ export function DonationModal() {
                 <div className="divide-y divide-gray-800">
                   {[
                     { label: 'Merchant No.', value: method === 'mtn' ? config.merchantMTN : config.merchantAirtel },
-                    { label: 'Amount (USD)', value: formatUSD(finalAmount) },
+                    { label: `Amount (${currency})`, value: formatAmt(finalAmount) },
                     { label: 'Reference', value: mobileRef },
                   ].map(r => (
                     <div key={r.label} className="flex items-center justify-between px-4 py-2.5">
@@ -858,6 +904,27 @@ export function DonationModal() {
                 ))}
               </div>
 
+              {/* Currency selector */}
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-gray-500">Currency</span>
+                <div className="flex gap-1">
+                  {CURRENCIES.map(c => (
+                    <button
+                      key={c.code}
+                      type="button"
+                      onClick={() => setCurrency(c.code)}
+                      className={`px-3 py-1 rounded-full text-xs font-bold transition-all duration-200 ${
+                        currency === c.code
+                          ? 'bg-emerald-600 text-white shadow-sm'
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
+                    >
+                      {c.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               <div className="space-y-4">
                 <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider text-center">Select Amount</p>
 
@@ -870,14 +937,14 @@ export function DonationModal() {
                       onClick={() => { setAmount(v); setIsCustom(false); setCustomAmount(''); }}
                       className={`py-2.5 rounded-xl border-2 transition-all duration-200 ${!isCustom && amount === v ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-gray-100 bg-white text-gray-700 hover:border-emerald-200'}`}
                     >
-                      <span className="text-sm font-bold">{formatUSD(v)}</span>
+                      <span className="text-sm font-bold">{formatAmt(v)}</span>
                     </button>
                   ))}
                 </div>
 
                 {/* Custom amount */}
                 <div className={`flex items-center rounded-xl border-2 transition-all duration-200 ${isCustom ? 'border-emerald-500 bg-emerald-50' : 'border-gray-200 bg-white'}`}>
-                  <span className={`shrink-0 pl-4 pr-2 py-2.5 text-sm font-bold select-none ${isCustom ? 'text-emerald-600' : 'text-gray-400'}`}>$</span>
+                  <span className={`shrink-0 pl-4 pr-2 py-2.5 text-sm font-bold select-none ${isCustom ? 'text-emerald-600' : 'text-gray-400'}`}>{currencySymbol}</span>
                   <input
                     type="text"
                     placeholder="Other amount"
@@ -1100,7 +1167,7 @@ export function DonationModal() {
                     <div className="mx-6 mt-5 bg-emerald-50 border border-emerald-100 rounded-xl px-4 py-3 flex items-center justify-between">
                       <div>
                         <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-0.5">Donation Amount</p>
-                        <p className="text-lg font-bold text-emerald-700">{formatUSD(finalAmount)}</p>
+                        <p className="text-lg font-bold text-emerald-700">{formatAmt(finalAmount)}</p>
                       </div>
                       <div className="text-right">
                         <p className="text-[10px] text-gray-400 uppercase tracking-wider mb-0.5">Frequency</p>
@@ -1175,7 +1242,7 @@ export function DonationModal() {
                           className="w-2/3 bg-emerald-600 text-white font-semibold rounded-xl text-sm shadow-lg shadow-emerald-200/50 flex items-center justify-center gap-2 opacity-40 cursor-not-allowed"
                           style={btnStyle}
                         >
-                          <Lock size={14} /> Donate {formatUSD(finalAmount)}
+                          <Lock size={14} /> Donate {formatAmt(finalAmount)}
                         </button>
                       </div>
                     </div>
@@ -1201,7 +1268,7 @@ export function DonationModal() {
                       <p className="text-sm text-gray-600 leading-relaxed">
                         Complete your{' '}
                         <strong>{freq === 'once' ? 'one-time' : freq}</strong> contribution of{' '}
-                        <strong className="text-blue-700">{formatUSD(finalAmount)}</strong> securely via PayPal.
+                        <strong className="text-blue-700">{formatAmt(finalAmount)}</strong> securely via PayPal.
                       </p>
                       <div className="flex items-center gap-2 text-xs text-gray-400">
                         <Info size={13} />
@@ -1313,7 +1380,7 @@ export function DonationModal() {
                             {method === 'mtn' ? 'MTN Mobile Money' : 'Airtel Money'}
                           </strong>.
                           Enter your PIN on your phone to confirm the payment of{' '}
-                          <strong className="text-emerald-700">{formatUSD(finalAmount)}</strong>.
+                          <strong className="text-emerald-700">{formatAmt(finalAmount)}</strong>.
                         </p>
                       </div>
                       <div className="flex flex-col items-center gap-2">
@@ -1391,7 +1458,7 @@ export function DonationModal() {
                         <div className="rounded-xl px-5 py-4 flex items-center justify-between" style={{ backgroundColor: '#f0fdf4' }}>
                           <div>
                             <p className="text-[9px] font-semibold text-gray-400 uppercase tracking-wider mb-0.5">Donation Amount</p>
-                            <p className="font-mono font-bold text-lg text-emerald-700">{formatUSD(finalAmount)}</p>
+                            <p className="font-mono font-bold text-lg text-emerald-700">{formatAmt(finalAmount)}</p>
                           </div>
                           <div className="text-right">
                             <p className="text-[9px] font-semibold text-gray-400 uppercase tracking-wider mb-0.5">Frequency</p>
@@ -1485,7 +1552,7 @@ export function DonationModal() {
                           >
                             {submitting
                               ? <span className="animate-spin w-4 h-4 border-2 border-current border-t-transparent rounded-full" />
-                              : <><Phone size={15} /> Pay Now — {formatUSD(finalAmount)}</>}
+                              : <><Phone size={15} /> Pay Now — {formatAmt(finalAmount)}</> }
                           </button>
                         </div>
                       </div>
@@ -1519,7 +1586,7 @@ export function DonationModal() {
                     <div className="flex items-center justify-between bg-emerald-50 border border-emerald-100 rounded-xl px-5 py-4">
                       <div>
                         <p className="text-[9px] font-semibold text-emerald-600/70 uppercase tracking-wider mb-1 leading-none">Donation Amount</p>
-                        <p className="text-base font-bold text-emerald-700 leading-none">{formatUSD(finalAmount)}</p>
+                        <p className="text-base font-bold text-emerald-700 leading-none">{formatAmt(finalAmount)}</p>
                       </div>
                       <div className="text-right">
                         <p className="text-[9px] text-gray-400 uppercase tracking-wider mb-1 leading-none">Frequency</p>
@@ -1625,7 +1692,7 @@ export function DonationModal() {
             {finalAmount > 0 && (
               <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-100 rounded-full px-3 py-1.5 shrink-0">
                 <Heart size={11} fill="#059669" className="text-emerald-600" />
-                <span className="text-sm font-semibold text-gray-800">{formatUSD(finalAmount)}</span>
+                <span className="text-sm font-semibold text-gray-800">{formatAmt(finalAmount)}</span>
               </div>
             )}
           </div>

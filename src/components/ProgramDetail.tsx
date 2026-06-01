@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, Calendar, Tag, Share2, Heart } from 'lucide-react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
+import { SEO } from './SEO';
 import { LoadingScreen } from './LoadingScreen';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
@@ -86,6 +87,12 @@ export function ProgramDetail() {
 
   return (
     <div className="bg-gray-50 min-h-screen pb-24" style={{ paddingTop: '120px' }}>
+      <SEO 
+        title={`${program.title} | Program`} 
+        description={program.description.substring(0, 150)} 
+        image={program.image} 
+        type="website"
+      />
       <div className="max-w-6xl mx-auto px-4">
         {/* Navigation */}
         <Link to="/#programs" className="inline-flex items-center text-emerald-600 hover:text-emerald-700 mb-8 transition-colors">

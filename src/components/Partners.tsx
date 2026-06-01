@@ -101,9 +101,9 @@ export function Partners() {
         <div className="text-center mb-12">
           <div className="flex items-center justify-center gap-2 mb-4">
             <Handshake className="text-emerald-600" size={32} />
-            <h2 className="text-emerald-600">{sectionSettings.title}</h2>
+            <h2 className="text-emerald-600 text-4xl mb-4">{sectionSettings.title}</h2>
           </div>
-          <p className="text-gray-600 max-w-3xl mx-auto">
+          <p className="text-gray-600 max-w-3xl mx-auto text-xl">
             {sectionSettings.description}
           </p>
         </div>
@@ -152,16 +152,16 @@ export function Partners() {
 
                 {/* Content */}
                 <div className="text-center mb-4">
-                  <h3 className="text-gray-900 font-bold mb-2 group-hover:text-emerald-600 transition-colors duration-300">{partner.name}</h3>
+                  <h3 className="text-2xl text-gray-900 font-bold mb-2 group-hover:text-emerald-600 transition-colors duration-300">{partner.name}</h3>
                   <Badge variant="secondary" className="mb-3 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-500/10">{partner.category}</Badge>
-                  <p className="text-sm text-gray-600 leading-relaxed">
+                  <p className="text-base text-gray-600 leading-relaxed">
                     {partner.description}
                   </p>
                 </div>
 
                 {/* Footer */}
                 <div className="flex items-center justify-between pt-4 border-t border-slate-100">
-                  <span className="text-xs text-gray-400">
+                  <span className="text-sm text-gray-400">
                     Partner since {partner.since}
                   </span>
                   {partner.website && (
@@ -169,7 +169,7 @@ export function Partners() {
                       href={partner.website}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-1 text-sm font-semibold text-emerald-600 hover:text-emerald-700 transition-colors"
+                      className="flex items-center gap-1 text-base font-semibold text-emerald-600 hover:text-emerald-700 transition-colors"
                     >
                       <span>Visit</span>
                       <ExternalLink size={14} />
@@ -181,15 +181,15 @@ export function Partners() {
           </div>
         ) : (
           <div className="text-center py-12">
-            <p className="text-gray-500">No partners in this category.</p>
+            <p className="text-gray-500 text-lg">No partners in this category.</p>
           </div>
         )}
 
         {/* Partnership CTA */}
         <div className="mt-16 bg-white border-2 border-emerald-600 rounded-2xl p-8 md:p-12">
           <div className="text-center max-w-3xl mx-auto">
-            <h3 className="text-gray-900 mb-4">Become a Partner</h3>
-            <p className="text-gray-600 mb-6">
+            <h3 className="text-3xl text-gray-900 mb-4">Become a Partner</h3>
+            <p className="text-xl text-gray-600 mb-6">
               We're always looking for partnerships that align with our mission. Whether you're 
               an organization, business, or individual wanting to make a difference, we'd love 
               to explore collaboration opportunities.

@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { STRIPE_PK, PAYPAL_CLIENT_ID, PAYPAL_MERCHANT_EMAIL } from '../utils/env';
+import { supabase } from '../utils/supabase/client';
 
 const stripePromise = STRIPE_PK ? loadStripe(STRIPE_PK) : null;
 
@@ -30,11 +31,29 @@ export function CardPaymentPage() {
   const [customAmount, setCustomAmount] = useState('');
   const [isCustom, setIsCustom] = useState(false);
   const [method, setMethod] = useState<'card' | 'paypal' | 'mtn' | 'airtel' | 'bank'>('card');
+  const [isRecurring, setIsRecurring] = useState(false);
   const [donorData, setDonorData] = useState({ firstName: '', lastName: '', email: '', phone: '' });
   const [submitting, setSubmitting] = useState(false);
   const [mobileRef, setMobileRef] = useState('');
   const [mobileWaiting, setMobileWaiting] = useState(false);
   const [done, setDone] = useState(false);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        const fullName = session.user.user_metadata?.name || '';
+        const parts = fullName.split(' ');
+        const firstName = parts[0] || '';
+        const lastName = parts.slice(1).join(' ') || '';
+        setDonorData(prev => ({
+          ...prev,
+          email: session.user.email || '',
+          firstName: prev.firstName || firstName,
+          lastName: prev.lastName || lastName
+        }));
+      }
+    });
+  }, []);
 
   const finalAmount = isCustom ? (parseInt(customAmount.replace(/\D/g, '')) || 0) : amount;
 
@@ -64,6 +83,15 @@ export function CardPaymentPage() {
     } catch { toast.error('Connection error'); setSubmitting(false); }
   };
 
+  useEffect(() => {
+    if (done) {
+      const timer = setTimeout(() => {
+        navigate('/donor/dashboard');
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [done, navigate]);
+
   if (done) {
     return (
       <div className="min-h-[70vh] flex items-center justify-center px-4">
@@ -72,8 +100,8 @@ export function CardPaymentPage() {
             <Heart size={36} fill="#059669" className="text-emerald-600" />
           </div>
           <h2 className="text-2xl font-bold">Thank You!</h2>
-          <p className="text-gray-500">Your {formatUSD(finalAmount)} donation is confirmed.</p>
-          <button onClick={() => navigate('/')} className="px-6 py-2.5 bg-emerald-600 text-white rounded-xl">Back to Home</button>
+          <p className="text-gray-500">Your {formatUSD(finalAmount)} donation is confirmed. Redirecting...</p>
+          <button onClick={() => navigate('/donor/dashboard')} className="px-6 py-2.5 bg-emerald-600 text-white rounded-xl">Go to Donor Portal Now</button>
         </div>
       </div>
     );
@@ -88,7 +116,23 @@ export function CardPaymentPage() {
 
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
           {/* Amount selector */}
-          <div className="px-6 pt-6 pb-4 border-b border-gray-100 space-y-3">
+          <div className="px-6 pt-6 pb-4 border-b border-gray-100 space-y-4">
+             {/* Recurring Toggle */}
+             <div className="flex bg-gray-100 rounded-lg p-1 w-full max-w-xs mx-auto mb-2">
+               <button 
+                 onClick={() => setIsRecurring(false)}
+                 className={`flex-1 py-1.5 text-xs font-bold rounded-md transition-all ${!isRecurring ? 'bg-white shadow-sm text-emerald-700' : 'text-gray-500 hover:text-gray-700'}`}
+               >
+                 One-time
+               </button>
+               <button 
+                 onClick={() => setIsRecurring(true)}
+                 className={`flex-1 py-1.5 text-xs font-bold rounded-md transition-all ${isRecurring ? 'bg-white shadow-sm text-emerald-700' : 'text-gray-500 hover:text-gray-700'}`}
+               >
+                 Monthly
+               </button>
+             </div>
+
              <div className="grid grid-cols-3 gap-2">
               {PRESET_AMOUNTS.map(v => (
                 <button key={v} onClick={() => { setAmount(v); setIsCustom(false); }}
@@ -121,9 +165,11 @@ export function CardPaymentPage() {
             {!mobileWaiting ? (
               <>
                 {method === 'card' && (
-                  stripePromise ? (
+                  isRecurring ? (
+                    <StripeCheckoutButton amount={finalAmount} isRecurring={true} donorData={donorData} setDonorData={setDonorData} />
+                  ) : stripePromise ? (
                     <Elements stripe={stripePromise}>
-                      <StripeCardForm amount={finalAmount} donorData={donorData} onSuccess={() => setDone(true)} />
+                      <StripeCardForm amount={finalAmount} donorData={donorData} setDonorData={setDonorData} onSuccess={() => setDone(true)} />
                     </Elements>
                   ) : <p className="text-center text-amber-600 text-xs">Stripe not configured</p>
                 )}
@@ -268,7 +314,7 @@ export function CardPaymentPage() {
   );
 }
 
-function StripeCardForm({ amount, donorData, onSuccess }: { amount: number, donorData: DonorData, onSuccess: () => void }) {
+function StripeCardForm({ amount, donorData, setDonorData, onSuccess }: { amount: number, donorData: DonorData, setDonorData: React.Dispatch<React.SetStateAction<DonorData>>, onSuccess: () => void }) {
   const stripe = useStripe();
   const elements = useElements();
   const [loading, setLoading] = useState(false);
@@ -299,8 +345,61 @@ function StripeCardForm({ amount, donorData, onSuccess }: { amount: number, dono
       <div className="border border-gray-200 rounded-xl px-4 py-3 bg-white">
         <CardElement options={{ style: { base: { fontSize: '16px', color: '#374151', '::placeholder': { color: '#9ca3af' } } } }} />
       </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div><label className={lbl}>First Name</label><input required className={inp} placeholder="First name" value={donorData.firstName} onChange={e => setDonorData(prev => ({...prev, firstName: e.target.value}))} /></div>
+        <div><label className={lbl}>Last Name</label><input required className={inp} placeholder="Last name" value={donorData.lastName} onChange={e => setDonorData(prev => ({...prev, lastName: e.target.value}))} /></div>
+      </div>
+      <div><label className={lbl}>Email Address (for receipt)</label><input required type="email" className={inp} placeholder="you@example.com" value={donorData.email} onChange={e => setDonorData(prev => ({...prev, email: e.target.value}))} /></div>
       <button type="submit" disabled={loading || !stripe} className="w-full bg-emerald-600 text-white font-bold py-4 rounded-xl shadow-lg flex items-center justify-center gap-2">
         {loading ? <span className="animate-spin w-5 h-5 border-2 border-white border-t-transparent rounded-full" /> : `Donate ${formatUSD(amount)}`}
+      </button>
+    </form>
+  );
+}
+
+function StripeCheckoutButton({ amount, isRecurring, donorData, setDonorData }: { amount: number, isRecurring: boolean, donorData: DonorData, setDonorData: React.Dispatch<React.SetStateAction<DonorData>> }) {
+  const [loading, setLoading] = useState(false);
+
+  const handleCheckout = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!donorData.email || !donorData.firstName) {
+      toast.error('Please enter your name and email first.');
+      return;
+    }
+    setLoading(true);
+    try {
+      const res = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/create-checkout-session`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${publicAnonKey}` },
+        body: JSON.stringify({ 
+          amount, 
+          currency: 'usd', 
+          donorName: `${donorData.firstName} ${donorData.lastName}`.trim(), 
+          donorEmail: donorData.email,
+          interval: isRecurring ? 'month' : undefined
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.details || data.error || 'Unknown error');
+      
+      // Redirect to Stripe Checkout
+      window.location.href = data.url;
+    } catch (err: any) { 
+      toast.error(err.message || 'Payment failed'); 
+      setLoading(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleCheckout} className="space-y-4">
+      <div className="grid grid-cols-2 gap-3">
+        <div><label className={lbl}>First Name</label><input required className={inp} placeholder="First name" value={donorData.firstName} onChange={(e) => setDonorData(prev => ({...prev, firstName: e.target.value}))} /></div>
+        <div><label className={lbl}>Last Name</label><input required className={inp} placeholder="Last name" value={donorData.lastName} onChange={(e) => setDonorData(prev => ({...prev, lastName: e.target.value}))} /></div>
+      </div>
+      <div><label className={lbl}>Email Address (for receipt)</label><input required type="email" className={inp} placeholder="you@example.com" value={donorData.email} onChange={(e) => setDonorData(prev => ({...prev, email: e.target.value}))} /></div>
+      
+      <button type="submit" disabled={loading} className="w-full bg-emerald-600 text-white font-bold py-4 rounded-xl shadow-lg flex items-center justify-center gap-2">
+        {loading ? <span className="animate-spin w-5 h-5 border-2 border-white border-t-transparent rounded-full" /> : `Continue to ${isRecurring ? 'Monthly' : ''} Checkout`}
       </button>
     </form>
   );

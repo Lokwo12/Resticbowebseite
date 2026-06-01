@@ -1,7 +1,7 @@
 import { Heart, Users, Target, Award } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
-import { useScrollAnimation, getStaggerDelay } from '../utils/animations';
+import { motion } from 'framer-motion';
 
 interface AboutValue {
   icon: string;
@@ -44,8 +44,6 @@ const DEFAULT_ABOUT_SETTINGS: AboutSettings = {
 
 export function About() {
   const [settings, setSettings] = useState<AboutSettings>(DEFAULT_ABOUT_SETTINGS);
-  // Start visible since About is near top of page
-  const { ref, isVisible } = useScrollAnimation({ startVisible: true });
 
   useEffect(() => {
     fetchSettings();
@@ -86,10 +84,16 @@ export function About() {
   const displaySettings = settings;
 
   return (
-    <section id="about" className="section-spacing-lg bg-slate-50/50" ref={ref}>
+    <section id="about" className="section-spacing-lg bg-slate-50/50 overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Intro */}
-        <div className={`max-w-3xl mx-auto text-center mb-16 transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+        <motion.div 
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.2 }}
+          transition={{ duration: 0.8, ease: "easeOut" }}
+          className="max-w-3xl mx-auto text-center mb-16"
+        >
           <div className="inline-flex items-center gap-2 bg-emerald-100 text-emerald-700 text-sm font-semibold px-4 py-2 rounded-full mb-5">
             <Heart size={14} className="fill-emerald-600 text-emerald-600" />
             Community Based Organization
@@ -97,87 +101,132 @@ export function About() {
           <h2 className="text-3xl lg:text-5xl text-gray-900 mb-6">
             {displaySettings.title}
           </h2>
-          <p className="text-lg text-gray-600 leading-relaxed">
+          <p className="text-xl text-gray-600 leading-relaxed">
             {displaySettings.intro}
           </p>
-        </div>
+        </motion.div>
 
         {/* Mission & Vision */}
         <div className="grid md:grid-cols-2 gap-8 mb-16">
-          <div className={`group bg-gradient-to-br from-emerald-50 to-teal-50 p-8 rounded-2xl hover:shadow-premium-soft hover:shadow-2xl transition-all duration-300 transition-all duration-500 ${isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-8'}`} style={{ transitionDelay: '200ms' }}>
-            <h3 className="text-2xl text-gray-900 mb-4 group-hover:text-emerald-600 transition-colors">Our Mission</h3>
-            <p className="text-gray-700 leading-relaxed">
+          <motion.div 
+            initial={{ opacity: 0, x: -40 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true, amount: 0.2 }}
+            transition={{ duration: 0.8, ease: "easeOut" }}
+            className="group bg-gradient-to-br from-emerald-50 to-teal-50 p-8 rounded-2xl shadow-sm hover:shadow-premium-soft hover:-translate-y-1 transition-all duration-300"
+          >
+            <h3 className="text-3xl text-gray-900 mb-4 group-hover:text-emerald-600 transition-colors">Our Mission</h3>
+            <p className="text-lg text-gray-700 leading-relaxed">
               {displaySettings.mission}
             </p>
-          </div>
-          <div className={`group bg-gradient-to-br from-blue-50 to-indigo-50 p-8 rounded-2xl hover:shadow-premium-soft hover:shadow-2xl transition-all duration-300 transition-all duration-500 ${isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-8'}`} style={{ transitionDelay: '300ms' }}>
-            <h3 className="text-2xl text-gray-900 mb-4 group-hover:text-blue-600 transition-colors">Our Vision</h3>
-            <p className="text-gray-700 leading-relaxed">
+          </motion.div>
+          <motion.div 
+            initial={{ opacity: 0, x: 40 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true, amount: 0.2 }}
+            transition={{ duration: 0.8, ease: "easeOut", delay: 0.2 }}
+            className="group bg-gradient-to-br from-blue-50 to-indigo-50 p-8 rounded-2xl shadow-sm hover:shadow-premium-soft hover:-translate-y-1 transition-all duration-300"
+          >
+            <h3 className="text-3xl text-gray-900 mb-4 group-hover:text-blue-600 transition-colors">Our Vision</h3>
+            <p className="text-lg text-gray-700 leading-relaxed">
               {displaySettings.vision}
             </p>
-          </div>
+          </motion.div>
         </div>
 
         {/* Values */}
         {displaySettings.values && displaySettings.values.length > 0 && (
-          <div className="mb-12">
-            <h3 className={`text-2xl text-gray-900 text-center mb-10 transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`} style={{ transitionDelay: '400ms' }}>Our Core Values</h3>
+          <motion.div 
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.2 }}
+            variants={{
+              hidden: {},
+              visible: { transition: { staggerChildren: 0.15 } }
+            }}
+            className="mb-12"
+          >
+            <motion.h3 
+              variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}
+              className="text-2xl text-gray-900 text-center mb-10"
+            >
+              Our Core Values
+            </motion.h3>
             <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {displaySettings.values.map((value, index) => {
               const IconComponent = iconMap[value.icon] || Heart;
               return (
-                <div
+                <motion.div
                   key={index}
-                  className={`group p-6 border border-slate-100 rounded-2xl hover:shadow-premium-soft hover:shadow-2xl transition-all duration-300 hover:border-emerald-500/20 hover:-translate-y-2 transition-all duration-500 bg-gradient-to-b from-white to-slate-50/50 hover:to-emerald-50/10 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
-                  style={{ transitionDelay: isVisible ? getStaggerDelay(index, 100) : '0ms' }}
+                  variants={{ hidden: { opacity: 0, y: 30 }, visible: { opacity: 1, y: 0, transition: { duration: 0.6 } } }}
+                  className="group p-6 border border-slate-100 rounded-2xl shadow-sm hover:shadow-premium-soft transition-all duration-300 hover:border-emerald-500/20 hover:-translate-y-2 bg-gradient-to-b from-white to-slate-50/50 hover:to-emerald-50/10"
                 >
                   <div className="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center mb-5 group-hover:bg-emerald-600 group-hover:scale-110 transition-all duration-300 shadow-sm border border-emerald-500/10">
                     <IconComponent className="text-emerald-600 group-hover:text-white transition-colors" size={24} />
                   </div>
-                  <h4 className="text-lg text-gray-900 mb-2 group-hover:text-emerald-600 transition-colors duration-300 font-bold font-heading tracking-tight">{value.title}</h4>
-                  <p className="text-sm text-gray-600 leading-relaxed">{value.description}</p>
-                </div>
+                  <h4 className="text-xl text-gray-900 mb-2 group-hover:text-emerald-600 transition-colors duration-300 font-bold font-heading tracking-tight">{value.title}</h4>
+                  <p className="text-base text-gray-600 leading-relaxed">{value.description}</p>
+                </motion.div>
               );
             })}
             </div>
-          </div>
+          </motion.div>
         )}
 
         {/* Story */}
         {displaySettings.story && displaySettings.story.length > 0 && (
-          <div className={`relative overflow-hidden bg-gradient-to-br from-slate-50 to-emerald-50/20 p-8 lg:p-12 rounded-3xl border border-slate-100 hover:shadow-premium-soft hover:shadow-2xl transition-all duration-300 transition-all duration-500 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`} style={{ transitionDelay: '800ms' }}>
+          <motion.div 
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.2 }}
+            transition={{ duration: 0.8, ease: "easeOut" }}
+            className="relative overflow-hidden bg-gradient-to-br from-slate-50 to-emerald-50/20 p-8 lg:p-12 rounded-3xl border border-slate-100 shadow-sm hover:shadow-premium-soft transition-all duration-300"
+          >
             <div className="absolute top-0 left-0 w-1.5 h-full bg-emerald-600"></div>
             <div className="max-w-3xl mx-auto">
-              <h3 className="text-2xl font-bold font-heading tracking-tight text-gray-900 mb-6 tracking-tight flex items-center gap-2">
+              <h3 className="text-3xl font-bold font-heading tracking-tight text-gray-900 mb-6 flex items-center gap-2">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
                 Our Story
               </h3>
               <div className="space-y-6">
                 {displaySettings.story.map((paragraph, index) => (
-                  <p key={index} className="text-gray-600 text-base md:text-lg leading-relaxed font-normal">
+                  <p key={index} className="text-gray-600 text-lg md:text-xl leading-relaxed font-normal">
                     {paragraph}
                   </p>
                 ))}
               </div>
             </div>
-          </div>
+          </motion.div>
         )}
 
         {/* Trust & Certifications Strip */}
-        <div className={`mt-8 md:mt-14 grid grid-cols-2 md:grid-cols-4 gap-4 transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`} style={{ transitionDelay: '1000ms' }}>
+        <motion.div 
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, amount: 0.2 }}
+          variants={{
+            hidden: {},
+            visible: { transition: { staggerChildren: 0.1 } }
+          }}
+          className="mt-8 md:mt-14 grid grid-cols-2 md:grid-cols-4 gap-4"
+        >
           {[
             { icon: '🏛️', label: 'Registered CBO', sub: 'Uganda NGO Bureau' },
             { icon: '🌍', label: '2,500+ Lives', sub: 'Changed & Counting' },
             { icon: '💯', label: '100% Transparent', sub: 'Annual Reports Published' },
             { icon: '🤝', label: 'Community-Led', sub: 'Locally Driven Solutions' },
-          ].map((item) => (
-            <div key={item.label} className="flex flex-col items-center text-center bg-emerald-50 border border-emerald-100 rounded-2xl py-5 px-4">
+          ].map((item, index) => (
+            <motion.div 
+              key={item.label} 
+              variants={{ hidden: { opacity: 0, scale: 0.9 }, visible: { opacity: 1, scale: 1, transition: { type: "spring", bounce: 0.4 } } }}
+              className="flex flex-col items-center text-center bg-emerald-50 border border-emerald-100 rounded-2xl py-5 px-4"
+            >
               <span className="text-3xl mb-2">{item.icon}</span>
-              <span className="text-sm font-bold font-heading tracking-tight text-emerald-800">{item.label}</span>
-              <span className="text-xs text-emerald-600 mt-0.5">{item.sub}</span>
-            </div>
+              <span className="text-base font-bold font-heading tracking-tight text-emerald-800">{item.label}</span>
+              <span className="text-sm text-emerald-600 mt-0.5">{item.sub}</span>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
       </div>
     </section>
   );

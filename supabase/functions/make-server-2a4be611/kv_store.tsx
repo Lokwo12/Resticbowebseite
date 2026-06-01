@@ -12,7 +12,6 @@ const getTableInfo = (key: string) => {
   if (key.startsWith('news:')) return { table: 'news', id: key.split(':')[1] || key };
   if (key.startsWith('contact:')) return { table: 'contacts', id: key.split(':')[1] || key };
   if (key.startsWith('volunteer:')) return { table: 'volunteers', id: key.split(':')[1] || key };
-  if (key.startsWith('donation:')) return { table: 'donations', id: key.split(':')[1] || key };
   if (key.startsWith('newsletter:')) return { table: 'newsletters', id: key.split(':')[1] || key };
   if (key.startsWith('gallery:')) return { table: 'gallery', id: key.split(':')[1] || key };
   if (key.startsWith('story:')) return { table: 'stories', id: key.split(':')[1] || key };
@@ -35,17 +34,22 @@ const mapToSql = (table: string, id: string, val: any) => {
   
   const mapped: any = { id, ...val };
   // Handle specific snake_case conversions based on schema
-  if (val.createdAt) { mapped.created_at = val.createdAt; delete mapped.createdAt; }
-  if (val.updatedAt) { mapped.updated_at = val.updatedAt; delete mapped.updatedAt; }
-  if (val.firstName) { mapped.first_name = val.firstName; delete mapped.firstName; }
-  if (val.lastName) { mapped.last_name = val.lastName; delete mapped.lastName; }
-  if (val.publishDate) { mapped.publish_date = val.publishDate; delete mapped.publishDate; }
-  if (val.timeCommitment) { mapped.time_commitment = val.timeCommitment; delete mapped.timeCommitment; }
-  if (val.openPositions) { mapped.open_positions = val.openPositions; delete mapped.openPositions; }
-  if (val.fileUrl) { mapped.file_url = val.fileUrl; delete mapped.fileUrl; }
-  if (val.fileType) { mapped.file_type = val.fileType; delete mapped.fileType; }
-  if (val.fileSize) { mapped.file_size = val.fileSize; delete mapped.fileSize; }
-  if (val.transactionId) { mapped.transaction_id = val.transactionId; delete mapped.transactionId; }
+  if (val.createdAt !== undefined) { mapped.created_at = val.createdAt; delete mapped.createdAt; }
+  if (val.updatedAt !== undefined) { mapped.updated_at = val.updatedAt; delete mapped.updatedAt; }
+  if (val.firstName !== undefined) { mapped.first_name = val.firstName; delete mapped.firstName; }
+  if (val.lastName !== undefined) { mapped.last_name = val.lastName; delete mapped.lastName; }
+  if (val.publishDate !== undefined) { mapped.publish_date = val.publishDate; delete mapped.publishDate; }
+  if (val.timeCommitment !== undefined) { mapped.time_commitment = val.timeCommitment; delete val.timeCommitment; }
+  if (val.openPositions !== undefined) { mapped.open_positions = val.openPositions; delete mapped.openPositions; }
+  if (val.fileUrl !== undefined) { mapped.file_url = val.fileUrl; delete mapped.fileUrl; }
+  if (val.fileType !== undefined) { mapped.file_type = val.fileType; delete mapped.fileType; }
+  if (val.fileSize !== undefined) { mapped.file_size = val.fileSize; delete mapped.fileSize; }
+  if (val.transactionId !== undefined) { mapped.transaction_id = val.transactionId; delete mapped.transactionId; }
+  if (val.donorName !== undefined) { mapped.donor_name = val.donorName; delete mapped.donorName; }
+  if (val.donorEmail !== undefined) { mapped.donor_email = val.donorEmail; delete mapped.donorEmail; }
+  if (val.donorPhone !== undefined) { mapped.donor_phone = val.donorPhone; delete mapped.donorPhone; }
+  if (val.paymentMethod !== undefined) { mapped.payment_method = val.paymentMethod; delete mapped.paymentMethod; }
+  if (val.paymentIntentId !== undefined) { mapped.payment_intent_id = val.paymentIntentId; delete mapped.paymentIntentId; }
   
   return mapped;
 };
@@ -67,6 +71,11 @@ const mapToJs = (table: string, prefix: string, row: any) => {
   if (row.file_type) { val.fileType = row.file_type; delete val.file_type; }
   if (row.file_size) { val.fileSize = row.file_size; delete val.file_size; }
   if (row.transaction_id) { val.transactionId = row.transaction_id; delete val.transaction_id; }
+  if (row.donor_name) { val.donorName = row.donor_name; delete val.donor_name; }
+  if (row.donor_email) { val.donorEmail = row.donor_email; delete val.donor_email; }
+  if (row.donor_phone) { val.donorPhone = row.donor_phone; delete val.donor_phone; }
+  if (row.payment_method) { val.paymentMethod = row.payment_method; delete val.payment_method; }
+  if (row.payment_intent_id) { val.paymentIntentId = row.payment_intent_id; delete val.payment_intent_id; }
   
   delete val.id; // Usually id is combined into the key
   

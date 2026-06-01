@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { BookOpen } from 'lucide-react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
-import { useScrollAnimation, getStaggerDelay } from '../utils/animations';
+import { motion } from 'framer-motion';
 
 interface Program {
   key: string;
@@ -83,7 +83,6 @@ export function Programs() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [sectionSettings, setSectionSettings] = useState({ title: 'Our Programs', description: 'We run comprehensive programs designed to address the most pressing needs in our community, creating pathways to opportunity and sustainable development.' });
-  const { ref, isVisible } = useScrollAnimation({ startVisible: true });
 
   useEffect(() => {
     fetchPrograms();
@@ -137,10 +136,16 @@ export function Programs() {
 
 
   return (
-    <section id="programs" className="section-spacing-lg bg-white" ref={ref}>
+    <section id="programs" className="section-spacing-lg bg-white overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
-        <div className={`max-w-3xl mx-auto text-center mb-16 transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+        <motion.div 
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.2 }}
+          transition={{ duration: 0.8, ease: "easeOut" }}
+          className="max-w-3xl mx-auto text-center mb-16"
+        >
           <div className="inline-flex items-center gap-2 bg-emerald-100 text-emerald-700 text-sm font-semibold px-4 py-2 rounded-full mb-5">
             <BookOpen size={14} />
             What We Do
@@ -148,10 +153,10 @@ export function Programs() {
           <h2 className="text-3xl lg:text-5xl text-gray-900 mb-6">
             {sectionSettings.title}
           </h2>
-          <p className="text-lg text-gray-600">
+          <p className="text-xl text-gray-600">
             {sectionSettings.description}
           </p>
-        </div>
+        </motion.div>
 
         {/* Error Message */}
         {error && (
@@ -161,12 +166,21 @@ export function Programs() {
         )}
 
         {/* Programs Grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <motion.div 
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, amount: 0.1 }}
+          variants={{
+            hidden: {},
+            visible: { transition: { staggerChildren: 0.15 } }
+          }}
+          className="grid md:grid-cols-2 lg:grid-cols-3 gap-8"
+        >
           {programs.filter(p => p && p.value).map((program, index) => (
-            <div
+            <motion.div
               key={program.key}
-              className={`card-lift group bg-slate-50 border border-slate-100 rounded-3xl overflow-hidden shadow-premium-soft transition-all duration-300 hover:shadow-premium-soft hover:shadow-2xl transition-all duration-300 transition-all duration-500 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
-              style={{ transitionDelay: isVisible ? getStaggerDelay(index, 100) : '0ms' }}
+              variants={{ hidden: { opacity: 0, y: 40 }, visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease: "easeOut" } } }}
+              className="card-lift group bg-slate-50 border border-slate-100 rounded-3xl overflow-hidden shadow-sm hover:shadow-premium-soft transition-all duration-300"
             >
               {program.value.image && (
                 <div className="relative aspect-video overflow-hidden bg-slate-100 border-b border-slate-100 flex items-center justify-center">
@@ -186,10 +200,10 @@ export function Programs() {
                 }`}>
                   {program.value.category}
                 </div>
-                <h3 className="text-xl text-gray-900 mb-3 group-hover:text-emerald-600 transition-colors duration-300">
+                <h3 className="text-2xl text-gray-900 mb-3 group-hover:text-emerald-600 transition-colors duration-300">
                   {program.value.title}
                 </h3>
-                <p className="text-gray-600 leading-relaxed mb-4">
+                <p className="text-lg text-gray-600 leading-relaxed mb-4">
                   {program.value.description}
                 </p>
                 <Link 
@@ -200,13 +214,13 @@ export function Programs() {
                   <span className="group-hover/link:translate-x-1 transition-transform duration-200">→</span>
                 </Link>
               </div>
-            </div>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
 
         {programs.length === 0 && !error && (
           <div className="text-center py-12 animate-[fadeIn_0.5s_ease-out]">
-            <p className="text-gray-500">No programs available at the moment.</p>
+            <p className="text-lg text-gray-500">No programs available at the moment.</p>
           </div>
         )}
       </div>

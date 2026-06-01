@@ -110,14 +110,14 @@ export function ImpactStories() {
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="text-center mb-16">
-          <span className="inline-flex items-center gap-2 bg-emerald-100 text-emerald-700 text-xs font-semibold px-4 py-1.5 rounded-full mb-6 uppercase tracking-wider">
+          <span className="inline-flex items-center gap-2 bg-emerald-100 text-emerald-700 text-sm font-semibold px-4 py-1.5 rounded-full mb-6 uppercase tracking-wider">
             <Heart size={14} fill="currentColor" />
             Real Stories
           </span>
-          <h2 className="text-3xl md:text-5xl font-bold font-heading text-white mb-6">
+          <h2 className="text-4xl md:text-6xl font-bold font-heading text-white mb-6">
             {sectionSettings.title}
           </h2>
-          <p className="text-lg text-gray-300 max-w-3xl mx-auto leading-relaxed">
+          <p className="text-xl text-gray-300 max-w-3xl mx-auto leading-relaxed">
             {sectionSettings.description}
           </p>
         </div>
@@ -146,7 +146,8 @@ export function ImpactStories() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {filteredStories.map((story) => (
               <Card key={story.id} className="overflow-hidden hover:shadow-premium-soft hover:-translate-y-1 transition-all duration-300 group flex flex-col border-0 shadow-md rounded-2xl" style={{ transitionDelay: getStaggerDelay(filteredStories.indexOf(story)) }}>
-                {/* Uniform image area */}
+                <Link to={`/stories/${story.id}`} className="block flex-grow flex flex-col">
+                  {/* Uniform image area */}
                 <div className="relative h-52 overflow-hidden bg-slate-50 border-b border-slate-100 flex-shrink-0 flex items-center justify-center">
                   {story.image ? (
                     <img
@@ -165,41 +166,39 @@ export function ImpactStories() {
                 <div className="p-6 flex-grow flex flex-col">
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex-1 min-w-0 pr-2">
-                      <h3 className="text-gray-900 mb-1 line-clamp-1">{story.name}</h3>
-                      <p className="text-sm text-emerald-600 mb-2">{story.title}</p>
+                      <h3 className="text-xl text-gray-900 mb-1 line-clamp-1">{story.name}</h3>
+                      <p className="text-base text-emerald-600 mb-2">{story.title}</p>
                     </div>
                     <Quote className="text-emerald-200 flex-shrink-0" size={28} />
                   </div>
 
-                  <p className="text-gray-600 mb-4 leading-relaxed text-sm line-clamp-4 flex-grow">
+                  <p className="text-gray-600 mb-4 leading-relaxed text-base line-clamp-4 flex-grow">
                     {story.story}
                   </p>
 
                   {story.impact && (
                     <div className="bg-emerald-50 border-l-4 border-emerald-500 p-4 mb-4">
-                      <p className="text-sm text-emerald-900">
+                      <p className="text-base text-emerald-900">
                         <strong className="block mb-1">Impact:</strong>
                         {story.impact}
                       </p>
                     </div>
                   )}
 
-                  <div className="flex items-center justify-between mt-auto pt-4 border-t border-gray-100">
-                    <Badge variant="secondary">{story.category}</Badge>
-                    <span className="text-xs text-gray-500">
-                      {(() => {
-                        const d = new Date(story.date);
-                        return isNaN(d.getTime()) ? 'No Date' : d.toLocaleDateString();
-                      })()}
-                    </span>
+                    <div className="flex items-center justify-between mt-auto pt-4 border-t border-gray-100">
+                      <Badge variant="secondary">{story.category}</Badge>
+                      <span className="text-emerald-600 font-semibold text-base flex items-center group-hover:text-emerald-700 transition-colors">
+                        Read Story <Heart size={14} className="ml-1" fill="currentColor" />
+                      </span>
+                    </div>
                   </div>
-                </div>
+                </Link>
               </Card>
             ))}
           </div>
         ) : (
           <div className="text-center py-12">
-            <p className="text-gray-500">No stories available yet. Check back soon!</p>
+            <p className="text-gray-500 text-lg">No stories available yet. Check back soon!</p>
           </div>
         )}
 
@@ -216,7 +215,7 @@ export function ImpactStories() {
         {/* Call to Action */}
         <div className="mt-16 bg-gradient-to-r from-emerald-600 to-emerald-700 rounded-2xl p-8 md:p-12 text-center text-white">
           <h3 className="mb-4">Want to Share Your Story?</h3>
-          <p className="mb-6 text-emerald-50 max-w-2xl mx-auto">
+          <p className="mb-6 text-emerald-50 max-w-2xl mx-auto text-xl">
             Your story could inspire others and show the power of community support. 
             We'd love to hear how Resti Kiryandongo CBO has impacted your life.
           </p>

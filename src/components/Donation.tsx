@@ -1,16 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Heart, Lock, Phone, CreditCard, ChevronRight, Building2, Shield, Star, ExternalLink, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
-import { loadStripe } from '@stripe/stripe-js';
-import { Elements, CardNumberElement, CardExpiryElement, CardCvcElement, useStripe, useElements } from '@stripe/react-stripe-js';
+import { StripePaymentProvider, StripeCardForm, stripePromise, formatCurrency, FreqOption } from './StripeShared';
+import { DonorWall } from './DonorWall';
 import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
 import { projectId, publicAnonKey } from '../utils/supabase/info';
-
-import { STRIPE_PK, PAYPAL_CLIENT_ID } from '../utils/env';
-const stripePromise = STRIPE_PK ? loadStripe(STRIPE_PK) : null;
+import { PAYPAL_CLIENT_ID } from '../utils/env';
 
 type PayMethod = 'card' | 'paypal' | 'mtn' | 'airtel' | 'bank';
-type FreqOption = 'once' | 'monthly' | 'yearly';
 
 interface DonorData {
   firstName: string;
@@ -21,13 +18,12 @@ interface DonorData {
 
 const PRESET_AMOUNTS = [5, 10, 25, 50, 100, 250];
 
-const formatUSD = (n: number) =>
-  new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(n);
-
-
-
-
-
+const CURRENCIES = [
+  { code: 'USD', symbol: '$',   label: 'USD' },
+  { code: 'EUR', symbol: '€',   label: 'EUR' },
+  { code: 'GBP', symbol: '£',   label: 'GBP' },
+  { code: 'UGX', symbol: 'USh', label: 'UGX' },
+];
 
 const DEFAULT_DONATION_CONFIG = {
   merchantMTN: '0772 000 000',
@@ -41,6 +37,9 @@ const DEFAULT_DONATION_CONFIG = {
 
 export function Donation() {
   const [amount, setAmount] = useState(50);
+  const [currency, setCurrency] = useState('USD');
+  const formatAmt = (n: number) => formatCurrency(n, currency);
+  const currencySymbol = CURRENCIES.find(c => c.code === currency)?.symbol ?? '$';
   const [customAmount, setCustomAmount] = useState('');
   const [isCustom, setIsCustom] = useState(false);
   const [freq, setFreq] = useState<FreqOption>('once');
@@ -228,25 +227,42 @@ export function Donation() {
                     ))}
                   </div>
 
+                  {/* Currency selector */}
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-semibold text-gray-600">Currency</span>
+                    <div className="flex gap-1.5">
+                      {CURRENCIES.map(c => (
+                        <button key={c.code} type="button" onClick={() => setCurrency(c.code)}
+                          className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-200 ${
+                            currency === c.code
+                              ? 'bg-emerald-600 text-white shadow-sm'
+                              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                          }`}>
+                          {c.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-3">Choose an amount to give</label>
                     <div className="grid grid-cols-3 gap-3">
                       {PRESET_AMOUNTS.map(v => (
                         <button key={v} type="button" onClick={() => handlePreset(v)}
                           className={`py-4 rounded-xl border-2 text-base font-bold transition-all leading-tight ${!isCustom && amount === v ? 'border-emerald-500 bg-emerald-50 text-emerald-700 shadow-sm' : 'border-gray-100 bg-white text-gray-700 hover:border-emerald-300 hover:shadow-sm'}`}>
-                          {formatUSD(v)}
+                          {formatAmt(v)}
                         </button>
                       ))}
                     </div>
                     <div className={`mt-3 flex items-center rounded-xl border-2 transition-all ${isCustom ? 'border-emerald-500 bg-emerald-50' : 'border-gray-100 bg-white'}`}>
-                      <span className={`shrink-0 pl-4 pr-2 py-3 text-base font-bold select-none ${isCustom ? 'text-emerald-600' : 'text-gray-400'}`}>$</span>
+                      <span className={`shrink-0 pl-4 pr-2 py-3 text-base font-bold select-none ${isCustom ? 'text-emerald-600' : 'text-gray-400'}`}>{currencySymbol}</span>
                       <input type="text" placeholder="Enter custom amount" value={customAmount} onChange={handleCustom}
                         className={`flex-1 px-3 py-3 text-base font-semibold outline-none bg-transparent ${isCustom ? 'text-emerald-800 placeholder:text-emerald-300' : 'text-gray-700 placeholder:text-gray-400'}`} />
                     </div>
                     {impactHint && (
                       <div className="mt-3 flex items-start gap-2 text-sm text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-xl px-4 py-3">
                         <Heart size={14} className="shrink-0 mt-0.5" fill="currentColor" />
-                        <span>{formatUSD(amount)} — {impactHint}</span>
+                        <span>{formatAmt(amount)} — {impactHint}</span>
                       </div>
                     )}
                   </div>
@@ -256,7 +272,7 @@ export function Donation() {
                     className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold rounded-xl text-base flex items-center justify-center gap-2 shadow-lg shadow-emerald-200/50 hover:from-emerald-700 hover:to-teal-700 hover:shadow-xl hover:scale-[1.01] active:scale-[0.99] transition-all duration-200"
                     style={btnStyle}>
                     <Heart size={18} fill="currentColor" />
-                    Continue{finalAmount > 0 ? ` — ${formatUSD(finalAmount)}` : ''}
+                    Continue{finalAmount > 0 ? ` — ${formatAmt(finalAmount)}` : ''}
                     <ChevronRight size={18} />
                   </button>
                 </div>
@@ -276,7 +292,7 @@ export function Donation() {
                         <Heart size={14} fill="currentColor" className="text-emerald-500" />
                         <span className="text-xs text-gray-500 font-medium">{freq === 'once' ? 'one-time' : freq}</span>
                       </div>
-                      <div className="text-emerald-700 font-extrabold text-base">{formatUSD(finalAmount)}</div>
+                      <div className="text-emerald-700 font-extrabold text-base">{formatAmt(finalAmount)}</div>
                     </div>
                   </div>
 
@@ -304,7 +320,7 @@ export function Donation() {
                         <Heart size={40} fill="#059669" className="text-emerald-600" />
                       </div>
                       <h3 className="text-2xl font-bold">Thank You!</h3>
-                      <p className="text-gray-600">Your donation of <span className="font-bold text-emerald-700">{formatUSD(finalAmount)}</span> is confirmed.</p>
+                      <p className="text-gray-600">Your donation of <span className="font-bold text-emerald-700">{formatAmt(finalAmount)}</span> is confirmed.</p>
                       <button onClick={resetState} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-lg shadow-emerald-200/50 hover:shadow-xl hover:scale-[1.01] active:scale-[0.99] transition-all duration-200" style={btnStyle}>Donate Again</button>
                     </div>
                   ) : mobileWaiting ? (
@@ -319,20 +335,27 @@ export function Donation() {
                   ) : (
                     <>
                       {method === 'card' && (
-                        <div className="space-y-6">
-                          <div className="grid grid-cols-2 gap-3">
-                            <div><label className={lbl}>First Name</label><input required className={inp} style={inpStyle} value={donorData.firstName} onChange={e => setDonorData(p => ({ ...p, firstName: e.target.value }))} /></div>
-                            <div><label className={lbl}>Last Name</label><input required className={inp} style={inpStyle} value={donorData.lastName} onChange={e => setDonorData(p => ({ ...p, lastName: e.target.value }))} /></div>
-                          </div>
-                          <div><label className={lbl}>Email</label><input required type="email" className={inp} style={inpStyle} value={donorData.email} onChange={e => setDonorData(p => ({ ...p, email: e.target.value }))} /></div>
-                          <div className="bg-white border border-gray-100 rounded-2xl p-6">
-                            {stripePromise ? (
-                              <Elements stripe={stripePromise}>
-                                <StripeCardForm amount={finalAmount} donorData={donorData} onSuccess={() => setDone(true)} />
-                              </Elements>
-                            ) : <p className="text-xs text-amber-600 text-center">Stripe not configured</p>}
-                          </div>
-                        </div>
+                        stripePromise ? (
+                          <StripePaymentProvider finalAmount={finalAmount} currency={currency} freq={freq} donorData={donorData}>
+                            <div className="bg-white border border-gray-100 rounded-2xl p-2 md:p-6 shadow-sm">
+                              <StripeCardForm
+                                donorData={donorData}
+                                setDonorData={setDonorData}
+                                finalAmount={finalAmount}
+                                freq={freq}
+                                setDone={setDone}
+                                submitting={submitting}
+                                setSubmitting={setSubmitting}
+                                inp="w-full border border-gray-200 rounded-xl px-4 text-sm font-normal outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-50 transition-all placeholder:text-gray-400 bg-white text-gray-800"
+                                lbl="block text-xs font-semibold text-gray-600 mb-1.5 tracking-wide uppercase"
+                                onBack={() => setStep(1)}
+                                formatAmt={formatAmt}
+                              />
+                            </div>
+                          </StripePaymentProvider>
+                        ) : (
+                          <p className="text-xs text-amber-600 text-center">Stripe not configured</p>
+                        )
                       )}
 
                       {method === 'paypal' && (
@@ -375,7 +398,7 @@ export function Donation() {
                             <input required className={inp} style={inpStyle} placeholder="256 700 000 000" value={donorData.phone} onChange={e => setDonorData(p => ({ ...p, phone: e.target.value }))} />
                           </div>
                           <button type="submit" disabled={submitting} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-emerald-200/50 hover:shadow-xl hover:scale-[1.01] active:scale-[0.99] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed" style={btnStyle}>
-                            {submitting ? <span className="animate-spin w-5 h-5 border-2 border-white border-t-transparent rounded-full" /> : <><Phone size={18} /> Pay {formatUSD(finalAmount)}</>}
+                            {submitting ? <span className="animate-spin w-5 h-5 border-2 border-white border-t-transparent rounded-full" /> : <><Phone size={18} /> Pay {formatAmt(finalAmount)}</>}
                           </button>
                         </form>
                       )}
@@ -423,60 +446,5 @@ export function Donation() {
         </div>
       </div>
     </section>
-  );
-}
-
-function StripeCardForm({ amount, donorData, onSuccess }: { amount: number, donorData: DonorData, onSuccess: () => void }) {
-  const stripe = useStripe();
-  const elements = useElements();
-  const [loading, setLoading] = useState(false);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!stripe || !elements) return;
-    setLoading(true);
-    try {
-      const res = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/create-payment-intent`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${publicAnonKey}` },
-        body: JSON.stringify({ amount, currency: 'usd', donorName: `${donorData.firstName} ${donorData.lastName}`.trim(), donorEmail: donorData.email }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
-      const { error, paymentIntent } = await stripe.confirmCardPayment(data.clientSecret, {
-        payment_method: { card: elements.getElement(CardNumberElement)!, billing_details: { name: `${donorData.firstName} ${donorData.lastName}`.trim(), email: donorData.email } }
-      });
-      if (error) toast.error(error.message);
-      else if (paymentIntent?.status === 'succeeded') onSuccess();
-    } catch (err: any) { toast.error(err.message || 'Payment failed'); }
-    setLoading(false);
-  };
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="space-y-1.5">
-        <label className="block text-xs font-semibold text-gray-600 mb-1.5 tracking-wide uppercase">Card Number</label>
-        <div className="border border-gray-200 rounded-xl px-4 bg-white focus-within:border-emerald-400 focus-within:ring-2 focus-within:ring-emerald-50 transition-all flex items-center" style={{ height: 52 }}>
-          <CardNumberElement className="w-full" options={{ placeholder: '0000 0000 0000 0000', style: { base: { fontSize: '14px', color: '#374151', fontFamily: 'Arial, Helvetica, sans-serif', '::placeholder': { color: '#9ca3af' } }, invalid: { color: '#ef4444', iconColor: '#ef4444' } }, showIcon: true }} />
-        </div>
-      </div>
-      <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-1.5">
-          <label className="block text-xs font-semibold text-gray-600 mb-1.5 tracking-wide uppercase">Expiry Date</label>
-          <div className="border border-gray-200 rounded-xl px-4 bg-white focus-within:border-emerald-400 focus-within:ring-2 focus-within:ring-emerald-50 transition-all flex items-center" style={{ height: 52 }}>
-            <CardExpiryElement className="w-full" options={{ placeholder: 'MM / YY', style: { base: { fontSize: '14px', color: '#374151', fontFamily: 'Arial, Helvetica, sans-serif', '::placeholder': { color: '#9ca3af' } }, invalid: { color: '#ef4444', iconColor: '#ef4444' } } }} />
-          </div>
-        </div>
-        <div className="space-y-1.5">
-          <label className="block text-xs font-semibold text-gray-600 mb-1.5 tracking-wide uppercase">CVC</label>
-          <div className="border border-gray-200 rounded-xl px-4 bg-white focus-within:border-emerald-400 focus-within:ring-2 focus-within:ring-emerald-50 transition-all flex items-center" style={{ height: 52 }}>
-            <CardCvcElement className="w-full" options={{ placeholder: 'CVC', style: { base: { fontSize: '14px', color: '#374151', fontFamily: 'Arial, Helvetica, sans-serif', '::placeholder': { color: '#9ca3af' } }, invalid: { color: '#ef4444', iconColor: '#ef4444' } } }} />
-          </div>
-        </div>
-      </div>
-      <button type="submit" disabled={loading || !stripe} className="w-full bg-emerald-600 text-white font-bold rounded-xl shadow-lg shadow-emerald-200/50 hover:bg-emerald-700 hover:shadow-xl hover:scale-[1.01] active:scale-[0.99] transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed" style={{ height: 52 }}>
-        {loading ? <span className="animate-spin w-5 h-5 border-2 border-white border-t-transparent rounded-full" /> : <><Lock size={18} /> Confirm Donation — {formatUSD(amount)}</>}
-      </button>
-    </form>
   );
 }

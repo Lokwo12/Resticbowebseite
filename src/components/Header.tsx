@@ -1,9 +1,11 @@
-import { Menu, X, Heart, ChevronRight, ChevronDown } from 'lucide-react';
+import { Menu, X, Heart, ChevronRight, ChevronDown, Search } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 const logo = '/logo.png';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { useDonationModal } from './DonationModal';
+import { GlobalSearch } from './GlobalSearch';
+import { LanguageSwitcher } from './LanguageSwitcher';
 
 interface SiteSettings {
   general: { siteName: string; tagline: string; logoUrl: string; };
@@ -23,6 +25,7 @@ export function Header() {
   const [activeSection, setActiveSection] = useState('home');
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [customPages, setCustomPages] = useState<Array<{slug: string; title: string}>>([]);
+  const [searchOpen, setSearchOpen] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -236,21 +239,21 @@ export function Header() {
                     <Link 
                       to="/about"
                       onClick={() => setActiveDropdown(null)} 
-                      className="w-full text-left block px-4 py-2.5 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-600 transition-colors"
+                      className="w-full text-left block px-4 py-2.5 text-base text-gray-700 hover:bg-emerald-50 hover:text-emerald-600 transition-colors"
                     >
                       About Us
                     </Link>
                     <Link 
                       to="/team" 
                       onClick={() => setActiveDropdown(null)}
-                      className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-600 transition-colors"
+                      className="block px-4 py-2.5 text-base text-gray-700 hover:bg-emerald-50 hover:text-emerald-600 transition-colors"
                     >
                       Our Team
                     </Link>
                     <Link 
                       to="/faqs" 
                       onClick={() => setActiveDropdown(null)}
-                      className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-600 transition-colors"
+                      className="block px-4 py-2.5 text-base text-gray-700 hover:bg-emerald-50 hover:text-emerald-600 transition-colors"
                     >
                       FAQs
                     </Link>
@@ -297,14 +300,14 @@ export function Header() {
                     <Link 
                       to="/stories" 
                       onClick={() => setActiveDropdown(null)}
-                      className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-600 transition-colors"
+                      className="block px-4 py-2.5 text-base text-gray-700 hover:bg-emerald-50 hover:text-emerald-600 transition-colors"
                     >
                       Impact Stories
                     </Link>
                     <Link 
                       to="/reports" 
                       onClick={() => setActiveDropdown(null)}
-                      className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-600 transition-colors"
+                      className="block px-4 py-2.5 text-base text-gray-700 hover:bg-emerald-50 hover:text-emerald-600 transition-colors"
                     >
                       Impact Reports
                     </Link>
@@ -340,21 +343,21 @@ export function Header() {
                     <Link 
                       to="/volunteer" 
                       onClick={() => setActiveDropdown(null)}
-                      className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-600 transition-colors"
+                      className="block px-4 py-2.5 text-base text-gray-700 hover:bg-emerald-50 hover:text-emerald-600 transition-colors"
                     >
                       Volunteer
                     </Link>
                     <Link 
                       to="/opportunities" 
                       onClick={() => setActiveDropdown(null)}
-                      className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-600 transition-colors"
+                      className="block px-4 py-2.5 text-base text-gray-700 hover:bg-emerald-50 hover:text-emerald-600 transition-colors"
                     >
                       Opportunities
                     </Link>
                     <Link 
                       to="/partners" 
                       onClick={() => setActiveDropdown(null)}
-                      className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-600 transition-colors"
+                      className="block px-4 py-2.5 text-base text-gray-700 hover:bg-emerald-50 hover:text-emerald-600 transition-colors"
                     >
                       Become a Partner
                     </Link>
@@ -376,6 +379,26 @@ export function Header() {
               Contact
             </Link>
             <button
+              onClick={() => setSearchOpen(true)}
+              className={`p-2 rounded-full transition-all duration-300 ${
+                isSolid 
+                  ? 'text-gray-600 hover:text-emerald-600 hover:bg-emerald-50' 
+                  : 'text-white hover:text-emerald-300 hover:bg-white/10'
+              }`}
+              title="Search (Ctrl+K)"
+            >
+              <Search size={20} />
+            </button>
+            <LanguageSwitcher />
+            <Link 
+              to="/login"
+              className={`font-semibold text-sm transition-colors ${
+                isSolid ? 'text-gray-600 hover:text-emerald-600' : 'text-white/90 hover:text-white'
+              }`}
+            >
+              Sign In
+            </Link>
+            <button
               onClick={() => { openDonationModal(); setActiveDropdown(null); }}
               className={`px-6 py-2 rounded-lg transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 ${
                 isSolid
@@ -389,6 +412,17 @@ export function Header() {
 
           {/* Mobile right actions: hamburger */}
           <div className="lg:hidden flex items-center gap-1">
+            <LanguageSwitcher />
+            <button
+              onClick={() => setSearchOpen(true)}
+              className={`p-2 rounded-lg transition-colors ${
+                isSolid
+                  ? 'hover:bg-gray-100 text-gray-700'
+                  : 'hover:bg-white/20 text-white'
+              }`}
+            >
+              <Search size={22} />
+            </button>
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className={`p-2 rounded-lg transition-colors ${
@@ -452,7 +486,9 @@ export function Header() {
               <Link to="/contact" className="text-gray-700 hover:text-emerald-600 transition-colors text-left px-2 py-1" onClick={() => setMobileMenuOpen(false)}>
                 Contact
               </Link>
-
+              <Link to="/login" className="text-emerald-600 hover:text-emerald-700 font-semibold transition-colors text-left px-2 py-1 mt-2 border-t border-gray-100 pt-3" onClick={() => setMobileMenuOpen(false)}>
+                Donor Sign In
+              </Link>
               <button onClick={openDonationModal} className="bg-emerald-600 text-white px-6 py-2 rounded-lg hover:bg-emerald-700 transition-colors mt-2">
                 Donate Now
               </button>
@@ -461,6 +497,9 @@ export function Header() {
         )}
       </nav>
       </div>
+      
+      {/* Global Search Overlay */}
+      <GlobalSearch isOpen={searchOpen} onClose={() => setSearchOpen(false)} />
     </header>
   );
 }

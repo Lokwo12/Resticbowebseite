@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Heart, Clock, MapPin, Users, CheckCircle, ArrowRight } from 'lucide-react';
+import { Heart, Clock, MapPin, Users, CheckCircle, ArrowRight, Sparkles } from 'lucide-react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { Card } from './ui/card';
 import { Badge } from './ui/badge';
 import { toast } from 'sonner';
+import { VolunteerQuizModal } from './VolunteerQuizModal';
 
 interface Opportunity {
   id: string;
@@ -23,6 +24,7 @@ export function VolunteerOpportunities() {
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [showForm, setShowForm] = useState(false);
+  const [showQuiz, setShowQuiz] = useState(false);
   const [selectedOpportunity, setSelectedOpportunity] = useState<Opportunity | null>(null);
   const [formData, setFormData] = useState({
     name: '',
@@ -33,6 +35,7 @@ export function VolunteerOpportunities() {
     opportunityId: ''
   });
   const [sectionSettings, setSectionSettings] = useState({ title: 'Volunteer Opportunities', description: 'Make a difference by volunteering with us. Explore available positions and find the perfect fit for your skills.' });
+  const [globalSettings, setGlobalSettings] = useState<any>({});
 
   useEffect(() => {
     fetchOpportunities();
@@ -52,8 +55,11 @@ export function VolunteerOpportunities() {
 
       if (response.ok) {
         const data = await response.json();
-        if (data.settings?.sections?.opportunities) {
-          setSectionSettings(data.settings.sections.opportunities);
+        if (data.settings) {
+          setGlobalSettings(data.settings);
+          if (data.settings.sections?.opportunities) {
+            setSectionSettings(data.settings.sections.opportunities);
+          }
         }
       }
     } catch (err) {
@@ -154,9 +160,9 @@ export function VolunteerOpportunities() {
         <div className="text-center mb-12">
           <div className="flex items-center justify-center gap-2 mb-4">
             <Heart className="text-emerald-600" size={32} />
-            <h2 className="text-emerald-600">{sectionSettings.title}</h2>
+            <h2 className="text-emerald-600 text-4xl mb-4">{sectionSettings.title}</h2>
           </div>
-          <p className="text-gray-600 max-w-3xl mx-auto">
+          <p className="text-gray-600 max-w-3xl mx-auto text-xl">
             {sectionSettings.description}
           </p>
         </div>
@@ -167,8 +173,8 @@ export function VolunteerOpportunities() {
             <div className="w-12 h-12 bg-emerald-100 rounded-lg flex items-center justify-center mx-auto mb-4">
               <Heart className="text-emerald-600" size={24} />
             </div>
-            <h4 className="text-gray-900 mb-2">Make Impact</h4>
-            <p className="text-sm text-gray-600">
+            <h4 className="text-2xl text-gray-900 mb-2">Make Impact</h4>
+            <p className="text-base text-gray-600">
               Directly contribute to positive change in people's lives
             </p>
           </Card>
@@ -177,8 +183,8 @@ export function VolunteerOpportunities() {
             <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-4">
               <Users className="text-blue-600" size={24} />
             </div>
-            <h4 className="text-gray-900 mb-2">Build Community</h4>
-            <p className="text-sm text-gray-600">
+            <h4 className="text-2xl text-gray-900 mb-2">Build Community</h4>
+            <p className="text-base text-gray-600">
               Connect with like-minded people who care about giving back
             </p>
           </Card>
@@ -187,11 +193,23 @@ export function VolunteerOpportunities() {
             <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mx-auto mb-4">
               <CheckCircle className="text-purple-600" size={24} />
             </div>
-            <h4 className="text-gray-900 mb-2">Gain Experience</h4>
-            <p className="text-sm text-gray-600">
+            <h4 className="text-2xl text-gray-900 mb-2">Gain Experience</h4>
+            <p className="text-base text-gray-600">
               Develop new skills and gain valuable hands-on experience
             </p>
           </Card>
+        </div>
+
+        {/* Quiz CTA */}
+        <div className="mb-12 flex justify-center">
+          <button
+            onClick={() => setShowQuiz(true)}
+            className="group relative inline-flex items-center justify-center gap-3 px-8 py-4 bg-emerald-600 text-white rounded-full font-bold text-lg overflow-hidden transition-transform hover:scale-105 shadow-lg shadow-emerald-500/30"
+          >
+            <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-emerald-500 to-teal-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+            <Sparkles size={24} className="relative z-10 animate-pulse text-yellow-300" />
+            <span className="relative z-10">Take the Volunteer Match Quiz</span>
+          </button>
         </div>
 
         {/* Category Filter */}
@@ -220,7 +238,7 @@ export function VolunteerOpportunities() {
               <Card key={opportunity.id} className="p-6 hover:shadow-xl transition-shadow">
                 <div className="flex items-start justify-between mb-4">
                   <div>
-                    <h3 className="text-gray-900 mb-2">{opportunity.title}</h3>
+                    <h3 className="text-3xl text-gray-900 mb-2">{opportunity.title}</h3>
                     <Badge variant="secondary">{opportunity.category}</Badge>
                   </div>
                   {opportunity.openPositions > 0 && (
@@ -230,17 +248,17 @@ export function VolunteerOpportunities() {
                   )}
                 </div>
 
-                <p className="text-gray-600 text-sm mb-4">
+                <p className="text-gray-600 text-lg mb-4">
                   {opportunity.description}
                 </p>
 
                 {/* Details */}
                 <div className="space-y-2 mb-4">
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <div className="flex items-center gap-2 text-base text-gray-600">
                     <Clock size={16} className="text-emerald-600 flex-shrink-0" />
                     <span>{opportunity.timeCommitment}</span>
                   </div>
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <div className="flex items-center gap-2 text-base text-gray-600">
                     <MapPin size={16} className="text-emerald-600 flex-shrink-0" />
                     <span>{opportunity.location}</span>
                   </div>
@@ -249,10 +267,10 @@ export function VolunteerOpportunities() {
                 {/* Requirements */}
                 {opportunity.requirements.length > 0 && (
                   <div className="mb-4">
-                    <h5 className="text-sm text-gray-900 mb-2">Requirements:</h5>
+                    <h5 className="text-base text-gray-900 mb-2">Requirements:</h5>
                     <ul className="space-y-1">
                       {opportunity.requirements.map((req, index) => (
-                        <li key={index} className="flex items-start gap-2 text-sm text-gray-600">
+                        <li key={index} className="flex items-start gap-2 text-base text-gray-600">
                           <CheckCircle size={16} className="text-emerald-600 flex-shrink-0 mt-0.5" />
                           <span>{req}</span>
                         </li>
@@ -264,10 +282,10 @@ export function VolunteerOpportunities() {
                 {/* Benefits */}
                 {opportunity.benefits.length > 0 && (
                   <div className="mb-4 bg-emerald-50 p-3 rounded-lg">
-                    <h5 className="text-sm text-emerald-900 mb-2">Benefits:</h5>
+                    <h5 className="text-base text-emerald-900 mb-2">Benefits:</h5>
                     <ul className="space-y-1">
                       {opportunity.benefits.map((benefit, index) => (
-                        <li key={index} className="text-sm text-emerald-800">
+                        <li key={index} className="text-base text-emerald-800">
                           • {benefit}
                         </li>
                       ))}
@@ -290,8 +308,8 @@ export function VolunteerOpportunities() {
             <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <Heart className="text-gray-400" size={32} />
             </div>
-            <h3 className="text-gray-900 mb-2">No Opportunities Available</h3>
-            <p className="text-gray-500 mb-6 max-w-md mx-auto">
+            <h3 className="text-2xl text-gray-900 mb-2">No Opportunities Available</h3>
+            <p className="text-gray-500 mb-6 max-w-md mx-auto text-xl">
               {selectedCategory === 'all' 
                 ? 'No volunteer opportunities have been added yet. Check back soon or contact us to learn about upcoming opportunities!'
                 : `No opportunities in the "${selectedCategory}" category currently. Try selecting "All" to see other opportunities.`
@@ -405,6 +423,14 @@ export function VolunteerOpportunities() {
             </Card>
           </div>
         )}
+        {/* Quiz Modal */}
+        <VolunteerQuizModal
+          show={showQuiz}
+          onClose={() => setShowQuiz(false)}
+          onApply={handleApply}
+          opportunities={opportunities}
+          settings={globalSettings}
+        />
       </div>
     </section>
   );

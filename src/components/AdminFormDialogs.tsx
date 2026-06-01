@@ -472,7 +472,11 @@ export function ImpactStatsFormDialog({ show, onClose, currentStats, onSuccess, 
     volunteersActive: 150,
     fundsRaised: 250000,
     communitiesReached: 8,
-    successRate: 92
+    successRate: 92,
+    fundraisingGoal: 50000,
+    fundraisingCampaign: 'Campaign 2026',
+    fundraisingTitle: 'Help Us Reach Our Goal',
+    fundraisingDescription: 'We are raising funds to expand our mobile health clinics...'
   });
 
   useEffect(() => {
@@ -482,7 +486,11 @@ export function ImpactStatsFormDialog({ show, onClose, currentStats, onSuccess, 
       volunteersActive: currentStats?.volunteersActive ?? 150,
       fundsRaised: currentStats?.fundsRaised ?? 250000,
       communitiesReached: currentStats?.communitiesReached ?? 8,
-      successRate: currentStats?.successRate ?? 92
+      successRate: currentStats?.successRate ?? 92,
+      fundraisingGoal: currentStats?.fundraisingGoal ?? 50000,
+      fundraisingCampaign: currentStats?.fundraisingCampaign ?? 'Campaign 2026',
+      fundraisingTitle: currentStats?.fundraisingTitle ?? 'Help Us Reach Our Goal',
+      fundraisingDescription: currentStats?.fundraisingDescription ?? 'We are raising funds to expand our mobile health clinics...'
     });
   }, [currentStats, show]);
 
@@ -615,6 +623,68 @@ export function ImpactStatsFormDialog({ show, onClose, currentStats, onSuccess, 
               </div>
             </div>
 
+          </div>
+
+          <div className="border-t border-slate-200 mt-8 pt-6">
+            <h3 className="text-lg font-bold text-slate-800 mb-4">Fundraising Progress Display</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Target Goal <span className="text-slate-400 font-normal">(USD)</span></label>
+                <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 focus-within:ring-2 focus-within:ring-emerald-500/20 focus-within:border-emerald-500 transition-all">
+                  <Target size={18} className="text-slate-400 shrink-0" />
+                  <input
+                    type="number"
+                    min={0}
+                    value={formData.fundraisingGoal}
+                    onChange={(e) => handleNumber('fundraisingGoal', e.target.value)}
+                    className="flex-1 bg-transparent py-3 outline-none text-slate-800 placeholder:text-slate-400"
+                    placeholder="e.g. 50000"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Campaign Tag</label>
+                <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 focus-within:ring-2 focus-within:ring-emerald-500/20 focus-within:border-emerald-500 transition-all">
+                  <Tag size={18} className="text-slate-400 shrink-0" />
+                  <input
+                    type="text"
+                    value={formData.fundraisingCampaign}
+                    onChange={(e) => setFormData({ ...formData, fundraisingCampaign: e.target.value })}
+                    className="flex-1 bg-transparent py-3 outline-none text-slate-800 placeholder:text-slate-400"
+                    placeholder="e.g. Campaign 2026"
+                  />
+                </div>
+              </div>
+              
+              <div className="sm:col-span-2">
+                <label className="block text-sm font-medium text-slate-700 mb-1">Title</label>
+                <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 focus-within:ring-2 focus-within:ring-emerald-500/20 focus-within:border-emerald-500 transition-all">
+                  <FileText size={18} className="text-slate-400 shrink-0" />
+                  <input
+                    type="text"
+                    value={formData.fundraisingTitle}
+                    onChange={(e) => setFormData({ ...formData, fundraisingTitle: e.target.value })}
+                    className="flex-1 bg-transparent py-3 outline-none text-slate-800 placeholder:text-slate-400"
+                    placeholder="e.g. Help Us Reach Our Goal"
+                  />
+                </div>
+              </div>
+
+              <div className="sm:col-span-2">
+                <label className="block text-sm font-medium text-slate-700 mb-1">Description</label>
+                <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 focus-within:ring-2 focus-within:ring-emerald-500/20 focus-within:border-emerald-500 transition-all">
+                  <Info size={18} className="text-slate-400 shrink-0 self-start mt-3.5" />
+                  <textarea
+                    rows={2}
+                    value={formData.fundraisingDescription}
+                    onChange={(e) => setFormData({ ...formData, fundraisingDescription: e.target.value })}
+                    className="flex-1 bg-transparent py-3 outline-none text-slate-800 placeholder:text-slate-400"
+                    placeholder="e.g. We are raising funds to expand our mobile health clinics..."
+                  />
+                </div>
+              </div>
+            </div>
           </div>
 
           <div className="flex gap-2 justify-end pt-4">

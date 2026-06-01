@@ -157,7 +157,7 @@ export function News() {
             <Newspaper className="text-emerald-600" size={32} />
           </div>
           <h2 className="text-emerald-600 mb-4">{sectionSettings.title}</h2>
-          <p className="text-gray-600 max-w-3xl mx-auto text-lg">
+          <p className="text-gray-600 max-w-3xl mx-auto text-xl">
             {sectionSettings.description}
           </p>
         </div>
@@ -168,8 +168,8 @@ export function News() {
             <div className="inline-flex items-center justify-center w-24 h-24 bg-gray-100 rounded-full mb-6">
               <Newspaper size={48} className="text-gray-400" />
             </div>
-            <h3 className="text-gray-900 mb-3">No News Articles Yet</h3>
-            <p className="text-gray-500 max-w-md mx-auto">
+            <h3 className="text-3xl text-gray-900 mb-3">No News Articles Yet</h3>
+            <p className="text-gray-500 max-w-md mx-auto text-lg">
               Our latest news and updates will be available here soon. Check back later to stay informed about our activities and impact!
             </p>
           </div>
@@ -243,11 +243,11 @@ export function News() {
 
                     {/* Article Info */}
                     <div className="p-6">
-                      <h3 className="text-gray-900 mb-3 line-clamp-2 group-hover:text-emerald-600 transition-colors duration-300">
+                      <h3 className="text-2xl text-gray-900 mb-3 line-clamp-2 group-hover:text-emerald-600 transition-colors duration-300">
                         {article.title}
                       </h3>
 
-                      <div className="flex items-center gap-4 text-sm text-gray-500 mb-4 pb-4 border-b border-gray-100">
+                      <div className="flex items-center gap-4 text-base text-gray-500 mb-4 pb-4 border-b border-gray-100">
                         <div className="flex items-center gap-1">
                           <Calendar size={14} />
                           <span>{formatDate(article.publishDate)}</span>
@@ -260,7 +260,7 @@ export function News() {
                         )}
                       </div>
 
-                      <p className="text-gray-600 text-sm leading-relaxed mb-6 line-clamp-3">
+                      <p className="text-gray-600 text-base leading-relaxed mb-6 line-clamp-3">
                         {truncateContent(article.content)}
                       </p>
 
@@ -278,7 +278,7 @@ export function News() {
               </div>
             ) : (
               <div className="text-center py-12">
-                <p className="text-gray-500 text-lg">
+                <p className="text-gray-500 text-xl">
                   No news articles found in this category.
                 </p>
               </div>
@@ -303,8 +303,8 @@ export function News() {
               <div className="inline-flex items-center justify-center w-16 h-16 bg-white/20 rounded-full mb-6">
                 <Newspaper className="text-white" size={32} />
               </div>
-              <h3 className="text-white mb-4">Stay Updated</h3>
-              <p className="text-emerald-50 mb-8 text-lg">
+              <h3 className="text-3xl text-white mb-4">Stay Updated</h3>
+              <p className="text-emerald-50 mb-8 text-xl">
                 Subscribe to our newsletter and never miss an update. Get the latest news, stories, and opportunities delivered straight to your inbox.
               </p>
               <button

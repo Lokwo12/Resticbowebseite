@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, Calendar, Tag, User, Clock } from 'lucide-react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
+import { SEO } from './SEO';
 import { LoadingScreen } from './LoadingScreen';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
@@ -99,6 +100,12 @@ export function NewsDetail() {
 
   return (
     <div className="bg-gray-50 min-h-screen pt-28 sm:pt-36 pb-24">
+      <SEO 
+        title={`${article.title} | News`} 
+        description={article.content.substring(0, 150).replace(/<[^>]+>/g, '')} 
+        image={article.image} 
+        type="article"
+      />
       <div className="container mx-auto px-4 max-w-4xl">
         {/* Navigation */}
         <Link to="/news" className="inline-flex items-center text-emerald-600 hover:text-emerald-700 mb-8 transition-colors">

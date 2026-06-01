@@ -144,10 +144,10 @@ export function Footer() {
           <div className="col-span-2 sm:col-span-3 lg:col-span-2">
             <div className="mb-4">
               <img src={getLogoUrl()} alt={`${generalSettings.siteName} Logo`} className="h-20 w-20 rounded-full object-cover shadow-md border-2 border-slate-700 mb-2" />
-              <h3 className="text-white mb-1">{generalSettings.siteName}</h3>
-              <p className="text-sm text-gray-400 mb-3">{generalSettings.tagline}</p>
+              <h3 className="text-2xl text-white mb-1">{generalSettings.siteName}</h3>
+              <p className="text-base text-gray-400 mb-3">{generalSettings.tagline}</p>
             </div>
-            <p className="text-gray-400 text-sm">
+            <p className="text-gray-400 text-base">
               {footerSettings.description}
             </p>
           </div>
@@ -155,7 +155,7 @@ export function Footer() {
           {/* Quick Links */}
           <div>
             <h4 className="mb-4">Quick Links</h4>
-            <ul className="space-y-2 text-sm text-gray-400">
+            <ul className="space-y-3 text-base text-gray-400">
               <li><Link to="/#home" className="block hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Home</Link></li>
               <li><Link to="/about" className="block hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">About Us</Link></li>
               <li><Link to="/#programs" className="block hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Programs</Link></li>
@@ -168,7 +168,7 @@ export function Footer() {
           {/* Get Involved */}
           <div>
             <h4 className="mb-4">Get Involved</h4>
-            <ul className="space-y-2 text-sm text-gray-400">
+            <ul className="space-y-3 text-base text-gray-400">
               <li><Link to="/volunteer" className="block hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Volunteer</Link></li>
               <li><button onClick={openDonationModal} className="block text-left hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Donate</button></li>
               <li><Link to="/partners" className="block hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Become a Partner</Link></li>
@@ -180,7 +180,7 @@ export function Footer() {
           {/* Resources */}
           <div>
             <h4 className="mb-4">Resources</h4>
-            <ul className="space-y-2 text-sm text-gray-400">
+            <ul className="space-y-3 text-base text-gray-400">
               <li><Link to="/#gallery" className="block hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Gallery</Link></li>
               <li><Link to="/news" className="block hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">News</Link></li>
               <li><Link to="/faqs" className="block hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">FAQ</Link></li>
@@ -200,7 +200,7 @@ export function Footer() {
           {/* Contact */}
           <div>
             <h4 className="mb-4">Contact</h4>
-            <ul className="space-y-2 text-sm text-gray-400">
+            <ul className="space-y-3 text-base text-gray-400">
               <li>{contactSettings.address}</li>
               <li>
                 <a href={`mailto:${contactSettings.email}`} className="hover:text-emerald-400 transition-colors">
@@ -256,7 +256,7 @@ export function Footer() {
         {/* Bottom bar */}
         <div className="border-t border-white/10 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
           <div className="flex items-center gap-3">
-            <p className="text-sm text-gray-400">
+            <p className="text-base text-gray-400">
               © {new Date().getFullYear()} {footerSettings.copyrightText}
             </p>
             <div className="ngo-badge hidden md:inline-flex">
@@ -265,13 +265,13 @@ export function Footer() {
           </div>
           
           {/* Legal Links */}
-          <div className="flex gap-4 text-sm text-gray-400">
+          <div className="flex gap-4 text-base text-gray-400">
             <Link to="/privacy" className="hover:text-emerald-400 transition-colors">Privacy Policy</Link>
             <Link to="/terms" className="hover:text-emerald-400 transition-colors">Terms of Service</Link>
             <Link to="/refund" className="hover:text-emerald-400 transition-colors">Refund Policy</Link>
           </div>
 
-          <p className="text-sm text-gray-400 flex items-center gap-1">
+          <p className="text-base text-gray-400 flex items-center gap-1">
             {footerSettings.taglineBottom.includes('❤️') ? (
               <>
                 Made with <Heart size={16} className="text-red-500" /> for our community
