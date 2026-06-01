@@ -1100,9 +1100,7 @@ app.post('/make-server-2a4be611/admin/signup', async (c) => {
       name: name || email.split('@')[0],
       role: userRole,
       status: userStatus,
-      createdAt: new Date().toISOString(),
-      lastLogin: null,
-      loginCount: 0
+      createdAt: new Date().toISOString()
     })
 
     console.log(`Admin user created and synced to KV: ${data.user.id} with role: ${userRole}, status: ${userStatus}`)

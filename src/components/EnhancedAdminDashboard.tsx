@@ -206,7 +206,7 @@ export function EnhancedAdminDashboard() {
 
   // Form states
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('password');
+  const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [isSignup, setIsSignup] = useState(false);
   const [showSignupSuccessDialog, setShowSignupSuccessDialog] = useState(false);
