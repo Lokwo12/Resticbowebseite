@@ -1,6 +1,7 @@
 import { createClient } from 'npm:@supabase/supabase-js@2'
 import type { Context } from 'npm:hono'
 import Stripe from 'npm:stripe@17.5.0'
+import { getMtnAccessToken, getAirtelAccessToken } from './tokens.ts'
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!
 const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -57,16 +58,14 @@ export async function completeDonationFromWebhook(
   const donation = data.donation
 
   // Idempotency: Send receipt only if not already sent
-  if (!donation.receipt_sent_at) {
-    // Update receipt_sent_at to prevent concurrent emails
-    await supabase.from('donations')
-      .update({ receipt_sent_at: new Date().toISOString() })
-      .eq('id', donation.id)
-      .is('receipt_sent_at', null)
-  } else {
-    // Already sent, we mark success but remove donation to avoid resending
+  const { data: claimData, error: claimError } = await supabase.rpc('claim_donation_receipt', { p_donation_id: donation.id })
+  
+  if (claimError || !claimData?.success) {
+    // Already claimed or not found
     return { alreadyProcessed: true, notFound: false, success: true }
   }
+  
+  donation.receipt_sent_at = claimData.donation.receipt_sent_at
 
   return { alreadyProcessed: false, notFound: false, success: true, donation }
 }
@@ -142,7 +141,9 @@ export async function handleStripeWebhook(
     return c.json({ received: true, action: 'no_reference_id' })
   }
 
-  const result = await completeDonationFromWebhook(referenceId, {
+  const dbReferenceId = metadata?.restiDonationId || referenceId
+
+  const result = await completeDonationFromWebhook(dbReferenceId, {
     provider: 'stripe',
     providerTransactionId: providerTxId,
     providerStatus: event.type,
@@ -151,42 +152,8 @@ export async function handleStripeWebhook(
     rawPayload: { eventType: event.type, eventId: event.id },
   })
 
-  // Security: only auto-create if metadata strongly proves it's a RESTI donation
-  if (result.notFound && metadata?.paymentPurpose === 'resti_donation') {
-    const donationId = `donation:${crypto.randomUUID()}`
-    const { error: insertError } = await supabase.from('donations').insert({
-      id: donationId,
-      amount,
-      currency,
-      method: 'card',
-      first_name: donorName?.split(' ')[0] || 'Anonymous',
-      last_name: donorName?.split(' ').slice(1).join(' ') || '',
-      email: donorEmail || '',
-      transaction_id: referenceId,
-      status: 'completed',
-      provider: 'stripe',
-      provider_transaction_id: providerTxId,
-      completed_at: new Date().toISOString(),
-      provider_response: { eventType: event.type, eventId: event.id }
-    })
-    
-    if (insertError) {
-      console.error('Failed to create unmatched donation:', insertError)
-      return c.json({ received: true, action: 'error_creating', error: insertError.message })
-    }
-
-    if (donorEmail) {
-      await sendEmail(
-        donorEmail,
-        'Thank You for Your Donation – Resti Kiryandongo CBO',
-        buildReceiptEmail(donorName || 'Donor', currency || 'USD', amount || 0, referenceId),
-      )
-      await supabase.from('donations').update({ receipt_sent_at: new Date().toISOString() }).eq('id', donationId)
-    }
-
-    return c.json({ received: true, action: 'recorded_new', donationId })
-  } else if (result.notFound) {
-    return c.json({ received: true, action: 'unmatched_payment_ignored' })
+  if (result.notFound) {
+    return c.json({ received: true, action: 'unmatched_payment_requires_review' })
   }
 
   if (result.success && result.donation) {
@@ -312,36 +279,32 @@ export async function handleAirtelWebhook(
   const country = Deno.env.get('AIRTEL_COUNTRY') || 'UG'
   const currency = Deno.env.get('AIRTEL_CURRENCY') || 'UGX'
   
-  // Note: Production usually requires generating a Bearer token first.
-  // For the sake of this implementation, we will log the verification attempt
-  // but if the token isn't available we may fallback or error.
-  const token = c.req.header('Authorization') // Or fetch token
-  
-  let verifiedStatus = 'TS'
-  let verifiedAmount = undefined
-  let verifiedCurrency = currency
-  
-  if (token) {
-    const verifyRes = await fetch(`https://${airtelHost}/standard/v1/payments/${referenceId}`, {
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': '*/*',
-        'X-Country': country,
-        'X-Currency': currency,
-        'Authorization': token
-      }
-    })
-    
-    if (verifyRes.ok) {
-      const verifyData = await verifyRes.json()
-      verifiedStatus = verifyData.data?.transaction?.status || 'TF'
-      verifiedAmount = verifyData.data?.transaction?.amount
-      verifiedCurrency = verifyData.data?.transaction?.currency || currency
-    }
-  } else {
-    console.warn('Airtel verification skipped due to missing token. Accepting payload status.')
-    verifiedStatus = (transaction.status as string) || (body.status as string) || ''
+  let accessToken: string;
+  try {
+    accessToken = await getAirtelAccessToken()
+  } catch (err) {
+    console.error('Failed to get Airtel access token:', err)
+    return c.json({ error: 'Unable to verify transaction' }, 503)
   }
+
+  const verifyRes = await fetch(`https://${airtelHost}/standard/v1/payments/${referenceId}`, {
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': '*/*',
+      'X-Country': country,
+      'X-Currency': currency,
+      'Authorization': `Bearer ${accessToken}`
+    }
+  })
+
+  if (!verifyRes.ok) {
+    return c.json({ received: true, action: 'not_verified' })
+  }
+
+  const verifyData = await verifyRes.json()
+  const verifiedStatus = verifyData.data?.transaction?.status || 'TF'
+  const verifiedAmount = verifyData.data?.transaction?.amount
+  const verifiedCurrency = verifyData.data?.transaction?.currency || currency
 
   const isSuccessful = verifiedStatus === 'TS' || verifiedStatus?.toUpperCase() === 'SUCCESSFUL'
 

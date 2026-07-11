@@ -94,6 +94,10 @@ CREATE TABLE IF NOT EXISTS public.donations (
 );
 
 -- Ensure a provider's transaction cannot be completed twice
+CREATE UNIQUE INDEX IF NOT EXISTS donations_transaction_id_unique 
+  ON public.donations (transaction_id) 
+  WHERE transaction_id IS NOT NULL;
+
 CREATE UNIQUE INDEX IF NOT EXISTS donations_provider_transaction_unique 
   ON public.donations (provider, provider_transaction_id) 
   WHERE provider_transaction_id IS NOT NULL;
@@ -257,7 +261,8 @@ CREATE TABLE IF NOT EXISTS public.rate_limits (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE INDEX IF NOT EXISTS rate_limits_ip_action_idx ON public.rate_limits (ip_address, action);
+ALTER TABLE public.rate_limits DROP CONSTRAINT IF EXISTS rate_limits_ip_action_key;
+ALTER TABLE public.rate_limits ADD CONSTRAINT rate_limits_ip_action_key UNIQUE (ip_address, action);
 
 -- ============================================================================
 -- Security & Utility Functions
@@ -317,6 +322,17 @@ BEGIN
     RETURN jsonb_build_object('notFound', true, 'success', false, 'error', 'Pending donation not found');
   END IF;
 
+  -- Verify status is successful
+  IF upper(p_provider_status) NOT IN (
+    'SUCCESSFUL',
+    'SUCCEEDED',
+    'TS',
+    'CHECKOUT.SESSION.COMPLETED',
+    'PAYMENT_INTENT.SUCCEEDED'
+  ) THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Provider status is not successful');
+  END IF;
+
   -- Verify provider
   IF v_donation.provider IS NOT NULL AND v_donation.provider != p_provider THEN
     RETURN jsonb_build_object('success', false, 'error', 'Provider mismatch');
@@ -339,7 +355,7 @@ BEGIN
     provider_response = p_raw_payload,
     completed_at = NOW(),
     updated_at = NOW()
-  WHERE transaction_id = p_reference_id;
+  WHERE id = v_donation.id AND status = 'pending';
 
   -- Return the updated donation details for sending receipts
   SELECT * INTO v_donation FROM public.donations WHERE transaction_id = p_reference_id;
@@ -421,3 +437,73 @@ END $$;
 -- Example for programs (authenticated users can read programs):
 -- CREATE POLICY "Authenticated Read Programs" ON public.programs
 --   FOR SELECT TO authenticated USING (true);
+
+
+-- RPC: Atomic Receipt Claiming
+CREATE OR REPLACE FUNCTION public.claim_donation_receipt(p_donation_id UUID)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_donation RECORD;
+BEGIN
+  UPDATE public.donations
+  SET receipt_sent_at = NOW()
+  WHERE id = p_donation_id::text
+    AND receipt_sent_at IS NULL
+  RETURNING * INTO v_donation;
+
+  IF FOUND THEN
+    RETURN jsonb_build_object('success', true, 'donation', to_jsonb(v_donation));
+  ELSE
+    RETURN jsonb_build_object('success', false, 'error', 'Receipt already claimed or donation not found');
+  END IF;
+END;
+$$;
+
+
+-- RPC: Atomic Rate Limit Increment
+CREATE OR REPLACE FUNCTION public.increment_rate_limit(
+  p_ip_address TEXT,
+  p_action TEXT,
+  p_reset_in_ms INTEGER
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_limit RECORD;
+BEGIN
+  INSERT INTO public.rate_limits (id, ip_address, action, count, reset_at, created_at)
+  VALUES (
+    gen_random_uuid()::text,
+    p_ip_address,
+    p_action,
+    1,
+    NOW() + (p_reset_in_ms || ' milliseconds')::interval,
+    NOW()
+  )
+  ON CONFLICT (ip_address, action) DO UPDATE
+  SET 
+    count = CASE 
+      WHEN public.rate_limits.reset_at < NOW() THEN 1 
+      ELSE public.rate_limits.count + 1 
+    END,
+    reset_at = CASE 
+      WHEN public.rate_limits.reset_at < NOW() THEN NOW() + (p_reset_in_ms || ' milliseconds')::interval
+      ELSE public.rate_limits.reset_at
+    END
+  RETURNING * INTO v_limit;
+
+  -- Clean up expired rate limits periodically
+  IF random() < 0.05 THEN
+    DELETE FROM public.rate_limits WHERE reset_at < NOW();
+  END IF;
+
+  RETURN to_jsonb(v_limit);
+END;
+$$;

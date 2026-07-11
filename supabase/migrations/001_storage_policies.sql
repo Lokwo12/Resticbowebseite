@@ -17,12 +17,14 @@ VALUES (
 ON CONFLICT (id) DO NOTHING;
 
 -- Public read: anyone can read public-assets
-CREATE POLICY IF NOT EXISTS "Public read on public-assets"
+DROP POLICY IF EXISTS "Public read on public-assets" ON storage.objects;
+CREATE POLICY "Public read on public-assets"
   ON storage.objects FOR SELECT
   USING (bucket_id = 'public-assets');
 
 -- Admin write: only authenticated admins can upload/update/delete
-CREATE POLICY IF NOT EXISTS "Admin insert on public-assets"
+DROP POLICY IF EXISTS "Admin insert on public-assets" ON storage.objects;
+CREATE POLICY "Admin insert on public-assets"
   ON storage.objects FOR INSERT
   WITH CHECK (
     bucket_id = 'public-assets'
@@ -30,7 +32,8 @@ CREATE POLICY IF NOT EXISTS "Admin insert on public-assets"
     AND public.is_active_admin()
   );
 
-CREATE POLICY IF NOT EXISTS "Admin update on public-assets"
+DROP POLICY IF EXISTS "Admin update on public-assets" ON storage.objects;
+CREATE POLICY "Admin update on public-assets"
   ON storage.objects FOR UPDATE
   USING (
     bucket_id = 'public-assets'
@@ -38,7 +41,8 @@ CREATE POLICY IF NOT EXISTS "Admin update on public-assets"
     AND public.is_active_admin()
   );
 
-CREATE POLICY IF NOT EXISTS "Admin delete on public-assets"
+DROP POLICY IF EXISTS "Admin delete on public-assets" ON storage.objects;
+CREATE POLICY "Admin delete on public-assets"
   ON storage.objects FOR DELETE
   USING (
     bucket_id = 'public-assets'
@@ -67,7 +71,8 @@ VALUES (
 ON CONFLICT (id) DO NOTHING;
 
 -- Admin-only access to private documents
-CREATE POLICY IF NOT EXISTS "Admin full access on private-documents"
+DROP POLICY IF EXISTS "Admin full access on private-documents" ON storage.objects;
+CREATE POLICY "Admin full access on private-documents"
   ON storage.objects FOR ALL
   USING (
     bucket_id = 'private-documents'
@@ -92,12 +97,13 @@ BEGIN
     UPDATE storage.buckets SET public = false WHERE id = 'make-2a4be611-uploads';
 
     -- Drop any existing open policies on the old bucket
-    DROP POLICY IF EXISTS "Public read" ON storage.objects;
-    DROP POLICY IF EXISTS "Public Access" ON storage.objects;
+    -- Note: Removed generic DROP POLICY statements to avoid breaking other buckets.
+    -- If the old 'make-2a4be611-uploads' bucket has old policies, please drop them manually.
 
     -- Add admin-only policy
     EXECUTE $policy$
-      CREATE POLICY "Admin access make-2a4be611-uploads"
+      DROP POLICY IF EXISTS "Admin access make-2a4be611-uploads" ON storage.objects;
+        CREATE POLICY "Admin access make-2a4be611-uploads"
         ON storage.objects FOR ALL
         USING (
           bucket_id = 'make-2a4be611-uploads'
