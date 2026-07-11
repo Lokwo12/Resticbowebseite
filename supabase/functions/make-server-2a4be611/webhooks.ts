@@ -158,7 +158,67 @@ export async function handleStripeWebhook(
   let donorName: string | undefined
   let metadata: Stripe.Metadata | undefined
 
-  if (event.type === 'checkout.session.completed') {
+  if (event.type === 'invoice.payment_succeeded') {
+    const invoice = event.data.object as any
+    if (invoice.billing_reason === 'subscription_create') {
+      const { error: subErr } = await supabase.from('subscriptions').insert({
+        id: `sub:${crypto.randomUUID()}`,
+        donor_id: invoice.customer?.toString(),
+        provider_subscription_id: invoice.subscription?.toString(),
+        status: 'active',
+        plan: invoice.lines?.data?.[0]?.plan?.id,
+        amount: invoice.amount_paid / 100,
+        currency: invoice.currency.toUpperCase()
+      })
+      if (subErr) console.error('Error creating subscription:', subErr)
+      return c.json({ received: true, action: 'subscription_created' })
+    } else if (invoice.billing_reason === 'subscription_cycle') {
+      const subId = invoice.subscription?.toString()
+      const txId = invoice.payment_intent?.toString() || invoice.id
+      const amountPaid = invoice.amount_paid / 100
+      const cur = invoice.currency.toUpperCase()
+      const newDonationId = `donation:${crypto.randomUUID()}`
+      
+      await supabase.from('donations').insert({
+        id: newDonationId,
+        amount: amountPaid,
+        currency: cur,
+        method: 'card_recurring',
+        provider: 'stripe',
+        first_name: invoice.customer_name?.split(' ')[0] || 'Anonymous',
+        last_name: invoice.customer_name?.split(' ').slice(1).join(' ') || '',
+        email: invoice.customer_email || '',
+        status: 'completed',
+        transaction_id: txId,
+        provider_transaction_id: txId,
+        provider_response: { eventType: event.type, eventId: event.id }
+      })
+      
+      const { data: subData } = await supabase.from('subscriptions').select('id').eq('provider_subscription_id', subId).single()
+      if (subData) {
+        await supabase.from('subscription_payments').insert({
+          id: `subpay:${crypto.randomUUID()}`,
+          subscription_id: subData.id,
+          donation_id: newDonationId,
+          invoice_id: invoice.id,
+          amount: amountPaid,
+          currency: cur
+        })
+      }
+      
+      await deliverDonationReceipt({
+        id: newDonationId,
+        amount: amountPaid,
+        currency: cur,
+        email: invoice.customer_email,
+        first_name: invoice.customer_name?.split(' ')[0],
+        last_name: invoice.customer_name?.split(' ').slice(1).join(' '),
+        transaction_id: txId
+      }, sendEmail)
+      return c.json({ received: true, action: 'renewal_processed' })
+    }
+    return c.json({ received: true, action: 'ignored_invoice' })
+  } else if (event.type === 'checkout.session.completed') {
     const session = event.data.object as Stripe.Checkout.Session
     referenceId = session.id
     providerTxId = session.payment_intent?.toString() || session.id

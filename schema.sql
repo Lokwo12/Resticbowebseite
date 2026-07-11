@@ -522,3 +522,26 @@ CREATE TABLE IF NOT EXISTS public.unmatched_payments (
   raw_payload JSONB,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+
+CREATE TABLE IF NOT EXISTS public.subscriptions (
+  id TEXT PRIMARY KEY,
+  donor_id TEXT,
+  provider_subscription_id TEXT UNIQUE,
+  status TEXT DEFAULT 'active' CHECK (status IN ('active', 'past_due', 'canceled', 'unpaid', 'incomplete', 'incomplete_expired', 'trialing')),
+  plan TEXT,
+  amount NUMERIC,
+  currency TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS public.subscription_payments (
+  id TEXT PRIMARY KEY,
+  subscription_id TEXT REFERENCES public.subscriptions(id) ON DELETE CASCADE,
+  donation_id TEXT REFERENCES public.donations(id) ON DELETE CASCADE,
+  invoice_id TEXT,
+  amount NUMERIC,
+  currency TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);

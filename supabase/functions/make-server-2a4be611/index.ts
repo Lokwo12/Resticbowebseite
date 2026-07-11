@@ -7,7 +7,7 @@ import Stripe from 'npm:stripe@17.5.0'
 import * as kv from './kv_store.tsx'
 import { escapeHtml, escapeMessage, validateName, validateEmail, validatePhone, validateMessage, validateAmount, validateMobileMoneyPhone, normaliseUgandanPhone } from './validation.ts'
 import { withRateLimit } from './rateLimit.ts'
-import { handleStripeWebhook, handleMtnWebhook, handleAirtelWebhook, completeDonationFromWebhook } from './webhooks.ts'
+import { handleStripeWebhook, handleMtnWebhook, handleAirtelWebhook, completeDonationFromWebhook, deliverDonationReceipt } from './webhooks.ts'
 import { getMtnAccessToken, getAirtelAccessToken } from './tokens.ts'
 
 const app = new Hono()
@@ -519,9 +519,6 @@ app.post('/make-server-2a4be611/verify-session', async (c) => {
     // Return canonical status
     const d = donation[0]
     return c.json({ status: d.status || 'pending' })
-    await kv.set(['donations_by_tx', sessionId], true)
-    
-    return c.json({ status: 'success', donation: donationData })
   } catch (error) {
     console.error('Error verifying session:', error)
     return c.json({ error: 'Failed to verify session', details: String(error) }, 500)
