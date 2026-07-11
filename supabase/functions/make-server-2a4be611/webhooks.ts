@@ -73,7 +73,7 @@ export async function completeDonationFromWebhook(
 export async function handleStripeWebhook(
   c: Context,
   stripe: Stripe | null,
-  sendEmail: (to: string, subject: string, html: string) => Promise<unknown>,
+  sendEmail: (to: string, subject: string, html: string) => Promise<any>,
 ): Promise<Response> {
   if (!stripe) {
     return c.json({ error: 'Stripe is not configured' }, 503)
@@ -189,12 +189,12 @@ export async function handleStripeWebhook(
   if (result.success && result.donation) {
     const d = result.donation as any
     if (d.email) {
-      await sendEmail(
+      const emailRes: any = await sendEmail(
         d.email,
         'Thank You for Your Donation – Resti Kiryandongo CBO',
         buildReceiptEmail(`${d.first_name || ''} ${d.last_name || ''}`.trim() || 'Donor', d.currency, d.amount, referenceId),
       )
-      await supabase.from('donations').update({ receipt_status: 'sent', receipt_sent_at: new Date().toISOString() }).eq('id', d.id)
+      await supabase.from('donations').update({ receipt_status: emailRes?.success ? 'sent' : 'failed', receipt_sent_at: new Date().toISOString(), receipt_message_id: emailRes?.data?.id || null }).eq('id', d.id)
     } else {
       await supabase.from('donations').update({ receipt_status: 'sent' }).eq('id', d.id)
     }
@@ -205,7 +205,7 @@ export async function handleStripeWebhook(
 
 export async function handleMtnWebhook(
   c: Context,
-  sendEmail: (to: string, subject: string, html: string) => Promise<unknown>,
+  sendEmail: (to: string, subject: string, html: string) => Promise<any>,
 ): Promise<Response> {
   const env = Deno.env.get('MTN_MOMO_ENVIRONMENT') || 'sandbox'
   const subKey = Deno.env.get('MTN_MOMO_SUBSCRIPTION_KEY')
@@ -276,12 +276,12 @@ export async function handleMtnWebhook(
   if (result.success && result.donation) {
     const d = result.donation as any
     if (d.email) {
-      await sendEmail(
+      const emailRes: any = await sendEmail(
         d.email,
         'Thank You for Your MTN Mobile Money Donation – Resti Kiryandongo CBO',
         buildReceiptEmail(`${d.first_name || ''} ${d.last_name || ''}`.trim() || 'Donor', d.currency, d.amount, referenceId),
       )
-      await supabase.from('donations').update({ receipt_status: 'sent', receipt_sent_at: new Date().toISOString() }).eq('id', d.id)
+      await supabase.from('donations').update({ receipt_status: emailRes?.success ? 'sent' : 'failed', receipt_sent_at: new Date().toISOString(), receipt_message_id: emailRes?.data?.id || null }).eq('id', d.id)
     } else {
       await supabase.from('donations').update({ receipt_status: 'sent' }).eq('id', d.id)
     }
@@ -296,7 +296,7 @@ export async function handleMtnWebhook(
 
 export async function handleAirtelWebhook(
   c: Context,
-  sendEmail: (to: string, subject: string, html: string) => Promise<unknown>,
+  sendEmail: (to: string, subject: string, html: string) => Promise<any>,
 ): Promise<Response> {
   const clientId = Deno.env.get('AIRTEL_CLIENT_ID')
   if (!clientId) {
@@ -368,12 +368,12 @@ export async function handleAirtelWebhook(
   if (result.success && result.donation) {
     const d = result.donation as any
     if (d.email) {
-      await sendEmail(
+      const emailRes: any = await sendEmail(
         d.email,
         'Thank You for Your Airtel Money Donation – Resti Kiryandongo CBO',
         buildReceiptEmail(`${d.first_name || ''} ${d.last_name || ''}`.trim() || 'Donor', d.currency, d.amount, referenceId),
       )
-      await supabase.from('donations').update({ receipt_status: 'sent', receipt_sent_at: new Date().toISOString() }).eq('id', d.id)
+      await supabase.from('donations').update({ receipt_status: emailRes?.success ? 'sent' : 'failed', receipt_sent_at: new Date().toISOString(), receipt_message_id: emailRes?.data?.id || null }).eq('id', d.id)
     } else {
       await supabase.from('donations').update({ receipt_status: 'sent' }).eq('id', d.id)
     }

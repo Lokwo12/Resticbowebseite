@@ -88,6 +88,7 @@ CREATE TABLE IF NOT EXISTS public.donations (
   expires_at TIMESTAMPTZ,
   receipt_sent_at TIMESTAMPTZ,
   receipt_status TEXT DEFAULT 'pending' CHECK (receipt_status IN ('pending', 'sending', 'sent', 'failed')),
+  receipt_message_id TEXT,
   verification_method TEXT,
   provider_response JSONB,
   created_at TIMESTAMPTZ DEFAULT NOW(),
