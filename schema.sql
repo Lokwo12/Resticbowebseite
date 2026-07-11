@@ -87,6 +87,7 @@ CREATE TABLE IF NOT EXISTS public.donations (
   completed_at TIMESTAMPTZ,
   expires_at TIMESTAMPTZ,
   receipt_sent_at TIMESTAMPTZ,
+  receipt_status TEXT DEFAULT 'pending' CHECK (receipt_status IN ('pending', 'sending', 'sent', 'failed')),
   verification_method TEXT,
   provider_response JSONB,
   created_at TIMESTAMPTZ DEFAULT NOW(),
@@ -440,7 +441,7 @@ END $$;
 
 
 -- RPC: Atomic Receipt Claiming
-CREATE OR REPLACE FUNCTION public.claim_donation_receipt(p_donation_id UUID)
+CREATE OR REPLACE FUNCTION public.claim_donation_receipt(p_donation_id TEXT)
 RETURNS JSONB
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -450,9 +451,9 @@ DECLARE
   v_donation RECORD;
 BEGIN
   UPDATE public.donations
-  SET receipt_sent_at = NOW()
-  WHERE id = p_donation_id::text
-    AND receipt_sent_at IS NULL
+  SET receipt_status = 'sending'
+  WHERE id = p_donation_id
+    AND receipt_status = 'pending'
   RETURNING * INTO v_donation;
 
   IF FOUND THEN
@@ -466,6 +467,7 @@ $$;
 
 -- RPC: Atomic Rate Limit Increment
 CREATE OR REPLACE FUNCTION public.increment_rate_limit(
+  p_id TEXT,
   p_ip_address TEXT,
   p_action TEXT,
   p_reset_in_ms INTEGER
@@ -480,14 +482,14 @@ DECLARE
 BEGIN
   INSERT INTO public.rate_limits (id, ip_address, action, count, reset_at, created_at)
   VALUES (
-    gen_random_uuid()::text,
+    p_id,
     p_ip_address,
     p_action,
     1,
     NOW() + (p_reset_in_ms || ' milliseconds')::interval,
     NOW()
   )
-  ON CONFLICT (ip_address, action) DO UPDATE
+  ON CONFLICT (id) DO UPDATE
   SET 
     count = CASE 
       WHEN public.rate_limits.reset_at < NOW() THEN 1 
@@ -507,3 +509,15 @@ BEGIN
   RETURN to_jsonb(v_limit);
 END;
 $$;
+
+
+CREATE TABLE IF NOT EXISTS public.unmatched_payments (
+  id TEXT PRIMARY KEY,
+  provider TEXT,
+  provider_transaction_id TEXT,
+  amount NUMERIC,
+  currency TEXT,
+  metadata JSONB,
+  raw_payload JSONB,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);

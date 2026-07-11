@@ -12,8 +12,12 @@ export function withRateLimit(routeKey: string, max: number, windowMs: number) {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const supabase = createClient(supabaseUrl, supabaseKey)
+    const key = `${routeKey}:${ip}`
+    const now = new Date()
+    const resetTime = new Date(now.getTime() + windowMs)
 
-        const { data: limitData, error } = await supabase.rpc('increment_rate_limit', {
+    const { data: limitData, error } = await supabase.rpc('increment_rate_limit', {
+      p_id: key,
       p_ip_address: ip,
       p_action: routeKey,
       p_reset_in_ms: windowMs

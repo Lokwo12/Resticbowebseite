@@ -65,7 +65,7 @@ export async function completeDonationFromWebhook(
     return { alreadyProcessed: true, notFound: false, success: true }
   }
   
-  donation.receipt_sent_at = claimData.donation.receipt_sent_at
+
 
   return { alreadyProcessed: false, notFound: false, success: true, donation }
 }
@@ -101,6 +101,14 @@ export async function handleStripeWebhook(
   }
 
   console.log(`Stripe webhook event received: ${event.type}`)
+
+  if (event.type === 'payment_intent.succeeded') {
+    const pi = event.data.object as Stripe.PaymentIntent
+    // If this payment intent was created by a Checkout Session, ignore it to prevent duplicates
+    if (pi.metadata?.checkoutSessionId || pi.invoice || (pi as any).checkout) {
+      return c.json({ received: true, action: 'ignored_checkout_duplicate' })
+    }
+  }
 
   if (
     event.type !== 'checkout.session.completed' &&
@@ -153,6 +161,28 @@ export async function handleStripeWebhook(
   })
 
   if (result.notFound) {
+    const isRestiDonation = metadata?.paymentPurpose === 'resti_donation' && 
+                            metadata?.restiDonationId && 
+                            metadata?.internalReference && 
+                            metadata?.campaignId;
+
+    if (isRestiDonation) {
+      // Record unmatched payment
+      const { error: insertError } = await supabase.from('unmatched_payments').insert({
+        id: `unmatched:${crypto.randomUUID()}`,
+        provider: 'stripe',
+        provider_transaction_id: providerTxId,
+        amount,
+        currency,
+        metadata: metadata,
+        raw_payload: { eventType: event.type, eventId: event.id }
+      })
+      
+      if (insertError) {
+        console.error('Failed to create unmatched payment:', insertError)
+        return c.json({ received: true, action: 'error_creating_unmatched' })
+      }
+    }
     return c.json({ received: true, action: 'unmatched_payment_requires_review' })
   }
 
@@ -164,6 +194,9 @@ export async function handleStripeWebhook(
         'Thank You for Your Donation – Resti Kiryandongo CBO',
         buildReceiptEmail(`${d.first_name || ''} ${d.last_name || ''}`.trim() || 'Donor', d.currency, d.amount, referenceId),
       )
+      await supabase.from('donations').update({ receipt_status: 'sent', receipt_sent_at: new Date().toISOString() }).eq('id', d.id)
+    } else {
+      await supabase.from('donations').update({ receipt_status: 'sent' }).eq('id', d.id)
     }
   }
 
@@ -201,12 +234,20 @@ export async function handleMtnWebhook(
 
   // Server-to-Server Verification
   const mtnHost = env === 'sandbox' ? 'sandbox.momodeveloper.mtn.com' : 'proxy.momoapi.mtn.com'
+  
+  let accessToken: string;
+  try {
+    accessToken = await getMtnAccessToken()
+  } catch (err) {
+    console.error('Failed to get MTN access token:', err)
+    return c.json({ error: 'Unable to verify transaction' }, 503)
+  }
+
   const verifyRes = await fetch(`https://${mtnHost}/collection/v1_0/requesttopay/${referenceId}`, {
     headers: {
+      'Authorization': `Bearer ${accessToken}`,
       'Ocp-Apim-Subscription-Key': subKey,
-      'X-Target-Environment': env,
-      // Target environment sometimes requires Authorization header, but reference ID lookup 
-      // often only needs the subKey. Assuming standard lookup here.
+      'X-Target-Environment': env
     }
   })
 
@@ -240,6 +281,9 @@ export async function handleMtnWebhook(
         'Thank You for Your MTN Mobile Money Donation – Resti Kiryandongo CBO',
         buildReceiptEmail(`${d.first_name || ''} ${d.last_name || ''}`.trim() || 'Donor', d.currency, d.amount, referenceId),
       )
+      await supabase.from('donations').update({ receipt_status: 'sent', receipt_sent_at: new Date().toISOString() }).eq('id', d.id)
+    } else {
+      await supabase.from('donations').update({ receipt_status: 'sent' }).eq('id', d.id)
     }
   }
 
@@ -329,6 +373,9 @@ export async function handleAirtelWebhook(
         'Thank You for Your Airtel Money Donation – Resti Kiryandongo CBO',
         buildReceiptEmail(`${d.first_name || ''} ${d.last_name || ''}`.trim() || 'Donor', d.currency, d.amount, referenceId),
       )
+      await supabase.from('donations').update({ receipt_status: 'sent', receipt_sent_at: new Date().toISOString() }).eq('id', d.id)
+    } else {
+      await supabase.from('donations').update({ receipt_status: 'sent' }).eq('id', d.id)
     }
   }
 
