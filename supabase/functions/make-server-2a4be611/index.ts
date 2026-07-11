@@ -350,20 +350,52 @@ app.post('/make-server-2a4be611/create-payment-intent', async (c) => {
       return c.json({ error: 'Invalid amount' }, 400)
     }
 
-    // Create a payment intent
+    // Create a pending donation in Postgres first
+    const internalReference = crypto.randomUUID()
+    const donationId = `donation:${internalReference}`
+    const parts = (donorName || 'Anonymous').split(' ')
+    const firstName = parts[0]
+    const lastName = parts.slice(1).join(' ') || ''
+
+    const { error: insertError } = await supabase.from('donations').insert({
+      id: donationId,
+      amount: Number(amount),
+      currency: (currency || 'USD').toUpperCase(),
+      method: 'card',
+      provider: 'stripe',
+      first_name: firstName,
+      last_name: lastName,
+      email: donorEmail || '',
+      status: 'pending',
+      transaction_id: internalReference,
+      provider_transaction_id: null,
+      provider_response: { createdBy: 'create-payment-intent' }
+    })
+
+    if (insertError) {
+      console.error('Failed to create pending donation:', insertError)
+      return c.json({ error: 'Database error' }, 500)
+    }
+
+    // Create a payment intent and attach the internal reference so webhook can locate it
     const paymentIntent = await stripe.paymentIntents.create({
       amount: Math.round(amount * 100), // Stripe expects amount in cents
-      currency: currency || 'usd',
+      currency: (currency || 'usd'),
       metadata: {
+        restiDonationId: internalReference,
+        internalReference,
+        paymentPurpose: 'resti_donation',
+        campaignId: 'general',
         donorName: donorName || 'Anonymous',
-        donorEmail: donorEmail || '',
+        donorEmail: donorEmail || ''
       },
     })
 
     console.log(`Payment intent created: ${paymentIntent.id}`)
     return c.json({ 
       clientSecret: paymentIntent.client_secret,
-      paymentIntentId: paymentIntent.id
+      paymentIntentId: paymentIntent.id,
+      restiDonationId: internalReference,
     })
   } catch (error) {
     console.error('Error creating payment intent:', error)
@@ -381,22 +413,50 @@ app.post('/make-server-2a4be611/create-checkout-session', async (c) => {
     const body = await c.req.json()
     const { amount, currency, donorName, donorEmail, interval, successUrl, cancelUrl } = body
 
-    if (!amount || amount < 1 || !interval) {
-      return c.json({ error: 'Invalid amount or interval' }, 400)
+    if (!amount || amount < 1) {
+      return c.json({ error: 'Invalid amount' }, 400)
+    }
+
+    const isRecurring = !!interval
+    const internalReference = crypto.randomUUID()
+    const donationId = `donation:${internalReference}`
+    const parts = (donorName || 'Anonymous').split(' ')
+    const firstName = parts[0]
+    const lastName = parts.slice(1).join(' ') || ''
+
+    // Create pending donation
+    const { error: insertError } = await supabase.from('donations').insert({
+      id: donationId,
+      amount: Number(amount),
+      currency: (currency || 'USD').toUpperCase(),
+      method: isRecurring ? 'card_recurring' : 'card',
+      provider: 'stripe',
+      first_name: firstName,
+      last_name: lastName,
+      email: donorEmail || '',
+      status: 'pending',
+      transaction_id: internalReference,
+      provider_transaction_id: null,
+      provider_response: { createdBy: 'create-checkout-session' }
+    })
+
+    if (insertError) {
+      console.error('Failed to create pending donation:', insertError)
+      return c.json({ error: 'Database error' }, 500)
     }
 
     const sessionConfig: Stripe.Checkout.SessionCreateParams = {
       payment_method_types: ['card'],
-      mode: 'subscription',
+      mode: isRecurring ? 'subscription' : 'payment',
       line_items: [
         {
           price_data: {
-            currency: currency || 'usd',
-            recurring: { interval: interval },
+            currency: (currency || 'usd'),
+            ...(isRecurring ? { recurring: { interval: interval } } : {}),
             unit_amount: Math.round(amount * 100),
             product_data: {
-              name: `Recurring Donation to Resti Kiryandongo CBO`,
-              description: `A ${interval}ly donation. Thank you for your support!`,
+              name: isRecurring ? `Recurring Donation to Resti Kiryandongo CBO` : `One-time Donation to Resti Kiryandongo CBO`,
+              description: isRecurring ? `A ${interval}ly donation. Thank you for your support!` : `One-time donation. Thank you for your support!`,
             },
           },
           quantity: 1,
@@ -406,13 +466,18 @@ app.post('/make-server-2a4be611/create-checkout-session', async (c) => {
       cancel_url: cancelUrl || `${c.req.header('origin') || 'http://localhost:5173'}/donate`,
       customer_email: donorEmail || undefined,
       metadata: {
+        restiDonationId: internalReference,
+        internalReference,
+        paymentPurpose: 'resti_donation',
+        campaignId: 'general',
         donorName: donorName || 'Anonymous',
-        isRecurring: 'true'
+        donorEmail: donorEmail || '',
+        isRecurring: isRecurring ? 'true' : 'false',
       }
     }
 
     const session = await stripe.checkout.sessions.create(sessionConfig)
-    return c.json({ url: session.url })
+    return c.json({ url: session.url, restiDonationId: internalReference })
   } catch (error) {
     console.error('Error creating checkout session:', error)
     return c.json({ error: 'Failed to create checkout session', details: String(error) }, 500)
@@ -437,27 +502,23 @@ app.post('/make-server-2a4be611/verify-session', async (c) => {
       return c.json({ status: 'pending' })
     }
 
-    const existing = await kv.get(['donations_by_tx', sessionId])
-    if (existing?.value) {
-      return c.json({ status: 'already_recorded' })
+    // Do NOT create a new donation here. The canonical record is the Postgres donations table.
+    // Lookup the donation by the internal reference stored in metadata (restiDonationId) or by transaction id.
+    const internalRef = session.metadata?.restiDonationId || session.id
+    const { data: donation, error: findErr } = await supabase.from('donations').select('*').or(`transaction_id.eq.${sessionId},transaction_id.eq.${internalRef}`)
+
+    if (findErr) {
+      console.error('DB lookup error in verify-session:', findErr)
+      return c.json({ error: 'Database lookup failed' }, 500)
     }
 
-    const donationId = `donation:${crypto.randomUUID()}`
-    const donationData = {
-      amount: session.amount_total ? session.amount_total / 100 : 0,
-      currency: session.currency?.toUpperCase() || 'USD',
-      paymentMethod: session.mode === 'subscription' ? 'card_recurring' : 'card',
-      donorName: session.metadata?.donorName || session.customer_details?.name || 'Anonymous',
-      donorEmail: session.customer_details?.email || session.customer_email || '',
-      donorPhone: '',
-      message: session.mode === 'subscription' ? 'Monthly subscription setup' : 'One-time donation',
-      paymentIntentId: session.payment_intent?.toString() || session.subscription?.toString() || '',
-      transactionId: sessionId,
-      timestamp: new Date().toISOString(),
-      status: 'completed'
+    if (!donation || donation.length === 0) {
+      return c.json({ status: 'not_found' })
     }
 
-    await kv.set(donationId, donationData)
+    // Return canonical status
+    const d = donation[0]
+    return c.json({ status: d.status || 'pending' })
     await kv.set(['donations_by_tx', sessionId], true)
     
     return c.json({ status: 'success', donation: donationData })
@@ -507,7 +568,12 @@ app.delete('/make-server-2a4be611/admin/donations/:id', requireAdmin, async (c) 
   try {
     const id = c.req.param('id')
     const key = id.includes(':') ? id : `donation:${id}`
-    await kv.del(key)
+    // Delete from Postgres canonical donations table
+    const { error: delErr } = await supabase.from('donations').delete().eq('id', key)
+    if (delErr) {
+      console.error('Failed to delete donation from Postgres:', delErr)
+      return c.json({ error: 'Failed to delete donation', details: delErr.message }, 500)
+    }
     return c.json({ success: true, message: 'Donation deleted successfully' })
   } catch (error) {
     return c.json({ error: 'Failed to delete donation', details: String(error) }, 500)
@@ -517,10 +583,14 @@ app.delete('/make-server-2a4be611/admin/donations/:id', requireAdmin, async (c) 
 // Clear all donations (admin)
 app.post('/make-server-2a4be611/admin/donations/clear-all', requireAdmin, async (c) => {
   try {
-    const donations = await kv.getByPrefix('donation:')
-    const keys = donations.map(d => d.key)
-    await kv.mdel(keys)
-    return c.json({ success: true, message: `Cleared ${keys.length} donations successfully` })
+    // Delete all donations from Postgres. This is irreversible - admin-only.
+    const { data: deleted, error: delErr } = await supabase.from('donations').delete().neq('id', '')
+    if (delErr) {
+      console.error('Failed to clear donations from Postgres:', delErr)
+      return c.json({ error: 'Failed to clear donations', details: delErr.message }, 500)
+    }
+    const count = Array.isArray(deleted) ? deleted.length : 0
+    return c.json({ success: true, message: `Cleared ${count} donations successfully` })
   } catch (error) {
     return c.json({ error: 'Failed to clear donations', details: String(error) }, 500)
   }
@@ -535,8 +605,9 @@ app.post('/make-server-2a4be611/admin/sync-stripe', requireAdmin, async (c) => {
     let synced = 0;
     
     // Fetch existing donations to prevent duplicates
-    const existing = await kv.getByPrefix('donation:')
-    const existingTxIds = new Set(existing.map(d => d.value?.transactionId || d.value?.paymentIntentId))
+    // Fetch existing donation transaction IDs from Postgres to avoid duplicates
+    const { data: existingDonations } = await supabase.from('donations').select('transaction_id')
+    const existingTxIds = new Set((existingDonations || []).map(d => d.transaction_id))
 
     for (const pi of paymentIntents.data) {
       if (pi.status !== 'succeeded') continue;
@@ -561,21 +632,23 @@ app.post('/make-server-2a4be611/admin/sync-stripe', requireAdmin, async (c) => {
       }
 
       const donationId = `donation:${Date.now() + synced}`
-      const donationData = {
+      const donationRecord = {
+        id: donationId,
         amount: pi.amount ? pi.amount / 100 : 0,
         currency: pi.currency?.toUpperCase() || 'USD',
-        paymentMethod: 'card',
-        donorName: donorName,
-        donorEmail: donorEmail,
-        donorPhone: '',
+        method: 'card',
+        provider: 'stripe',
+        first_name: donorName.split(' ')[0] || 'Anonymous',
+        last_name: donorName.split(' ').slice(1).join(' ') || '',
+        email: donorEmail || '',
         message: 'Historical Stripe payment sync',
-        paymentIntentId: pi.id,
-        transactionId: pi.id,
-        timestamp: new Date(pi.created * 1000).toISOString(),
+        payment_intent_id: pi.id,
+        transaction_id: pi.id,
+        created_at: new Date(pi.created * 1000).toISOString(),
         status: 'completed'
       }
 
-      await kv.set(donationId, donationData)
+      await supabase.from('donations').insert(donationRecord)
       synced++
     }
 
@@ -949,37 +1022,67 @@ app.get('/make-server-2a4be611/mobile-payment/status/:referenceId', async (c) =>
 
     // On confirmed success, mark donation complete and send thank-you email (once)
     if (paymentStatus === 'SUCCESSFUL') {
+      // When completing from polling, include verified amount/currency and provider transaction id
+      // Fetch verified provider response where possible
+      let verifiedAmount: number | undefined = undefined
+      let verifiedCurrency: string | undefined = undefined
+      let providerTxId = referenceId
+
+      if (provider === 'mtn' && typeof referenceId === 'string') {
+        // Request verification data
+        const subscriptionKey = Deno.env.get('MTN_MOMO_SUBSCRIPTION_KEY')
+        const environment = Deno.env.get('MTN_MOMO_ENVIRONMENT') ?? 'sandbox'
+        const baseUrl = environment === 'production' ? 'https://proxy.momoapi.mtn.com' : 'https://sandbox.momodeveloper.mtn.com'
+        try {
+          const accessToken = await getMtnAccessToken()
+          const v = await fetch(`${baseUrl}/collection/v1_0/requesttopay/${referenceId}`, {
+            headers: { 'Authorization': `Bearer ${accessToken}`, 'Ocp-Apim-Subscription-Key': subscriptionKey!, 'X-Target-Environment': environment }
+          })
+          if (v.ok) {
+            const vd = await v.json()
+            verifiedAmount = Number(vd.amount)
+            verifiedCurrency = vd.currency
+            providerTxId = vd.financialTransactionId || referenceId
+          }
+        } catch (e) {
+          console.warn('MTN polling verification failed', e)
+        }
+      }
+
+      if (provider === 'airtel') {
+        try {
+          const environment = Deno.env.get('AIRTEL_ENVIRONMENT') ?? 'sandbox'
+          const baseUrl = environment === 'production' ? 'https://openapi.airtel.africa' : 'https://openapiuat.airtel.africa'
+          const accessToken = await getAirtelAccessToken()
+          const v = await fetch(`${baseUrl}/standard/v1/payments/${referenceId}`, { headers: { 'Authorization': `Bearer ${accessToken}` } })
+          if (v.ok) {
+            const vd = await v.json()
+            verifiedAmount = Number(vd.data?.transaction?.amount)
+            verifiedCurrency = vd.data?.transaction?.currency
+            providerTxId = vd.data?.transaction?.financialTransactionId || referenceId
+          }
+        } catch (e) {
+          console.warn('Airtel polling verification failed', e)
+        }
+      }
+
       const result = await completeDonationFromWebhook(referenceId, {
         provider,
-        providerTransactionId: referenceId,
+        providerTransactionId: providerTxId,
         providerStatus: 'SUCCESSFUL',
+        expectedAmount: verifiedAmount,
+        expectedCurrency: verifiedCurrency,
         rawPayload: { source: 'polling' },
       })
       if (result.success && result.donation) {
         const d = result.donation as any
-        if (d.donorEmail) {
-          const adminEmail = Deno.env.get('ADMIN_NOTIFY_EMAIL') || 'admin@restikirya.org'
-          await sendEmail(
-            d.donorEmail,
-            'Thank You for Your Donation – Resti Kiryandongo CBO',
-            `
-              <h2>Payment Confirmed! 🙏</h2>
-              <p>Dear ${escapeHtml(d.donorName)},</p>
-              <p>Your ${provider === 'mtn' ? 'MTN Mobile Money' : 'Airtel Money'} donation of
-              <strong>${escapeHtml(d.currency)} ${d.amount}</strong> has been confirmed.</p>
-              <p><strong>Reference:</strong> ${escapeHtml(referenceId)}</p>
-              <p>Thank you for supporting Resti Kiryandongo CBO.</p>
-            `,
-          )
-          await sendEmail(
-            adminEmail,
-            `Mobile Money Donation Confirmed: ${d.currency} ${d.amount}`,
-            `<h2>Mobile Money Donation Confirmed</h2>
-             <p><strong>Donor:</strong> ${escapeHtml(d.donorName)}</p>
-             <p><strong>Amount:</strong> ${escapeHtml(d.currency)} ${d.amount}</p>
-             <p><strong>Provider:</strong> ${escapeHtml(provider.toUpperCase())}</p>
-             <p><strong>Reference:</strong> ${escapeHtml(referenceId)}</p>`,
-          )
+        // Use centralized delivery helper from webhooks
+        // import would be circular here; call via dynamic import to avoid cycle
+        try {
+          const web = await import('./webhooks.ts')
+          await web.deliverDonationReceipt(d, sendEmail)
+        } catch (e) {
+          console.error('Failed to deliver receipt from polling:', e)
         }
       }
     }
@@ -992,11 +1095,14 @@ app.get('/make-server-2a4be611/mobile-payment/status/:referenceId', async (c) =>
 })
 app.get('/make-server-2a4be611/donation-stats', async (c) => {
   try {
-    const donations = await kv.getByPrefix('donation:')
-    
-    const stats = donations.reduce((acc, donation) => {
-      // Safely access the amount property
-      const amount = parseFloat(donation?.value?.amount || donation?.amount || 0)
+    // Aggregate donation stats from Postgres
+    const { data: donations, error } = await supabase.from('donations').select('amount')
+    if (error) {
+      console.error('Failed to fetch donations for stats:', error)
+      return c.json({ error: 'Failed to fetch donation stats' }, 500)
+    }
+    const stats = (donations || []).reduce((acc, donation) => {
+      const amount = Number(donation.amount || 0)
       acc.totalAmount += amount
       acc.totalDonations += 1
       return acc
@@ -1400,19 +1506,105 @@ app.get('/make-server-2a4be611/admin/donations', requireAdmin, async (c) => {
     const limit = parseInt(c.req.query('limit') || '100');
     const offset = parseInt(c.req.query('offset') || '0');
     
+    // Prefer Postgres as canonical source
     if (c.req.query('limit') !== undefined) {
-      const { data, count } = await kv.getPaginatedByPrefix('donation:', limit, offset);
-      data.sort((a: any, b: any) => new Date(b.value?.timestamp || b.value?.created_at || 0).getTime() - new Date(a.value?.timestamp || a.value?.created_at || 0).getTime());
-      return c.json({ donations: data, count, limit, offset });
+      const start = offset
+      const end = offset + limit - 1
+      const { data, error, count } = await supabase
+        .from('donations')
+        .select('*', { count: 'exact' })
+        .order('created_at', { ascending: false })
+        .range(start, end)
+      if (error) {
+        console.error('Failed to fetch donations from Postgres:', error)
+        return c.json({ error: 'Failed to fetch donations', details: error.message }, 500)
+      }
+      return c.json({ donations: data || [], count: count || 0, limit, offset })
     }
-    
-    const donations = await kv.getByPrefix('donation:')
-    // Sort by timestamp descending
-    donations.sort((a, b) => new Date(b.value.timestamp).getTime() - new Date(a.value.timestamp).getTime())
-    return c.json({ donations })
+
+    const { data, error } = await supabase.from('donations').select('*').order('created_at', { ascending: false })
+    if (error) {
+      console.error('Failed to fetch donations from Postgres:', error)
+      return c.json({ error: 'Failed to fetch donations', details: error.message }, 500)
+    }
+    return c.json({ donations: data || [] })
   } catch (error) {
     console.error('Error fetching donations:', error)
     return c.json({ error: 'Failed to fetch donations', details: String(error) }, 500)
+  }
+})
+
+// Migrate donations from KV store into Postgres (admin only)
+app.post('/make-server-2a4be611/admin/migrate-donations-kv-to-postgres', requireAdmin, async (c) => {
+  try {
+    const body = await c.req.json().catch(() => ({}))
+    const dryRun = body.dryRun === true
+    const deleteKv = body.deleteKv === true
+
+    const kvDonations = await kv.getByPrefix('donation:')
+    const summary = { total: kvDonations.length, skipped: 0, migrated: 0, errors: 0 }
+
+    for (const entry of kvDonations) {
+      try {
+        const key = entry.key
+        const v = entry.value || entry
+        const amount = Number(v.amount || 0)
+        const currency = (v.currency || 'USD').toUpperCase()
+        const donorName = v.donorName || v.name || 'Anonymous'
+        const parts = (donorName || 'Anonymous').split(' ')
+        const first_name = parts[0]
+        const last_name = parts.slice(1).join(' ') || ''
+        const email = v.donorEmail || v.email || ''
+        const method = v.paymentMethod || v.method || 'unknown'
+        const provider = method.includes('mtn') ? 'mtn' : method.includes('airtel') ? 'airtel' : (v.provider || 'stripe')
+        const status = (v.status === 'manually_verified') ? 'completed' : (v.status || 'pending')
+        const transaction_id = v.transactionId || v.paymentIntentId || v.transactionId || key.split(':')[1]
+        const provider_transaction_id = v.paymentIntentId || v.providerTransactionId || null
+
+        // Check if already exists
+        const { data: existing } = await supabase.from('donations').select('id').eq('transaction_id', transaction_id)
+        if (existing && existing.length > 0) {
+          summary.skipped++
+          continue
+        }
+
+        if (!dryRun) {
+          const insert = {
+            id: key,
+            amount,
+            currency,
+            method,
+            provider,
+            first_name,
+            last_name,
+            email,
+            status,
+            transaction_id,
+            provider_transaction_id,
+            provider_response: v,
+            created_at: v.timestamp || new Date().toISOString()
+          }
+          const { error: insertErr } = await supabase.from('donations').insert(insert)
+          if (insertErr) {
+            console.error('Failed to insert donation', key, insertErr)
+            summary.errors++
+            continue
+          }
+          summary.migrated++
+          if (deleteKv) {
+            await kv.del(key)
+          }
+        }
+      } catch (e) {
+        console.error('Migration error for entry', entry, e)
+        summary.errors++
+      }
+    }
+
+    return c.json({ success: true, dryRun, summary })
+  } catch (error) {
+    console.error('Migration endpoint error:', error)
+    return c.json({ error: 'Migration failed', details: String(error) }, 500)
   }
 })
 
@@ -1817,11 +2009,14 @@ app.get('/make-server-2a4be611/admin/stats', requireAdmin, async (c) => {
       kv.getByPrefix('news:'),
       kv.getByPrefix('contact:'),
       kv.getByPrefix('volunteer:'),
-      kv.getByPrefix('donation:'),
+      // Fetch donations from Postgres
+      supabase.from('donations').select('*'),
       kv.getByPrefix('newsletter:')
     ])
 
-    const totalDonations = donations.reduce((sum, d) => sum + (d.value.amount || 0), 0)
+    // donations from supabase Promise resolves to { data, error }
+    const donationRows = Array.isArray(donations) ? donations : (donations.data || [])
+    const totalDonations = donationRows.reduce((sum: number, d: any) => sum + (Number(d.amount || 0)), 0)
     const newContacts = contacts.filter(c => c.value.status === 'new').length
     const pendingVolunteers = volunteers.filter(v => v.value.status === 'pending').length
 
@@ -1832,7 +2027,7 @@ app.get('/make-server-2a4be611/admin/stats', requireAdmin, async (c) => {
       newContacts,
       totalVolunteers: volunteers.length,
       pendingVolunteers,
-      totalDonations: donations.length,
+      totalDonations: donationRows.length,
       totalDonationAmount: totalDonations,
       totalSubscribers: subscribers.length
     }
@@ -1847,12 +2042,13 @@ app.get('/make-server-2a4be611/admin/stats', requireAdmin, async (c) => {
 // Get advanced analytics (admin)
 app.get('/make-server-2a4be611/admin/analytics', requireAdmin, async (c) => {
   try {
-    const [donations, contacts, volunteers, subscribers] = await Promise.all([
-      kv.getByPrefix('donation:'),
+    const [donationsRes, contacts, volunteers, subscribers] = await Promise.all([
+      supabase.from('donations').select('*'),
       kv.getByPrefix('contact:'),
       kv.getByPrefix('volunteer:'),
       kv.getByPrefix('newsletter:')
     ])
+    const donations = donationsRes.data || []
 
     // Donation trends by month (last 12 months)
     const now = new Date()
@@ -1865,25 +2061,25 @@ app.get('/make-server-2a4be611/admin/analytics', requireAdmin, async (c) => {
       }
     }).reverse()
 
-    donations.forEach(donation => {
-      const donationDate = new Date(donation.value.timestamp || donation.value.created_at || new Date().toISOString())
+    donations.forEach((donation: any) => {
+      const donationDate = new Date(donation.created_at || donation.timestamp || new Date().toISOString())
       const monthKey = donationDate.toLocaleString('default', { month: 'short', year: 'numeric' })
-      const monthData = monthlyDonations.find(m => m.month === monthKey)
+      const monthData = monthlyDonations.find((m: any) => m.month === monthKey)
       if (monthData) {
-        monthData.amount += donation.value.amount || 0
+        monthData.amount += Number(donation.amount || 0)
         monthData.count += 1
       }
     })
 
     // Donations by payment method
     const paymentMethods: { [key: string]: { count: number; amount: number } } = {}
-    donations.forEach(donation => {
-      const method = donation.value.paymentMethod || 'unknown'
+    donations.forEach((donation: any) => {
+      const method = donation.method || donation.paymentMethod || 'unknown'
       if (!paymentMethods[method]) {
         paymentMethods[method] = { count: 0, amount: 0 }
       }
       paymentMethods[method].count += 1
-      paymentMethods[method].amount += donation.value.amount || 0
+      paymentMethods[method].amount += Number(donation.amount || 0)
     })
 
     const paymentMethodData = Object.entries(paymentMethods).map(([name, data]) => ({
@@ -1919,9 +2115,9 @@ app.get('/make-server-2a4be611/admin/analytics', requireAdmin, async (c) => {
       }
     }).reverse()
 
-    donations.forEach(d => {
-      const date = (d.value.timestamp || d.value.created_at || new Date().toISOString()).split('T')[0]
-      const day = last30Days.find(day => day.date === date)
+    donations.forEach((d: any) => {
+      const date = (d.created_at || d.timestamp || new Date().toISOString()).split('T')[0]
+      const day = last30Days.find((day: any) => day.date === date)
       if (day) day.donations += 1
     })
 

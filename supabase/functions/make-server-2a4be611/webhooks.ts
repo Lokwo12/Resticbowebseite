@@ -70,6 +70,39 @@ export async function completeDonationFromWebhook(
   return { alreadyProcessed: false, notFound: false, success: true, donation }
 }
 
+// Deliver donation receipt and update DB atomically for status and message id
+export async function deliverDonationReceipt(donation: any, sendEmail: (to: string, subject: string, html: string) => Promise<any>) {
+  if (!donation || !donation.id) return { success: false, error: 'invalid_donation' }
+
+  const email = donation.email || donation.donorEmail || null
+  if (!email) {
+    // mark as no-email
+    await supabase.from('donations').update({ receipt_status: 'no_email' }).eq('id', donation.id)
+    return { success: true, info: 'no_recipient' }
+  }
+
+  try {
+    const emailRes: any = await sendEmail(
+      email,
+      'Thank You for Your Donation – Resti Kiryandongo CBO',
+      buildReceiptEmail(`${donation.first_name || donation.donorName || ''} ${donation.last_name || ''}`.trim() || 'Donor', donation.currency, donation.amount, donation.transaction_id || donation.id),
+    )
+
+    const success = !!emailRes?.success
+    await supabase.from('donations').update({
+      receipt_status: success ? 'sent' : 'failed',
+      receipt_sent_at: success ? new Date().toISOString() : null,
+      receipt_message_id: emailRes?.data?.id || null,
+    }).eq('id', donation.id)
+
+    return { success }
+  } catch (err) {
+    console.error('deliverDonationReceipt error', err)
+    await supabase.from('donations').update({ receipt_status: 'failed' }).eq('id', donation.id)
+    return { success: false, error: String(err) }
+  }
+}
+
 export async function handleStripeWebhook(
   c: Context,
   stripe: Stripe | null,
@@ -188,16 +221,7 @@ export async function handleStripeWebhook(
 
   if (result.success && result.donation) {
     const d = result.donation as any
-    if (d.email) {
-      const emailRes: any = await sendEmail(
-        d.email,
-        'Thank You for Your Donation – Resti Kiryandongo CBO',
-        buildReceiptEmail(`${d.first_name || ''} ${d.last_name || ''}`.trim() || 'Donor', d.currency, d.amount, referenceId),
-      )
-      await supabase.from('donations').update({ receipt_status: emailRes?.success ? 'sent' : 'failed', receipt_sent_at: new Date().toISOString(), receipt_message_id: emailRes?.data?.id || null }).eq('id', d.id)
-    } else {
-      await supabase.from('donations').update({ receipt_status: 'sent' }).eq('id', d.id)
-    }
+    await deliverDonationReceipt(d, sendEmail)
   }
 
   return c.json({ received: true, action: result.alreadyProcessed ? 'already_processed' : 'completed', error: result.error })
@@ -275,16 +299,7 @@ export async function handleMtnWebhook(
 
   if (result.success && result.donation) {
     const d = result.donation as any
-    if (d.email) {
-      const emailRes: any = await sendEmail(
-        d.email,
-        'Thank You for Your MTN Mobile Money Donation – Resti Kiryandongo CBO',
-        buildReceiptEmail(`${d.first_name || ''} ${d.last_name || ''}`.trim() || 'Donor', d.currency, d.amount, referenceId),
-      )
-      await supabase.from('donations').update({ receipt_status: emailRes?.success ? 'sent' : 'failed', receipt_sent_at: new Date().toISOString(), receipt_message_id: emailRes?.data?.id || null }).eq('id', d.id)
-    } else {
-      await supabase.from('donations').update({ receipt_status: 'sent' }).eq('id', d.id)
-    }
+    await deliverDonationReceipt(d, sendEmail)
   }
 
   return c.json({
@@ -367,16 +382,7 @@ export async function handleAirtelWebhook(
 
   if (result.success && result.donation) {
     const d = result.donation as any
-    if (d.email) {
-      const emailRes: any = await sendEmail(
-        d.email,
-        'Thank You for Your Airtel Money Donation – Resti Kiryandongo CBO',
-        buildReceiptEmail(`${d.first_name || ''} ${d.last_name || ''}`.trim() || 'Donor', d.currency, d.amount, referenceId),
-      )
-      await supabase.from('donations').update({ receipt_status: emailRes?.success ? 'sent' : 'failed', receipt_sent_at: new Date().toISOString(), receipt_message_id: emailRes?.data?.id || null }).eq('id', d.id)
-    } else {
-      await supabase.from('donations').update({ receipt_status: 'sent' }).eq('id', d.id)
-    }
+    await deliverDonationReceipt(d, sendEmail)
   }
 
   return c.json({

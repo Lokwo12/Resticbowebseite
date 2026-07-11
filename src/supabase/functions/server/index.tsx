@@ -487,48 +487,32 @@ app.post('/make-server-2a4be611/donations', async (c) => {
       return c.json({ error: 'Amount and payment method are required' }, 400)
     }
 
-    const donationId = `donation:${Date.now()}`
-    const donationData = {
-      amount,
-      currency: currency || 'USD',
-      paymentMethod,
-      donorName: donorName || 'Anonymous',
-      donorEmail: donorEmail || '',
-      donorPhone: donorPhone || '',
-      message: message || '',
-      paymentIntentId: paymentIntentId || '',
-      transactionId: transactionId || '',
-      timestamp: new Date().toISOString(),
-      status: 'completed'
-    }
-    
-    await kv.set(donationId, donationData)
-
-    // Save to PostgreSQL table 'donations'
+    // Persist donation to Postgres (do not write to KV for financial records)
     try {
       const supabase = createClient(
         Deno.env.get('SUPABASE_URL') || '',
         Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
       )
-      
+
       const parts = (donorName || 'Anonymous').split(' ')
       const firstName = parts[0]
       const lastName = parts.slice(1).join(' ') || ''
-      
+
       await supabase.from('donations').insert({
-        id: crypto.randomUUID(),
+        id: `donation:${crypto.randomUUID()}`,
         first_name: firstName,
         last_name: lastName,
         email: donorEmail || '',
         amount: Number(amount),
-        currency: currency || 'USD',
+        currency: (currency || 'USD').toUpperCase(),
         frequency: 'once',
         method: paymentMethod,
         status: 'completed',
-        transaction_id: transactionId || paymentIntentId || donationId
+        transaction_id: transactionId || paymentIntentId || null,
       })
     } catch (dbErr) {
       console.error('Failed to log to Postgres:', dbErr)
+      return c.json({ error: 'Failed to record donation' }, 500)
     }
 
     // Send notification email to admin
@@ -587,11 +571,9 @@ app.post('/make-server-2a4be611/donations', async (c) => {
 // Get donation statistics
 app.get('/make-server-2a4be611/donation-stats', async (c) => {
   try {
-    const donations = await kv.getByPrefix('donation:')
-    
-    const stats = donations.reduce((acc, donation) => {
-      // Safely access the amount property
-      const amount = parseFloat(donation?.value?.amount || donation?.amount || 0)
+    const { data: donations } = await supabase.from('donations').select('amount')
+    const stats = (donations || []).reduce((acc: any, donation: any) => {
+      const amount = Number(donation.amount || 0)
       acc.totalAmount += amount
       acc.totalDonations += 1
       return acc
@@ -912,10 +894,12 @@ app.patch('/make-server-2a4be611/admin/volunteers/:id', async (c) => {
 // Get all donations (admin)
 app.get('/make-server-2a4be611/admin/donations', async (c) => {
   try {
-    const donations = await kv.getByPrefix('donation:')
-    // Sort by timestamp descending
-    donations.sort((a, b) => new Date(b.value.timestamp).getTime() - new Date(a.value.timestamp).getTime())
-    return c.json({ donations })
+    const { data, error } = await supabase.from('donations').select('*').order('created_at', { ascending: false })
+    if (error) {
+      console.error('Failed to fetch donations from Postgres:', error)
+      return c.json({ error: 'Failed to fetch donations', details: error.message }, 500)
+    }
+    return c.json({ donations: data || [] })
   } catch (error) {
     console.error('Error fetching donations:', error)
     return c.json({ error: 'Failed to fetch donations', details: String(error) }, 500)
@@ -1320,16 +1304,17 @@ app.put('/make-server-2a4be611/news/:id', async (c) => {
 // Get dashboard statistics (admin)
 app.get('/make-server-2a4be611/admin/stats', async (c) => {
   try {
-    const [programs, news, contacts, volunteers, donations, subscribers] = await Promise.all([
+    const [programs, news, contacts, volunteers, donationsRes, subscribers] = await Promise.all([
       kv.getByPrefix('program:'),
       kv.getByPrefix('news:'),
       kv.getByPrefix('contact:'),
       kv.getByPrefix('volunteer:'),
-      kv.getByPrefix('donation:'),
+      supabase.from('donations').select('*'),
       kv.getByPrefix('newsletter:')
     ])
 
-    const totalDonations = donations.reduce((sum, d) => sum + (d.value.amount || 0), 0)
+    const donations = donationsRes.data || []
+    const totalDonations = donations.reduce((sum: number, d: any) => sum + (Number(d.amount || 0)), 0)
     const newContacts = contacts.filter(c => c.value.status === 'new').length
     const pendingVolunteers = volunteers.filter(v => v.value.status === 'pending').length
 
@@ -1355,12 +1340,13 @@ app.get('/make-server-2a4be611/admin/stats', async (c) => {
 // Get advanced analytics (admin)
 app.get('/make-server-2a4be611/admin/analytics', async (c) => {
   try {
-    const [donations, contacts, volunteers, subscribers] = await Promise.all([
-      kv.getByPrefix('donation:'),
+    const [donationsRes, contacts, volunteers, subscribers] = await Promise.all([
+      supabase.from('donations').select('*'),
       kv.getByPrefix('contact:'),
       kv.getByPrefix('volunteer:'),
       kv.getByPrefix('newsletter:')
     ])
+    const donations = donationsRes.data || []
 
     // Donation trends by month (last 12 months)
     const now = new Date()

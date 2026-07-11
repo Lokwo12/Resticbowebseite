@@ -1,6 +1,8 @@
 export async function getMtnAccessToken(): Promise<string> {
   const subscriptionKey = Deno.env.get('MTN_MOMO_SUBSCRIPTION_KEY')!
-  const apiUserId = Deno.env.get('MTN_MOMO_API_USER_ID')!
+  // Use documented env var name MTN_MOMO_API_USER for consistency
+  const apiUserId = Deno.env.get('MTN_MOMO_API_USER')!
+  if (!apiUserId) throw new Error('MTN_MOMO_API_USER is not configured')
   const apiKey = Deno.env.get('MTN_MOMO_API_KEY')!
   const environment = Deno.env.get('MTN_MOMO_ENVIRONMENT') ?? 'sandbox'
   const baseUrl = environment === 'production'
