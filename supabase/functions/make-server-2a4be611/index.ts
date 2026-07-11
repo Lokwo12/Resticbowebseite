@@ -3703,10 +3703,8 @@ app.get('/make-server-2a4be611/map-locations', async (c) => {
   }
 })
 
-app.post('/make-server-2a4be611/admin/map-locations', async (c) => {
+app.post('/make-server-2a4be611/admin/map-locations', requireAdmin, async (c) => {
   try {
-    const authHeader = c.req.header('Authorization')
-    if (!authHeader) return c.json({ error: 'Unauthorized' }, 401)
     
     const body = await c.req.json()
     const { name, category, coordinates, description, impact } = body
@@ -3720,10 +3718,8 @@ app.post('/make-server-2a4be611/admin/map-locations', async (c) => {
   }
 })
 
-app.put('/make-server-2a4be611/admin/map-locations/:id', async (c) => {
+app.put('/make-server-2a4be611/admin/map-locations/:id', requireAdmin, async (c) => {
   try {
-    const authHeader = c.req.header('Authorization')
-    if (!authHeader) return c.json({ error: 'Unauthorized' }, 401)
     
     const id = c.req.param('id')
     const body = await c.req.json()
@@ -3739,10 +3735,8 @@ app.put('/make-server-2a4be611/admin/map-locations/:id', async (c) => {
   }
 })
 
-app.delete('/make-server-2a4be611/admin/map-locations/:id', async (c) => {
+app.delete('/make-server-2a4be611/admin/map-locations/:id', requireAdmin, async (c) => {
   try {
-    const authHeader = c.req.header('Authorization')
-    if (!authHeader) return c.json({ error: 'Unauthorized' }, 401)
     
     const id = c.req.param('id')
     await kv.del(`map-location:${id}`)
