@@ -153,7 +153,9 @@ export function ContactPage() {
 
       <div className="py-20 md:py-32 bg-white"></div>
 
-      <Newsletter />
+      <div className="pt-24 md:pt-32">
+        <Newsletter />
+      </div>
       <Footer />
     </div>
   );

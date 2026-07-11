@@ -5,10 +5,11 @@ node_modules/
 build/
 dist/
 
-# Environment variables (secrets)
+# Environment variables (secrets — NEVER commit real secrets)
 .env
 .env.local
 .env.*.local
+.env.production
 
 # Logs
 *.log
@@ -25,7 +26,13 @@ Thumbs.db
 # Supabase local dev
 supabase/.temp/
 supabase/functions/.cache/
+supabase-cli/
 
-# Misc scratch/temp files
+# Generated / temp files created during development
 diff.txt
 scratch/
+db-settings.json
+fetch-settings.js
+test-browser.js
+*.local.ts
+*.local.js

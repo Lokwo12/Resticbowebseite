@@ -1,14 +1,51 @@
 import { Hono } from 'npm:hono'
 import { cors } from 'npm:hono/cors'
 import { logger } from 'npm:hono/logger'
+import type { Context, Next } from 'npm:hono'
 import { createClient } from 'npm:@supabase/supabase-js@2'
 import Stripe from 'npm:stripe@17.5.0'
 import * as kv from './kv_store.tsx'
+import { escapeHtml, escapeMessage, validateName, validateEmail, validatePhone, validateMessage, validateAmount, validateMobileMoneyPhone, normaliseUgandanPhone } from './validation.ts'
+import { withRateLimit } from './rateLimit.ts'
+import { handleStripeWebhook, handleMtnWebhook, handleAirtelWebhook, completeDonationFromWebhook } from './webhooks.ts'
 
 const app = new Hono()
 
-app.use('*', cors())
+// ── CORS: restrict to approved origins only ──────────────────────────────────
+const ALLOWED_ORIGINS = (
+  Deno.env.get('ALLOWED_ORIGINS') ||
+  'https://resti.org,https://www.resti.org,http://localhost:5173'
+).split(',')
+
+app.use('*', cors({
+  origin: (origin) => ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0],
+  allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowHeaders: ['Content-Type', 'Authorization'],
+  credentials: true,
+}))
 app.use('*', logger())
+
+// ── requireAdmin middleware ───────────────────────────────────────────────────
+// Verifies the Bearer JWT, reads role from user_metadata, and rejects
+// non-admin callers with 401/403 before the route handler runs.
+async function requireAdmin(c: Context, next: Next) {
+  const authHeader = c.req.header('Authorization')
+  const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null
+  if (!token) {
+    return c.json({ error: 'Unauthorized – authentication required' }, 401)
+  }
+  const { data: { user }, error } = await supabase.auth.getUser(token)
+  if (error || !user) {
+    return c.json({ error: 'Unauthorized – invalid or expired token' }, 401)
+  }
+  const role: string = user.user_metadata?.role || 'viewer'
+  if (role !== 'admin' && role !== 'super-admin') {
+    return c.json({ error: 'Forbidden – administrator role required' }, 403)
+  }
+  // Make the authenticated user available to route handlers
+  c.set('adminUser', user)
+  await next()
+}
 
 const supabase = createClient(
   Deno.env.get('SUPABASE_URL')!,
@@ -39,7 +76,7 @@ async function sendEmail(to: string, subject: string, html: string) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: 'onboarding@resend.dev', // Using Resend's test domain. Replace with 'Resti Kiryandongo CBO <noreply@yourdomain.com>' after verifying your domain
+        from: Deno.env.get('ADMIN_EMAIL') || 'Resti Kiryandongo CBO <onboarding@resend.dev>',
         to: [to],
         subject,
         html,
@@ -86,36 +123,49 @@ async function initializeStorage() {
 initializeStorage()
 
 // Contact form submission with email notification
-app.post('/make-server-2a4be611/contact', async (c) => {
+app.post('/make-server-2a4be611/contact', withRateLimit('contact', 5, 10 * 60_000), async (c) => {
   try {
     const body = await c.req.json()
     const { name, email, phone, message } = body
 
-    if (!name || !email || !message) {
-      return c.json({ error: 'Name, email, and message are required' }, 400)
-    }
+    const nameV = validateName(name)
+    const emailV = validateEmail(email)
+    const phoneV = validatePhone(phone)
+    const msgV = validateMessage(message)
 
-    const contactId = `contact:${Date.now()}`
+    if (!nameV.ok) return c.json({ error: nameV.error }, 400)
+    if (!emailV.ok) return c.json({ error: emailV.error }, 400)
+    if (!phoneV.ok) return c.json({ error: phoneV.error }, 400)
+    if (!msgV.ok) return c.json({ error: msgV.error }, 400)
+
+    const safeName = escapeHtml(name.trim())
+    const safeEmail = escapeHtml(email.trim())
+    const safePhone = escapeHtml(phone || '')
+    const safeMessage = escapeMessage(message)
+
+    const contactId = `contact:${crypto.randomUUID()}`
     await kv.set(contactId, {
-      name,
-      email,
+      name: name.trim(),
+      email: email.trim(),
       phone: phone || '',
       message,
       timestamp: new Date().toISOString(),
       status: 'new'
     })
 
+    const adminEmail = Deno.env.get('ADMIN_NOTIFY_EMAIL') || 'admin@restikirya.org'
+
     // Send notification email to admin
     await sendEmail(
-      'admin@restikirya.org', // TODO: Replace with your actual admin email
+      adminEmail,
       'New Contact Form Submission',
       `
         <h2>New Contact Message</h2>
-        <p><strong>From:</strong> ${name}</p>
-        <p><strong>Email:</strong> ${email}</p>
-        <p><strong>Phone:</strong> ${phone || 'Not provided'}</p>
+        <p><strong>From:</strong> ${safeName}</p>
+        <p><strong>Email:</strong> ${safeEmail}</p>
+        <p><strong>Phone:</strong> ${safePhone || 'Not provided'}</p>
         <p><strong>Message:</strong></p>
-        <p>${message}</p>
+        <p>${safeMessage}</p>
         <hr>
         <p><em>Submitted at ${new Date().toLocaleString()}</em></p>
       `
@@ -123,14 +173,14 @@ app.post('/make-server-2a4be611/contact', async (c) => {
 
     // Send confirmation email to submitter
     await sendEmail(
-      email,
+      email.trim(),
       'Thank you for contacting Resti Kiryandongo CBO',
       `
         <h2>Thank You for Reaching Out!</h2>
-        <p>Dear ${name},</p>
+        <p>Dear ${safeName},</p>
         <p>We have received your message and will get back to you as soon as possible.</p>
         <p><strong>Your message:</strong></p>
-        <p>${message}</p>
+        <p>${safeMessage}</p>
         <br>
         <p>Best regards,</p>
         <p>Resti Kiryandongo CBO Team</p>
@@ -168,7 +218,7 @@ app.get('/make-server-2a4be611/programs', async (c) => {
 })
 
 // Add a new program (admin function)
-app.post('/make-server-2a4be611/programs', async (c) => {
+app.post('/make-server-2a4be611/programs', requireAdmin, async (c) => {
   try {
     const body = await c.req.json()
     const { title, description, image, category } = body
@@ -219,7 +269,7 @@ app.get('/make-server-2a4be611/news', async (c) => {
 })
 
 // Add news/update (admin function)
-app.post('/make-server-2a4be611/news', async (c) => {
+app.post('/make-server-2a4be611/news', requireAdmin, async (c) => {
   try {
     const body = await c.req.json()
     const { title, content, image } = body
@@ -245,19 +295,23 @@ app.post('/make-server-2a4be611/news', async (c) => {
 })
 
 // Volunteer application submission
-app.post('/make-server-2a4be611/volunteer', async (c) => {
+app.post('/make-server-2a4be611/volunteer', withRateLimit('volunteer', 3, 10 * 60_000), async (c) => {
   try {
     const body = await c.req.json()
     const { name, email, phone, skills, message } = body
 
-    if (!name || !email || !phone) {
-      return c.json({ error: 'Name, email, and phone are required' }, 400)
-    }
+    const nameV = validateName(name)
+    const emailV = validateEmail(email)
+    const phoneV = validatePhone(phone)
 
-    const volunteerId = `volunteer:${Date.now()}`
+    if (!nameV.ok) return c.json({ error: nameV.error }, 400)
+    if (!emailV.ok) return c.json({ error: emailV.error }, 400)
+    if (phone && !phoneV.ok) return c.json({ error: phoneV.error }, 400)
+
+    const volunteerId = `volunteer:${crypto.randomUUID()}`
     await kv.set(volunteerId, {
-      name,
-      email,
+      name: name.trim(),
+      email: email.trim(),
       phone,
       skills: skills || '',
       message: message || '',
@@ -440,7 +494,7 @@ app.post('/make-server-2a4be611/create-portal-session', async (c) => {
 })
 
 // Delete a specific donation (admin)
-app.delete('/make-server-2a4be611/admin/donations/:id', async (c) => {
+app.delete('/make-server-2a4be611/admin/donations/:id', requireAdmin, async (c) => {
   try {
     const id = c.req.param('id')
     const key = id.includes(':') ? id : `donation:${id}`
@@ -452,7 +506,7 @@ app.delete('/make-server-2a4be611/admin/donations/:id', async (c) => {
 })
 
 // Clear all donations (admin)
-app.post('/make-server-2a4be611/admin/donations/clear-all', async (c) => {
+app.post('/make-server-2a4be611/admin/donations/clear-all', requireAdmin, async (c) => {
   try {
     const donations = await kv.getByPrefix('donation:')
     const keys = donations.map(d => d.key)
@@ -464,7 +518,7 @@ app.post('/make-server-2a4be611/admin/donations/clear-all', async (c) => {
 })
 
 // Sync Stripe historical payments to KV store
-app.post('/make-server-2a4be611/admin/sync-stripe', async (c) => {
+app.post('/make-server-2a4be611/admin/sync-stripe', requireAdmin, async (c) => {
   try {
     if (!stripe) return c.json({ error: 'Stripe is not configured' }, 400)
 
@@ -523,8 +577,10 @@ app.post('/make-server-2a4be611/admin/sync-stripe', async (c) => {
   }
 })
 
-// Record donation with email notification
-app.post('/make-server-2a4be611/donations', async (c) => {
+// Record a PENDING donation (public — payment provider has not confirmed yet)
+// Public clients must NEVER create a completed donation.
+// Receipts are issued only after payment provider confirmation via webhook or polling.
+app.post('/make-server-2a4be611/donations', withRateLimit('donation', 5, 5 * 60_000), async (c) => {
   try {
     const body = await c.req.json()
     const { 
@@ -539,11 +595,16 @@ app.post('/make-server-2a4be611/donations', async (c) => {
       transactionId
     } = body
 
-    if (!amount || !paymentMethod) {
-      return c.json({ error: 'Amount and payment method are required' }, 400)
+    const amountV = validateAmount(amount)
+    if (!amountV.ok) return c.json({ error: amountV.error }, 400)
+    if (!paymentMethod) return c.json({ error: 'Payment method is required' }, 400)
+
+    if (donorEmail) {
+      const emailV = validateEmail(donorEmail)
+      if (!emailV.ok) return c.json({ error: emailV.error }, 400)
     }
 
-    const donationId = `donation:${Date.now()}`
+    const donationId = `donation:${crypto.randomUUID()}`
     const donationData = {
       amount,
       currency: currency || 'USD',
@@ -555,61 +616,76 @@ app.post('/make-server-2a4be611/donations', async (c) => {
       paymentIntentId: paymentIntentId || '',
       transactionId: transactionId || '',
       timestamp: new Date().toISOString(),
-      status: 'completed'
+      // SECURITY: Always pending — provider must confirm via webhook or /verify-session
+      status: 'pending'
     }
     
     await kv.set(donationId, donationData)
 
-    // Send notification email to admin
-    await sendEmail(
-      'admin@restikirya.org', // TODO: Replace with your actual admin email
-      `New Donation: ${currency} ${amount}`,
-      `
-        <h2>New Donation Received! 🎉</h2>
-        <p><strong>Amount:</strong> ${currency} ${amount.toLocaleString()}</p>
-        <p><strong>Donor:</strong> ${donorName}</p>
-        <p><strong>Email:</strong> ${donorEmail || 'Not provided'}</p>
-        <p><strong>Phone:</strong> ${donorPhone || 'Not provided'}</p>
-        <p><strong>Payment Method:</strong> ${paymentMethod}</p>
-        ${message ? `<p><strong>Message:</strong> ${message}</p>` : ''}
-        <hr>
-        <p><em>Received at ${new Date().toLocaleString()}</em></p>
-      `
-    )
+    console.log(`Pending donation recorded: ${donationId}`)
+    return c.json({ success: true, message: 'Donation pending — awaiting payment confirmation', id: donationId })
+  } catch (error) {
+    console.error('Error recording donation:', error)
+    return c.json({ error: 'Failed to record donation', details: String(error) }, 500)
+  }
+})
 
-    // Send thank you email to donor
+// Admin-only manual donation entry (finance staff recording offline/cash donations)
+// These are marked as manually_verified and record the approving admin's identity.
+app.post('/make-server-2a4be611/admin/donations/manual', requireAdmin, async (c) => {
+  try {
+    const body = await c.req.json()
+    const adminUser = c.get('adminUser') as any
+    const { amount, currency, paymentMethod, donorName, donorEmail, donorPhone, message, transactionId } = body
+
+    const amountV = validateAmount(amount)
+    if (!amountV.ok) return c.json({ error: amountV.error }, 400)
+    if (!paymentMethod) return c.json({ error: 'Payment method is required' }, 400)
+
+    const safeName = escapeHtml(donorName || 'Anonymous')
+    const safeEmail = escapeHtml(donorEmail || '')
+    const safeCurrency = escapeHtml(currency || 'USD')
+    const safeMessage = escapeMessage(message || '')
+
+    const donationId = `donation:${crypto.randomUUID()}`
+    const donationData = {
+      amount,
+      currency: currency || 'USD',
+      paymentMethod,
+      donorName: donorName || 'Anonymous',
+      donorEmail: donorEmail || '',
+      donorPhone: donorPhone || '',
+      message: message || '',
+      transactionId: transactionId || '',
+      timestamp: new Date().toISOString(),
+      status: 'manually_verified',
+      verifiedBy: adminUser?.email || 'admin',
+      verifiedAt: new Date().toISOString(),
+    }
+
+    await kv.set(donationId, donationData)
+
+    // Send receipt to donor
     if (donorEmail) {
       await sendEmail(
         donorEmail,
         'Thank You for Your Generous Donation!',
         `
           <h2>Thank You! 🙏</h2>
-          <p>Dear ${donorName},</p>
-          <p>Thank you for your generous donation of <strong>${currency} ${amount.toLocaleString()}</strong> to Resti Kiryandongo CBO.</p>
-          <p>Your support makes a real difference in our community and helps us continue our vital work in education, healthcare, and community development.</p>
-          ${message ? `<p><strong>Your message to us:</strong> ${message}</p>` : ''}
-          <br>
-          <h3>Donation Details:</h3>
-          <ul>
-            <li>Amount: ${currency} ${amount.toLocaleString()}</li>
-            <li>Payment Method: ${paymentMethod}</li>
-            <li>Date: ${new Date().toLocaleDateString()}</li>
-            <li>Reference: ${donationId.split(':')[1]}</li>
-          </ul>
-          <br>
-          <p>With gratitude,</p>
-          <p>The Resti Kiryandongo CBO Team</p>
-          <hr>
-          <p style="font-size: 12px; color: #666;">This email serves as your donation receipt. Please keep it for your records.</p>
+          <p>Dear ${safeName},</p>
+          <p>Thank you for your generous donation of <strong>${safeCurrency} ${Number(amount).toLocaleString()}</strong> to Resti Kiryandongo CBO.</p>
+          ${message ? `<p><strong>Your message:</strong> ${safeMessage}</p>` : ''}
+          <p>Reference: ${donationId.split(':')[1]}</p>
+          <p>With gratitude,<br>The Resti Kiryandongo CBO Team</p>
         `
       )
     }
 
-    console.log(`Donation recorded: ${donationId}`)
-    return c.json({ success: true, message: 'Donation recorded successfully', id: donationId })
+    console.log(`Manual donation recorded by ${adminUser?.email}: ${donationId}`)
+    return c.json({ success: true, message: 'Manual donation recorded successfully', id: donationId })
   } catch (error) {
-    console.error('Error recording donation:', error)
-    return c.json({ error: 'Failed to record donation', details: String(error) }, 500)
+    console.error('Error recording manual donation:', error)
+    return c.json({ error: 'Failed to record manual donation', details: String(error) }, 500)
   }
 })
 
@@ -658,9 +734,10 @@ async function getAirtelAccessToken(): Promise<string> {
 }
 
 // ── Initiate mobile money STK push ───────────────────────────────────────────
-app.post('/make-server-2a4be611/mobile-payment/initiate', async (c) => {
+app.post('/make-server-2a4be611/mobile-payment/initiate', withRateLimit('mobile-payment', 3, 5 * 60_000), async (c) => {
   try {
-    const { provider, phone, amount, donorName, donorEmail, currency } = await c.req.json()
+    // SECURITY: currency is determined server-side from env config, NOT from the browser
+    const { provider, phone, amount, donorName, donorEmail } = await c.req.json()
 
     if (!provider || !phone || !amount) {
       return c.json({ error: 'provider, phone, and amount are required' }, 400)
@@ -669,8 +746,24 @@ app.post('/make-server-2a4be611/mobile-payment/initiate', async (c) => {
       return c.json({ error: 'provider must be "mtn" or "airtel"' }, 400)
     }
 
+    const phoneV = validateMobileMoneyPhone(phone)
+    if (!phoneV.ok) return c.json({ error: phoneV.error }, 400)
+
+    const amountV = validateAmount(amount)
+    if (!amountV.ok) return c.json({ error: amountV.error }, 400)
+
+    if (donorEmail) {
+      const emailV = validateEmail(donorEmail)
+      if (!emailV.ok) return c.json({ error: emailV.error }, 400)
+    }
+
+    // Currency is ALWAYS from server configuration — never accepted from the browser
+    const transactionCurrency = provider === 'mtn'
+      ? (Deno.env.get('MTN_CURRENCY') ?? 'UGX')
+      : (Deno.env.get('AIRTEL_CURRENCY') ?? 'UGX')
+
     const referenceId = crypto.randomUUID()
-    const cleanPhone = String(phone).replace(/\D/g, '')
+    const cleanPhone = normaliseUgandanPhone(String(phone))
 
     if (provider === 'mtn') {
       const subscriptionKey = Deno.env.get('MTN_MOMO_SUBSCRIPTION_KEY')
@@ -746,7 +839,7 @@ app.post('/make-server-2a4be611/mobile-payment/initiate', async (c) => {
     const donationId = `donation:${Date.now()}`
     await kv.set(donationId, {
       amount,
-      currency: currency ?? 'USD',
+      currency: transactionCurrency,
       paymentMethod: provider === 'mtn' ? 'mtn_mobile_money' : 'airtel_money',
       donorName: donorName ?? 'Anonymous',
       donorEmail: donorEmail ?? '',
@@ -755,6 +848,8 @@ app.post('/make-server-2a4be611/mobile-payment/initiate', async (c) => {
       message: `${provider.toUpperCase()} Mobile Money STK push – ref: ${referenceId}`,
       timestamp: new Date().toISOString(),
       status: 'pending',
+      // Store provider and currency so the status endpoint doesn't trust the browser
+      provider,
     })
 
     return c.json({ success: true, referenceId })
@@ -765,13 +860,31 @@ app.post('/make-server-2a4be611/mobile-payment/initiate', async (c) => {
 })
 
 // ── Poll mobile money payment status ─────────────────────────────────────────
+// SECURITY: provider is read from the database record, NOT from the query string.
+// The browser cannot spoof a different provider by passing ?provider=airtel on an MTN transaction.
 app.get('/make-server-2a4be611/mobile-payment/status/:referenceId', async (c) => {
   try {
     const referenceId = c.req.param('referenceId')
-    const provider = c.req.query('provider')
 
-    if (!provider || !referenceId) {
-      return c.json({ error: 'provider query param and referenceId are required' }, 400)
+    // Look up the pending donation to get the authoritative provider
+    const donations = await kv.getByPrefix('donation:')
+    const pendingDonation = donations.find(
+      (d: any) => d.value?.transactionId === referenceId
+    )
+
+    if (!pendingDonation) {
+      return c.json({ error: 'Transaction not found' }, 404)
+    }
+
+    // If already completed, return success immediately
+    if (pendingDonation.value?.status === 'completed') {
+      return c.json({ status: 'SUCCESSFUL', referenceId })
+    }
+
+    // Provider comes from the stored record, never from the request
+    const provider: string = pendingDonation.value?.provider
+    if (!provider) {
+      return c.json({ error: 'Provider information not found for this transaction' }, 500)
     }
 
     let paymentStatus = 'PENDING'
@@ -818,34 +931,36 @@ app.get('/make-server-2a4be611/mobile-payment/status/:referenceId', async (c) =>
 
     // On confirmed success, mark donation complete and send thank-you email (once)
     if (paymentStatus === 'SUCCESSFUL') {
-      const donations = await kv.getByPrefix('donation:')
-      const match = donations.find(d => d.value?.transactionId === referenceId && d.value?.status === 'pending')
-      if (match) {
-        await kv.set(match.key, { ...match.value, status: 'completed' })
-        if (match.value.donorEmail) {
+      const result = await completeDonationFromWebhook(referenceId, {
+        provider,
+        providerTransactionId: referenceId,
+        providerStatus: 'SUCCESSFUL',
+        rawPayload: { source: 'polling' },
+      })
+      if (result.success && result.donation) {
+        const d = result.donation as any
+        if (d.donorEmail) {
+          const adminEmail = Deno.env.get('ADMIN_NOTIFY_EMAIL') || 'admin@restikirya.org'
           await sendEmail(
-            match.value.donorEmail,
+            d.donorEmail,
             'Thank You for Your Donation – Resti Kiryandongo CBO',
             `
               <h2>Payment Confirmed! 🙏</h2>
-              <p>Dear ${match.value.donorName},</p>
+              <p>Dear ${escapeHtml(d.donorName)},</p>
               <p>Your ${provider === 'mtn' ? 'MTN Mobile Money' : 'Airtel Money'} donation of
-              <strong>${match.value.currency} ${match.value.amount}</strong> has been confirmed.</p>
-              <p><strong>Reference:</strong> ${referenceId}</p>
+              <strong>${escapeHtml(d.currency)} ${d.amount}</strong> has been confirmed.</p>
+              <p><strong>Reference:</strong> ${escapeHtml(referenceId)}</p>
               <p>Thank you for supporting Resti Kiryandongo CBO.</p>
             `,
           )
           await sendEmail(
-            'admin@restikirya.org',
-            `Mobile Money Donation Confirmed: ${match.value.currency} ${match.value.amount}`,
-            `
-              <h2>Mobile Money Donation Confirmed</h2>
-              <p><strong>Donor:</strong> ${match.value.donorName}</p>
-              <p><strong>Phone:</strong> ${match.value.donorPhone}</p>
-              <p><strong>Amount:</strong> ${match.value.currency} ${match.value.amount}</p>
-              <p><strong>Provider:</strong> ${provider.toUpperCase()}</p>
-              <p><strong>Reference:</strong> ${referenceId}</p>
-            `,
+            adminEmail,
+            `Mobile Money Donation Confirmed: ${d.currency} ${d.amount}`,
+            `<h2>Mobile Money Donation Confirmed</h2>
+             <p><strong>Donor:</strong> ${escapeHtml(d.donorName)}</p>
+             <p><strong>Amount:</strong> ${escapeHtml(d.currency)} ${d.amount}</p>
+             <p><strong>Provider:</strong> ${escapeHtml(provider.toUpperCase())}</p>
+             <p><strong>Reference:</strong> ${escapeHtml(referenceId)}</p>`,
           )
         }
       }
@@ -877,26 +992,25 @@ app.get('/make-server-2a4be611/donation-stats', async (c) => {
 })
 
 // Newsletter subscription
-app.post('/make-server-2a4be611/newsletter', async (c) => {
+app.post('/make-server-2a4be611/newsletter', withRateLimit('newsletter', 3, 10 * 60_000), async (c) => {
   try {
     const body = await c.req.json()
     const { email, name } = body
 
-    if (!email) {
-      return c.json({ error: 'Email is required' }, 400)
-    }
+    const emailV = validateEmail(email)
+    if (!emailV.ok) return c.json({ error: emailV.error }, 400)
 
     // Check if already subscribed
     const existing = await kv.getByPrefix('newsletter:')
-    const alreadySubscribed = existing.some(sub => sub.value.email === email)
+    const alreadySubscribed = existing.some((sub: any) => sub.value.email === email.trim())
     
     if (alreadySubscribed) {
       return c.json({ error: 'This email is already subscribed' }, 400)
     }
 
-    const subscriberId = `newsletter:${Date.now()}`
+    const subscriberId = `newsletter:${crypto.randomUUID()}`
     await kv.set(subscriberId, {
-      email,
+      email: email.trim(),
       name: name || '',
       timestamp: new Date().toISOString(),
       status: 'active'
@@ -911,7 +1025,7 @@ app.post('/make-server-2a4be611/newsletter', async (c) => {
 })
 
 // Get all newsletter subscribers (admin)
-app.get('/make-server-2a4be611/newsletter', async (c) => {
+app.get('/make-server-2a4be611/newsletter', requireAdmin, async (c) => {
   try {
     const limit = parseInt(c.req.query('limit') || '100');
     const offset = parseInt(c.req.query('offset') || '0');
@@ -931,7 +1045,7 @@ app.get('/make-server-2a4be611/newsletter', async (c) => {
 })
 
 // Delete newsletter subscriber (admin)
-app.delete('/make-server-2a4be611/admin/newsletter/:id', async (c) => {
+app.delete('/make-server-2a4be611/admin/newsletter/:id', requireAdmin, async (c) => {
   try {
     const id = c.req.param('id')
     await kv.del(id)
@@ -944,13 +1058,8 @@ app.delete('/make-server-2a4be611/admin/newsletter/:id', async (c) => {
 })
 
 // Send newsletter blast to all subscribers (admin)
-app.post('/make-server-2a4be611/admin/newsletter/send', async (c) => {
+app.post('/make-server-2a4be611/admin/newsletter/send', requireAdmin, async (c) => {
   try {
-    const authHeader = c.req.header('Authorization')
-    if (!authHeader) {
-      return c.json({ error: 'Unauthorized' }, 401)
-    }
-
     const body = await c.req.json()
     const { subject, html } = body
 
@@ -985,8 +1094,8 @@ app.post('/make-server-2a4be611/admin/newsletter/send', async (c) => {
   }
 })
 
-// Image upload endpoint
-app.post('/make-server-2a4be611/upload-image', async (c) => {
+// Image upload endpoint (admin only)
+app.post('/make-server-2a4be611/upload-image', requireAdmin, async (c) => {
   try {
     const formData = await c.req.formData()
     const file = formData.get('file') as File
@@ -1040,8 +1149,8 @@ app.post('/make-server-2a4be611/upload-image', async (c) => {
   }
 })
 
-// Delete image endpoint
-app.delete('/make-server-2a4be611/images/:fileName', async (c) => {
+// Delete image endpoint (admin only)
+app.delete('/make-server-2a4be611/images/:fileName', requireAdmin, async (c) => {
   try {
     const fileName = c.req.param('fileName')
     const bucketName = 'make-2a4be611-uploads'
@@ -1063,28 +1172,35 @@ app.delete('/make-server-2a4be611/images/:fileName', async (c) => {
   }
 })
 
-// Admin signup with role
-app.post('/make-server-2a4be611/admin/signup', async (c) => {
+// Admin signup
+// SECURITY: Registration is controlled by ADMIN_REGISTRATION_OPEN env flag.
+// Set ADMIN_REGISTRATION_OPEN=true only during initial setup, then set it back to false.
+app.post('/make-server-2a4be611/admin/signup', withRateLimit('admin-signup', 5, 60 * 60_000), async (c) => {
   try {
-    const body = await c.req.json()
-    const { email, password, name, role } = body
-
-    if (!email || !password) {
-      return c.json({ error: 'Email and password are required' }, 400)
+    const registrationOpen = Deno.env.get('ADMIN_REGISTRATION_OPEN') === 'true'
+    if (!registrationOpen) {
+      return c.json({ error: 'Administrator registration is currently closed. Contact the system administrator.' }, 403)
     }
 
-    // Default role is 'editor', first user can be 'super-admin'
-    const existingUsers = await kv.getByPrefix('admin_user:')
-    const isFirstUser = !existingUsers || existingUsers.length === 0
+    const body = await c.req.json()
+    const { email, password, name } = body
 
-    const userRole = isFirstUser ? 'super-admin' : (role || 'editor')
-    const userStatus = isFirstUser ? 'active' : 'pending'
+    const emailV = validateEmail(email)
+    if (!emailV.ok) return c.json({ error: emailV.error }, 400)
+    if (!password || password.length < 12) {
+      return c.json({ error: 'Password must be at least 12 characters' }, 400)
+    }
+
+    // All self-registered accounts start as editors with pending status.
+    // A super-admin must manually activate and promote them.
+    const userRole = 'editor'
+    const userStatus = 'pending'
 
     const { data, error } = await supabase.auth.admin.createUser({
       email,
       password,
       user_metadata: { name: name || '', role: userRole },
-      email_confirm: true // Auto-confirm since email server not configured
+      email_confirm: true
     })
 
     if (error) {
@@ -1092,7 +1208,7 @@ app.post('/make-server-2a4be611/admin/signup', async (c) => {
       return c.json({ error: error.message }, 400)
     }
 
-    // Store user info in KV to keep User Management tab fully synced
+    // Store user info in KV
     const userId = `admin_user:${data.user.id}`
     await kv.set(userId, {
       id: data.user.id,
@@ -1103,8 +1219,18 @@ app.post('/make-server-2a4be611/admin/signup', async (c) => {
       createdAt: new Date().toISOString()
     })
 
-    console.log(`Admin user created and synced to KV: ${data.user.id} with role: ${userRole}, status: ${userStatus}`)
-    return c.json({ success: true, message: 'Admin account created successfully', user: data.user })
+    // Audit log
+    const auditId = `audit:${crypto.randomUUID()}`
+    await kv.set(auditId, {
+      event: 'admin_signup',
+      userId: data.user.id,
+      email,
+      role: userRole,
+      timestamp: new Date().toISOString(),
+    })
+
+    console.log(`Admin user created: ${data.user.id} role=${userRole} status=${userStatus}`)
+    return c.json({ success: true, message: 'Account created successfully. Awaiting administrator activation.', user: data.user })
   } catch (error) {
     console.error('Error creating admin account:', error)
     return c.json({ error: 'Failed to create admin account', details: String(error) }, 500)
@@ -1128,7 +1254,7 @@ app.get('/make-server-2a4be611/admin/users/:userId/status', async (c) => {
 })
 
 // Update user role (super-admin only)
-app.patch('/make-server-2a4be611/admin/users/:userId/role', async (c) => {
+app.patch('/make-server-2a4be611/admin/users/:userId/role', requireAdmin, async (c) => {
   try {
     const userId = c.req.param('userId')
     const body = await c.req.json()
@@ -1159,7 +1285,7 @@ app.patch('/make-server-2a4be611/admin/users/:userId/role', async (c) => {
 // Note: GET /admin/users is defined further below using the KV store (admin_user: prefix)
 
 // Get all contact submissions (admin)
-app.get('/make-server-2a4be611/admin/contacts', async (c) => {
+app.get('/make-server-2a4be611/admin/contacts', requireAdmin, async (c) => {
   try {
     const limit = parseInt(c.req.query('limit') || '100');
     const offset = parseInt(c.req.query('offset') || '0');
@@ -1181,7 +1307,7 @@ app.get('/make-server-2a4be611/admin/contacts', async (c) => {
 })
 
 // Update contact status (admin)
-app.patch('/make-server-2a4be611/admin/contacts/:id', async (c) => {
+app.patch('/make-server-2a4be611/admin/contacts/:id', requireAdmin, async (c) => {
   try {
     const id = c.req.param('id')
     const body = await c.req.json()
@@ -1205,7 +1331,7 @@ app.patch('/make-server-2a4be611/admin/contacts/:id', async (c) => {
 })
 
 // Get all volunteers (admin)
-app.get('/make-server-2a4be611/admin/volunteers', async (c) => {
+app.get('/make-server-2a4be611/admin/volunteers', requireAdmin, async (c) => {
   try {
     const limit = parseInt(c.req.query('limit') || '100');
     const offset = parseInt(c.req.query('offset') || '0');
@@ -1251,7 +1377,7 @@ app.patch('/make-server-2a4be611/admin/volunteers/:id', async (c) => {
 })
 
 // Get all donations (admin)
-app.get('/make-server-2a4be611/admin/donations', async (c) => {
+app.get('/make-server-2a4be611/admin/donations', requireAdmin, async (c) => {
   try {
     const limit = parseInt(c.req.query('limit') || '100');
     const offset = parseInt(c.req.query('offset') || '0');
@@ -1273,7 +1399,7 @@ app.get('/make-server-2a4be611/admin/donations', async (c) => {
 })
 
 // Delete program (admin)
-app.delete('/make-server-2a4be611/programs/:id', async (c) => {
+app.delete('/make-server-2a4be611/programs/:id', requireAdmin, async (c) => {
   try {
     const id = c.req.param('id')
     await kv.del(id)
@@ -1286,7 +1412,7 @@ app.delete('/make-server-2a4be611/programs/:id', async (c) => {
 })
 
 // Update program (admin)
-app.put('/make-server-2a4be611/programs/:id', async (c) => {
+app.put('/make-server-2a4be611/programs/:id', requireAdmin, async (c) => {
   try {
     const id = c.req.param('id')
     const body = await c.req.json()
@@ -1319,7 +1445,7 @@ app.put('/make-server-2a4be611/programs/:id', async (c) => {
 })
 
 // Bulk delete programs
-app.post('/make-server-2a4be611/programs/bulk-delete', async (c) => {
+app.post('/make-server-2a4be611/programs/bulk-delete', requireAdmin, async (c) => {
   try {
     const body = await c.req.json()
     const { ids } = body
@@ -1338,7 +1464,7 @@ app.post('/make-server-2a4be611/programs/bulk-delete', async (c) => {
 })
 
 // Delete news (admin)
-app.delete('/make-server-2a4be611/news/:id', async (c) => {
+app.delete('/make-server-2a4be611/news/:id', requireAdmin, async (c) => {
   try {
     const id = c.req.param('id')
     await kv.del(id)
@@ -1351,7 +1477,7 @@ app.delete('/make-server-2a4be611/news/:id', async (c) => {
 })
 
 // Bulk delete news
-app.post('/make-server-2a4be611/news/bulk-delete', async (c) => {
+app.post('/make-server-2a4be611/news/bulk-delete', requireAdmin, async (c) => {
   try {
     const body = await c.req.json()
     const { ids } = body
@@ -1634,7 +1760,7 @@ app.post('/make-server-2a4be611/admin/volunteers/bulk-delete', async (c) => {
 })
 
 // Update news (admin)
-app.put('/make-server-2a4be611/news/:id', async (c) => {
+app.put('/make-server-2a4be611/news/:id', requireAdmin, async (c) => {
   try {
     const id = c.req.param('id')
     const body = await c.req.json()
@@ -1666,7 +1792,7 @@ app.put('/make-server-2a4be611/news/:id', async (c) => {
 })
 
 // Get dashboard statistics (admin)
-app.get('/make-server-2a4be611/admin/stats', async (c) => {
+app.get('/make-server-2a4be611/admin/stats', requireAdmin, async (c) => {
   try {
     const [programs, news, contacts, volunteers, donations, subscribers] = await Promise.all([
       kv.getByPrefix('program:'),
@@ -1701,7 +1827,7 @@ app.get('/make-server-2a4be611/admin/stats', async (c) => {
 })
 
 // Get advanced analytics (admin)
-app.get('/make-server-2a4be611/admin/analytics', async (c) => {
+app.get('/make-server-2a4be611/admin/analytics', requireAdmin, async (c) => {
   try {
     const [donations, contacts, volunteers, subscribers] = await Promise.all([
       kv.getByPrefix('donation:'),
@@ -2930,8 +3056,8 @@ app.get('/make-server-2a4be611/site-settings', async (c) => {
   }
 })
 
-// Update site settings (admin only)
-app.put('/make-server-2a4be611/site-settings', async (c) => {
+// ── Update site settings (admin only) ───────────────────────────────────────
+app.put('/make-server-2a4be611/site-settings', requireAdmin, async (c) => {
   try {
     const body = await c.req.json()
     const { settings } = body
@@ -3076,8 +3202,8 @@ app.post('/make-server-2a4be611/site-settings/initialize', async (c) => {
 
 // ============= USER MANAGEMENT ROUTES =============
 
-// Get all users
-app.get('/make-server-2a4be611/admin/users', async (c) => {
+// ── Get all users (admin) ────────────────────────────────────────────────
+app.get('/make-server-2a4be611/admin/users', requireAdmin, async (c) => {
   try {
     const limit = parseInt(c.req.query('limit') || '100');
     const offset = parseInt(c.req.query('offset') || '0');
@@ -3096,8 +3222,8 @@ app.get('/make-server-2a4be611/admin/users', async (c) => {
   }
 })
 
-// Create new user
-app.post('/make-server-2a4be611/admin/users', async (c) => {
+// Create new user (admin only)
+app.post('/make-server-2a4be611/admin/users', requireAdmin, async (c) => {
   try {
     const body = await c.req.json()
     const { email, password, name, role, status } = body
@@ -3152,8 +3278,8 @@ app.post('/make-server-2a4be611/admin/users', async (c) => {
   }
 })
 
-// Update user
-app.put('/make-server-2a4be611/admin/users/:id', async (c) => {
+// Update user (admin only)
+app.put('/make-server-2a4be611/admin/users/:id', requireAdmin, async (c) => {
   try {
     const id = c.req.param('id')
     const body = await c.req.json()
@@ -3202,8 +3328,8 @@ app.put('/make-server-2a4be611/admin/users/:id', async (c) => {
   }
 })
 
-// Delete user
-app.delete('/make-server-2a4be611/admin/users/:id', async (c) => {
+// Delete user (admin only)
+app.delete('/make-server-2a4be611/admin/users/:id', requireAdmin, async (c) => {
   try {
     const id = c.req.param('id')
 
@@ -3505,17 +3631,11 @@ app.get('/make-server-2a4be611/livechat/session/:id', async (c) => {
 })
 
 // Admin lists all active chat sessions
-app.get('/make-server-2a4be611/admin/livechats', async (c) => {
+app.get('/make-server-2a4be611/admin/livechats', requireAdmin, async (c) => {
   try {
-    const authHeader = c.req.header('Authorization')
-    if (!authHeader) return c.json({ error: 'Unauthorized' }, 401)
-    
     const data = await kv.getByPrefix('livechat:')
     const sessions = data.map((d: any) => d.value)
-    
-    // Sort by updated_at descending
     sessions.sort((a: any, b: any) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
-    
     return c.json({ sessions })
   } catch (err: any) {
     return c.json({ error: err.message }, 500)
@@ -3523,11 +3643,8 @@ app.get('/make-server-2a4be611/admin/livechats', async (c) => {
 })
 
 // Admin replies to a session
-app.post('/make-server-2a4be611/admin/livechats/:id/reply', async (c) => {
+app.post('/make-server-2a4be611/admin/livechats/:id/reply', requireAdmin, async (c) => {
   try {
-    const authHeader = c.req.header('Authorization')
-    if (!authHeader) return c.json({ error: 'Unauthorized' }, 401)
-    
     const id = c.req.param('id')
     const { message } = await c.req.json()
     const key = `livechat:${id}`
@@ -3548,6 +3665,23 @@ app.post('/make-server-2a4be611/admin/livechats/:id/reply', async (c) => {
   } catch (err: any) {
     return c.json({ error: err.message }, 500)
   }
+})
+
+// ── Payment Provider Webhooks ───────────────────────────────────────────────
+// These endpoints receive server-to-server callbacks from payment providers.
+// Each verifies the provider's signature, prevents duplicate processing,
+// atomically completes the donation, and sends the receipt once.
+
+app.post('/make-server-2a4be611/webhooks/stripe', async (c) => {
+  return handleStripeWebhook(c, stripe, sendEmail)
+})
+
+app.post('/make-server-2a4be611/webhooks/mtn', async (c) => {
+  return handleMtnWebhook(c, sendEmail)
+})
+
+app.post('/make-server-2a4be611/webhooks/airtel', async (c) => {
+  return handleAirtelWebhook(c, sendEmail)
 })
 
 

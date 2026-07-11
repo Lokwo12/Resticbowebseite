@@ -233,20 +233,68 @@ CREATE TABLE IF NOT EXISTS public.site_settings (
 );
 
 -- Set up Row Level Security (RLS)
--- We will enable RLS but allow full access to authenticated Service Role (used by Edge Functions).
--- If you want the frontend to query directly later, you can refine these policies.
-DO $$ 
+-- 
+-- SECURITY MODEL:
+-- • Service role (used by the Edge Function) has full access to all tables.
+-- • Public (anonymous) access is ONLY granted to tables with non-sensitive content.
+-- • Sensitive tables (donations, contacts, volunteers, newsletters, admin_users,
+--   pages, site_settings, reports) are restricted to service_role only.
+--   The anon key / direct PostgREST queries CANNOT read these tables.
+
+-- ── Enable RLS on every table ──────────────────────────────────────────────
+DO $$
 DECLARE
     t_name text;
 BEGIN
     FOR t_name IN (SELECT tablename FROM pg_tables WHERE schemaname = 'public') LOOP
         EXECUTE format('ALTER TABLE public.%I ENABLE ROW LEVEL SECURITY;', t_name);
-        
-        -- Policy: Allow service role full access
-        EXECUTE format('CREATE POLICY "Service Role Full Access" ON public.%I FOR ALL USING (true) WITH CHECK (true);', t_name);
-        
-        -- Policy: Allow public read access (optional, but good for programs, news, etc)
-        -- Remove or adjust these depending on strict security needs. For now, Edge functions handle most requests.
-        EXECUTE format('CREATE POLICY "Public Read Access" ON public.%I FOR SELECT USING (true);', t_name);
     END LOOP;
 END $$;
+
+-- ── Service role: full access to everything ─────────────────────────────────
+DO $$
+DECLARE
+    t_name text;
+BEGIN
+    FOR t_name IN (SELECT tablename FROM pg_tables WHERE schemaname = 'public') LOOP
+        -- Drop any previously created blanket policies first
+        EXECUTE format('DROP POLICY IF EXISTS "Service Role Full Access" ON public.%I;', t_name);
+        EXECUTE format('DROP POLICY IF EXISTS "Public Read Access" ON public.%I;', t_name);
+
+        -- Recreate service role access
+        EXECUTE format(
+          'CREATE POLICY "Service Role Full Access" ON public.%I FOR ALL TO service_role USING (true) WITH CHECK (true);',
+          t_name
+        );
+    END LOOP;
+END $$;
+
+-- ── Public read: only non-sensitive tables ──────────────────────────────────
+-- These tables contain content that the website displays publicly.
+-- Contacts, donations, volunteers, etc. must NOT be readable via the anon key.
+
+DO $$
+DECLARE
+    public_tables text[] := ARRAY[
+        'programs', 'news', 'gallery', 'stories', 'team',
+        'events', 'partners', 'faqs', 'resources', 'opportunities'
+    ];
+    t_name text;
+BEGIN
+    FOREACH t_name IN ARRAY public_tables LOOP
+        EXECUTE format(
+          'CREATE POLICY "Public Read" ON public.%I FOR SELECT TO anon USING (true);',
+          t_name
+        );
+    END LOOP;
+END $$;
+
+-- Sensitive tables — NO public read policy created intentionally:
+--   admin_users, contacts, volunteers, donations, newsletters, pages, site_settings, reports
+
+-- ── Notes for future direct-DB queries ─────────────────────────────────────
+-- If you ever want the frontend to query public tables directly via Supabase JS
+-- (bypassing the Edge Function), create authenticated policies here.
+-- Example for programs (authenticated users can read programs):
+-- CREATE POLICY "Authenticated Read Programs" ON public.programs
+--   FOR SELECT TO authenticated USING (true);

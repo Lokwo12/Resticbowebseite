@@ -1,24 +1,30 @@
-# Resti Kiryandongo Refugee Settlement — Website
+# Resti Kiryandongo CBO — Website
 
-A full-stack nonprofit website for **Resti Kiryandongo CBO**. Built with React, TypeScript, Vite, and Tailwind CSS on the frontend, and Supabase (Edge Functions + PostgreSQL + Auth) on the backend. The static frontend is hosted on Hostinger. The backend lives entirely on Supabase.
+A full-stack nonprofit donation website for **Resti Kiryandongo CBO**. Built with React, TypeScript, Vite, and Tailwind CSS on the frontend, and Supabase (Edge Functions + PostgreSQL + Auth) on the backend. The static frontend is hosted on Hostinger. The backend lives entirely on Supabase.
 
 ---
 
 ## Table of Contents
 
 1. [Tech Stack](#tech-stack)
-2. [Prerequisites](#prerequisites)
-3. [Project Structure](#project-structure)
-4. [Local Development Setup](#local-development-setup)
-5. [Environment Variables](#environment-variables)
+2. [Project Structure](#project-structure)
+3. [Local Development Setup](#local-development-setup)
+4. [Getting Your API Credentials](#getting-your-api-credentials)
+   - [Resend (Email)](#1-resend-email-service)
+   - [Stripe (Card Payments)](#2-stripe-card-payments)
+   - [MTN MoMo](#3-mtn-mobile-money)
+   - [Airtel Money](#4-airtel-money)
+   - [PayPal](#5-paypal-optional)
+5. [Environment Variables Reference](#environment-variables-reference)
 6. [Supabase Setup](#supabase-setup)
-7. [Deploying the Edge Function](#deploying-the-edge-function)
-8. [Payment Integrations](#payment-integrations)
-9. [Building for Production](#building-for-production)
-10. [Hosting on Hostinger](#hosting-on-hostinger)
-11. [Admin Dashboard](#admin-dashboard)
-12. [Routes Reference](#routes-reference)
-13. [Troubleshooting](#troubleshooting)
+7. [Setting Supabase Secrets](#setting-supabase-secrets)
+8. [Deploying the Edge Function](#deploying-the-edge-function)
+9. [Registering Payment Webhooks](#registering-payment-webhooks)
+10. [Bootstrapping the First Admin Account](#bootstrapping-the-first-admin-account)
+11. [Building & Hosting on Hostinger](#building--hosting-on-hostinger)
+12. [Admin Dashboard](#admin-dashboard)
+13. [Routes Reference](#routes-reference)
+14. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -29,22 +35,12 @@ A full-stack nonprofit website for **Resti Kiryandongo CBO**. Built with React, 
 | Frontend | React 18, TypeScript, Vite 6, Tailwind CSS 3 |
 | UI Components | Radix UI, shadcn/ui, Lucide icons, Framer Motion |
 | Backend / API | Supabase Edge Function (Deno runtime, Hono framework) |
-| Database | Supabase PostgreSQL (18 tables) |
-| Auth | Supabase Auth |
-| Payments | Stripe, PayPal, MTN MoMo, Airtel, Bank Transfer |
-| Frontend hosting | Hostinger (static Apache hosting) |
+| Database | Supabase PostgreSQL (18 tables) + Supabase KV store |
+| Auth | Supabase Auth (JWT) |
+| Payments | Stripe, MTN MoMo, Airtel Money, PayPal, Bank Transfer |
+| Email | Resend |
+| Frontend hosting | Hostinger (static Apache/LiteSpeed) |
 | Backend hosting | Supabase (Edge Functions + DB + Auth) |
-
----
-
-## Prerequisites
-
-Install the following before starting:
-
-- **Node.js** v18 or higher — https://nodejs.org
-- **npm** v9 or higher (bundled with Node)
-- A **Supabase** account — https://supabase.com (free tier works)
-- A **Hostinger** account with an active hosting plan
 
 ---
 
@@ -52,32 +48,35 @@ Install the following before starting:
 
 ```
 /
-├── public/                   Static assets copied as-is into the build
-│   ├── .htaccess             Apache SPA routing rule — required on Hostinger
+├── public/                     Static assets copied as-is into the build
+│   ├── .htaccess               Apache SPA routing rule — required on Hostinger
 │   ├── favicon.svg
 │   ├── logo.png
 │   └── robots.txt
 ├── src/
-│   ├── App.tsx               Root component with all client-side routes
-│   ├── main.tsx              Entry point
-│   ├── components/           All page and UI components
-│   ├── hooks/                Custom React hooks
+│   ├── App.tsx                 Root component with all client-side routes
+│   ├── main.tsx                Entry point
+│   ├── components/             All page and UI components
+│   ├── hooks/                  Custom React hooks
 │   └── utils/
 │       └── supabase/
-│           ├── client.ts     Supabase JS client instance
-│           └── info.tsx      Project ID and public anon key
+│           ├── client.ts       Supabase JS client instance
+│           └── info.tsx        Project ID and public anon key
 ├── supabase/
-│   └── functions/
-│       └── make-server-2a4be611/
-│           ├── index.ts      Edge function — all API and admin routes
-│           └── kv_store.tsx  Database abstraction layer (maps keys to SQL tables)
-├── supabase-cli/
-│   └── supabase.exe          Supabase CLI binary for Windows
-├── schema.sql                Full database schema — run once in Supabase SQL Editor
-├── .env                      Local environment variables (never commit this file)
+│   ├── functions/
+│   │   └── make-server-2a4be611/
+│   │       ├── index.ts        Edge function — all API and admin routes
+│   │       ├── kv_store.tsx    Database abstraction layer
+│   │       ├── validation.ts   Input validators + HTML escaping
+│   │       ├── rateLimit.ts    Per-IP rate limiter
+│   │       └── webhooks.ts     Stripe/MTN/Airtel webhook handlers
+│   └── migrations/
+│       └── 001_storage_policies.sql   Storage bucket security policies
+├── schema.sql                  Full database schema + RLS policies
+├── .env                        Local environment variables (never commit)
 ├── .gitignore
 ├── vite.config.ts
-├── tailwind.config.js
+├── tailwind.config.cjs
 └── package.json
 ```
 
@@ -100,26 +99,15 @@ npm install
 
 ### 3. Create your `.env` file
 
-Create a file named `.env` in the project root with the following content.  
-Fill in your real values — see [Environment Variables](#environment-variables) for where to get each one.
+Copy `.env` and fill in your real values (see [Getting Your API Credentials](#getting-your-api-credentials) below):
 
 ```env
-# PayPal — https://developer.paypal.com → My Apps & Credentials
-VITE_PAYPAL_CLIENT_ID=your_paypal_client_id_here
-VITE_PAYPAL_MERCHANT_EMAIL=donate@resticbo.org
-
-# Stripe — https://dashboard.stripe.com/apikeys
-VITE_STRIPE_PUBLISHABLE_KEY=pk_test_...
-STRIPE_SECRET_KEY=sk_test_...
-
-# MTN Mobile Money — https://momodeveloper.mtn.com
-MTN_MOMO_API_USER=your_mtn_api_user_uuid
-MTN_MOMO_API_KEY=your_mtn_api_key
-MTN_MOMO_SUBSCRIPTION_KEY=your_mtn_subscription_key
-MTN_MOMO_ENVIRONMENT=sandbox
+VITE_STRIPE_PUBLISHABLE_KEY=pk_test_YOUR_KEY_HERE
+VITE_PAYPAL_CLIENT_ID=YOUR_PAYPAL_CLIENT_ID_HERE
+VITE_PAYPAL_MERCHANT_EMAIL=donate@resti.org
 ```
 
-> `.env` is listed in `.gitignore` and will never be committed to git.
+> `.env` is in `.gitignore` — it is never committed to Git. Production secrets go in the **Supabase Dashboard**, not this file.
 
 ### 4. Start the development server
 
@@ -131,31 +119,206 @@ The site runs at **http://localhost:5173**.
 
 ---
 
-## Environment Variables
+## Getting Your API Credentials
 
-### Frontend variables (prefix `VITE_`)
+You need accounts with four services before going live. Work through them in this order.
 
-These are embedded into the compiled JavaScript at build time. They are visible in the browser — only put **public/publishable** keys here.
+---
 
-| Variable | Description | Where to get it |
+### 1. Resend (Email Service)
+
+Resend sends donation receipts, contact form confirmations, and admin notifications.  
+**It is free to sign up and free up to 3,000 emails/month.**
+
+#### Step 1 — Create account
+1. Go to **[resend.com](https://resend.com)** → click **Sign Up**
+2. Verify your email address
+
+#### Step 2 — Get your API key
+1. In the left sidebar → click **API Keys**
+2. Click **Create API Key**
+3. Name it `RESTI Production` → click **Create**
+4. **Copy the key immediately** — it starts with `re_` and is only shown once
+5. This is your `RESEND_API_KEY`
+
+#### Step 3 — Verify your domain (required to send from @resti.org)
+1. In the left sidebar → click **Domains** → **Add Domain**
+2. Enter `resti.org`
+3. Resend will show you DNS records to add (TXT + MX records)
+4. Log in to your domain registrar (Namecheap, GoDaddy, etc.) and add those records
+5. Back in Resend → click **Verify** (takes 10–60 minutes)
+6. Once verified, set:
+   - `ADMIN_EMAIL` = `Resti Kiryandongo CBO <noreply@resti.org>`
+
+> **No domain yet?** Leave `ADMIN_EMAIL` as the default. Resend's sandbox sender (`onboarding@resend.dev`) works for testing.
+
+---
+
+### 2. Stripe (Card Payments)
+
+Stripe processes international card donations. Free to set up — they charge 1.5%–2.9% + fixed fee per transaction.
+
+#### Step 1 — Create account
+1. Go to **[stripe.com](https://stripe.com)** → click **Start now**
+2. Fill in your details:
+   - **Business type**: Non-profit / Sole trader / Other
+   - **Country**: Uganda
+   - **Business name**: Resti Kiryandongo CBO
+3. Verify your email
+
+#### Step 2 — Get your API keys
+1. In the Stripe Dashboard → click **Developers** (top right)
+2. Click **API Keys**
+3. Copy the **Publishable key** (starts with `pk_test_` for testing, `pk_live_` for production)
+   - This is `VITE_STRIPE_PUBLISHABLE_KEY`
+4. Click **Reveal** on the **Secret key** (starts with `sk_test_` / `sk_live_`)
+   - This is `STRIPE_SECRET_KEY`
+
+#### Step 3 — Create a webhook
+1. In Stripe Dashboard → **Developers** → **Webhooks**
+2. Click **Add endpoint**
+3. Endpoint URL:
+   ```
+   https://YOUR_PROJECT_ID.supabase.co/functions/v1/make-server-2a4be611/webhooks/stripe
+   ```
+4. Under **Events to listen to**, select:
+   - `checkout.session.completed`
+   - `payment_intent.succeeded`
+5. Click **Add endpoint**
+6. Click on the new endpoint row → find **Signing secret** → click **Reveal** → copy it
+   - This is `STRIPE_WEBHOOK_SECRET`
+
+#### Step 4 — Activate your account (to accept real money)
+- Stripe requires bank account details before live payments work
+- Go to **Settings** → **Business settings** → add your CBO bank account details
+- This usually takes 1–2 business days to verify
+
+> **Testing Stripe without a real card:** Use test card number `4242 4242 4242 4242`, any future expiry date, any 3-digit CVC.
+
+---
+
+### 3. MTN Mobile Money
+
+MTN MoMo allows Ugandans to donate directly from their MTN mobile wallet.
+
+#### Step 1 — Create developer account
+1. Go to **[momodeveloper.mtn.com](https://momodeveloper.mtn.com)**
+2. Click **Sign Up** in the top right
+3. Fill in your name and email → verify your email
+
+#### Step 2 — Subscribe to Collections API
+1. After signing in → click **Products** in the navigation
+2. Find **Collections** → click **Subscribe**
+3. On the next page → click **Subscribe** again to confirm
+4. You will now see your **Subscription Key** (Primary Key)
+   - This is `MTN_MOMO_SUBSCRIPTION_KEY`
+
+#### Step 3 — Create sandbox API user and key
+1. Click your profile/username in the top right → **Profile**
+2. Scroll down to find your Subscription Key under **Collections**
+3. Now go back to the **Collections** product page
+4. Click the **Sandbox** tab
+5. In the **Sandbox User Provisioning** section:
+   - Enter the Sandbox Base URL: `https://sandbox.momodeveloper.mtn.com`
+   - Click **Create API User**
+   - Copy the UUID shown — this is `MTN_MOMO_API_USER`
+6. Copy the User ID you just created → click **Create API Key**
+   - Copy the key shown — this is `MTN_MOMO_API_KEY`
+
+#### Step 4 — Go live (for real donations)
+- Contact **MTN Uganda Business** directly to apply for production access
+- They will need your CBO registration certificate and bank details
+- Once approved, change `MTN_MOMO_ENVIRONMENT` from `sandbox` → `production`
+- Register your webhook URL with them:
+  ```
+  https://YOUR_PROJECT_ID.supabase.co/functions/v1/make-server-2a4be611/webhooks/mtn
+  ```
+
+> **Sandbox testing:** In sandbox mode, no real money moves. MTN provides test phone numbers and simulated payment responses.
+
+---
+
+### 4. Airtel Money
+
+Airtel Money allows Airtel Uganda subscribers to donate from their mobile wallet.
+
+#### Step 1 — Create developer account
+1. Go to **[developers.airtel.africa](https://developers.airtel.africa)**
+2. Click **Sign Up**
+3. Fill in your details and verify your email
+
+#### Step 2 — Create an application
+1. After signing in → click **My Apps** → **Create App**
+2. Name it `RESTI Donation`
+3. Select **Merchant Payments** or **Collections** API
+4. Once created, click on the app to view:
+   - **Client ID** → this is `AIRTEL_CLIENT_ID`
+   - **Client Secret** → click Reveal → this is `AIRTEL_CLIENT_SECRET`
+5. Set `AIRTEL_COUNTRY=UG`
+
+#### Step 3 — Go live (for real donations)
+- Contact **Airtel Uganda** business team to apply for production credentials
+- They need your CBO registration documents and bank account
+- Once approved, change `AIRTEL_ENVIRONMENT` from `sandbox` → `production`
+- Register your webhook URL:
+  ```
+  https://YOUR_PROJECT_ID.supabase.co/functions/v1/make-server-2a4be611/webhooks/airtel
+  ```
+
+---
+
+### 5. PayPal (Optional)
+
+PayPal is an additional payment option for international donors.
+
+1. Go to **[developer.paypal.com](https://developer.paypal.com)**
+2. Sign in with your PayPal business account
+3. Click **My Apps & Credentials**
+4. Under **REST API apps** → click **Create App**
+5. Name it `RESTI Website` → click **Create App**
+6. Copy the **Client ID** → this is `VITE_PAYPAL_CLIENT_ID`
+
+> Use the **Sandbox** Client ID for testing, **Live** Client ID for production.
+
+---
+
+## Environment Variables Reference
+
+### Frontend variables (safe for browser, prefix `VITE_`)
+
+Set these in your local `.env` file. They are embedded in the compiled JavaScript at build time.
+
+| Variable | Description |
+|---|---|
+| `VITE_STRIPE_PUBLISHABLE_KEY` | Stripe publishable key (`pk_test_...` or `pk_live_...`) |
+| `VITE_PAYPAL_CLIENT_ID` | PayPal REST API client ID |
+| `VITE_PAYPAL_MERCHANT_EMAIL` | Your PayPal business email |
+
+### Server-side secrets (NEVER put in `.env` for production)
+
+Set these in the **Supabase Dashboard → Edge Function → Secrets**. See next section.
+
+| Variable | Description | Required? |
 |---|---|---|
-| `VITE_PAYPAL_CLIENT_ID` | PayPal app client ID | PayPal Developer Dashboard → My Apps → App → Client ID |
-| `VITE_PAYPAL_MERCHANT_EMAIL` | Your PayPal business email | Your PayPal business account |
-| `VITE_STRIPE_PUBLISHABLE_KEY` | Stripe publishable key (starts with `pk_`) | Stripe Dashboard → Developers → API Keys |
+| `STRIPE_SECRET_KEY` | Stripe secret key (`sk_...`) | Yes if using card payments |
+| `STRIPE_WEBHOOK_SECRET` | Stripe webhook signing secret (`whsec_...`) | Yes for auto-confirming donations |
+| `MTN_MOMO_API_USER` | MTN API user UUID | Yes if using MTN |
+| `MTN_MOMO_API_KEY` | MTN API key | Yes if using MTN |
+| `MTN_MOMO_SUBSCRIPTION_KEY` | MTN Collections subscription key | Yes if using MTN |
+| `MTN_MOMO_ENVIRONMENT` | `sandbox` or `production` | Yes if using MTN |
+| `MTN_CURRENCY` | `UGX` (or your currency code) | Yes if using MTN |
+| `AIRTEL_CLIENT_ID` | Airtel API client ID | Yes if using Airtel |
+| `AIRTEL_CLIENT_SECRET` | Airtel API client secret | Yes if using Airtel |
+| `AIRTEL_ENVIRONMENT` | `sandbox` or `production` | Yes if using Airtel |
+| `AIRTEL_COUNTRY` | `UG` | Yes if using Airtel |
+| `AIRTEL_CURRENCY` | `UGX` | Yes if using Airtel |
+| `RESEND_API_KEY` | Resend email API key (`re_...`) | Yes (for all emails) |
+| `ADMIN_EMAIL` | Sender address for outgoing emails | Yes |
+| `ADMIN_NOTIFY_EMAIL` | Admin inbox for notifications | Yes |
+| `ALLOWED_ORIGINS` | Comma-separated list of allowed CORS origins | Yes |
+| `ADMIN_REGISTRATION_OPEN` | `true` = allow signup, `false` = block signup | Yes — set to `false` in production |
 
-### Server-side variables (Edge Function secrets)
-
-These are **never** sent to the browser. They must be configured in the Supabase Dashboard as Edge Function secrets (see [Deploying the Edge Function](#deploying-the-edge-function)).
-
-| Variable | Description | Where to get it |
-|---|---|---|
-| `STRIPE_SECRET_KEY` | Stripe secret key (starts with `sk_`) | Stripe Dashboard → Developers → API Keys |
-| `MTN_MOMO_API_USER` | MTN API user UUID | MTN MoMo Developer Portal |
-| `MTN_MOMO_API_KEY` | MTN API key | MTN MoMo Developer Portal |
-| `MTN_MOMO_SUBSCRIPTION_KEY` | MTN Collections product subscription key | MTN MoMo Developer Portal |
-| `MTN_MOMO_ENVIRONMENT` | `sandbox` for testing, `production` for live | — |
-
-> `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are **automatically injected** by Supabase into every Edge Function. You do not need to set these.
+> `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are **automatically injected** by Supabase. You do not need to set these yourself.
 
 ---
 
@@ -163,9 +326,10 @@ These are **never** sent to the browser. They must be configured in the Supabase
 
 ### Step 1 — Create a Supabase project
 
-1. Go to https://supabase.com and sign in.
-2. Click **New project** and fill in the details.
-3. After creation, note your **Project ID** from the URL: `https://supabase.com/dashboard/project/YOUR_PROJECT_ID`.
+1. Go to **[supabase.com](https://supabase.com)** → sign in → click **New project**
+2. Enter your project details and a strong database password
+3. Wait ~2 minutes for the project to be ready
+4. Note your **Project ID** from the URL: `https://supabase.com/dashboard/project/YOUR_PROJECT_ID`
 
 ### Step 2 — Add your project credentials to the codebase
 
@@ -178,321 +342,306 @@ export const publicAnonKey = "eyJ..."  // Project Settings → API → anon publ
 
 ### Step 3 — Apply the database schema
 
-1. In the Supabase Dashboard, go to **SQL Editor**.
-2. Open `schema.sql` from the project root, copy its entire contents, paste into the SQL Editor, and click **Run**.
+1. In the Supabase Dashboard → **SQL Editor**
+2. Open `schema.sql` from the project root → copy all contents → paste → click **Run**
 
-This creates all 18 tables required by the site:
+This creates 18 tables (`programs`, `news`, `contacts`, `donations`, etc.) with proper Row Level Security policies.
 
-| Table | Purpose |
+### Step 4 — Apply the storage policies
+
+1. In the Supabase Dashboard → **SQL Editor**
+2. Open `supabase/migrations/001_storage_policies.sql` → copy all contents → paste → click **Run**
+
+This creates two secure storage buckets:
+- `public-assets` — website images (public read, admin write only)
+- `private-documents` — reports, receipts (admin only, no public access)
+
+---
+
+## Setting Supabase Secrets
+
+### Method A — Supabase Dashboard (Easiest)
+
+1. Go to **[supabase.com](https://supabase.com)** → open your project
+2. In the left sidebar → click **Edge Functions**
+3. Click **`make-server-2a4be611`**
+4. Click the **Secrets** tab
+5. Click **Add new secret** for each one:
+
+| Secret Name | Example Value |
 |---|---|
-| `admin_users` | Admin accounts and roles |
-| `programs` | Programs/services listings |
-| `news` | News articles |
-| `contacts` | Contact form submissions |
-| `volunteers` | Volunteer applications |
-| `donations` | Donation records |
-| `newsletters` | Newsletter subscribers |
-| `gallery` | Photo gallery images |
-| `stories` | Impact stories |
-| `team` | Team member profiles |
-| `events` | Upcoming and past events |
-| `partners` | Partner organizations |
-| `reports` | Annual impact reports |
-| `opportunities` | Volunteer opportunities |
-| `faqs` | Frequently asked questions |
-| `resources` | Downloadable resources |
-| `pages` | Custom CMS pages |
-| `site_settings` | All site-wide content settings |
+| `STRIPE_SECRET_KEY` | `sk_live_abc123...` |
+| `STRIPE_WEBHOOK_SECRET` | `whsec_abc123...` |
+| `MTN_MOMO_API_USER` | `fe495637-c688-...` |
+| `MTN_MOMO_API_KEY` | `c5cfd305d399...` |
+| `MTN_MOMO_SUBSCRIPTION_KEY` | `fa9bcaea9dd3...` |
+| `MTN_MOMO_ENVIRONMENT` | `production` |
+| `MTN_CURRENCY` | `UGX` |
+| `AIRTEL_CLIENT_ID` | `your_client_id` |
+| `AIRTEL_CLIENT_SECRET` | `your_secret` |
+| `AIRTEL_ENVIRONMENT` | `production` |
+| `AIRTEL_COUNTRY` | `UG` |
+| `AIRTEL_CURRENCY` | `UGX` |
+| `RESEND_API_KEY` | `re_abc123...` |
+| `ADMIN_EMAIL` | `Resti Kiryandongo CBO <noreply@resti.org>` |
+| `ADMIN_NOTIFY_EMAIL` | `admin@resti.org` |
+| `ALLOWED_ORIGINS` | `https://resti.org,https://www.resti.org` |
+| `ADMIN_REGISTRATION_OPEN` | `false` |
+
+6. After adding all secrets → click **Redeploy** on the same page
+
+### Method B — Supabase CLI (PowerShell)
+
+```powershell
+# 1. Install the CLI (if not already installed)
+npm install -g supabase
+
+# 2. Log in
+supabase login
+
+# 3. Link to your project
+supabase link --project-ref YOUR_PROJECT_ID
+
+# 4. Set each secret
+supabase secrets set STRIPE_SECRET_KEY=sk_live_...
+supabase secrets set STRIPE_WEBHOOK_SECRET=whsec_...
+supabase secrets set MTN_MOMO_API_USER=your-uuid
+supabase secrets set MTN_MOMO_API_KEY=your-key
+supabase secrets set MTN_MOMO_SUBSCRIPTION_KEY=your-sub-key
+supabase secrets set MTN_MOMO_ENVIRONMENT=production
+supabase secrets set MTN_CURRENCY=UGX
+supabase secrets set AIRTEL_CLIENT_ID=your-client-id
+supabase secrets set AIRTEL_CLIENT_SECRET=your-secret
+supabase secrets set AIRTEL_ENVIRONMENT=production
+supabase secrets set AIRTEL_COUNTRY=UG
+supabase secrets set AIRTEL_CURRENCY=UGX
+supabase secrets set RESEND_API_KEY=re_...
+supabase secrets set ADMIN_EMAIL="Resti Kiryandongo CBO <noreply@resti.org>"
+supabase secrets set ADMIN_NOTIFY_EMAIL=admin@resti.org
+supabase secrets set "ALLOWED_ORIGINS=https://resti.org,https://www.resti.org"
+supabase secrets set ADMIN_REGISTRATION_OPEN=false
+
+# 5. Verify all secrets are saved
+supabase secrets list
+```
+
+> **Find your Project ID**: Supabase Dashboard → Project Settings → General → Reference ID
 
 ---
 
 ## Deploying the Edge Function
 
-The backend API runs as a single Supabase Edge Function. The CLI binary is included in `supabase-cli/supabase.exe`.
-
-### Step 1 — Log in to Supabase CLI
-
-Run this once (opens a browser for authentication):
-
 ```powershell
-.\supabase-cli\supabase.exe login
+# Install Supabase CLI globally
+npm install -g supabase
+
+# Log in (opens browser)
+supabase login
+
+# Link to your project
+supabase link --project-ref YOUR_PROJECT_ID
+
+# Deploy the function
+supabase functions deploy make-server-2a4be611
 ```
 
-### Step 2 — Deploy the function
+**After any code changes** to `index.ts`, `webhooks.ts`, `validation.ts`, or `rateLimit.ts`, redeploy:
 
 ```powershell
-.\supabase-cli\supabase.exe functions deploy make-server-2a4be611 --project-ref YOUR_PROJECT_ID
-```
-
-Replace `YOUR_PROJECT_ID` with your actual Supabase project ID (e.g. `mxffqgefsufcdgnhjjsw`).
-
-### Step 3 — Set Edge Function secrets
-
-In the Supabase Dashboard:
-1. Go to **Edge Functions** → `make-server-2a4be611` → **Secrets** tab.
-2. Add each of the server-side variables from the table above.
-
-Alternatively, set them via CLI:
-
-```powershell
-.\supabase-cli\supabase.exe secrets set STRIPE_SECRET_KEY=sk_test_... --project-ref YOUR_PROJECT_ID
-.\supabase-cli\supabase.exe secrets set MTN_MOMO_API_KEY=your_key --project-ref YOUR_PROJECT_ID
-# ... repeat for each variable
-```
-
-### Re-deploying after code changes
-
-Any time you edit `supabase/functions/make-server-2a4be611/index.ts` or `kv_store.tsx`, redeploy:
-
-```powershell
-.\supabase-cli\supabase.exe functions deploy make-server-2a4be611 --project-ref YOUR_PROJECT_ID
+supabase functions deploy make-server-2a4be611
 ```
 
 ---
 
-## Payment Integrations
+## Registering Payment Webhooks
 
-### Stripe (Card Payments — `/donate`)
+After deploying, register your webhook URL with each payment provider.
 
-- The card form only appears when `VITE_STRIPE_PUBLISHABLE_KEY` in `.env` is a real key starting with `pk_test_` or `pk_live_`.
-- The server-side charge is handled by the Edge Function using `STRIPE_SECRET_KEY`.
-- For **production**, use `pk_live_` and `sk_live_` keys.
-- Get keys: https://dashboard.stripe.com/apikeys
+Your webhook base URL is:
+```
+https://YOUR_PROJECT_ID.supabase.co/functions/v1/make-server-2a4be611
+```
 
-### PayPal
+| Provider | Webhook URL | Events |
+|---|---|---|
+| Stripe | `.../webhooks/stripe` | `checkout.session.completed`, `payment_intent.succeeded` |
+| MTN MoMo | `.../webhooks/mtn` | Payment status callbacks |
+| Airtel | `.../webhooks/airtel` | Payment status callbacks |
 
-- Uses `VITE_PAYPAL_CLIENT_ID` embedded at build time.
-- Use the **Sandbox** Client ID for testing, **Live** for production.
-- Get credentials: https://developer.paypal.com → My Apps & Credentials
-
-### MTN Mobile Money
-
-- Handled server-side by the Edge Function.
-- Register at https://momodeveloper.mtn.com.
-- Subscribe to the **Collections** product to get your Subscription Key.
-- Set `MTN_MOMO_ENVIRONMENT=sandbox` for testing, `production` for live.
-
-### Airtel Money
-
-- Credentials are configured via the Admin Dashboard → Settings when you have an Airtel business account.
-
-### Bank Transfer
-
-- No API keys required.
-- Bank account details are displayed as static information. Update them in Admin Dashboard → Settings.
+**Stripe webhook setup** (most important):
+1. Stripe Dashboard → **Developers** → **Webhooks** → **Add endpoint**
+2. Paste the Stripe webhook URL above
+3. Select events: `checkout.session.completed` + `payment_intent.succeeded`
+4. Copy the **Signing secret** → save as `STRIPE_WEBHOOK_SECRET` in Supabase Secrets
 
 ---
 
-## Building for Production
+## Bootstrapping the First Admin Account
 
-Before building, make sure your `.env` file has real values for all `VITE_` variables.
+> **IMPORTANT:** The admin registration endpoint is closed by default (`ADMIN_REGISTRATION_OPEN=false`). Follow these steps carefully.
+
+### Step 1 — Temporarily open registration
+In Supabase Dashboard → Edge Functions → Secrets:
+- Change `ADMIN_REGISTRATION_OPEN` from `false` to **`true`**
+- Click **Redeploy**
+
+### Step 2 — Create the first admin account
+1. Go to `https://yourdomain.com/admin` (or wherever your admin login page is)
+2. Click **Create Account / Sign Up**
+3. Enter your email and a **strong password** (minimum 12 characters)
+4. Submit the form
+
+### Step 3 — Promote to super-admin
+1. Go to **Supabase Dashboard** → **Authentication** → **Users**
+2. Find your new user → click the three dots → **Edit User**
+3. In the **User Metadata** field, set:
+   ```json
+   { "role": "super-admin", "name": "Your Name" }
+   ```
+4. Click **Save**
+
+### Step 4 — Close registration immediately
+In Supabase Dashboard → Edge Functions → Secrets:
+- Change `ADMIN_REGISTRATION_OPEN` back to **`false`**
+- Click **Redeploy**
+
+> From now on, all new admin accounts are created and managed from within the Admin Dashboard by the super-admin.
+
+---
+
+## Building & Hosting on Hostinger
+
+### Build the frontend
 
 ```bash
 npm run build
 ```
 
-This generates the `build/` folder:
+This generates a `build/` folder.
 
-```
-build/
-├── .htaccess         ← handles SPA routing on Apache (Hostinger)
-├── assets/
-│   ├── index-XXXX.css
-│   └── index-XXXX.js
-├── favicon.svg
-├── index.html
-├── logo.png
-├── robots.txt
-└── sitemap.xml
-```
+### Upload to Hostinger
 
-> `.htaccess` and `logo.png` are copied silently from `public/` — they will not appear in Vite's build output log but they are present in `build/`.
+1. Log in to **[hpanel.hostinger.com](https://hpanel.hostinger.com)**
+2. Click **File Manager** → open `public_html`
+3. Delete any default placeholder files (e.g. `index.php`, `default.php`)
+4. Upload the **contents** of `build/` directly into `public_html/` — not the folder itself
+5. Make sure `.htaccess` is present inside `public_html/` (it is a hidden file, starts with a dot)
 
----
+> **Tip:** ZIP the contents of `build/`, upload the ZIP to `public_html/`, use File Manager's **Extract** option, then delete the ZIP.
 
-## Hosting on Hostinger
+### Enable SSL
+In hPanel → **Security** → **SSL** → enable the free certificate for your domain.
 
-Only the contents of `build/` need to be uploaded. The Supabase backend is entirely separate and unaffected.
-
-### Step 1 — Build
-
-```bash
-npm run build
-```
-
-### Step 2 — Open Hostinger File Manager
-
-Log in at https://hpanel.hostinger.com → **File Manager** → open `public_html`.
-
-Delete any default placeholder files Hostinger placed there (e.g. `default.php`, `index.php`).
-
-### Step 3 — Upload
-
-Upload the **contents** of your `build/` folder directly into `public_html/`. Do not upload the `build/` folder itself — upload what is inside it.
-
-The result should look exactly like this inside `public_html/`:
-
-```
-public_html/
-├── .htaccess          ← must be present — this is a hidden file
-├── assets/
-│   ├── index-XXXX.css
-│   └── index-XXXX.js
-├── favicon.svg
-├── index.html
-├── logo.png
-├── robots.txt
-└── sitemap.xml
-```
-
-**Tip on `.htaccess`**: It is a hidden file (starts with a dot). In Hostinger's File Manager it is visible by default. If uploading via FTP, enable "Show hidden files" in your FTP client.
-
-**Tip on uploading**: You can ZIP the contents of `build/` (not the folder itself), upload the ZIP to `public_html/`, and use File Manager's Extract option. Then delete the ZIP.
-
-### Step 4 — Enable SSL
-
-In hPanel → **Security** → **SSL** → enable the free SSL certificate for your domain. This ensures the site runs on `https://`.
-
-### Step 5 — Verify
-
-Visit your domain. Test a route like `yourdomain.com/about` directly in the browser — if it loads (not a 404), the `.htaccess` is working correctly.
-
-### How the `.htaccess` works
-
-Hostinger runs Apache/LiteSpeed. The `.htaccess` file in `public_html/` tells the server to serve `index.html` for every URL that doesn't match a real file or folder. This lets React Router handle all client-side navigation:
-
-```apache
-<IfModule mod_rewrite.c>
-  RewriteEngine On
-  RewriteBase /
-  RewriteRule ^index\.html$ - [L]
-  RewriteCond %{REQUEST_FILENAME} !-f
-  RewriteCond %{REQUEST_FILENAME} !-d
-  RewriteRule . /index.html [L]
-</IfModule>
-```
-
-### After updates
-
-Whenever you make code changes, rebuild and re-upload. If you don't see changes after re-uploading, go to hPanel → **Advanced** → **Cache Manager** → **Purge All**.
+### After code changes
+Rebuild and re-upload. If you don't see changes:  
+hPanel → **Advanced** → **Cache Manager** → **Purge All**
 
 ---
 
 ## Admin Dashboard
 
 The admin dashboard is at:
-
 ```
-https://yourdomain.com/super-secret-admin-route
+https://yourdomain.com/admin
 ```
-
-### First-time account creation
-
-The **first account** registered via the signup form on this page is automatically assigned the `super-admin` role. All subsequent accounts get the `editor` role and must be activated by a super-admin.
-
-**Steps to create your super-admin account:**
-1. Go to `https://yourdomain.com/super-secret-admin-route`
-2. Click the signup / create account link
-3. Enter your email and a strong password
-4. Log in with those credentials
 
 ### Roles
 
 | Role | Access |
 |---|---|
-| `super-admin` | Full access to all tabs, settings, and user management |
-| `editor` | Content editing — requires activation by a super-admin |
-| `viewer` | Read-only |
+| `super-admin` | Full access — users, settings, all content |
+| `admin` | All content management, no user/role management |
+| `editor` | Content editing only — must be activated by admin |
 
-### What is manageable from the dashboard
-
-Every piece of public-facing content on the site is editable without touching code:
+### What you can manage
 
 | Tab | What you can edit |
 |---|---|
-| Overview | Site-wide stats, recent activity |
+| Overview | Site stats, recent activity |
 | Programs | Add / edit / delete program listings |
 | News | News articles with images |
 | Gallery | Photo gallery |
 | Team | Staff and team profiles |
 | Stories | Impact stories |
-| Impact | Impact map markers, statistics |
-| Reports | Annual impact/financial reports |
+| Impact | Map markers, statistics |
+| Reports | Annual reports |
 | Events | Upcoming and past events |
-| Partners | Partner organization listings |
+| Partners | Partner listings |
 | Opportunities | Volunteer opportunity listings |
 | FAQs | Frequently asked questions |
 | Resources | Downloadable documents |
-| Pages | Custom pages accessible at `/pages/:slug` |
-| Contacts | Submitted contact forms |
+| Pages | Custom CMS pages at `/pages/:slug` |
+| Contacts | Contact form submissions |
 | Volunteers | Volunteer applications |
-| Donations | Donor records |
+| Donations | Donor records (pending + completed) |
 | Subscribers | Newsletter subscribers |
-| Settings | Hero text, About content, contact details, footer, announcement bar, social links, bank transfer details |
-| Activity Log | Audit trail of all admin actions |
+| Settings | Hero text, About, contact details, footer, social links, bank details |
 
 ---
 
 ## Routes Reference
 
-| URL | Component |
+| URL | Page |
 |---|---|
-| `/` | Homepage (all sections) |
+| `/` | Homepage |
 | `/about` | About page |
 | `/news` | News archive |
 | `/news/:id` | Individual news article |
 | `/stories` | Stories archive |
-| `/stories/:id` | Individual story |
-| `/programs/:id` | Individual program detail |
+| `/programs/:id` | Program detail |
 | `/team` | Full team page |
 | `/reports` | Impact reports |
-| `/volunteer` | Volunteer signup page |
-| `/faqs` | FAQ page |
-| `/partners` | Partners page |
+| `/volunteer` | Volunteer signup |
+| `/faqs` | FAQs |
+| `/partners` | Partners |
 | `/opportunities` | Volunteer opportunities |
-| `/donate` | Donation / card payment page |
-| `/login` | Donor login |
-| `/register` | Donor registration |
-| `/reset-password` | Password reset |
-| `/donor/dashboard` | Donor dashboard |
+| `/donate` | Donation page |
 | `/contact` | Contact page |
-| `/financials` | Financial reports |
-| `/privacy` | Privacy policy |
-| `/terms` | Terms of service |
-| `/refund` | Refund policy |
 | `/pages/:slug` | Custom CMS pages |
-| `/super-secret-admin-route` | Admin dashboard |
+| `/admin` | Admin dashboard |
 
 ---
 
 ## Troubleshooting
 
 **Card payment form not showing**  
-`VITE_STRIPE_PUBLISHABLE_KEY` must be a real key starting with `pk_test_` or `pk_live_`. Placeholder values disable the form. Set the real key in `.env` and rebuild.
+`VITE_STRIPE_PUBLISHABLE_KEY` must start with `pk_test_` or `pk_live_`. Rebuild after setting the real key.
 
-**"Failed to create admin account"**  
-The Edge Function must be deployed and the `schema.sql` must have been run. Redeploy with:
-```powershell
-.\supabase-cli\supabase.exe functions deploy make-server-2a4be611 --project-ref YOUR_PROJECT_ID
-```
+**"Administrator registration is currently closed"**  
+Set `ADMIN_REGISTRATION_OPEN=true` in Supabase Secrets → Redeploy → register → set back to `false` → Redeploy.
 
-**"Invalid login credentials"**  
-The account must be created via the signup form on the admin page first. The Supabase Auth user must exist — having a row in `admin_users` alone is not enough.
+**"Unauthorized" on admin actions**  
+Your JWT token may have expired. Log out and log back in to the admin dashboard.
+
+**Mobile money payment stuck on pending**  
+The MTN/Airtel webhook URL is not registered with the provider, or `MTN_MOMO_ENVIRONMENT` is still `sandbox` while using production credentials. Check Supabase Edge Function logs.
+
+**Stripe webhook "Invalid signature" error**  
+`STRIPE_WEBHOOK_SECRET` in Supabase Secrets does not match the signing secret shown in the Stripe Dashboard for that webhook endpoint.
 
 **Routes return 404 on Hostinger**  
-The `.htaccess` file was not uploaded, or was uploaded to the wrong location. It must be directly inside `public_html/`, not inside a subfolder.
+`.htaccess` is missing from `public_html/` or is in the wrong location.
 
 **Changes not visible after re-upload**  
-Clear the Hostinger cache: hPanel → **Advanced** → **Cache Manager** → **Purge All**.
+hPanel → **Advanced** → **Cache Manager** → **Purge All**
 
 **Edge Function errors**  
-Check live logs: Supabase Dashboard → **Edge Functions** → `make-server-2a4be611` → **Logs**.
+Supabase Dashboard → **Edge Functions** → `make-server-2a4be611` → **Logs** tab.
 
-**Large file warning on `git push`**  
-`supabase-cli/supabase.exe` (93 MB) exceeds GitHub's 50 MB limit. To remove it from git tracking:
+**`git push` fails with "file too large"**  
+Remove the old CLI binary if it was tracked:
 ```bash
 git rm --cached supabase-cli/supabase.exe
-echo "supabase-cli/supabase.exe" >> .gitignore
-git commit -m "remove large binary from tracking"
+git commit -m "remove large binary"
 ```
-The file stays on disk but is no longer tracked by git.
+
+---
+
+## Security Notes
+
+- **Never commit `.env`** — it is in `.gitignore`
+- **Never put secret keys** (`sk_`, `whsec_`, `re_`, MTN/Airtel keys) in `.env` for production — use Supabase Dashboard Secrets only
+- **`ADMIN_REGISTRATION_OPEN` must be `false`** in production at all times except during initial bootstrap
+- The admin JWT is verified server-side on every request — no client-side trust
+- All public form inputs are HTML-escaped before appearing in emails
+- Donations are only marked `completed` after webhook or polling confirmation — never by the browser
