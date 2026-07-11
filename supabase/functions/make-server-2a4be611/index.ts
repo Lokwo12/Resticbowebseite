@@ -13,12 +13,18 @@ const app = new Hono()
 
 // ── CORS: restrict to approved origins only ──────────────────────────────────
 const ALLOWED_ORIGINS = (
-  Deno.env.get('ALLOWED_ORIGINS') ||
-  'https://resti.org,https://www.resti.org,http://localhost:5173'
-).split(',')
+  Deno.env.get('ALLOWED_ORIGINS') || ''
+).split(',').filter(Boolean)
+
+if (ALLOWED_ORIGINS.length === 0) {
+  console.warn('WARNING: ALLOWED_ORIGINS is not set. API will reject all CORS requests.')
+}
 
 app.use('*', cors({
-  origin: (origin) => ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0],
+  origin: (origin) => {
+    if (!origin) return ''
+    return ALLOWED_ORIGINS.includes(origin) ? origin : ''
+  },
   allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowHeaders: ['Content-Type', 'Authorization'],
   credentials: true,
@@ -26,24 +32,41 @@ app.use('*', cors({
 app.use('*', logger())
 
 // ── requireAdmin middleware ───────────────────────────────────────────────────
-// Verifies the Bearer JWT, reads role from user_metadata, and rejects
-// non-admin callers with 401/403 before the route handler runs.
+// Verifies the Bearer JWT, then checks the admin_users table for active status and role.
 async function requireAdmin(c: Context, next: Next) {
   const authHeader = c.req.header('Authorization')
   const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null
+  
   if (!token) {
     return c.json({ error: 'Unauthorized – authentication required' }, 401)
   }
+  
   const { data: { user }, error } = await supabase.auth.getUser(token)
   if (error || !user) {
     return c.json({ error: 'Unauthorized – invalid or expired token' }, 401)
   }
-  const role: string = user.user_metadata?.role || 'viewer'
-  if (role !== 'admin' && role !== 'super-admin') {
+  
+  const { data: admin, error: adminError } = await supabase
+    .from('admin_users')
+    .select('role, status')
+    .eq('id', user.id)
+    .single()
+
+  if (
+    adminError ||
+    !admin ||
+    admin.status !== 'active' ||
+    !['admin', 'super-admin'].includes(admin.role)
+  ) {
     return c.json({ error: 'Forbidden – administrator role required' }, 403)
   }
+
   // Make the authenticated user available to route handlers
-  c.set('adminUser', user)
+  c.set('adminUser', {
+    id: user.id,
+    email: user.email,
+    role: admin.role,
+  })
   await next()
 }
 
@@ -58,8 +81,14 @@ const stripe = stripeSecretKey ? new Stripe(stripeSecretKey, {
   apiVersion: '2024-11-20.acacia',
 }) : null
 
-// Initialize Resend for email notifications
+// Validate email configuration at startup
 const resendApiKey = Deno.env.get('RESEND_API_KEY')
+const adminEmail = Deno.env.get('ADMIN_EMAIL')
+const adminNotifyEmail = Deno.env.get('ADMIN_NOTIFY_EMAIL')
+
+if (!resendApiKey) console.error('CRITICAL WARNING: RESEND_API_KEY is not set. Emails will not send.')
+if (!adminEmail) console.error('CRITICAL WARNING: ADMIN_EMAIL is not set. Defaulting sender to Resend sandbox.')
+if (!adminNotifyEmail) console.error('CRITICAL WARNING: ADMIN_NOTIFY_EMAIL is not set. Admin notifications will fail.')
 
 // Email notification helper
 async function sendEmail(to: string, subject: string, html: string) {
@@ -98,30 +127,6 @@ async function sendEmail(to: string, subject: string, html: string) {
   }
 }
 
-// Initialize Supabase Storage bucket
-async function initializeStorage() {
-  const bucketName = 'make-2a4be611-uploads'
-  
-  try {
-    const { data: buckets } = await supabase.storage.listBuckets()
-    const bucketExists = buckets?.some(bucket => bucket.name === bucketName)
-    
-    if (!bucketExists) {
-      await supabase.storage.createBucket(bucketName, {
-        public: true,
-        fileSizeLimit: 5242880, // 5MB
-        allowedMimeTypes: ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
-      })
-      console.log('Storage bucket created:', bucketName)
-    }
-  } catch (error) {
-    console.error('Storage initialization error:', error)
-  }
-}
-
-// Initialize storage on startup
-initializeStorage()
-
 // Contact form submission with email notification
 app.post('/make-server-2a4be611/contact', withRateLimit('contact', 5, 10 * 60_000), async (c) => {
   try {
@@ -153,14 +158,16 @@ app.post('/make-server-2a4be611/contact', withRateLimit('contact', 5, 10 * 60_00
       status: 'new'
     })
 
-    const adminEmail = Deno.env.get('ADMIN_NOTIFY_EMAIL') || 'admin@restikirya.org'
-
-    // Send notification email to admin
-    await sendEmail(
-      adminEmail,
-      'New Contact Form Submission',
-      `
-        <h2>New Contact Message</h2>
+    const adminNotify = Deno.env.get('ADMIN_NOTIFY_EMAIL')
+    if (!adminNotify) {
+      console.error('Cannot send admin notification: ADMIN_NOTIFY_EMAIL not configured')
+    } else {
+      // Send notification email to admin
+      await sendEmail(
+        adminNotify,
+        'New Contact Form Submission',
+        `
+          <h2>New Contact Message</h2>
         <p><strong>From:</strong> ${safeName}</p>
         <p><strong>Email:</strong> ${safeEmail}</p>
         <p><strong>Phone:</strong> ${safePhone || 'Not provided'}</p>
@@ -169,7 +176,8 @@ app.post('/make-server-2a4be611/contact', withRateLimit('contact', 5, 10 * 60_00
         <hr>
         <p><em>Submitted at ${new Date().toLocaleString()}</em></p>
       `
-    )
+      )
+    }
 
     // Send confirmation email to submitter
     await sendEmail(
@@ -227,7 +235,7 @@ app.post('/make-server-2a4be611/programs', requireAdmin, async (c) => {
       return c.json({ error: 'Title and description are required' }, 400)
     }
 
-    const programId = `program:${Date.now()}`
+    const programId = `program:${crypto.randomUUID()}`
     await kv.set(programId, {
       title,
       description,
@@ -278,7 +286,7 @@ app.post('/make-server-2a4be611/news', requireAdmin, async (c) => {
       return c.json({ error: 'Title and content are required' }, 400)
     }
 
-    const newsId = `news:${Date.now()}`
+    const newsId = `news:${crypto.randomUUID()}`
     await kv.set(newsId, {
       title,
       content,
@@ -433,7 +441,7 @@ app.post('/make-server-2a4be611/verify-session', async (c) => {
       return c.json({ status: 'already_recorded' })
     }
 
-    const donationId = `donation:${Date.now()}`
+    const donationId = `donation:${crypto.randomUUID()}`
     const donationData = {
       amount: session.amount_total ? session.amount_total / 100 : 0,
       currency: session.currency?.toUpperCase() || 'USD',
@@ -836,7 +844,7 @@ app.post('/make-server-2a4be611/mobile-payment/initiate', withRateLimit('mobile-
     }
 
     // Record pending donation
-    const donationId = `donation:${Date.now()}`
+    const donationId = `donation:${crypto.randomUUID()}`
     await kv.set(donationId, {
       amount,
       currency: transactionCurrency,
@@ -1116,7 +1124,7 @@ app.post('/make-server-2a4be611/upload-image', requireAdmin, async (c) => {
     }
 
     const bucketName = 'make-2a4be611-uploads'
-    const fileName = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`
+    const fileName = `${crypto.randomUUID()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`
     
     const arrayBuffer = await file.arrayBuffer()
     const uint8Array = new Uint8Array(arrayBuffer)
@@ -1998,7 +2006,7 @@ app.post('/make-server-2a4be611/admin/gallery', async (c) => {
       return c.json({ error: 'Title and image URL are required' }, 400)
     }
 
-    const imageId = `gallery:${Date.now()}`
+    const imageId = `gallery:${crypto.randomUUID()}`
     await kv.set(imageId, {
       title,
       description: description || '',
@@ -2109,7 +2117,7 @@ app.post('/make-server-2a4be611/admin/stories', async (c) => {
   try {
     const body = await c.req.json()
     const { name, title, story, image, category, impact } = body
-    const storyId = `story:${Date.now()}`
+    const storyId = `story:${crypto.randomUUID()}`
     await kv.set(storyId, { name, title, story, image: image || '', category: category || 'general', impact: impact || '', date: new Date().toISOString() })
     return c.json({ success: true, message: 'Story added successfully', id: storyId })
   } catch (error) {
@@ -2168,7 +2176,7 @@ app.post('/make-server-2a4be611/admin/team', async (c) => {
   try {
     const body = await c.req.json()
     const { name, role, department, bio, image, email, linkedin, twitter, order } = body
-    const memberId = `team:${Date.now()}`
+    const memberId = `team:${crypto.randomUUID()}`
     await kv.set(memberId, { name, role, department: department || 'general', bio: bio || '', image: image || '', email: email || '', linkedin, twitter, order: order || 999 })
     return c.json({ success: true, message: 'Team member added successfully', id: memberId })
   } catch (error) {
@@ -2227,7 +2235,7 @@ app.post('/make-server-2a4be611/admin/events', async (c) => {
   try {
     const body = await c.req.json()
     const { title, description, date, time, location, image, category, capacity, status } = body
-    const eventId = `event:${Date.now()}`
+    const eventId = `event:${crypto.randomUUID()}`
     await kv.set(eventId, { title, description, date, time, location, image: image || '', category: category || 'general', capacity, registered: 0, status: status || 'upcoming' })
     return c.json({ success: true, message: 'Event added successfully', id: eventId })
   } catch (error) {
@@ -2285,7 +2293,7 @@ app.post('/make-server-2a4be611/admin/partners', async (c) => {
   try {
     const body = await c.req.json()
     const { name, description, logo, website, category, since } = body
-    const partnerId = `partner:${Date.now()}`
+    const partnerId = `partner:${crypto.randomUUID()}`
     await kv.set(partnerId, { name, description, logo: logo || '', website, category: category || 'general', since: since || new Date().getFullYear().toString() })
     return c.json({ success: true, message: 'Partner added successfully', id: partnerId })
   } catch (error) {
@@ -2365,7 +2373,7 @@ app.post('/make-server-2a4be611/admin/reports', async (c) => {
   try {
     const body = await c.req.json()
     const { title, year, fileUrl, description, fileSize } = body
-    const reportId = `report:${Date.now()}`
+    const reportId = `report:${crypto.randomUUID()}`
     await kv.set(reportId, { title, year, fileUrl, description, fileSize })
     return c.json({ success: true, message: 'Report added successfully', id: reportId })
   } catch (error) {
@@ -2423,7 +2431,7 @@ app.post('/make-server-2a4be611/admin/opportunities', async (c) => {
   try {
     const body = await c.req.json()
     const { title, description, requirements, timeCommitment, location, category, openPositions, benefits } = body
-    const opportunityId = `opportunity:${Date.now()}`
+    const opportunityId = `opportunity:${crypto.randomUUID()}`
     await kv.set(opportunityId, { title, description, requirements: requirements || [], timeCommitment, location, category: category || 'general', openPositions: openPositions || 1, benefits: benefits || [] })
     return c.json({ success: true, message: 'Opportunity added successfully', id: opportunityId })
   } catch (error) {
@@ -2482,7 +2490,7 @@ app.post('/make-server-2a4be611/admin/faqs', async (c) => {
   try {
     const body = await c.req.json()
     const { question, answer, category, order } = body
-    const faqId = `faq:${Date.now()}`
+    const faqId = `faq:${crypto.randomUUID()}`
     await kv.set(faqId, { question, answer, category: category || 'general', order: order || 999 })
     return c.json({ success: true, message: 'FAQ added successfully', id: faqId })
   } catch (error) {
@@ -2541,7 +2549,7 @@ app.post('/make-server-2a4be611/admin/resources', async (c) => {
   try {
     const body = await c.req.json()
     const { title, description, fileUrl, fileType, fileSize, category } = body
-    const resourceId = `resource:${Date.now()}`
+    const resourceId = `resource:${crypto.randomUUID()}`
     await kv.set(resourceId, { title, description, fileUrl, fileType, fileSize, category: category || 'general', date: new Date().toISOString() })
     return c.json({ success: true, message: 'Resource added successfully', id: resourceId })
   } catch (error) {
@@ -2628,7 +2636,7 @@ app.post('/make-server-2a4be611/pages', async (c) => {
     const body = await c.req.json()
     const { title, slug, content, published } = body
     if (!title || !slug) return c.json({ error: 'Title and slug are required' }, 400)
-    const pageId = `page:${Date.now()}`
+    const pageId = `page:${crypto.randomUUID()}`
     const now = new Date().toISOString()
     await kv.set(pageId, { title, slug, content: content || '', published: published ?? true, createdAt: now, updatedAt: now })
     return c.json({ success: true, message: 'Page created successfully', id: pageId })
@@ -3530,7 +3538,7 @@ app.post('/make-server-2a4be611/admin/map-locations', async (c) => {
     
     const body = await c.req.json()
     const { name, category, coordinates, description, impact } = body
-    const id = `map-location:${Date.now()}`
+    const id = `map-location:${crypto.randomUUID()}`
     
     await kv.set(id, { name, category, coordinates, description, impact, created_at: new Date().toISOString() })
     
@@ -3582,7 +3590,7 @@ app.post('/make-server-2a4be611/livechat/message', async (c) => {
     const { sessionId, email, message } = body
     
     // If no sessionId, generate one
-    const actualSessionId = sessionId || `chat-${Date.now()}-${Math.floor(Math.random()*1000)}`
+    const actualSessionId = sessionId || `chat-${crypto.randomUUID()}`
     const key = `livechat:${actualSessionId}`
     
     // Get existing session

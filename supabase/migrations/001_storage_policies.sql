@@ -27,7 +27,7 @@ CREATE POLICY IF NOT EXISTS "Admin insert on public-assets"
   WITH CHECK (
     bucket_id = 'public-assets'
     AND auth.role() = 'authenticated'
-    AND (auth.jwt() -> 'user_metadata' ->> 'role') IN ('admin', 'super-admin')
+    AND public.is_active_admin()
   );
 
 CREATE POLICY IF NOT EXISTS "Admin update on public-assets"
@@ -35,7 +35,7 @@ CREATE POLICY IF NOT EXISTS "Admin update on public-assets"
   USING (
     bucket_id = 'public-assets'
     AND auth.role() = 'authenticated'
-    AND (auth.jwt() -> 'user_metadata' ->> 'role') IN ('admin', 'super-admin')
+    AND public.is_active_admin()
   );
 
 CREATE POLICY IF NOT EXISTS "Admin delete on public-assets"
@@ -43,7 +43,7 @@ CREATE POLICY IF NOT EXISTS "Admin delete on public-assets"
   USING (
     bucket_id = 'public-assets'
     AND auth.role() = 'authenticated'
-    AND (auth.jwt() -> 'user_metadata' ->> 'role') IN ('admin', 'super-admin')
+    AND public.is_active_admin()
   );
 
 -- 2. Create private-documents bucket (no public access, admin only)
@@ -72,12 +72,12 @@ CREATE POLICY IF NOT EXISTS "Admin full access on private-documents"
   USING (
     bucket_id = 'private-documents'
     AND auth.role() = 'authenticated'
-    AND (auth.jwt() -> 'user_metadata' ->> 'role') IN ('admin', 'super-admin')
+    AND public.is_active_admin()
   )
   WITH CHECK (
     bucket_id = 'private-documents'
     AND auth.role() = 'authenticated'
-    AND (auth.jwt() -> 'user_metadata' ->> 'role') IN ('admin', 'super-admin')
+    AND public.is_active_admin()
   );
 
 -- 3. Remove or secure the old general uploads bucket if it exists
@@ -102,7 +102,7 @@ BEGIN
         USING (
           bucket_id = 'make-2a4be611-uploads'
           AND auth.role() = 'authenticated'
-          AND (auth.jwt() -> 'user_metadata' ->> 'role') IN ('admin', 'super-admin')
+          AND public.is_active_admin()
         )
     $policy$;
   END IF;

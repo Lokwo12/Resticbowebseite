@@ -73,15 +73,30 @@ CREATE TABLE IF NOT EXISTS public.donations (
   first_name TEXT,
   last_name TEXT,
   email TEXT,
-  amount NUMERIC,
+  amount NUMERIC CHECK (amount > 0),
   currency TEXT DEFAULT 'USD',
   frequency TEXT DEFAULT 'once',
   method TEXT,
-  status TEXT DEFAULT 'pending',
+  status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'completed', 'failed', 'cancelled', 'expired')),
   transaction_id TEXT,
+  provider TEXT,
+  provider_reference TEXT,
+  provider_transaction_id TEXT,
+  expected_amount NUMERIC,
+  expected_currency TEXT,
+  completed_at TIMESTAMPTZ,
+  expires_at TIMESTAMPTZ,
+  receipt_sent_at TIMESTAMPTZ,
+  verification_method TEXT,
+  provider_response JSONB,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Ensure a provider's transaction cannot be completed twice
+CREATE UNIQUE INDEX IF NOT EXISTS donations_provider_transaction_unique 
+  ON public.donations (provider, provider_transaction_id) 
+  WHERE provider_transaction_id IS NOT NULL;
 
 -- 7. newsletters
 CREATE TABLE IF NOT EXISTS public.newsletters (
@@ -231,6 +246,114 @@ CREATE TABLE IF NOT EXISTS public.site_settings (
   settings JSONB NOT NULL,
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- 19. rate_limits
+CREATE TABLE IF NOT EXISTS public.rate_limits (
+  id TEXT PRIMARY KEY,
+  ip_address TEXT NOT NULL,
+  action TEXT NOT NULL,
+  count INTEGER DEFAULT 1,
+  reset_at TIMESTAMPTZ NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS rate_limits_ip_action_idx ON public.rate_limits (ip_address, action);
+
+-- ============================================================================
+-- Security & Utility Functions
+-- ============================================================================
+
+-- Security Definer Function: Checks if the current user is an active admin
+CREATE OR REPLACE FUNCTION public.is_active_admin()
+RETURNS boolean
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT EXISTS (
+    SELECT 1
+    FROM public.admin_users
+    WHERE id = auth.uid()::text
+      AND status = 'active'
+      AND role IN ('admin', 'super-admin')
+  );
+$$;
+
+-- RPC: Atomic Donation Completion
+-- This ensures a pending donation is only completed once, verifying amounts and preventing race conditions.
+CREATE OR REPLACE FUNCTION public.complete_donation_transactionally(
+  p_reference_id TEXT,
+  p_provider TEXT,
+  p_provider_tx_id TEXT,
+  p_provider_status TEXT,
+  p_expected_amount NUMERIC,
+  p_expected_currency TEXT,
+  p_raw_payload JSONB
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_donation RECORD;
+BEGIN
+  -- Select the pending donation and lock it for update
+  SELECT * INTO v_donation
+  FROM public.donations
+  WHERE transaction_id = p_reference_id
+    AND status = 'pending'
+  FOR UPDATE;
+
+  IF NOT FOUND THEN
+    -- Check if it's already completed
+    IF EXISTS (
+      SELECT 1 FROM public.donations
+      WHERE transaction_id = p_reference_id AND status = 'completed'
+    ) THEN
+      RETURN jsonb_build_object('alreadyProcessed', true, 'success', false, 'error', 'Already processed');
+    END IF;
+    
+    RETURN jsonb_build_object('notFound', true, 'success', false, 'error', 'Pending donation not found');
+  END IF;
+
+  -- Verify provider
+  IF v_donation.provider IS NOT NULL AND v_donation.provider != p_provider THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Provider mismatch');
+  END IF;
+
+  -- Verify amount and currency if provided by the webhook payload
+  IF p_expected_amount IS NOT NULL AND p_expected_amount != v_donation.amount THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Amount mismatch');
+  END IF;
+
+  IF p_expected_currency IS NOT NULL AND upper(p_expected_currency) != upper(v_donation.currency) THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Currency mismatch');
+  END IF;
+
+  -- Update to completed atomically
+  UPDATE public.donations
+  SET
+    status = 'completed',
+    provider_transaction_id = p_provider_tx_id,
+    provider_response = p_raw_payload,
+    completed_at = NOW(),
+    updated_at = NOW()
+  WHERE transaction_id = p_reference_id;
+
+  -- Return the updated donation details for sending receipts
+  SELECT * INTO v_donation FROM public.donations WHERE transaction_id = p_reference_id;
+
+  RETURN jsonb_build_object(
+    'success', true,
+    'donation', to_jsonb(v_donation)
+  );
+EXCEPTION
+  WHEN unique_violation THEN
+    -- If the unique constraint on (provider, provider_transaction_id) triggers
+    RETURN jsonb_build_object('alreadyProcessed', true, 'success', false, 'error', 'Duplicate provider transaction ID');
+END;
+$$;
 
 -- Set up Row Level Security (RLS)
 -- 

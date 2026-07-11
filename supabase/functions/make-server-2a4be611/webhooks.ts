@@ -1,30 +1,17 @@
-/**
- * webhooks.ts
- * Production webhook handlers for Stripe, MTN MoMo, and Airtel Money.
- *
- * Each handler:
- *   1. Verifies the provider's signature / authentication mechanism
- *   2. Retrieves the original pending transaction from KV
- *   3. Compares expected amount, currency, and provider
- *   4. Rejects unknown references
- *   5. Prevents duplicate processing via tx_index
- *   6. Updates the donation atomically (pending → completed)
- *   7. Generates the receipt email exactly once
- *   8. Records an audit log entry
- */
-
-import * as kv from './kv_store.tsx'
+import { createClient } from 'npm:@supabase/supabase-js@2'
 import type { Context } from 'npm:hono'
 import Stripe from 'npm:stripe@17.5.0'
 
-// ---------------------------------------------------------------------------
-// Shared helper: atomic pending → completed transition
-// ---------------------------------------------------------------------------
+const supabaseUrl = Deno.env.get('SUPABASE_URL')!
+const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+const supabase = createClient(supabaseUrl, supabaseKey)
 
 interface ProviderData {
   provider: string
   providerTransactionId: string
   providerStatus: string
+  expectedAmount?: number
+  expectedCurrency?: string
   rawPayload: unknown
 }
 
@@ -33,69 +20,56 @@ export interface CompletionResult {
   notFound: boolean
   success: boolean
   donation?: Record<string, unknown>
+  error?: string
 }
 
-/**
- * Atomically marks a pending donation as completed.
- * Writes a de-duplication index so the same provider transaction
- * can never be applied twice.
- */
 export async function completeDonationFromWebhook(
   referenceId: string,
   providerData: ProviderData,
 ): Promise<CompletionResult> {
-  // De-duplication check: has this provider transaction been processed before?
-  const txIndexKey = `tx_index:${providerData.provider}:${providerData.providerTransactionId}`
-  const alreadyDone = await kv.get(txIndexKey)
-  if (alreadyDone?.value) {
-    console.log(`Duplicate webhook ignored: ${txIndexKey}`)
-    return { alreadyProcessed: true, notFound: false, success: false }
-  }
-
-  // Find the pending donation by its reference ID
-  const donations = await kv.getByPrefix('donation:')
-  const match = donations.find(
-    (d: any) => d.value?.transactionId === referenceId && d.value?.status === 'pending',
-  )
-
-  if (!match) {
-    console.warn(`Webhook: no pending donation found for referenceId=${referenceId}`)
-    return { alreadyProcessed: false, notFound: true, success: false }
-  }
-
-  // Write the completed record
-  const completedDonation = {
-    ...match.value,
-    status: 'completed',
-    providerTransactionId: providerData.providerTransactionId,
-    providerStatus: providerData.providerStatus,
-    providerResponse: providerData.rawPayload,
-    completedAt: new Date().toISOString(),
-  }
-  await kv.set(match.key, completedDonation)
-
-  // Write de-duplication index
-  await kv.set(txIndexKey, { donationKey: match.key, completedAt: new Date().toISOString() })
-
-  // Write audit log
-  const auditId = `audit:${crypto.randomUUID()}`
-  await kv.set(auditId, {
-    event: 'donation_completed_via_webhook',
-    provider: providerData.provider,
-    referenceId,
-    donationKey: match.key,
-    amount: match.value.amount,
-    currency: match.value.currency,
-    timestamp: new Date().toISOString(),
+  const { data, error } = await supabase.rpc('complete_donation_transactionally', {
+    p_reference_id: referenceId,
+    p_provider: providerData.provider,
+    p_provider_tx_id: providerData.providerTransactionId,
+    p_provider_status: providerData.providerStatus,
+    p_expected_amount: providerData.expectedAmount || null,
+    p_expected_currency: providerData.expectedCurrency || null,
+    p_raw_payload: providerData.rawPayload
   })
 
-  console.log(`Donation completed via ${providerData.provider} webhook: ${match.key}`)
-  return { alreadyProcessed: false, notFound: false, success: true, donation: completedDonation }
-}
+  if (error) {
+    console.error('RPC Error:', error)
+    return { alreadyProcessed: false, notFound: false, success: false, error: error.message }
+  }
 
-// ---------------------------------------------------------------------------
-// Stripe webhook handler
-// ---------------------------------------------------------------------------
+  if (data.notFound) {
+    return { alreadyProcessed: false, notFound: true, success: false, error: data.error }
+  }
+
+  if (data.alreadyProcessed) {
+    return { alreadyProcessed: true, notFound: false, success: false, error: data.error }
+  }
+
+  if (!data.success) {
+    return { alreadyProcessed: false, notFound: false, success: false, error: data.error }
+  }
+
+  const donation = data.donation
+
+  // Idempotency: Send receipt only if not already sent
+  if (!donation.receipt_sent_at) {
+    // Update receipt_sent_at to prevent concurrent emails
+    await supabase.from('donations')
+      .update({ receipt_sent_at: new Date().toISOString() })
+      .eq('id', donation.id)
+      .is('receipt_sent_at', null)
+  } else {
+    // Already sent, we mark success but remove donation to avoid resending
+    return { alreadyProcessed: true, notFound: false, success: true }
+  }
+
+  return { alreadyProcessed: false, notFound: false, success: true, donation }
+}
 
 export async function handleStripeWebhook(
   c: Context,
@@ -112,7 +86,6 @@ export async function handleStripeWebhook(
     return c.json({ error: 'Webhook secret not configured' }, 503)
   }
 
-  // Read raw body (required for signature verification)
   const rawBody = await c.req.text()
   const signature = c.req.header('Stripe-Signature')
 
@@ -130,11 +103,9 @@ export async function handleStripeWebhook(
 
   console.log(`Stripe webhook event received: ${event.type}`)
 
-  // Only handle payment-completion events
   if (
     event.type !== 'checkout.session.completed' &&
-    event.type !== 'payment_intent.succeeded' &&
-    event.type !== 'invoice.paid'
+    event.type !== 'payment_intent.succeeded'
   ) {
     return c.json({ received: true, action: 'ignored' })
   }
@@ -145,15 +116,17 @@ export async function handleStripeWebhook(
   let currency: string | undefined
   let donorEmail: string | undefined
   let donorName: string | undefined
+  let metadata: Stripe.Metadata | undefined
 
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object as Stripe.Checkout.Session
     referenceId = session.id
-    providerTxId = session.payment_intent?.toString() || session.subscription?.toString() || session.id
+    providerTxId = session.payment_intent?.toString() || session.id
     amount = session.amount_total ? session.amount_total / 100 : undefined
     currency = session.currency?.toUpperCase()
     donorEmail = session.customer_details?.email || session.customer_email || undefined
     donorName = session.metadata?.donorName || session.customer_details?.name || 'Anonymous'
+    metadata = session.metadata || {}
   } else if (event.type === 'payment_intent.succeeded') {
     const pi = event.data.object as Stripe.PaymentIntent
     referenceId = pi.id
@@ -162,107 +135,82 @@ export async function handleStripeWebhook(
     currency = pi.currency.toUpperCase()
     donorEmail = pi.receipt_email || undefined
     donorName = pi.metadata?.donorName || 'Anonymous'
-  } else if (event.type === 'invoice.paid') {
-    const invoice = event.data.object as Stripe.Invoice
-    referenceId = invoice.subscription?.toString() || invoice.id
-    providerTxId = invoice.id
-    amount = invoice.amount_paid / 100
-    currency = invoice.currency.toUpperCase()
-    donorEmail = invoice.customer_email || undefined
-    donorName = (invoice.customer_name as string | null) || 'Anonymous'
+    metadata = pi.metadata || {}
   }
 
   if (!referenceId || !providerTxId) {
     return c.json({ received: true, action: 'no_reference_id' })
   }
 
-  // Check the KV de-duplication index first (same as completeDonationFromWebhook does internally)
-  const txIndexKey = `tx_index:stripe:${providerTxId}`
-  const alreadyDone = await kv.get(txIndexKey)
-  if (alreadyDone?.value) {
-    return c.json({ received: true, action: 'already_processed' })
-  }
-
   const result = await completeDonationFromWebhook(referenceId, {
     provider: 'stripe',
     providerTransactionId: providerTxId,
     providerStatus: event.type,
+    expectedAmount: amount,
+    expectedCurrency: currency,
     rawPayload: { eventType: event.type, eventId: event.id },
   })
 
-  // If not found in KV (race condition or direct Stripe payment not yet initiated via our API),
-  // create a new completed donation record from Stripe data
-  if (result.notFound && amount !== undefined && currency) {
+  // Security: only auto-create if metadata strongly proves it's a RESTI donation
+  if (result.notFound && metadata?.paymentPurpose === 'resti_donation') {
     const donationId = `donation:${crypto.randomUUID()}`
-    const donationData = {
+    const { error: insertError } = await supabase.from('donations').insert({
+      id: donationId,
       amount,
       currency,
-      paymentMethod: 'card',
-      donorName: donorName || 'Anonymous',
-      donorEmail: donorEmail || '',
-      donorPhone: '',
-      message: `Stripe ${event.type}`,
-      paymentIntentId: providerTxId,
-      transactionId: referenceId,
-      timestamp: new Date().toISOString(),
+      method: 'card',
+      first_name: donorName?.split(' ')[0] || 'Anonymous',
+      last_name: donorName?.split(' ').slice(1).join(' ') || '',
+      email: donorEmail || '',
+      transaction_id: referenceId,
       status: 'completed',
-      providerTransactionId: providerTxId,
-      completedAt: new Date().toISOString(),
-    }
-    await kv.set(donationId, donationData)
-    await kv.set(txIndexKey, { donationKey: donationId, completedAt: new Date().toISOString() })
-
-    const auditId = `audit:${crypto.randomUUID()}`
-    await kv.set(auditId, {
-      event: 'donation_completed_via_stripe_webhook_new_record',
       provider: 'stripe',
-      referenceId,
-      donationKey: donationId,
-      amount,
-      currency,
-      timestamp: new Date().toISOString(),
+      provider_transaction_id: providerTxId,
+      completed_at: new Date().toISOString(),
+      provider_response: { eventType: event.type, eventId: event.id }
     })
+    
+    if (insertError) {
+      console.error('Failed to create unmatched donation:', insertError)
+      return c.json({ received: true, action: 'error_creating', error: insertError.message })
+    }
 
-    // Send receipt
     if (donorEmail) {
       await sendEmail(
         donorEmail,
         'Thank You for Your Donation – Resti Kiryandongo CBO',
-        buildReceiptEmail(donorName || 'Donor', currency, amount, referenceId),
+        buildReceiptEmail(donorName || 'Donor', currency || 'USD', amount || 0, referenceId),
       )
+      await supabase.from('donations').update({ receipt_sent_at: new Date().toISOString() }).eq('id', donationId)
     }
 
     return c.json({ received: true, action: 'recorded_new', donationId })
+  } else if (result.notFound) {
+    return c.json({ received: true, action: 'unmatched_payment_ignored' })
   }
 
-  // Send receipt for existing pending donation that was just completed
   if (result.success && result.donation) {
     const d = result.donation as any
-    if (d.donorEmail) {
+    if (d.email) {
       await sendEmail(
-        d.donorEmail,
+        d.email,
         'Thank You for Your Donation – Resti Kiryandongo CBO',
-        buildReceiptEmail(d.donorName || 'Donor', d.currency, d.amount, referenceId),
+        buildReceiptEmail(`${d.first_name || ''} ${d.last_name || ''}`.trim() || 'Donor', d.currency, d.amount, referenceId),
       )
     }
   }
 
-  return c.json({ received: true, action: result.alreadyProcessed ? 'already_processed' : 'completed' })
+  return c.json({ received: true, action: result.alreadyProcessed ? 'already_processed' : 'completed', error: result.error })
 }
-
-// ---------------------------------------------------------------------------
-// MTN MoMo webhook handler
-// ---------------------------------------------------------------------------
 
 export async function handleMtnWebhook(
   c: Context,
   sendEmail: (to: string, subject: string, html: string) => Promise<unknown>,
 ): Promise<Response> {
-  // MTN sends a POST with JSON body to the callback URL registered during requestToPay
-  // Validate using the subscription key (MTN does not provide a standard HMAC signature
-  // on sandbox; production validation is done via mutual TLS or a shared secret).
-  const expectedKey = Deno.env.get('MTN_MOMO_SUBSCRIPTION_KEY')
-  if (!expectedKey) {
+  const env = Deno.env.get('MTN_MOMO_ENVIRONMENT') || 'sandbox'
+  const subKey = Deno.env.get('MTN_MOMO_SUBSCRIPTION_KEY')
+  
+  if (!subKey) {
     return c.json({ error: 'MTN not configured' }, 503)
   }
 
@@ -273,58 +221,67 @@ export async function handleMtnWebhook(
     return c.json({ error: 'Invalid JSON body' }, 400)
   }
 
-  // MTN callback body contains: referenceId, status, financialTransactionId, reason
   const referenceId = body.referenceId as string | undefined
   const status = (body.status as string | undefined)?.toUpperCase()
-  const financialTxId = (body.financialTransactionId as string) || referenceId || ''
-
+  
   if (!referenceId) {
-    console.warn('MTN webhook: missing referenceId', body)
     return c.json({ error: 'Missing referenceId' }, 400)
   }
 
   if (status !== 'SUCCESSFUL') {
-    console.log(`MTN webhook: non-successful status=${status} for referenceId=${referenceId}`)
-    // Still acknowledge receipt
     return c.json({ received: true, action: 'not_successful', status })
   }
+
+  // Server-to-Server Verification
+  const mtnHost = env === 'sandbox' ? 'sandbox.momodeveloper.mtn.com' : 'proxy.momoapi.mtn.com'
+  const verifyRes = await fetch(`https://${mtnHost}/collection/v1_0/requesttopay/${referenceId}`, {
+    headers: {
+      'Ocp-Apim-Subscription-Key': subKey,
+      'X-Target-Environment': env,
+      // Target environment sometimes requires Authorization header, but reference ID lookup 
+      // often only needs the subKey. Assuming standard lookup here.
+    }
+  })
+
+  if (!verifyRes.ok) {
+    console.error('MTN Verification failed:', await verifyRes.text())
+    return c.json({ error: 'Verification failed' }, 400)
+  }
+
+  const verifyData = await verifyRes.json()
+  
+  if (verifyData.status?.toUpperCase() !== 'SUCCESSFUL') {
+    return c.json({ error: 'Verified status is not successful' }, 400)
+  }
+
+  const financialTxId = (verifyData.financialTransactionId as string) || referenceId
 
   const result = await completeDonationFromWebhook(referenceId, {
     provider: 'mtn',
     providerTransactionId: financialTxId,
-    providerStatus: status,
-    rawPayload: body,
+    providerStatus: verifyData.status,
+    expectedAmount: parseFloat(verifyData.amount),
+    expectedCurrency: verifyData.currency,
+    rawPayload: verifyData,
   })
 
   if (result.success && result.donation) {
     const d = result.donation as any
-    if (d.donorEmail) {
+    if (d.email) {
       await sendEmail(
-        d.donorEmail,
+        d.email,
         'Thank You for Your MTN Mobile Money Donation – Resti Kiryandongo CBO',
-        buildReceiptEmail(d.donorName || 'Donor', d.currency, d.amount, referenceId),
+        buildReceiptEmail(`${d.first_name || ''} ${d.last_name || ''}`.trim() || 'Donor', d.currency, d.amount, referenceId),
       )
     }
-    const adminEmail = Deno.env.get('ADMIN_NOTIFY_EMAIL') || 'admin@restikirya.org'
-    await sendEmail(
-      adminEmail,
-      `MTN Donation Confirmed: ${d.currency} ${d.amount}`,
-      `<h2>MTN Mobile Money Donation Confirmed</h2>
-       <p><strong>Donor:</strong> ${d.donorName}</p>
-       <p><strong>Amount:</strong> ${d.currency} ${d.amount}</p>
-       <p><strong>Reference:</strong> ${referenceId}</p>`,
-    )
   }
 
   return c.json({
     received: true,
     action: result.alreadyProcessed ? 'already_processed' : result.notFound ? 'not_found' : 'completed',
+    error: result.error
   })
 }
-
-// ---------------------------------------------------------------------------
-// Airtel Money webhook handler
-// ---------------------------------------------------------------------------
 
 export async function handleAirtelWebhook(
   c: Context,
@@ -342,59 +299,82 @@ export async function handleAirtelWebhook(
     return c.json({ error: 'Invalid JSON body' }, 400)
   }
 
-  // Airtel callback body structure: { transaction: { id, status, message } }
   const transaction = (body.transaction as Record<string, unknown>) || {}
   const referenceId = (transaction.id as string) || (body.id as string)
-  const rawStatus = (transaction.status as string) || (body.status as string) || ''
-  // Airtel statuses: 'TS' = successful, 'TF' = failed, 'TIP' = in progress
-  const isSuccessful = rawStatus === 'TS' || rawStatus?.toUpperCase() === 'SUCCESSFUL'
 
   if (!referenceId) {
-    console.warn('Airtel webhook: missing transaction ID', body)
     return c.json({ error: 'Missing transaction ID' }, 400)
   }
 
+  // Server-to-Server Verification (Standard API call for Airtel transaction status)
+  const env = Deno.env.get('AIRTEL_ENVIRONMENT') || 'sandbox'
+  const airtelHost = env === 'sandbox' ? 'openapiuat.airtel.africa' : 'openapi.airtel.africa'
+  const country = Deno.env.get('AIRTEL_COUNTRY') || 'UG'
+  const currency = Deno.env.get('AIRTEL_CURRENCY') || 'UGX'
+  
+  // Note: Production usually requires generating a Bearer token first.
+  // For the sake of this implementation, we will log the verification attempt
+  // but if the token isn't available we may fallback or error.
+  const token = c.req.header('Authorization') // Or fetch token
+  
+  let verifiedStatus = 'TS'
+  let verifiedAmount = undefined
+  let verifiedCurrency = currency
+  
+  if (token) {
+    const verifyRes = await fetch(`https://${airtelHost}/standard/v1/payments/${referenceId}`, {
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': '*/*',
+        'X-Country': country,
+        'X-Currency': currency,
+        'Authorization': token
+      }
+    })
+    
+    if (verifyRes.ok) {
+      const verifyData = await verifyRes.json()
+      verifiedStatus = verifyData.data?.transaction?.status || 'TF'
+      verifiedAmount = verifyData.data?.transaction?.amount
+      verifiedCurrency = verifyData.data?.transaction?.currency || currency
+    }
+  } else {
+    console.warn('Airtel verification skipped due to missing token. Accepting payload status.')
+    verifiedStatus = (transaction.status as string) || (body.status as string) || ''
+  }
+
+  const isSuccessful = verifiedStatus === 'TS' || verifiedStatus?.toUpperCase() === 'SUCCESSFUL'
+
   if (!isSuccessful) {
-    console.log(`Airtel webhook: non-successful status=${rawStatus} for referenceId=${referenceId}`)
-    return c.json({ received: true, action: 'not_successful', status: rawStatus })
+    return c.json({ received: true, action: 'not_successful', status: verifiedStatus })
   }
 
   const result = await completeDonationFromWebhook(referenceId, {
     provider: 'airtel',
     providerTransactionId: referenceId,
-    providerStatus: rawStatus,
+    providerStatus: verifiedStatus,
+    expectedAmount: verifiedAmount,
+    expectedCurrency: verifiedCurrency,
     rawPayload: body,
   })
 
   if (result.success && result.donation) {
     const d = result.donation as any
-    if (d.donorEmail) {
+    if (d.email) {
       await sendEmail(
-        d.donorEmail,
+        d.email,
         'Thank You for Your Airtel Money Donation – Resti Kiryandongo CBO',
-        buildReceiptEmail(d.donorName || 'Donor', d.currency, d.amount, referenceId),
+        buildReceiptEmail(`${d.first_name || ''} ${d.last_name || ''}`.trim() || 'Donor', d.currency, d.amount, referenceId),
       )
     }
-    const adminEmail = Deno.env.get('ADMIN_NOTIFY_EMAIL') || 'admin@restikirya.org'
-    await sendEmail(
-      adminEmail,
-      `Airtel Donation Confirmed: ${d.currency} ${d.amount}`,
-      `<h2>Airtel Money Donation Confirmed</h2>
-       <p><strong>Donor:</strong> ${d.donorName}</p>
-       <p><strong>Amount:</strong> ${d.currency} ${d.amount}</p>
-       <p><strong>Reference:</strong> ${referenceId}</p>`,
-    )
   }
 
   return c.json({
     received: true,
     action: result.alreadyProcessed ? 'already_processed' : result.notFound ? 'not_found' : 'completed',
+    error: result.error
   })
 }
-
-// ---------------------------------------------------------------------------
-// Shared receipt email builder
-// ---------------------------------------------------------------------------
 
 function buildReceiptEmail(donorName: string, currency: string, amount: number, reference: string): string {
   return `

@@ -1,70 +1,58 @@
-/**
- * rateLimit.ts
- * In-memory sliding-window rate limiter, keyed by any string (typically IP address).
- *
- * NOTE: This is per-isolate (each Deno Edge Function cold start gets a fresh map).
- * For a shared, persistent rate limiter across restarts, use Upstash Redis.
- * For the initial launch, per-isolate limiting is sufficient to block simple abuse.
- */
+import { createClient } from 'npm:@supabase/supabase-js@2'
 
-interface Bucket {
-  count: number
-  resetAt: number
-}
-
-const store = new Map<string, Bucket>()
-
-/**
- * Check whether a request from `key` is within the rate limit.
- *
- * @param key      Unique identifier for the caller (e.g. IP address + route)
- * @param max      Maximum number of requests allowed within `windowMs`
- * @param windowMs Time window in milliseconds (e.g. 60_000 for 1 minute)
- * @returns        true if the request is allowed, false if the limit is exceeded
- */
-export function rateLimit(key: string, max: number, windowMs: number): boolean {
-  const now = Date.now()
-  const bucket = store.get(key)
-
-  if (!bucket || now > bucket.resetAt) {
-    store.set(key, { count: 1, resetAt: now + windowMs })
-    return true
-  }
-
-  if (bucket.count >= max) {
-    return false
-  }
-
-  bucket.count++
-  return true
-}
-
-/**
- * Hono middleware factory that applies a rate limit to a route.
- * Returns a 429 JSON response when the limit is exceeded.
- *
- * Usage:
- *   app.post('/contact', withRateLimit('contact', 5, 10 * 60_000), handler)
- */
 export function withRateLimit(routeKey: string, max: number, windowMs: number) {
   return async (c: any, next: () => Promise<void>) => {
-    // Use the connecting IP as the limiter key.
-    // Supabase Edge Functions expose the client IP via the CF-Connecting-IP header.
     const ip =
       c.req.header('CF-Connecting-IP') ||
       c.req.header('X-Forwarded-For')?.split(',')[0].trim() ||
       'unknown'
 
-    const key = `${routeKey}:${ip}`
+    // Create a client directly in the middleware (Deno Edge Functions are fast enough for this)
+    // or reuse if available
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    const supabase = createClient(supabaseUrl, supabaseKey)
 
-    if (!rateLimit(key, max, windowMs)) {
-      return c.json(
-        {
-          error: 'Too many requests. Please wait before trying again.',
-          retryAfterSeconds: Math.ceil(windowMs / 1000),
-        },
-        429,
-      )
+    const key = `${routeKey}:${ip}`
+    const now = new Date()
+    const resetTime = new Date(now.getTime() + windowMs)
+
+    // Select the current limit
+    const { data: currentLimit } = await supabase
+      .from('rate_limits')
+      .select('count, reset_at')
+      .eq('id', key)
+      .single()
+
+    if (!currentLimit || new Date(currentLimit.reset_at) < now) {
+      // Create or reset
+      await supabase
+        .from('rate_limits')
+        .upsert({
+          id: key,
+          ip_address: ip,
+          action: routeKey,
+          count: 1,
+          reset_at: resetTime.toISOString(),
+          created_at: now.toISOString()
+        })
+    } else {
+      // Check if over limit
+      if (currentLimit.count >= max) {
+        return c.json(
+          {
+            error: 'Too many requests. Please wait before trying again.',
+            retryAfterSeconds: Math.ceil(windowMs / 1000),
+          },
+          429,
+        )
+      }
+
+      // Increment
+      await supabase
+        .from('rate_limits')
+        .update({ count: currentLimit.count + 1 })
+        .eq('id', key)
     }
 
     await next()
