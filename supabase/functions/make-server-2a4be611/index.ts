@@ -845,20 +845,28 @@ app.post('/make-server-2a4be611/mobile-payment/initiate', withRateLimit('mobile-
 
     // Record pending donation
     const donationId = `donation:${crypto.randomUUID()}`
-    await kv.set(donationId, {
+    const { error: insertError } = await supabase.from('donations').insert({
+      id: donationId,
       amount,
       currency: transactionCurrency,
-      paymentMethod: provider === 'mtn' ? 'mtn_mobile_money' : 'airtel_money',
-      donorName: donorName ?? 'Anonymous',
-      donorEmail: donorEmail ?? '',
-      donorPhone: cleanPhone,
-      transactionId: referenceId,
-      message: `${provider.toUpperCase()} Mobile Money STK push – ref: ${referenceId}`,
-      timestamp: new Date().toISOString(),
+      method: provider === 'mtn' ? 'mtn_mobile_money' : 'airtel_money',
+      first_name: donorName?.split(' ')[0] ?? 'Anonymous',
+      last_name: donorName?.split(' ').slice(1).join(' ') ?? '',
+      email: donorEmail ?? '',
+      transaction_id: referenceId,
       status: 'pending',
-      // Store provider and currency so the status endpoint doesn't trust the browser
       provider,
+      provider_transaction_id: null,
+      provider_response: {
+        message: `${provider.toUpperCase()} Mobile Money STK push - ref: ${referenceId}`,
+        donorPhone: cleanPhone,
+      }
     })
+
+    if (insertError) {
+      console.error('Failed to create pending donation in database:', insertError)
+      return c.json({ error: 'Database error', details: insertError.message }, 500)
+    }
 
     return c.json({ success: true, referenceId })
   } catch (error) {
@@ -875,22 +883,23 @@ app.get('/make-server-2a4be611/mobile-payment/status/:referenceId', async (c) =>
     const referenceId = c.req.param('referenceId')
 
     // Look up the pending donation to get the authoritative provider
-    const donations = await kv.getByPrefix('donation:')
-    const pendingDonation = donations.find(
-      (d: any) => d.value?.transactionId === referenceId
-    )
+    const { data: pendingDonation, error } = await supabase
+      .from('donations')
+      .select('*')
+      .eq('transaction_id', referenceId)
+      .single()
 
-    if (!pendingDonation) {
+    if (error || !pendingDonation) {
       return c.json({ error: 'Transaction not found' }, 404)
     }
 
     // If already completed, return success immediately
-    if (pendingDonation.value?.status === 'completed') {
+    if (pendingDonation.status === 'completed') {
       return c.json({ status: 'SUCCESSFUL', referenceId })
     }
 
     // Provider comes from the stored record, never from the request
-    const provider: string = pendingDonation.value?.provider
+    const provider: string = pendingDonation.provider
     if (!provider) {
       return c.json({ error: 'Provider information not found for this transaction' }, 500)
     }
