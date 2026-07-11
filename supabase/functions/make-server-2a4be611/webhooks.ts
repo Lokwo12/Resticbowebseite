@@ -143,11 +143,17 @@ export async function handleStripeWebhook(
     }
   }
 
-  if (
-    event.type !== 'checkout.session.completed' &&
-    event.type !== 'payment_intent.succeeded'
-  ) {
-    return c.json({ received: true, action: 'ignored' })
+  const acceptedStripeEvents = new Set([
+    "checkout.session.completed",
+    "payment_intent.succeeded",
+    "invoice.payment_succeeded",
+  ]);
+
+  if (!acceptedStripeEvents.has(event.type)) {
+    return c.json({
+      received: true,
+      action: "ignored",
+    });
   }
 
   let referenceId: string | undefined
