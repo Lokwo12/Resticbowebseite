@@ -628,7 +628,7 @@ app.post('/make-server-2a4be611/admin/sync-stripe', requireAdmin, async (c) => {
         }
       }
 
-      const donationId = `donation:${Date.now() + synced}`
+      const donationId = `donation:${crypto.randomUUID()}`
       const donationRecord = {
         id: donationId,
         amount: pi.amount ? pi.amount / 100 : 0,
@@ -684,22 +684,28 @@ app.post('/make-server-2a4be611/donations', withRateLimit('donation', 5, 5 * 60_
     }
 
     const donationId = `donation:${crypto.randomUUID()}`
-    const donationData = {
-      amount,
-      currency: currency || 'USD',
-      paymentMethod,
-      donorName: donorName || 'Anonymous',
-      donorEmail: donorEmail || '',
-      donorPhone: donorPhone || '',
-      message: message || '',
-      paymentIntentId: paymentIntentId || '',
-      transactionId: transactionId || '',
-      timestamp: new Date().toISOString(),
-      // SECURITY: Always pending — provider must confirm via webhook or /verify-session
-      status: 'pending'
-    }
     
-    await kv.set(donationId, donationData)
+    const parts = (donorName || 'Anonymous').split(' ')
+    const firstName = parts[0]
+    const lastName = parts.slice(1).join(' ') || ''
+    
+    const { error: insertErr } = await supabase.from('donations').insert({
+      id: donationId,
+      amount: Number(amount),
+      currency: (currency || 'USD').toUpperCase(),
+      method: paymentMethod,
+      provider: paymentMethod === 'mtn' || paymentMethod === 'airtel' ? paymentMethod : 'other',
+      first_name: firstName,
+      last_name: lastName,
+      email: donorEmail || '',
+      status: 'pending',
+      transaction_id: transactionId || crypto.randomUUID()
+    })
+    
+    if (insertErr) {
+      console.error('Failed to record pending donation:', insertErr)
+      return c.json({ error: 'Database error' }, 500)
+    }
 
     console.log(`Pending donation recorded: ${donationId}`)
     return c.json({ success: true, message: 'Donation pending — awaiting payment confirmation', id: donationId })
@@ -727,38 +733,42 @@ app.post('/make-server-2a4be611/admin/donations/manual', requireAdmin, async (c)
     const safeMessage = escapeMessage(message || '')
 
     const donationId = `donation:${crypto.randomUUID()}`
-    const donationData = {
-      amount,
-      currency: currency || 'USD',
-      paymentMethod,
-      donorName: donorName || 'Anonymous',
-      donorEmail: donorEmail || '',
-      donorPhone: donorPhone || '',
-      message: message || '',
-      transactionId: transactionId || '',
-      timestamp: new Date().toISOString(),
-      status: 'manually_verified',
-      verifiedBy: adminUser?.email || 'admin',
-      verifiedAt: new Date().toISOString(),
+    
+    const parts = (donorName || 'Anonymous').split(' ')
+    const firstName = parts[0]
+    const lastName = parts.slice(1).join(' ') || ''
+    
+    const { error: insertErr } = await supabase.from('donations').insert({
+      id: donationId,
+      amount: Number(amount),
+      currency: (currency || 'USD').toUpperCase(),
+      method: paymentMethod,
+      provider: 'manual',
+      first_name: firstName,
+      last_name: lastName,
+      email: donorEmail || '',
+      status: 'completed',
+      verification_method: 'manual',
+      verified_by: adminUser?.email || 'admin',
+      transaction_id: transactionId || crypto.randomUUID(),
+      provider_transaction_id: transactionId || null,
+      provider_response: { message }
+    })
+    
+    if (insertErr) {
+      console.error('Failed to record manual donation:', insertErr)
+      return c.json({ error: 'Database error' }, 500)
     }
 
-    await kv.set(donationId, donationData)
-
-    // Send receipt to donor
-    if (donorEmail) {
-      await sendEmail(
-        donorEmail,
-        'Thank You for Your Generous Donation!',
-        `
-          <h2>Thank You! 🙏</h2>
-          <p>Dear ${safeName},</p>
-          <p>Thank you for your generous donation of <strong>${safeCurrency} ${Number(amount).toLocaleString()}</strong> to Resti Kiryandongo CBO.</p>
-          ${message ? `<p><strong>Your message:</strong> ${safeMessage}</p>` : ''}
-          <p>Reference: ${donationId.split(':')[1]}</p>
-          <p>With gratitude,<br>The Resti Kiryandongo CBO Team</p>
-        `
-      )
-    }
+    await deliverDonationReceipt({
+      id: donationId,
+      amount: Number(amount),
+      currency: (currency || 'USD').toUpperCase(),
+      email: donorEmail,
+      first_name: firstName,
+      last_name: lastName,
+      transaction_id: transactionId
+    }, sendEmail)
 
     console.log(`Manual donation recorded by ${adminUser?.email}: ${donationId}`)
     return c.json({ success: true, message: 'Manual donation recorded successfully', id: donationId })
