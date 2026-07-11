@@ -87,7 +87,7 @@ CREATE TABLE IF NOT EXISTS public.donations (
   completed_at TIMESTAMPTZ,
   expires_at TIMESTAMPTZ,
   receipt_sent_at TIMESTAMPTZ,
-  receipt_status TEXT DEFAULT 'pending' CHECK (receipt_status IN ('pending', 'sending', 'sent', 'failed')),
+  receipt_status TEXT DEFAULT 'pending' CHECK (receipt_status IN ('pending', 'sending', 'sent', 'failed', 'no_email')),
   receipt_message_id TEXT,
   verification_method TEXT,
   provider_response JSONB,
@@ -511,6 +511,15 @@ BEGIN
 END;
 $$;
 
+
+
+CREATE TABLE IF NOT EXISTS public.payment_webhook_events (
+  provider TEXT NOT NULL,
+  event_id TEXT NOT NULL,
+  event_type TEXT NOT NULL,
+  received_at TIMESTAMPTZ DEFAULT NOW(),
+  PRIMARY KEY (provider, event_id)
+);
 
 CREATE TABLE IF NOT EXISTS public.unmatched_payments (
   id TEXT PRIMARY KEY,

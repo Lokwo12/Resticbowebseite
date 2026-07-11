@@ -2,10 +2,13 @@ import { createClient } from 'npm:@supabase/supabase-js@2'
 
 export function withRateLimit(routeKey: string, max: number, windowMs: number) {
   return async (c: any, next: () => Promise<void>) => {
-    const ip =
+    let ip =
       c.req.header('CF-Connecting-IP') ||
       c.req.header('X-Forwarded-For')?.split(',')[0].trim() ||
       'unknown'
+
+    // Normalize IPv6-mapped IPv4
+    ip = ip.replace(/^::ffff:/, '')
 
     // Create a client directly in the middleware (Deno Edge Functions are fast enough for this)
     // or reuse if available

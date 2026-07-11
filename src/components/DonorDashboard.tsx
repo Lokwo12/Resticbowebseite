@@ -34,7 +34,7 @@ export function DonorDashboard() {
 
       const urlParams = new URLSearchParams(window.location.search);
       const sessionId = urlParams.get('session_id');
-      let verifiedDonation = null;
+      let verifiedDonation: any = null;
       if (sessionId) {
         try {
           const vRes = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/verify-session`, {
@@ -52,28 +52,28 @@ export function DonorDashboard() {
         }
       }
 
-      await fetchDonations(session.user.email);
+      await fetchDonations(session.user?.email || "");
       
-      if (verifiedDonation && verifiedDonation.donorEmail?.toLowerCase().trim() === session.user.email.toLowerCase().trim()) {
+      if (verifiedDonation && verifiedDonation?.donorEmail?.toLowerCase().trim() === session.user?.email || "".toLowerCase().trim()) {
         setDonations(prev => {
           // ensure it's not already in the list
-          const exists = prev.find(d => d.date === verifiedDonation.timestamp);
+          const exists = prev.find(d => d.date === verifiedDonation?.timestamp);
           if (exists) return prev;
           
           return [{
             id: `donation-${Date.now()}`,
-            amount: verifiedDonation.amount,
-            currency: verifiedDonation.currency,
-            date: verifiedDonation.timestamp,
-            status: verifiedDonation.status,
-            paymentMethod: verifiedDonation.paymentMethod,
-            donorName: verifiedDonation.donorName
+            amount: verifiedDonation?.amount,
+            currency: verifiedDonation?.currency,
+            date: verifiedDonation?.timestamp,
+            status: verifiedDonation?.status,
+            paymentMethod: verifiedDonation?.paymentMethod,
+            donorName: verifiedDonation?.donorName
           }, ...prev];
         });
 
-        if (verifiedDonation.donorName && verifiedDonation.donorName !== session.user.user_metadata?.name) {
-          await supabase.auth.updateUser({ data: { name: verifiedDonation.donorName } });
-          setUser((prev: any) => ({ ...prev, user_metadata: { ...prev?.user_metadata, name: verifiedDonation.donorName } }));
+        if (verifiedDonation?.donorName && verifiedDonation?.donorName !== session.user.user_metadata?.name) {
+          await supabase.auth.updateUser({ data: { name: verifiedDonation?.donorName } });
+          setUser((prev: any) => ({ ...prev, user_metadata: { ...prev?.user_metadata, name: verifiedDonation?.donorName } }));
         }
       }
     };

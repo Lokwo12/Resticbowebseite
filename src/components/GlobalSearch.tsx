@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
-import { Search, X, Loader, ArrowRight, ExternalLink } from 'lucide-react';
+import { Search, X, Loader, ArrowRight, ExternalLink , Heart } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 
 const supabase = createClient(`https://${projectId}.supabase.co`, publicAnonKey);

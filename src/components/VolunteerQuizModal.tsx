@@ -26,7 +26,7 @@ interface VolunteerQuizModalProps {
 export function VolunteerQuizModal({ show, onClose, onApply, opportunities, settings }: VolunteerQuizModalProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [answers, setAnswers] = useState<string[]>([]);
-  const [match, setMatch] = useState<Opportunity | null>(null);
+  const [match, setMatch] = useState<Opportunity | null | any>(null);
 
   if (!show) return null;
 
@@ -80,13 +80,13 @@ export function VolunteerQuizModal({ show, onClose, onApply, opportunities, sett
     // finalAnswers[0] is impact area keywords
     // We try to find an opportunity that matches the category or title
     
-    let bestMatch = null;
+    let bestMatch: any = null;
     let maxScore = -1;
 
     // The first answer holds the label from questions[0]
     const impactAnswerLabel = finalAnswers[0];
     const impactOption = questions[0].options.find(o => o.label === impactAnswerLabel);
-    const keywords = impactOption?.keywords || [];
+    const keywords = (impactOption as any)?.keywords || [];
 
     opportunities.forEach(opp => {
       let score = 0;

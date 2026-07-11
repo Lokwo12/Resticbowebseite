@@ -26,7 +26,7 @@ export function LiveChat() {
 
   // Poll for new messages if session exists and chat is open
   useEffect(() => {
-    let intervalId: NodeJS.Timeout;
+    let intervalId: ReturnType<typeof setTimeout>;
 
     const pollMessages = async () => {
       if (!sessionId || !isOpen) return;

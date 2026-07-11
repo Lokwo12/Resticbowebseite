@@ -957,7 +957,7 @@ export function EnhancedAdminDashboard() {
 
   
   useEffect(() => {
-    let intervalId: NodeJS.Timeout;
+    let intervalId: ReturnType<typeof setTimeout>;
     if (activeTab === 'live-chat') {
       intervalId = setInterval(() => {
         loadData();

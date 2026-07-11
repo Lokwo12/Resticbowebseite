@@ -135,6 +135,15 @@ export async function handleStripeWebhook(
 
   console.log(`Stripe webhook event received: ${event.type}`)
 
+  const { error: eventErr } = await supabase.from('payment_webhook_events').insert({
+    provider: 'stripe',
+    event_id: event.id,
+    event_type: event.type
+  })
+  if (eventErr && eventErr.code === '23505') {
+    return c.json({ received: true, action: 'already_processed' })
+  }
+
   if (event.type === 'payment_intent.succeeded') {
     const pi = event.data.object as Stripe.PaymentIntent
     // If this payment intent was created by a Checkout Session, ignore it to prevent duplicates
@@ -176,7 +185,13 @@ export async function handleStripeWebhook(
         amount: invoice.amount_paid / 100,
         currency: invoice.currency.toUpperCase()
       })
-      if (subErr) console.error('Error creating subscription:', subErr)
+      if (subErr) {
+        if (subErr.code === '23505') {
+          return c.json({ received: true, action: 'already_processed' })
+        }
+        console.error('Error creating subscription:', subErr)
+        return c.json({ received: true, action: 'subscription_creation_failed' }, 500)
+      }
       return c.json({ received: true, action: 'subscription_created' })
     } else if (invoice.billing_reason === 'subscription_cycle') {
       const subId = invoice.subscription?.toString()
@@ -212,15 +227,18 @@ export async function handleStripeWebhook(
         })
       }
       
-      await deliverDonationReceipt({
-        id: newDonationId,
-        amount: amountPaid,
-        currency: cur,
-        email: invoice.customer_email,
-        first_name: invoice.customer_name?.split(' ')[0],
-        last_name: invoice.customer_name?.split(' ').slice(1).join(' '),
-        transaction_id: txId
-      }, sendEmail)
+      const { data: claim } = await supabase.rpc('claim_donation_receipt', { p_donation_id: newDonationId })
+      if (claim?.success) {
+        await deliverDonationReceipt({
+          id: newDonationId,
+          amount: amountPaid,
+          currency: cur,
+          email: invoice.customer_email,
+          first_name: invoice.customer_name?.split(' ')[0],
+          last_name: invoice.customer_name?.split(' ').slice(1).join(' '),
+          transaction_id: txId
+        }, sendEmail)
+      }
       return c.json({ received: true, action: 'renewal_processed' })
     }
     return c.json({ received: true, action: 'ignored_invoice' })
