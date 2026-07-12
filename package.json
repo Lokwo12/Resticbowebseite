@@ -74,7 +74,7 @@
             "tailwindcss": "^3.4.19",
             "tailwindcss-animate": "^1.0.7",
             "typescript": "^6.0.3",
-            "vite": "6.3.5",
+            "vite": "^6.4.3",
             "vite-plugin-sitemap": "^0.8.2"
       },
       "scripts": {
