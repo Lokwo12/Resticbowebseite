@@ -139,7 +139,7 @@ Resend sends donation receipts, contact form confirmations, and admin notificati
 2. Click **Create API Key**
 3. Name it `RESTI Production` → click **Create**
 4. **Copy the key immediately** — it starts with `re_` and is only shown once
-5. This is your `RESEND_API_KEY`
+5. This is your `RESEND_API_KEY=re_YOUR_API_KEY_HERE`
 
 #### Step 3 — Verify your domain (required to send from @resti.org)
 1. In the left sidebar → click **Domains** → **Add Domain**
