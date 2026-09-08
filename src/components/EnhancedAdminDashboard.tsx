@@ -459,7 +459,7 @@ export function EnhancedAdminDashboard() {
     try {
       const response = await fetch(
         `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/newsletter/${encodeURIComponent(key)}`,
-        { method: 'DELETE', headers: { Authorization: `Bearer ${publicAnonKey}` } }
+        { method: 'DELETE', headers: { Authorization: `Bearer ${accessToken || publicAnonKey}` } }
       );
       if (!response.ok) throw new Error('Failed to delete');
       toast.success('Subscriber removed');
@@ -474,7 +474,7 @@ export function EnhancedAdminDashboard() {
       await Promise.all(keys.map(key =>
         fetch(
           `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/newsletter/${encodeURIComponent(key)}`,
-          { method: 'DELETE', headers: { Authorization: `Bearer ${publicAnonKey}` } }
+          { method: 'DELETE', headers: { Authorization: `Bearer ${accessToken || publicAnonKey}` } }
         )
       ));
       toast.success(`${keys.length} subscriber(s) removed`);
@@ -786,11 +786,11 @@ export function EnhancedAdminDashboard() {
         const [statsRes, analyticsRes] = await Promise.all([
           fetch(
             `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/stats`,
-            { headers: { Authorization: `Bearer ${publicAnonKey}` } }
+            { headers: { Authorization: `Bearer ${accessToken || publicAnonKey}` } }
           ),
           fetch(
             `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/analytics`,
-            { headers: { Authorization: `Bearer ${publicAnonKey}` } }
+            { headers: { Authorization: `Bearer ${accessToken || publicAnonKey}` } }
           )
         ]);
         
@@ -825,35 +825,35 @@ export function EnhancedAdminDashboard() {
       } else if (activeTab === 'contacts') {
         const response = await fetch(
           `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/contacts`,
-          { headers: { Authorization: `Bearer ${publicAnonKey}` } }
+          { headers: { Authorization: `Bearer ${accessToken || publicAnonKey}` } }
         );
         const data = await response.json();
         setContacts(data.contacts || []);
       } else if (activeTab === 'volunteers') {
         const response = await fetch(
           `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/volunteers`,
-          { headers: { Authorization: `Bearer ${publicAnonKey}` } }
+          { headers: { Authorization: `Bearer ${accessToken || publicAnonKey}` } }
         );
         const data = await response.json();
         setVolunteers(data.volunteers || []);
       } else if (activeTab === 'donations') {
         const response = await fetch(
           `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/donations`,
-          { headers: { Authorization: `Bearer ${publicAnonKey}` } }
+          { headers: { Authorization: `Bearer ${accessToken || publicAnonKey}` } }
         );
         const data = await response.json();
         setDonations(data.donations || []);
       } else if (activeTab === 'subscribers') {
         const response = await fetch(
           `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/newsletter`,
-          { headers: { Authorization: `Bearer ${publicAnonKey}` } }
+          { headers: { Authorization: `Bearer ${accessToken || publicAnonKey}` } }
         );
         const data = await response.json();
         setSubscribers(data.subscribers || []);
       } else if (activeTab === 'users' && userRole === 'super-admin') {
         const response = await fetch(
           `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/users`,
-          { headers: { Authorization: `Bearer ${publicAnonKey}` } }
+          { headers: { Authorization: `Bearer ${accessToken || publicAnonKey}` } }
         );
         const data = await response.json();
         setAdminUsers(data.users || []);
@@ -929,7 +929,7 @@ export function EnhancedAdminDashboard() {
         setResources(data.resources || []);
       } else if (activeTab === 'pages') {
         const response = await fetch(
-          `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/pages`,
+          `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/pages`,
           { headers: { Authorization: `Bearer ${accessToken || publicAnonKey}` } }
         );
         const data = await response.json();
@@ -1011,7 +1011,7 @@ export function EnhancedAdminDashboard() {
         `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/upload-image`,
         {
           method: 'POST',
-          headers: { Authorization: `Bearer ${publicAnonKey}` },
+          headers: { Authorization: `Bearer ${accessToken || publicAnonKey}` },
           body: formDataObj,
         }
       );
@@ -1039,7 +1039,7 @@ export function EnhancedAdminDashboard() {
         method: editingItem ? 'PUT' : 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${publicAnonKey}`,
+          Authorization: `Bearer ${accessToken || publicAnonKey}`,
         },
         body: JSON.stringify(formData),
       });
@@ -1066,7 +1066,7 @@ export function EnhancedAdminDashboard() {
         `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/programs/${id}`,
         {
           method: 'DELETE',
-          headers: { Authorization: `Bearer ${publicAnonKey}` },
+          headers: { Authorization: `Bearer ${accessToken || publicAnonKey}` },
         }
       );
 
@@ -1091,7 +1091,7 @@ export function EnhancedAdminDashboard() {
             `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/programs/${id}`,
             {
               method: 'DELETE',
-              headers: { Authorization: `Bearer ${publicAnonKey}` },
+              headers: { Authorization: `Bearer ${accessToken || publicAnonKey}` },
             }
           )
         )
@@ -1118,7 +1118,7 @@ export function EnhancedAdminDashboard() {
         method: editingItem ? 'PUT' : 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${publicAnonKey}`,
+          Authorization: `Bearer ${accessToken || publicAnonKey}`,
         },
         body: JSON.stringify(formData),
       });
@@ -1145,7 +1145,7 @@ export function EnhancedAdminDashboard() {
         `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/news/${id}`,
         {
           method: 'DELETE',
-          headers: { Authorization: `Bearer ${publicAnonKey}` },
+          headers: { Authorization: `Bearer ${accessToken || publicAnonKey}` },
         }
       );
 
@@ -1170,7 +1170,7 @@ export function EnhancedAdminDashboard() {
             `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/news/${id}`,
             {
               method: 'DELETE',
-              headers: { Authorization: `Bearer ${publicAnonKey}` },
+              headers: { Authorization: `Bearer ${accessToken || publicAnonKey}` },
             }
           )
         )
@@ -1197,7 +1197,7 @@ export function EnhancedAdminDashboard() {
         method: editingItem ? 'PUT' : 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${publicAnonKey}`,
+          Authorization: `Bearer ${accessToken || publicAnonKey}`,
         },
         body: JSON.stringify({
           title: formData.title,
@@ -1229,7 +1229,7 @@ export function EnhancedAdminDashboard() {
         `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/gallery/${id}`,
         {
           method: 'DELETE',
-          headers: { Authorization: `Bearer ${publicAnonKey}` },
+          headers: { Authorization: `Bearer ${accessToken || publicAnonKey}` },
         }
       );
 
@@ -1254,7 +1254,7 @@ export function EnhancedAdminDashboard() {
             `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/gallery/${id}`,
             {
               method: 'DELETE',
-              headers: { Authorization: `Bearer ${publicAnonKey}` },
+              headers: { Authorization: `Bearer ${accessToken || publicAnonKey}` },
             }
           )
         )
@@ -1273,12 +1273,12 @@ export function EnhancedAdminDashboard() {
   const handleUpdateContactStatus = async (id: string, status: string) => {
     try {
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/contacts/${id}`,
+        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/contacts/${id}/status`,
         {
-          method: 'PATCH',
+          method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${publicAnonKey}`,
+            Authorization: `Bearer ${accessToken || publicAnonKey}`,
           },
           body: JSON.stringify({ status }),
         }
@@ -1307,7 +1307,7 @@ export function EnhancedAdminDashboard() {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${publicAnonKey}`,
+            Authorization: `Bearer ${accessToken || publicAnonKey}`,
           },
           body: JSON.stringify({ message: replyMessage }),
         }
@@ -1333,7 +1333,7 @@ export function EnhancedAdminDashboard() {
         `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/contacts/${id}`,
         {
           method: 'DELETE',
-          headers: { Authorization: `Bearer ${publicAnonKey}` },
+          headers: { Authorization: `Bearer ${accessToken || publicAnonKey}` },
         }
       );
 
@@ -1358,7 +1358,7 @@ export function EnhancedAdminDashboard() {
             `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/contacts/${id}`,
             {
               method: 'DELETE',
-              headers: { Authorization: `Bearer ${publicAnonKey}` },
+              headers: { Authorization: `Bearer ${accessToken || publicAnonKey}` },
             }
           )
         )
@@ -1377,12 +1377,12 @@ export function EnhancedAdminDashboard() {
   const handleUpdateVolunteerStatus = async (id: string, status: string) => {
     try {
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/volunteers/${id}`,
+        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/volunteers/${id}/status`,
         {
-          method: 'PATCH',
+          method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${publicAnonKey}`,
+            Authorization: `Bearer ${accessToken || publicAnonKey}`,
           },
           body: JSON.stringify({ status }),
         }
@@ -1406,7 +1406,7 @@ export function EnhancedAdminDashboard() {
         `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/volunteers/${id}`,
         {
           method: 'DELETE',
-          headers: { Authorization: `Bearer ${publicAnonKey}` },
+          headers: { Authorization: `Bearer ${accessToken || publicAnonKey}` },
         }
       );
 
@@ -1431,7 +1431,7 @@ export function EnhancedAdminDashboard() {
             `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/volunteers/${id}`,
             {
               method: 'DELETE',
-              headers: { Authorization: `Bearer ${publicAnonKey}` },
+              headers: { Authorization: `Bearer ${accessToken || publicAnonKey}` },
             }
           )
         )
@@ -1451,7 +1451,7 @@ export function EnhancedAdminDashboard() {
     try {
       const response = await fetch(
         `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/team/${id}`,
-        { method: 'DELETE', headers: { Authorization: `Bearer ${publicAnonKey}` } }
+        { method: 'DELETE', headers: { Authorization: `Bearer ${accessToken || publicAnonKey}` } }
       );
       if (!response.ok) throw new Error('Failed to delete team member');
       toast.success('Team member deleted');
@@ -1468,7 +1468,7 @@ export function EnhancedAdminDashboard() {
     try {
       const response = await fetch(
         `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/stories/${id}`,
-        { method: 'DELETE', headers: { Authorization: `Bearer ${publicAnonKey}` } }
+        { method: 'DELETE', headers: { Authorization: `Bearer ${accessToken || publicAnonKey}` } }
       );
       if (!response.ok) throw new Error('Failed to delete story');
       toast.success('Story deleted');
@@ -1485,7 +1485,7 @@ export function EnhancedAdminDashboard() {
     try {
       const response = await fetch(
         `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/reports/${id}`,
-        { method: 'DELETE', headers: { Authorization: `Bearer ${publicAnonKey}` } }
+        { method: 'DELETE', headers: { Authorization: `Bearer ${accessToken || publicAnonKey}` } }
       );
       if (!response.ok) throw new Error('Failed to delete report');
       toast.success('Report deleted');
@@ -1502,7 +1502,7 @@ export function EnhancedAdminDashboard() {
     try {
       const response = await fetch(
         `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/events/${id}`,
-        { method: 'DELETE', headers: { Authorization: `Bearer ${publicAnonKey}` } }
+        { method: 'DELETE', headers: { Authorization: `Bearer ${accessToken || publicAnonKey}` } }
       );
       if (!response.ok) throw new Error('Failed to delete event');
       toast.success('Event deleted');
@@ -1519,7 +1519,7 @@ export function EnhancedAdminDashboard() {
     try {
       const response = await fetch(
         `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/partners/${id}`,
-        { method: 'DELETE', headers: { Authorization: `Bearer ${publicAnonKey}` } }
+        { method: 'DELETE', headers: { Authorization: `Bearer ${accessToken || publicAnonKey}` } }
       );
       if (!response.ok) throw new Error('Failed to delete partner');
       toast.success('Partner deleted');
@@ -1536,7 +1536,7 @@ export function EnhancedAdminDashboard() {
     try {
       const response = await fetch(
         `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/opportunities/${id}`,
-        { method: 'DELETE', headers: { Authorization: `Bearer ${publicAnonKey}` } }
+        { method: 'DELETE', headers: { Authorization: `Bearer ${accessToken || publicAnonKey}` } }
       );
       if (!response.ok) throw new Error('Failed to delete opportunity');
       toast.success('Opportunity deleted');
@@ -1553,7 +1553,7 @@ export function EnhancedAdminDashboard() {
     try {
       const response = await fetch(
         `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/faqs/${id}`,
-        { method: 'DELETE', headers: { Authorization: `Bearer ${publicAnonKey}` } }
+        { method: 'DELETE', headers: { Authorization: `Bearer ${accessToken || publicAnonKey}` } }
       );
       if (!response.ok) throw new Error('Failed to delete FAQ');
       toast.success('FAQ deleted');
@@ -1570,7 +1570,7 @@ export function EnhancedAdminDashboard() {
     try {
       const response = await fetch(
         `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/resources/${id}`,
-        { method: 'DELETE', headers: { Authorization: `Bearer ${publicAnonKey}` } }
+        { method: 'DELETE', headers: { Authorization: `Bearer ${accessToken || publicAnonKey}` } }
       );
       if (!response.ok) throw new Error('Failed to delete resource');
       toast.success('Resource deleted');
@@ -1609,7 +1609,7 @@ export function EnhancedAdminDashboard() {
       const donationId = key.replace('donation:', '');
       const response = await fetch(
         `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/donations/${encodeURIComponent(donationId)}`,
-        { method: 'DELETE', headers: { Authorization: `Bearer ${publicAnonKey}` } }
+        { method: 'DELETE', headers: { Authorization: `Bearer ${accessToken || publicAnonKey}` } }
       );
       if (!response.ok) throw new Error('Failed to delete donation');
       toast.success('Donation deleted successfully');
@@ -1625,7 +1625,7 @@ export function EnhancedAdminDashboard() {
     try {
       const response = await fetch(
         `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/donations/clear-all`,
-        { method: 'POST', headers: { Authorization: `Bearer ${publicAnonKey}` } }
+        { method: 'POST', headers: { Authorization: `Bearer ${accessToken || publicAnonKey}` } }
       );
       if (!response.ok) throw new Error('Failed to clear donations');
       toast.success('All donations cleared successfully');
@@ -1640,7 +1640,7 @@ export function EnhancedAdminDashboard() {
     try {
       const response = await fetch(
         `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/pages/${encodeURIComponent(id)}`,
-        { method: 'DELETE', headers: { Authorization: `Bearer ${publicAnonKey}` } }
+        { method: 'DELETE', headers: { Authorization: `Bearer ${accessToken || publicAnonKey}` } }
       );
       if (!response.ok) throw new Error('Failed to delete page');
       toast.success('Page deleted');
@@ -1669,7 +1669,7 @@ export function EnhancedAdminDashboard() {
         method: editingItem ? 'PUT' : 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${publicAnonKey}`,
+          Authorization: `Bearer ${accessToken || publicAnonKey}`,
         },
         body: JSON.stringify(userFormData),
       });
@@ -1703,7 +1703,7 @@ export function EnhancedAdminDashboard() {
         `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/users/${id}`,
         {
           method: 'DELETE',
-          headers: { Authorization: `Bearer ${publicAnonKey}` },
+          headers: { Authorization: `Bearer ${accessToken || publicAnonKey}` },
         }
       );
 
@@ -1732,7 +1732,7 @@ export function EnhancedAdminDashboard() {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${publicAnonKey}`,
+            Authorization: `Bearer ${accessToken || publicAnonKey}`,
           },
           body: JSON.stringify({ ids }),
         }
@@ -1762,7 +1762,7 @@ export function EnhancedAdminDashboard() {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${publicAnonKey}`,
+            Authorization: `Bearer ${accessToken || publicAnonKey}`,
           },
           body: JSON.stringify({ ids, role }),
         }
@@ -1792,7 +1792,7 @@ export function EnhancedAdminDashboard() {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${publicAnonKey}`,
+            Authorization: `Bearer ${accessToken || publicAnonKey}`,
           },
           body: JSON.stringify({ ids, status }),
         }
@@ -1826,7 +1826,7 @@ export function EnhancedAdminDashboard() {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${publicAnonKey}`,
+            Authorization: `Bearer ${accessToken || publicAnonKey}`,
           },
           body: JSON.stringify({ password: newPassword }),
         }
