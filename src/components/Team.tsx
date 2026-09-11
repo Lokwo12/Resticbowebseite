@@ -259,30 +259,7 @@ export function Team() {
           </>
         )}
 
-        {/* Join Team CTA */}
-        {teamMembers.length > 0 && (
-          <div className="mt-20 bg-white border-2 border-emerald-600 rounded-2xl p-8 md:p-12 text-center shadow-lg">
-            <h3 className="text-3xl text-gray-900 mb-4">Join Our Team</h3>
-            <p className="text-gray-600 mb-8 max-w-2xl mx-auto text-xl">
-              We're always looking for passionate individuals who want to make a difference.
-              Whether you're interested in volunteering or joining our staff, we'd love to hear from you.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <button
-                onClick={() => document.getElementById('volunteer')?.scrollIntoView({ behavior: 'smooth' })}
-                className="bg-emerald-600 text-white px-8 py-3 rounded-lg hover:bg-emerald-700 transition-all duration-300 shadow-md hover:shadow-xl"
-              >
-                Volunteer With Us
-              </button>
-              <button
-                onClick={() => document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' })}
-                className="bg-white text-emerald-600 border-2 border-emerald-600 px-8 py-3 rounded-lg hover:bg-emerald-50 transition-all duration-300"
-              >
-                Contact Us
-              </button>
-            </div>
-          </div>
-        )}
+
       </div>
     </section>
   );

@@ -70,7 +70,7 @@ export function MapLocationFormDialog({ show, onClose, editingItem, onSuccess, u
       };
 
       const url = editingItem
-        ? `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/map-locations/${editingItem.id}`
+        ? `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/map-locations/${editingItem.key || editingItem.id}`
         : `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/map-locations`;
       const response = await fetch(url, {
         method: editingItem ? 'PUT' : 'POST',

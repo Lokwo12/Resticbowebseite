@@ -1,10 +1,7 @@
-import React, {
-  useState, useEffect, createContext, useContext,
-  type ReactNode,
-} from 'react';
+import React, { useState, useEffect } from 'react';
 import { PayPalScriptProvider, PayPalButtons } from '@paypal/react-paypal-js';
-import { loadStripe } from '@stripe/stripe-js';
 import { Elements, CardNumberElement, CardExpiryElement, CardCvcElement, useStripe, useElements } from '@stripe/react-stripe-js';
+import { stripePromise, StripeCardForm, StripePaymentProvider } from './StripeShared';
 import {
   X, Heart, Lock, Copy, CheckCircle, ChevronRight,
   Phone, CreditCard, Info, Building2,
@@ -14,6 +11,7 @@ import { useNavigate } from 'react-router-dom';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { STRIPE_PK, PAYPAL_CLIENT_ID, PAYPAL_MERCHANT_EMAIL } from '../utils/env';
 import { supabase } from '../utils/supabase/client';
+import { useDonationModal } from './DonationModalContext';
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 type PayMethod = 'card' | 'paypal' | 'mtn' | 'airtel' | 'bank';
@@ -21,29 +19,6 @@ type FreqOption = 'once' | 'monthly';
 type ModalStep = 1 | 2 | 3;
 
 // ─── Context ───────────────────────────────────────────────────────────────────
-interface DonationModalCtx {
-  isOpen: boolean;
-  open: () => void;
-  close: () => void;
-}
-
-const DonationModalContext = createContext<DonationModalCtx>({
-  isOpen: false,
-  open: () => { },
-  close: () => { },
-});
-
-export function DonationModalProvider({ children }: { children: ReactNode }) {
-  const [isOpen, setIsOpen] = useState(false);
-  return (
-    <DonationModalContext.Provider value={{ isOpen, open: () => setIsOpen(true), close: () => setIsOpen(false) }}>
-      {children}
-    </DonationModalContext.Provider>
-  );
-}
-
-export const useDonationModal = () => useContext(DonationModalContext);
-
 // ─── Constants ─────────────────────────────────────────────────────────────────
 const PRESET_AMOUNTS = [5, 10, 25, 50, 100, 250];
 
@@ -117,222 +92,6 @@ function CopyBtn({ text, light = false }: { text: string; light?: boolean }) {
         ? <CheckCircle size={14} className={light ? 'text-emerald-300' : 'text-emerald-500'} />
         : <Copy size={14} className={light ? 'text-white/60' : 'text-gray-400'} />}
     </button>
-  );
-}
-
-// ─── Stripe Card Form ─────────────────────────────────────────────────────────
-const stripePromise = STRIPE_PK ? loadStripe(STRIPE_PK) : null;
-
-interface StripeFormProps {
-  donorData: { firstName: string; lastName: string; email: string; phone: string };
-  setDonorData: React.Dispatch<React.SetStateAction<{ firstName: string; lastName: string; email: string; phone: string }>>;
-  finalAmount: number;
-  freq: FreqOption;
-  setDone: React.Dispatch<React.SetStateAction<boolean>>;
-  submitting: boolean;
-  setSubmitting: React.Dispatch<React.SetStateAction<boolean>>;
-  inp: string;
-  lbl: string;
-  onBack: () => void;
-}
-
-function StripeCardForm({ donorData, setDonorData, finalAmount, freq, setDone, submitting, setSubmitting, inp, lbl, onBack }: StripeFormProps) {
-  const stripe = useStripe();
-  const elements = useElements();
-
-  const handleCardSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!stripe || !elements) return;
-    if (finalAmount < 1) { toast.error('Minimum donation is $1'); return; }
-    setSubmitting(true);
-    try {
-      const res = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/create-payment-intent`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${publicAnonKey}` },
-          body: JSON.stringify({
-            amount: finalAmount,
-            currency: 'usd',
-            donorName: `${donorData.firstName} ${donorData.lastName}`.trim(),
-            donorEmail: donorData.email,
-          }),
-        },
-      );
-      const data = await res.json();
-      if (!res.ok || data.error || !data.clientSecret) {
-        toast.error(data.error || 'Could not initialise payment. Please try again.');
-        return;
-      }
-      const cardEl = elements.getElement(CardNumberElement);
-      const { error, paymentIntent } = await stripe.confirmCardPayment(data.clientSecret, {
-        payment_method: {
-          card: cardEl!,
-          billing_details: {
-            name: `${donorData.firstName} ${donorData.lastName}`.trim(),
-            email: donorData.email,
-          },
-        },
-      });
-      if (error) {
-        toast.error(error.message ?? 'Payment failed. Please try again.');
-      } else if (paymentIntent?.status === 'succeeded') {
-        toast.success(`Thank you, ${donorData.firstName || 'friend'}! Your donation was confirmed.`, { duration: 7000 });
-        setDone(true);
-      }
-    } catch {
-      toast.error('An unexpected error occurred. Please try again.');
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  return (
-    <form onSubmit={handleCardSubmit}>
-      {/* ── Branded header ── */}
-      <div
-        className="px-6 py-5 flex items-center justify-between"
-        style={{ background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)' }}
-      >
-        <div>
-          <p className="text-white font-bold text-sm">Secure Card Payment</p>
-          <p className="text-gray-400 text-xs mt-0.5">End-to-end encrypted · Powered by Stripe</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="rounded-md px-2 py-1 text-xs font-black italic tracking-tight text-white min-w-[32px] text-center" style={{ background: '#1434CB' }}>VISA</span>
-          <span className="rounded-md px-2 py-1 text-xs font-black text-white min-w-[32px] text-center" style={{ background: '#EB001B' }}>MC</span>
-          <span className="rounded-md px-2 py-1 text-xs font-black text-white min-w-[36px] text-center" style={{ background: '#007BC1' }}>AMEX</span>
-        </div>
-      </div>
-
-      {/* ── Amount summary ── */}
-      <div className="mx-6 mt-5 bg-emerald-50 border border-emerald-100 rounded-xl px-4 py-3 flex items-center justify-between">
-        <div>
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-0.5">Donation Amount</p>
-          <p className="text-lg font-bold text-emerald-700">{formatUSD(finalAmount)}</p>
-        </div>
-        <div className="text-right">
-          <p className="text-xs text-gray-400 uppercase tracking-wider mb-0.5">Frequency</p>
-          <p className="text-xs font-semibold text-gray-700">{freq === 'once' ? 'One-time' : 'Monthly'}</p>
-        </div>
-      </div>
-
-      {/* ── Form fields ── */}
-      <div className="px-6 pt-4 pb-6 space-y-4">
-        <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1.5">
-            <label className={lbl}>First Name</label>
-            <input required className={inp} style={{ height: 44 }} placeholder="John"
-              value={donorData.firstName} onChange={e => setDonorData(p => ({ ...p, firstName: e.target.value }))} />
-          </div>
-          <div className="space-y-1.5">
-            <label className={lbl}>Last Name</label>
-            <input required className={inp} style={{ height: 44 }} placeholder="Smith"
-              value={donorData.lastName} onChange={e => setDonorData(p => ({ ...p, lastName: e.target.value }))} />
-          </div>
-        </div>
-
-        <div className="space-y-1.5">
-          <label className={lbl}>Email Address</label>
-          <input required type="email" className={inp} style={{ height: 44 }} placeholder="you@example.com"
-            value={donorData.email} onChange={e => setDonorData(p => ({ ...p, email: e.target.value }))} />
-        </div>
-
-        <div className="space-y-1.5">
-          <label className={lbl}>Card Number</label>
-          <div className="w-full border border-gray-200 rounded-xl px-4 bg-white focus-within:border-emerald-400 focus-within:ring-2 focus-within:ring-emerald-50 transition-all flex items-center" style={{ height: 44 }}>
-            <CardNumberElement
-              className="w-full"
-              options={{
-                placeholder: '0000 0000 0000 0000',
-                style: {
-                  base: {
-                    fontSize: '14px',
-                    color: '#374151',
-                    fontFamily: 'Arial, Helvetica, sans-serif',
-                    '::placeholder': { color: '#9ca3af' },
-                  },
-                  invalid: { color: '#ef4444', iconColor: '#ef4444' },
-                },
-                showIcon: true,
-              }}
-            />
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1.5">
-            <label className={lbl}>Expiry Date</label>
-            <div className="w-full border border-gray-200 rounded-xl px-4 bg-white focus-within:border-emerald-400 focus-within:ring-2 focus-within:ring-emerald-50 transition-all flex items-center" style={{ height: 44 }}>
-              <CardExpiryElement
-                className="w-full"
-                options={{
-                  placeholder: 'MM / YY',
-                  style: {
-                    base: {
-                      fontSize: '14px',
-                      color: '#374151',
-                      fontFamily: 'Arial, Helvetica, sans-serif',
-                      '::placeholder': { color: '#9ca3af' },
-                    },
-                    invalid: { color: '#ef4444', iconColor: '#ef4444' },
-                  },
-                }}
-              />
-            </div>
-          </div>
-          <div className="space-y-1.5">
-            <label className={lbl}>CVC</label>
-            <div className="w-full border border-gray-200 rounded-xl px-4 bg-white focus-within:border-emerald-400 focus-within:ring-2 focus-within:ring-emerald-50 transition-all flex items-center" style={{ height: 44 }}>
-              <CardCvcElement
-                className="w-full"
-                options={{
-                  placeholder: 'CVC',
-                  style: {
-                    base: {
-                      fontSize: '14px',
-                      color: '#374151',
-                      fontFamily: 'Arial, Helvetica, sans-serif',
-                      '::placeholder': { color: '#9ca3af' },
-                    },
-                    invalid: { color: '#ef4444', iconColor: '#ef4444' },
-                  },
-                }}
-              />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-emerald-50 border border-emerald-100 rounded-lg px-3 py-2 flex items-center gap-2">
-          <Lock size={12} className="text-emerald-600 shrink-0" />
-          <p className="text-xs text-emerald-700 leading-tight">
-            256-bit SSL encrypted · Powered by Stripe · Your card data is handled securely and never stored on our servers.
-          </p>
-        </div>
-
-        <div className="flex gap-3">
-          <button
-            type="button"
-            onClick={onBack}
-            className="w-1/3 bg-white border border-gray-200 hover:bg-gray-50 hover:border-gray-300 text-gray-600 font-semibold rounded-xl text-sm transition-all duration-200 flex items-center justify-center"
-            style={{ height: 44 }}
-          >
-            Back
-          </button>
-          <button
-            type="submit"
-            disabled={submitting || finalAmount < 1 || !stripe}
-            className="w-2/3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl text-sm shadow-lg shadow-emerald-200/50 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 hover:shadow-xl hover:scale-[1.01] active:scale-[0.99]"
-            style={{ height: 44 }}
-          >
-            {submitting
-              ? <><span className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" /> Processing…</>
-              : <><Lock size={14} /> Donate {formatUSD(finalAmount)}</>
-            }
-          </button>
-        </div>
-      </div>
-    </form>
   );
 }
 
@@ -776,6 +535,7 @@ export function DonationModal() {
                     { label: 'Bank', value: config.bankName },
                     { label: 'Account Name', value: config.accountName },
                     { label: 'Account No.', value: config.accountNumber },
+                    { label: 'Branch', value: config.branch },
                     { label: 'Swift', value: config.swiftCode },
                     { label: 'Amount', value: formatAmt(finalAmount) },
                   ].map(r => (
@@ -1128,7 +888,7 @@ export function DonationModal() {
               {/* ── CARD ────────────────────────────────────────── */}
               {method === 'card' && (
                 stripePromise ? (
-                  <Elements stripe={stripePromise}>
+                  <StripePaymentProvider finalAmount={finalAmount} currency="USD" freq={freq} donorData={donorData}>
                     <div className="space-y-3">
                       <StripeCardForm
                         donorData={donorData}
@@ -1140,10 +900,11 @@ export function DonationModal() {
                         setSubmitting={setSubmitting}
                         inp={inp}
                         lbl={lbl}
+                        formatAmt={formatUSD}
                         onBack={() => setStep(2)}
                       />
                     </div>
-                  </Elements>
+                  </StripePaymentProvider>
                 ) : (
                   /* Full card form layout — Stripe key not yet configured */
                   <div>
@@ -1626,6 +1387,7 @@ export function DonationModal() {
                           { label: 'Bank', value: config.bankName },
                           { label: 'Account Name', value: config.accountName },
                           { label: 'Account No.', value: config.accountNumber },
+                          { label: 'Branch', value: config.branch },
                           { label: 'Swift / BIC', value: config.swiftCode },
                         ].map((r, i) => (
                           <div

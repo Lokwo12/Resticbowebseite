@@ -1,20 +1,20 @@
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation, Link } from 'react-router-dom';
 import React, { useEffect } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from './components/ui/sonner';
 import { Header } from './components/Header';
 import { Hero } from './components/Hero';
-import { FundraisingProgress } from './components/FundraisingProgress';
+
 import { About } from './components/About';
 import { Programs } from './components/Programs';
 import { Team } from './components/Team';
 import { ImpactStories } from './components/ImpactStories';
 import { ImpactDashboard } from './components/ImpactDashboard';
-import { ImpactMap } from './components/ImpactMap';
+
 import { Events } from './components/Events';
 import { Gallery } from './components/Gallery';
 import { Partners } from './components/Partners';
-import { VolunteerOpportunities } from './components/VolunteerOpportunities';
+
 import { FAQ } from './components/FAQ';
 import { Resources } from './components/Resources';
 import { News } from './components/News';
@@ -41,7 +41,8 @@ import { FAQPage } from './components/FAQPage';
 import { PartnersPage } from './components/PartnersPage';
 import { OpportunitiesPage } from './components/OpportunitiesPage';
 import { projectId, publicAnonKey } from './utils/supabase/info';
-import { DonationModalProvider, DonationModal } from './components/DonationModal';
+import { DonationModal } from './components/DonationModal';
+import { DonationModalProvider } from './components/DonationModalContext';
 import { CardPaymentPage } from './components/CardPaymentPage';
 import { ContactPage } from './components/ContactPage';
 import { CustomPage } from './components/CustomPage';
@@ -68,6 +69,7 @@ function PageTitleManager() {
       '/stories': 'Impact Stories | Resti Kiryandongo',
       '/team': 'Our Team | Resti Kiryandongo',
       '/reports': 'Impact Reports | Resti Kiryandongo',
+      '/impact-dashboard': 'Impact Dashboard | Resti Kiryandongo',
       '/volunteer': 'Volunteer | Resti Kiryandongo',
       '/faqs': 'Frequently Asked Questions | Resti Kiryandongo',
       '/partners': 'Our Partners | Resti Kiryandongo',
@@ -76,6 +78,8 @@ function PageTitleManager() {
       '/contact': 'Contact Us | Resti Kiryandongo',
       '/financials': 'Financial Transparency | Resti Kiryandongo',
       '/about': 'About Us | Resti Kiryandongo',
+      '/events': 'Events Calendar | Resti Kiryandongo',
+      '/resources': 'Resources & Downloads | Resti Kiryandongo',
     };
 
     let title = titleMap[pathname] || 'Resti Kiryandongo CBO';
@@ -112,19 +116,26 @@ function HomePage() {
       <Header />
       <main className="w-full overflow-x-hidden">
         <Hero />
-        <FundraisingProgress />
+
         <About />
         <Programs />
         <Team />
         <ImpactStories />
-        <ImpactDashboard />
-        <ImpactMap />
-        <Events />
+        
+        <div className="w-full bg-emerald-50 py-16 flex justify-center border-y border-emerald-100">
+          <Link to="/impact-dashboard" className="inline-flex items-center gap-3 bg-emerald-600 text-white px-10 py-5 rounded-2xl hover:bg-emerald-700 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 font-bold text-xl">
+            <span>View Our Impact Dashboard</span>
+            <span className="bg-white/20 p-2 rounded-full">→</span>
+          </Link>
+        </div>
+
+
+
         <Gallery />
         <Partners />
-        <VolunteerOpportunities />
+
         <FAQ />
-        <Resources />
+
         <News />
         <Donation />
         <Newsletter />
@@ -226,7 +237,10 @@ export default function App() {
         <Route path="/team" element={<MainLayout><TeamPage /></MainLayout>} />
         <Route path="/about" element={<MainLayout><AdminErrorBoundary><AboutPage /></AdminErrorBoundary></MainLayout>} />
         <Route path="/reports" element={<MainLayout><ImpactReports /></MainLayout>} />
+        <Route path="/impact-dashboard" element={<MainLayout><ImpactDashboard /></MainLayout>} />
         <Route path="/volunteer" element={<MainLayout><VolunteerPage /></MainLayout>} />
+        <Route path="/events" element={<MainLayout><Events /></MainLayout>} />
+        <Route path="/resources" element={<MainLayout><Resources /></MainLayout>} />
         <Route path="/faqs" element={<MainLayout><FAQPage /></MainLayout>} />
         <Route path="/partners" element={<MainLayout><PartnersPage /></MainLayout>} />
         <Route path="/opportunities" element={<MainLayout><OpportunitiesPage /></MainLayout>} />

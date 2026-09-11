@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Target, Heart, TrendingUp } from 'lucide-react';
-import { useDonationModal } from './DonationModal';
+import { useDonationModal } from './DonationModalContext';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 
 export function FundraisingProgress() {

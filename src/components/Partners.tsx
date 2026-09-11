@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Handshake, ExternalLink } from 'lucide-react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
-import { useDonationModal } from './DonationModal';
+import { useDonationModal } from './DonationModalContext';
 import { Card } from './ui/card';
 import { Badge } from './ui/badge';
 
@@ -26,7 +26,12 @@ export function Partners() {
   const [partners, setPartners] = useState<Partner[]>(FALLBACK_PARTNERS as any);
   const [loading, setLoading] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('all');
-  const [sectionSettings, setSectionSettings] = useState({ title: 'Our Partners & Sponsors', description: 'We work with amazing organizations and individuals who share our vision for community development.' });
+  const [sectionSettings, setSectionSettings] = useState({
+    title: 'Our Partners & Sponsors',
+    description: 'We work with amazing organizations and individuals who share our vision for community development.',
+    ctaTitle: 'Become a Partner',
+    ctaDescription: "We're always looking for partnerships that align with our mission. Whether you're an organization, business, or individual wanting to make a difference, we'd love to explore collaboration opportunities.",
+  });
 
   useEffect(() => {
     fetchPartners();
@@ -188,11 +193,9 @@ export function Partners() {
         {/* Partnership CTA */}
         <div className="mt-16 bg-white border-2 border-emerald-600 rounded-2xl p-8 md:p-12">
           <div className="text-center max-w-3xl mx-auto">
-            <h3 className="text-3xl text-gray-900 mb-4">Become a Partner</h3>
+            <h3 className="text-3xl text-gray-900 mb-4">{sectionSettings.ctaTitle || 'Become a Partner'}</h3>
             <p className="text-xl text-gray-600 mb-6">
-              We're always looking for partnerships that align with our mission. Whether you're 
-              an organization, business, or individual wanting to make a difference, we'd love 
-              to explore collaboration opportunities.
+              {sectionSettings.ctaDescription || "We're always looking for partnerships that align with our mission. Whether you're an organization, business, or individual wanting to make a difference, we'd love to explore collaboration opportunities."}
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <button

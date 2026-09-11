@@ -9,9 +9,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 interface SiteSettingsTabProps {
   settings: any;
   onUpdate: () => void;
+  accessToken: string;
 }
 
-export function SiteSettingsTab({ settings: initialSettings, onUpdate }: SiteSettingsTabProps) {
+export function SiteSettingsTab({ settings: initialSettings, onUpdate, accessToken }: SiteSettingsTabProps) {
   const [settings, setSettings] = useState(initialSettings || {});
   const [saving, setSaving] = useState(false);
   const [activeSection, setActiveSection] = useState('general');
@@ -32,7 +33,7 @@ export function SiteSettingsTab({ settings: initialSettings, onUpdate }: SiteSet
       formDataObj.append('file', file);
       const response = await fetch(
         `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/upload-image`,
-        { method: 'POST', headers: { Authorization: `Bearer ${publicAnonKey}` }, body: formDataObj }
+        { method: 'POST', headers: { Authorization: `Bearer ${accessToken || publicAnonKey}` }, body: formDataObj }
       );
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Upload failed');
@@ -46,6 +47,32 @@ export function SiteSettingsTab({ settings: initialSettings, onUpdate }: SiteSet
     }
   };
 
+  const handleSlideUpload = async (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const toastId = toast.loading('Uploading slide photo...');
+    try {
+      const formDataObj = new FormData();
+      formDataObj.append('file', file);
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/upload-image`,
+        { method: 'POST', headers: { Authorization: `Bearer ${accessToken || publicAnonKey}` }, body: formDataObj }
+      );
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Upload failed');
+      
+      const newImages = [...(settings.hero?.backgroundImages || [])];
+      newImages[index] = data.url;
+      setSettings((prev: any) => ({ ...prev, hero: { ...prev.hero, backgroundImages: newImages } }));
+      
+      toast.success('Slide photo uploaded successfully', { id: toastId });
+    } catch (err: any) {
+      toast.error(err.message || 'Upload failed', { id: toastId });
+    } finally {
+      e.target.value = '';
+    }
+  };
+
   const handleSave = async () => {
     setSaving(true);
     try {
@@ -55,7 +82,7 @@ export function SiteSettingsTab({ settings: initialSettings, onUpdate }: SiteSet
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${publicAnonKey}`,
+            Authorization: `Bearer ${accessToken || publicAnonKey}`,
           },
           body: JSON.stringify({ settings }),
         }
@@ -84,7 +111,7 @@ export function SiteSettingsTab({ settings: initialSettings, onUpdate }: SiteSet
         {
           method: 'POST',
           headers: {
-            Authorization: `Bearer ${publicAnonKey}`,
+            Authorization: `Bearer ${accessToken || publicAnonKey}`,
           },
         }
       );
@@ -420,21 +447,75 @@ export function SiteSettingsTab({ settings: initialSettings, onUpdate }: SiteSet
               </div>
 
               <div>
-                <label className="block text-sm text-gray-700 mb-2">Hero Background Images (One URL per line)</label>
-                <textarea
-                  value={settings.hero?.backgroundImages?.join('\n') || ''}
-                  onChange={(e) =>
-                    setSettings({
-                      ...settings,
-                      hero: { ...settings.hero, backgroundImages: e.target.value.split('\n').filter(Boolean) },
-                    })
-                  }
-                  rows={5}
-                  placeholder="https://example.com/image1.jpg&#10;https://example.com/image2.jpg"
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  These images will rotate in the background carousel. If empty, default images will be used.
+                <label className="block text-sm text-gray-700 mb-2">Hero Background Slides</label>
+                <div className="space-y-3">
+                  {(settings.hero?.backgroundImages || []).map((imgUrl: string, index: number) => (
+                    <div key={index} className="flex gap-3 items-start bg-gray-50 p-3 rounded-xl border border-gray-100">
+                      <div className="w-24 h-16 flex-shrink-0 bg-gray-200 rounded-lg overflow-hidden border border-gray-300 shadow-sm relative group">
+                        {imgUrl ? (
+                          <img src={imgUrl} alt={`Slide ${index + 1}`} className="w-full h-full object-cover" onError={(e) => (e.currentTarget.style.display = 'none')} />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">No Image</div>
+                        )}
+                      </div>
+                      <div className="flex-1 flex flex-col gap-2">
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            value={imgUrl}
+                            onChange={(e) => {
+                              const newImages = [...(settings.hero?.backgroundImages || [])];
+                              newImages[index] = e.target.value;
+                              setSettings({
+                                ...settings,
+                                hero: { ...settings.hero, backgroundImages: newImages },
+                              });
+                            }}
+                            placeholder="Image URL"
+                            className="flex-1 px-3 py-1.5 text-sm border rounded-lg focus:ring-2 focus:ring-emerald-500"
+                          />
+                          <label className="cursor-pointer bg-emerald-100 hover:bg-emerald-200 text-emerald-700 px-3 py-1.5 rounded-lg flex items-center justify-center transition-colors" title="Upload Photo">
+                            <Upload size={16} />
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={(e) => handleSlideUpload(e, index)}
+                            />
+                          </label>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => {
+                          const newImages = [...(settings.hero?.backgroundImages || [])];
+                          newImages.splice(index, 1);
+                          setSettings({
+                            ...settings,
+                            hero: { ...settings.hero, backgroundImages: newImages },
+                          });
+                        }}
+                        className="p-2 text-red-500 hover:bg-red-100 bg-red-50 rounded-lg transition-colors mt-1"
+                        title="Remove Slide"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  ))}
+                  <button
+                    onClick={() => {
+                      const newImages = [...(settings.hero?.backgroundImages || []), ''];
+                      setSettings({
+                        ...settings,
+                        hero: { ...settings.hero, backgroundImages: newImages },
+                      });
+                    }}
+                    className="flex items-center gap-2 text-sm text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 px-3 py-2 rounded-lg transition-colors font-medium border border-dashed border-emerald-300 w-full justify-center"
+                  >
+                    <Plus size={16} /> Add Slide Photo
+                  </button>
+                </div>
+                <p className="text-xs text-gray-500 mt-2">
+                  These photos will rotate in the homepage background carousel. Paste image URLs to update them. If empty, default images will be used.
                 </p>
               </div>
 
@@ -593,6 +674,80 @@ export function SiteSettingsTab({ settings: initialSettings, onUpdate }: SiteSet
                     className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 mb-2"
                   />
                 ))}
+              </div>
+
+              <div className="pt-4 border-t">
+                <div className="flex justify-between items-center mb-4">
+                  <label className="block text-sm font-medium text-gray-900">Core Values</label>
+                  <button
+                    onClick={() => {
+                      const newValues = [...(settings.about?.values || []), { icon: 'Heart', title: '', description: '' }];
+                      setSettings({ ...settings, about: { ...settings.about, values: newValues } });
+                    }}
+                    className="flex items-center gap-1 text-sm text-emerald-600 hover:text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-full transition-colors"
+                  >
+                    <Plus size={16} /> Add Value
+                  </button>
+                </div>
+                <div className="space-y-4">
+                  {(settings.about?.values || []).map((val: any, index: number) => (
+                    <div key={index} className="flex gap-4 items-start p-4 bg-gray-50 rounded-lg border border-gray-100">
+                      <div className="flex-1 space-y-3">
+                        <div className="flex gap-4">
+                          <select
+                            value={val.icon}
+                            onChange={(e) => {
+                              const newValues = [...(settings.about?.values || [])];
+                              newValues[index] = { ...newValues[index], icon: e.target.value };
+                              setSettings({ ...settings, about: { ...settings.about, values: newValues } });
+                            }}
+                            className="w-1/3 px-3 py-1.5 text-sm border rounded-md focus:ring-2 focus:ring-emerald-500"
+                          >
+                            <option value="Heart">Heart</option>
+                            <option value="Users">Users</option>
+                            <option value="Target">Target</option>
+                            <option value="Award">Award</option>
+                          </select>
+                          <input
+                            type="text"
+                            value={val.title}
+                            onChange={(e) => {
+                              const newValues = [...(settings.about?.values || [])];
+                              newValues[index] = { ...newValues[index], title: e.target.value };
+                              setSettings({ ...settings, about: { ...settings.about, values: newValues } });
+                            }}
+                            placeholder="Value Title (e.g. Compassion)"
+                            className="flex-1 px-3 py-1.5 text-sm border rounded-md focus:ring-2 focus:ring-emerald-500"
+                          />
+                        </div>
+                        <textarea
+                          value={val.description}
+                          onChange={(e) => {
+                            const newValues = [...(settings.about?.values || [])];
+                            newValues[index] = { ...newValues[index], description: e.target.value };
+                            setSettings({ ...settings, about: { ...settings.about, values: newValues } });
+                          }}
+                          placeholder="Description of the value..."
+                          rows={2}
+                          className="w-full px-3 py-1.5 text-sm border rounded-md focus:ring-2 focus:ring-emerald-500"
+                        />
+                      </div>
+                      <button
+                        onClick={() => {
+                          const newValues = settings.about.values.filter((_: any, i: number) => i !== index);
+                          setSettings({ ...settings, about: { ...settings.about, values: newValues } });
+                        }}
+                        className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                        title="Remove Value"
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                    </div>
+                  ))}
+                  {(!settings.about?.values || settings.about.values.length === 0) && (
+                    <p className="text-sm text-gray-500 text-center py-4">No core values added yet.</p>
+                  )}
+                </div>
               </div>
 
               <div className="pt-4 border-t">
@@ -1398,6 +1553,42 @@ export function SiteSettingsTab({ settings: initialSettings, onUpdate }: SiteSet
                         })
                       }
                       rows={2}
+                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
+                    />
+                  </div>
+                  <div className="pt-2 border-t mt-2">
+                    <label className="block text-sm text-gray-700 mb-1">CTA Title</label>
+                    <input
+                      type="text"
+                      value={settings.sections?.partners?.ctaTitle || ''}
+                      onChange={(e) =>
+                        setSettings({
+                          ...settings,
+                          sections: {
+                            ...settings.sections,
+                            partners: { ...settings.sections?.partners, ctaTitle: e.target.value },
+                          },
+                        })
+                      }
+                      placeholder="e.g. Become a Partner"
+                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-700 mb-1">CTA Description</label>
+                    <textarea
+                      value={settings.sections?.partners?.ctaDescription || ''}
+                      onChange={(e) =>
+                        setSettings({
+                          ...settings,
+                          sections: {
+                            ...settings.sections,
+                            partners: { ...settings.sections?.partners, ctaDescription: e.target.value },
+                          },
+                        })
+                      }
+                      rows={2}
+                      placeholder="We're always looking for partnerships..."
                       className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
                     />
                   </div>

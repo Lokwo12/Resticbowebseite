@@ -100,7 +100,7 @@ export function OpportunityFormDialog({ show, onClose, editingItem, onSuccess, u
     setLoading(true);
     try {
       const url = editingItem
-        ? `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/opportunities/${editingItem.id}`
+        ? `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/opportunities/${editingItem.key || editingItem.id}`
         : `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/opportunities`;
       const response = await fetch(url, {
         method: editingItem ? 'PUT' : 'POST',
@@ -283,7 +283,7 @@ export function FAQFormDialog({ show, onClose, editingItem, onSuccess, userRole,
     setLoading(true);
     try {
       const url = editingItem
-        ? `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/faqs/${editingItem.id}`
+        ? `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/faqs/${editingItem.key || editingItem.id}`
         : `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/faqs`;
       const response = await fetch(url, {
         method: editingItem ? 'PUT' : 'POST',
@@ -410,7 +410,7 @@ export function ResourceFormDialog({ show, onClose, editingItem, onSuccess, user
     setLoading(true);
     try {
       const url = editingItem
-        ? `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/resources/${editingItem.id}`
+        ? `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/resources/${editingItem.key || editingItem.id}`
         : `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/resources`;
       const response = await fetch(url, {
         method: editingItem ? 'PUT' : 'POST',

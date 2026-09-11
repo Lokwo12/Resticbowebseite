@@ -1,7 +1,7 @@
 import { ArrowRight, ChevronDown } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
-import { useDonationModal } from './DonationModal';
+import { useDonationModal } from './DonationModalContext';
 import { motion } from 'framer-motion';
 
 // Animated counter hook
@@ -54,13 +54,7 @@ interface HeroSettings {
   stats: Array<{ value: string; label: string }>;
 }
 
-const FALLBACK_BACKGROUND_IMAGES = [
-  'https://images.unsplash.com/photo-1761039808159-f02b58f07032?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxhZnJpY2FuJTIwY29tbXVuaXR5JTIwZGV2ZWxvcG1lbnR8ZW58MXx8fHwxNzY1MjMyNzc0fDA&ixlib=rb-4.1.0&q=80&w=1080',
-  'https://images.unsplash.com/photo-1641569707854-c80945fb4719?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx2b2x1bnRlZXIlMjBoZWxwaW5nJTIwY2hpbGRyZW58ZW58MXx8fHwxNzY1MTk3NzkwfDA&ixlib=rb-4.1.0&q=80&w=1080',
-  'https://images.unsplash.com/photo-1666281269793-da06484657e8?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxlZHVjYXRpb24lMjBjbGFzc3Jvb20lMjBhZnJpY2F8ZW58MXx8fHwxNzY1MjMyNzc1fDA&ixlib=rb-4.1.0&q=80&w=1080',
-  'https://images.unsplash.com/photo-1706806595136-5afefb45da1a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjb21tdW5pdHklMjBoZWFsdGhjYXJlfGVufDF8fHx8MTc2NTIzMjc3NXww&ixlib=rb-4.1.0&q=80&w=1080',
-  'https://images.unsplash.com/photo-1761466977752-de51b3ecce84?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxhZ3JpY3VsdHVyYWwlMjBkZXZlbG9wbWVudHxlbnwxfHx8fDE3NjUyMzI3NzV8MA&ixlib=rb-4.1.0&q=80&w=1080',
-];
+const FALLBACK_BACKGROUND_IMAGES: string[] = [];
 
 const DEFAULT_HERO_SETTINGS: HeroSettings = {
   badgeText: 'Making a Difference in Kiryandongo',
@@ -116,7 +110,7 @@ export function Hero() {
 
   // Automatic background image carousel with pause functionality
   useEffect(() => {
-    if (isPaused) return;
+    if (isPaused || backgroundImages.length === 0) return;
     
     const interval = setInterval(() => {
       setCurrentImageIndex((prevIndex) => 
@@ -125,7 +119,7 @@ export function Hero() {
     }, 6000); // Change image every 6 seconds
 
     return () => clearInterval(interval);
-  }, [isPaused]);
+  }, [isPaused, backgroundImages.length]);
 
   useEffect(() => {
     fetchSettings();
@@ -174,7 +168,7 @@ export function Hero() {
               index === currentImageIndex ? 'opacity-100' : 'opacity-0'
             }`}
             style={{
-              backgroundImage: `url(${image})`,
+              backgroundImage: `url('${image}')`,
               backgroundSize: 'cover',
               backgroundPosition: 'center',
               backgroundRepeat: 'no-repeat',

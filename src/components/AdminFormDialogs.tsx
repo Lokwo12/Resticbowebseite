@@ -94,7 +94,7 @@ export function TeamFormDialog({ show, onClose, editingItem, onSuccess, userRole
     setLoading(true);
     try {
       const url = editingItem
-        ? `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/team/${editingItem.id}`
+        ? `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/team/${editingItem.key || editingItem.id}`
         : `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/team`;
       const response = await fetch(url, {
         method: editingItem ? 'PUT' : 'POST',
@@ -329,7 +329,7 @@ export function StoryFormDialog({ show, onClose, editingItem, onSuccess, userRol
     setLoading(true);
     try {
       const url = editingItem
-        ? `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/stories/${editingItem.id}`
+        ? `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/stories/${editingItem.key || editingItem.id}`
         : `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/stories`;
       const response = await fetch(url, {
         method: editingItem ? 'PUT' : 'POST',

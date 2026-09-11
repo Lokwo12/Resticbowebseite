@@ -57,7 +57,7 @@ export function ReportFormDialog({ show, onClose, editingItem, onSuccess, userRo
     setLoading(true);
     try {
       const url = editingItem
-        ? `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/reports/${editingItem.id}`
+        ? `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/reports/${editingItem.key || editingItem.id}`
         : `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/reports`;
       const response = await fetch(url, {
         method: editingItem ? 'PUT' : 'POST',
@@ -218,7 +218,7 @@ export function EventFormDialog({ show, onClose, editingItem, onSuccess, userRol
     setLoading(true);
     try {
       const url = editingItem
-        ? `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/events/${editingItem.id}`
+        ? `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/events/${editingItem.key || editingItem.id}`
         : `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/events`;
       const response = await fetch(url, {
         method: editingItem ? 'PUT' : 'POST',
@@ -433,7 +433,7 @@ export function PartnerFormDialog({ show, onClose, editingItem, onSuccess, userR
     setLoading(true);
     try {
       const url = editingItem
-        ? `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/partners/${editingItem.id}`
+        ? `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/partners/${editingItem.key || editingItem.id}`
         : `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/partners`;
       const response = await fetch(url, {
         method: editingItem ? 'PUT' : 'POST',

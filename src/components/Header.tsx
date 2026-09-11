@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 const logo = '/logo.png';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
-import { useDonationModal } from './DonationModal';
+import { useDonationModal } from './DonationModalContext';
 import { GlobalSearch } from './GlobalSearch';
 import { LanguageSwitcher } from './LanguageSwitcher';
 
@@ -14,7 +14,7 @@ interface SiteSettings {
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { open: openDonationModal } = useDonationModal();
+  const { isOpen: isDonationModalOpen, open: openDonationModal, close: closeDonationModal } = useDonationModal();
   const [settings, setSettings] = useState<SiteSettings>({
     general: { siteName: 'Resti Kiryandongo', tagline: 'Community Based Organization', logoUrl: logo },
     header: { announcementText: 'We are looking for volunteers in Kiryandongo', announcementLink: 'contact', showAnnouncement: true }
@@ -153,18 +153,7 @@ export function Header() {
         showHeader || mobileMenuOpen ? 'translate-y-0' : '-translate-y-full'
       }`}
     >
-      {/* Announcement Bar */}
-      {showAnnouncement && (
-      <div className="announcement-bar bg-emerald-950 text-white text-[11px] sm:text-xs font-semibold tracking-wider uppercase py-2 text-center flex items-center justify-center gap-2 px-4 flex-wrap border-b border-emerald-900/30">
-        <span className="flex items-center gap-1.5"><span className="animate-pulse text-emerald-400">🌍</span> {announcementText}</span>
-        <Link
-          to="/volunteer"
-          className="inline-flex items-center gap-1 bg-emerald-500/20 hover:bg-emerald-500/40 text-emerald-200 border border-emerald-500/30 hover:border-emerald-500/50 px-3 py-0.5 rounded-full transition-all duration-300 font-bold font-heading tracking-tight text-[10px] tracking-wide"
-        >
-          Apply now <ChevronRight size={10} />
-        </Link>
-      </div>
-      )}
+
       {/* Main nav */}
       <div className={`transition-all duration-300 ${
         isSolid 
@@ -172,7 +161,7 @@ export function Header() {
           : 'bg-emerald-950/40 backdrop-blur-md border-b border-white/5'
       }`}>
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className={`flex justify-between items-center transition-all duration-300 ${isSolid ? 'h-14' : 'h-16'}`}>
+        <div className={`flex justify-between items-center transition-all duration-300 ${isSolid ? 'h-20' : 'h-24'}`}>
           {/* Logo */}
           <div className="flex items-center">
             <Link 
@@ -184,8 +173,8 @@ export function Header() {
                 alt="Resti Kiryandongo" 
                 className={`rounded-full object-cover shadow-sm transition-all duration-300 group-hover:scale-105 border ${
                   isSolid 
-                    ? 'h-12 w-12 sm:h-14 sm:w-14 border-emerald-500/20' 
-                    : 'h-14 w-14 sm:h-16 sm:w-16 border-white/20'
+                    ? 'h-16 w-16 sm:h-20 sm:w-20 border-emerald-500/20' 
+                    : 'h-20 w-20 sm:h-28 sm:w-28 border-white/20'
                 }`} 
               />
               <div className="hidden sm:block">
@@ -390,21 +379,14 @@ export function Header() {
               <Search size={20} />
             </button>
             <LanguageSwitcher />
-            <Link 
-              to="/login"
-              className={`font-semibold text-sm transition-colors ${
-                isSolid ? 'text-gray-600 hover:text-emerald-600' : 'text-white/90 hover:text-white'
-              }`}
-            >
-              Sign In
-            </Link>
+
             <button
-              onClick={() => { openDonationModal(); setActiveDropdown(null); }}
+              onClick={() => { setActiveDropdown(null); openDonationModal(); }}
               className={`px-6 py-2 rounded-lg transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 ${
                 isSolid
                   ? 'bg-emerald-600 text-white hover:bg-emerald-700'
                   : 'bg-white text-emerald-600 hover:bg-emerald-50 shadow-lg'
-              }`}
+              } font-semibold`}
             >
               Donate
             </button>
@@ -486,10 +468,8 @@ export function Header() {
               <Link to="/contact" className="text-gray-700 hover:text-emerald-600 transition-colors text-left px-2 py-1" onClick={() => setMobileMenuOpen(false)}>
                 Contact
               </Link>
-              <Link to="/login" className="text-emerald-600 hover:text-emerald-700 font-semibold transition-colors text-left px-2 py-1 mt-2 border-t border-gray-100 pt-3" onClick={() => setMobileMenuOpen(false)}>
-                Donor Sign In
-              </Link>
-              <button onClick={openDonationModal} className="bg-emerald-600 text-white px-6 py-2 rounded-lg hover:bg-emerald-700 transition-colors mt-2">
+
+              <button onClick={() => { setMobileMenuOpen(false); openDonationModal(); }} className="bg-emerald-600 text-white px-6 py-2 rounded-lg hover:bg-emerald-700 transition-colors mt-2 text-center font-semibold">
                 Donate Now
               </button>
             </div>

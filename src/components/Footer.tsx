@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 const logo = '/logo.png';
 import { useState, useEffect } from 'react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
-import { useDonationModal } from './DonationModal';
+import { useDonationModal } from './DonationModalContext';
 
 interface FooterSettings {
   description: string;
@@ -143,7 +143,7 @@ export function Footer() {
           {/* About */}
           <div className="col-span-2 sm:col-span-3 lg:col-span-2">
             <div className="mb-4">
-              <img src={getLogoUrl()} alt={`${generalSettings.siteName} Logo`} className="h-20 w-20 rounded-full object-cover shadow-md border-2 border-slate-700 mb-2" />
+              <img src={getLogoUrl()} alt={`${generalSettings.siteName} Logo`} className="h-40 w-40 rounded-full object-cover shadow-md border-2 border-slate-700 mb-2" />
               <h3 className="text-2xl text-white mb-1">{generalSettings.siteName}</h3>
               <p className="text-base text-gray-400 mb-3">{generalSettings.tagline}</p>
             </div>
@@ -161,7 +161,7 @@ export function Footer() {
               <li><Link to="/#programs" className="block hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Programs</Link></li>
               <li><Link to="/team" className="block hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Our Team</Link></li>
               <li><Link to="/stories" className="block hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Impact Stories</Link></li>
-              <li><Link to="/#events" className="block hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Events</Link></li>
+              <li><Link to="/events" className="block hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Events</Link></li>
             </ul>
           </div>
 
@@ -174,6 +174,7 @@ export function Footer() {
               <li><Link to="/partners" className="block hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Become a Partner</Link></li>
               <li><Link to="/opportunities" className="block hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Opportunities</Link></li>
               <li><Link to="/#newsletter" className="block hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Newsletter</Link></li>
+              <li><Link to="/donor/dashboard" className="block hover:text-emerald-400 hover:translate-x-1 transition-all duration-300 font-semibold text-emerald-300">Donor Portal Login</Link></li>
             </ul>
           </div>
 
@@ -186,7 +187,8 @@ export function Footer() {
               <li><Link to="/faqs" className="block hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">FAQ</Link></li>
               <li><Link to="/reports" className="block hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Impact Reports</Link></li>
               <li><Link to="/financials" className="block hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Financials</Link></li>
-              <li><Link to="/#impact-dashboard" className="block hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Impact Dashboard</Link></li>
+              <li><Link to="/impact-dashboard" className="block hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Impact Dashboard</Link></li>
+              <li><Link to="/resources" className="block hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Resources & Downloads</Link></li>
               {customPages.map(page => (
                 <li key={page.slug}>
                   <Link to={`/pages/${page.slug}`} className="block hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">

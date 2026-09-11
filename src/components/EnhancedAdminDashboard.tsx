@@ -905,7 +905,19 @@ export function EnhancedAdminDashboard() {
           { headers: { Authorization: `Bearer ${publicAnonKey}` } }
         );
         const data = await response.json();
-        setPartners(data.partners || []);
+        const mappedPartners = (data.partners || []).map((item: any) => ({
+          id: item.key || item.id || '',
+          key: item.key || item.id || '',
+          name: item.value?.name || item.name || '',
+          description: item.value?.description || item.description || '',
+          logo: item.value?.logo || item.logo || '',
+          website: item.value?.website || item.website || '',
+          category: item.value?.category || item.category || 'general',
+          since: item.value?.since || item.since || new Date().getFullYear().toString(),
+          ...item.value,
+          ...item
+        }));
+        setPartners(mappedPartners);
       } else if (activeTab === 'opportunities') {
         const response = await fetch(
           `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/opportunities`,
@@ -1032,7 +1044,7 @@ export function EnhancedAdminDashboard() {
     e.preventDefault();
     try {
       const url = editingItem
-        ? `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/programs/${editingItem.id}`
+        ? `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/programs/${editingItem.key || editingItem.id}`
         : `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/programs`;
 
       const response = await fetch(url, {
@@ -1111,7 +1123,7 @@ export function EnhancedAdminDashboard() {
     e.preventDefault();
     try {
       const url = editingItem
-        ? `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/news/${editingItem.id}`
+        ? `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/news/${editingItem.key || editingItem.id}`
         : `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/news`;
 
       const response = await fetch(url, {
@@ -1190,7 +1202,7 @@ export function EnhancedAdminDashboard() {
     e.preventDefault();
     try {
       const url = editingItem
-        ? `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/gallery/${editingItem.id}`
+        ? `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/gallery/${editingItem.key || editingItem.id}`
         : `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/gallery`;
 
       const response = await fetch(url, {
@@ -2778,7 +2790,7 @@ export function EnhancedAdminDashboard() {
                     news.forEach(n => n.value.title?.toLowerCase().includes(q) && results.push({ section: 'News', title: n.value.title, tab: 'news' }));
                     events.forEach(e => e.value.title?.toLowerCase().includes(q) && results.push({ section: 'Event', title: e.value.title, tab: 'events' }));
                     team.forEach(m => m.value.name?.toLowerCase().includes(q) && results.push({ section: 'Team', title: m.value.name, tab: 'team' }));
-                    partners.forEach(p => p.value.name?.toLowerCase().includes(q) && results.push({ section: 'Partner', title: p.value.name, tab: 'partners' }));
+                    partners.forEach(p => p.name?.toLowerCase().includes(q) && results.push({ section: 'Partner', title: p.name, tab: 'partners' }));
                     faqs.forEach(f => f.value.question?.toLowerCase().includes(q) && results.push({ section: 'FAQ', title: f.value.question, tab: 'faqs' }));
                     return (
                       <div className="mt-3 pt-3 border-t border-gray-100">
@@ -3335,7 +3347,7 @@ export function EnhancedAdminDashboard() {
                           Edit
                         </button>
                         <button
-                          onClick={() => handleDeleteTeam(member.id)}
+                          onClick={() => handleDeleteTeam(member.key || member.id)}
                           className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-colors"
                         >
                           <Trash2 size={13} />
@@ -4402,7 +4414,7 @@ export function EnhancedAdminDashboard() {
 
             {/* Settings Tab */}
             {activeTab === 'settings' && (
-              <SiteSettingsTab settings={siteSettings} onUpdate={loadData} />
+              <SiteSettingsTab settings={siteSettings} onUpdate={loadData} accessToken={accessToken} />
             )}
 
             {/* Stories Management */}
@@ -4460,7 +4472,7 @@ export function EnhancedAdminDashboard() {
                             Edit
                           </button>
                           <button
-                            onClick={() => handleDeleteStory(story.id)}
+                            onClick={() => handleDeleteStory(story.key || story.id)}
                             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-colors"
                           >
                             <Trash2 size={13} />
@@ -4619,7 +4631,7 @@ export function EnhancedAdminDashboard() {
                           </button>
                         )}
                         <button
-                          onClick={() => handleDeleteReport(report.id)}
+                          onClick={() => handleDeleteReport(report.key || report.id)}
                           className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-colors"
                         >
                           <Trash2 size={13} />
@@ -4708,7 +4720,7 @@ export function EnhancedAdminDashboard() {
                             Edit
                           </button>
                           <button
-                            onClick={() => handleDeleteEvent(event.id)}
+                            onClick={() => handleDeleteEvent(event.key || event.id)}
                             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-colors"
                           >
                             <Trash2 size={13} />
@@ -4910,7 +4922,7 @@ export function EnhancedAdminDashboard() {
                           Edit
                         </button>
                         <button
-                          onClick={() => handleDeleteOpportunity(opp.id)}
+                          onClick={() => handleDeleteOpportunity(opp.key || opp.id)}
                           className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-colors"
                         >
                           <Trash2 size={13} />
@@ -4983,7 +4995,7 @@ export function EnhancedAdminDashboard() {
                             Edit
                           </button>
                           <button
-                            onClick={() => handleDeleteFAQ(faq.id)}
+                            onClick={() => handleDeleteFAQ(faq.key || faq.id)}
                             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-colors"
                           >
                             <Trash2 size={13} />
@@ -5064,7 +5076,7 @@ export function EnhancedAdminDashboard() {
                             Edit
                           </button>
                           <button
-                            onClick={() => handleDeleteResource(resource.id)}
+                            onClick={() => handleDeleteResource(resource.key || resource.id)}
                             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-colors"
                           >
                             <Trash2 size={13} />
@@ -5166,7 +5178,7 @@ export function EnhancedAdminDashboard() {
                                 Edit
                               </button>
                               <button
-                                onClick={() => handleDeletePage(page.id)}
+                                onClick={() => handleDeletePage(page.key || page.id)}
                                 className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-colors"
                               >
                                 <Trash2 size={13} />
@@ -5395,7 +5407,7 @@ export function EnhancedAdminDashboard() {
                           <Edit size={13} /> Edit
                         </button>
                         <button
-                          onClick={() => handleDeleteMapLocation(loc.id)}
+                          onClick={() => handleDeleteMapLocation(loc.key || loc.id)}
                           className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-colors"
                         >
                           <Trash2 size={13} /> Delete
@@ -5686,7 +5698,7 @@ export function EnhancedAdminDashboard() {
               <Button type="button" variant="outline" onClick={() => setShowGalleryForm(false)}>
                 Cancel
               </Button>
-              <Button type="submit" className="rounded-xl px-6 bg-emerald-600 hover:bg-emerald-700 shadow-sm hover:shadow transition-all">
+              <Button type="submit" disabled={uploadingImage} className="rounded-xl px-6 bg-emerald-600 hover:bg-emerald-700 shadow-sm hover:shadow transition-all">
                 {editingItem ? 'Update' : 'Create'}
               </Button>
             </div>

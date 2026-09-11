@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { LoadingScreen } from './LoadingScreen';
 import { Handshake, ExternalLink, Globe, Heart } from 'lucide-react';
-import { useDonationModal } from './DonationModal';
+import { useDonationModal } from './DonationModalContext';
 import { Button } from './ui/button';
 
 interface Partner {
@@ -18,6 +18,12 @@ export function PartnersPage() {
   const { open: openDonationModal } = useDonationModal();
   const [partners, setPartners] = useState<Partner[]>([]);
   const [loading, setLoading] = useState(true);
+  const [sectionSettings, setSectionSettings] = useState({ 
+    title: 'Our Valued Partners', 
+    description: 'We are proud to work with organizations that share our vision for a better, more empowered community.',
+    ctaTitle: 'Want to Partner With Us?',
+    ctaDescription: 'We are always looking to collaborate with organizations that can help us expand our reach and impact.'
+  });
 
   useEffect(() => {
     const fetchPartners = async () => {
@@ -50,7 +56,28 @@ export function PartnersPage() {
         setLoading(false);
       }
     };
+    const fetchSettings = async () => {
+      try {
+        const response = await fetch(
+          `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/site-settings`,
+          {
+            headers: {
+              Authorization: `Bearer ${publicAnonKey}`,
+            },
+          }
+        );
+        if (response.ok) {
+          const data = await response.json();
+          if (data.settings?.sections?.partners) {
+            setSectionSettings((prev) => ({ ...prev, ...data.settings.sections.partners }));
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching section settings:', err);
+      }
+    };
     fetchPartners();
+    fetchSettings();
   }, []);
 
   const fallbackPartners: Partner[] = [
@@ -90,9 +117,9 @@ export function PartnersPage() {
           <div className="inline-flex items-center justify-center w-16 h-16 bg-white/10 backdrop-blur-md rounded-full mb-6">
             <Handshake className="text-white" size={32} />
           </div>
-          <h1 className="text-4xl md:text-5xl font-bold mb-4 text-white">Our Valued Partners</h1>
+          <h1 className="text-4xl md:text-5xl font-bold mb-4 text-white">{sectionSettings.title}</h1>
           <p className="text-emerald-50 max-w-2xl mx-auto text-lg">
-            We are proud to work with organizations that share our vision for a better, more empowered community.
+            {sectionSettings.description}
           </p>
         </div>
       </div>
@@ -147,9 +174,9 @@ export function PartnersPage() {
 
         {/* Call to Action */}
         <div className="mt-16 bg-emerald-50 rounded-2xl p-8 md:p-12 text-center border border-emerald-100">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Want to Partner With Us?</h2>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">{sectionSettings.ctaTitle || 'Want to Partner With Us?'}</h2>
           <p className="text-gray-600 max-w-2xl mx-auto mb-6">
-            We are always looking to collaborate with organizations that can help us expand our reach and impact.
+            {sectionSettings.ctaDescription || 'We are always looking to collaborate with organizations that can help us expand our reach and impact.'}
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <a

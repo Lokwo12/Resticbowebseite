@@ -152,20 +152,22 @@ export function About() {
             >
               Our Core Values
             </motion.h3>
-            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="max-w-3xl mx-auto space-y-10">
               {displaySettings.values.map((value, index) => {
               const IconComponent = iconMap[value.icon] || Heart;
               return (
                 <motion.div
                   key={index}
                   variants={{ hidden: { opacity: 0, y: 30 }, visible: { opacity: 1, y: 0, transition: { duration: 0.6 } } }}
-                  className="group p-6 border border-slate-100 rounded-2xl shadow-sm hover:shadow-premium-soft transition-all duration-300 hover:border-emerald-500/20 hover:-translate-y-2 bg-gradient-to-b from-white to-slate-50/50 hover:to-emerald-50/10"
+                  className="flex gap-6 items-start group"
                 >
-                  <div className="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center mb-5 group-hover:bg-emerald-600 group-hover:scale-110 transition-all duration-300 shadow-sm border border-emerald-500/10">
+                  <div className="shrink-0 mt-1 w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center group-hover:bg-emerald-600 group-hover:scale-110 transition-all duration-300 shadow-sm border border-emerald-500/10">
                     <IconComponent className="text-emerald-600 group-hover:text-white transition-colors" size={24} />
                   </div>
-                  <h4 className="text-xl text-gray-900 mb-2 group-hover:text-emerald-600 transition-colors duration-300 font-bold font-heading tracking-tight">{value.title}</h4>
-                  <p className="text-base text-gray-600 leading-relaxed">{value.description}</p>
+                  <div>
+                    <h4 className="text-2xl text-gray-900 mb-2 group-hover:text-emerald-600 transition-colors duration-300 font-bold font-heading tracking-tight">{value.title}</h4>
+                    <p className="text-lg text-gray-700 leading-relaxed">{value.description}</p>
+                  </div>
                 </motion.div>
               );
             })}

@@ -6,7 +6,7 @@ import { SEO } from './SEO';
 import { LoadingScreen } from './LoadingScreen';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
-import { useDonationModal } from './DonationModal';
+import { useDonationModal } from './DonationModalContext';
 
 interface Story {
   id: string;

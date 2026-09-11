@@ -538,7 +538,7 @@ export function SubscribersTab(props: any) {
 
             {/* Settings Tab */}
             {activeTab === 'settings' && (
-              <SiteSettingsTab settings={siteSettings} onUpdate={loadData} />
+              <SiteSettingsTab settings={siteSettings} onUpdate={loadData} accessToken={accessToken} />
             )}
 
 

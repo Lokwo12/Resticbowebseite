@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Heart, Lock, Phone, CreditCard, ChevronRight, Building2, Shield, Star, ExternalLink, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
-import { StripePaymentProvider, StripeCardForm, stripePromise, formatCurrency, FreqOption } from './StripeShared';
+import { StripePaymentProvider, StripeCardForm, stripePromise, FreqOption } from './StripeShared';
+import { formatCurrency } from '../utils/formatCurrency';
 import { DonorWall } from './DonorWall';
 import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
 import { projectId, publicAnonKey } from '../utils/supabase/info';

@@ -215,21 +215,23 @@ export function AboutPage() {
 
           <div 
             ref={valuesRef}
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8"
+            className="max-w-3xl mx-auto space-y-10"
           >
             {settings.values?.map((val, idx) => {
               const Icon = iconMap[val.icon] || Heart;
               return (
                 <div 
                   key={idx}
-                  className={`bg-white rounded-3xl p-8 shadow-sm border border-gray-100 hover:shadow-xl hover:border-emerald-100 transition-all duration-700 group ${valuesVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`}
+                  className={`flex gap-6 items-start transition-all duration-700 ${valuesVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`}
                   style={{ transitionDelay: `${idx * 150}ms` }}
                 >
-                  <div className="w-16 h-16 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-600 mb-6 group-hover:scale-110 group-hover:bg-emerald-600 group-hover:text-white transition-all">
-                    <Icon size={28} />
+                  <div className="shrink-0 mt-1 w-12 h-12 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-600">
+                    <Icon size={24} />
                   </div>
-                  <h4 className="text-xl font-bold text-gray-900 mb-3">{val.title}</h4>
-                  <p className="text-gray-600 text-sm leading-relaxed">{val.description}</p>
+                  <div>
+                    <h4 className="text-2xl font-bold text-gray-900 mb-3">{val.title}</h4>
+                    <p className="text-gray-700 text-lg leading-relaxed">{val.description}</p>
+                  </div>
                 </div>
               );
             })}

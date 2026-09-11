@@ -40,11 +40,15 @@ export function TeamTab(props: any) {
 
                 {/* Cards grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
-                  {team.map((member) => (
+                  {team.map((item) => {
+                    const member = item.value ? { ...item.value, id: item.key || item.id } : item;
+                    const rawMemberKey = item.key || member.id || '';
+                    const memberKey = rawMemberKey.startsWith('team:') ? rawMemberKey : `team:${rawMemberKey}`;
+                    return (
                     <div
-                      key={member.id}
+                      key={memberKey}
                       className="bg-white border border-gray-200 border-l-4 border-l-teal-500 rounded-2xl p-6 hover:shadow-xl hover:-translate-y-1 hover:border-teal-300 transition-all duration-300 shadow-sm cursor-pointer group flex flex-col"
-                      onClick={() => { setEditingItem(member); setShowTeamForm(true); }}
+                      onClick={() => { setEditingItem({ ...member, key: memberKey }); setShowTeamForm(true); }}
                     >
                       {/* Avatar + name + role */}
                       <div className="flex items-center gap-3 mb-4">
@@ -73,14 +77,14 @@ export function TeamTab(props: any) {
                       {/* Action buttons */}
                       <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-slate-100 relative z-20" onClick={(e) => e.stopPropagation()}>
                         <button
-                          onClick={() => { setEditingItem(member); setShowTeamForm(true); }}
+                          onClick={() => { setEditingItem({ ...member, key: memberKey }); setShowTeamForm(true); }}
                           className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors"
                         >
                           <Edit size={13} />
                           Edit
                         </button>
                         <button
-                          onClick={() => handleBulkDeleteTeam([member.id])}
+                          onClick={() => handleBulkDeleteTeam([memberKey])}
                           className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-colors"
                         >
                           <Trash2 size={13} />
@@ -88,7 +92,8 @@ export function TeamTab(props: any) {
                         </button>
                       </div>
                     </div>
-                  ))}
+                    );
+                  })}
                   {team.length === 0 && (
                     <div className="col-span-3 text-center py-16">
                       <div className="w-14 h-14 rounded-2xl bg-teal-50 border border-teal-100 flex items-center justify-center mx-auto mb-4">

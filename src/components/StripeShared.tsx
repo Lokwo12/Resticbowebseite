@@ -5,28 +5,64 @@ import { toast } from 'sonner';
 import { Lock } from 'lucide-react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { STRIPE_PK } from '../utils/env';
+import { supabaseUrl } from '../utils/supabase/client';
 
 export const stripePromise = STRIPE_PK ? loadStripe(STRIPE_PK) : null;
-
-export const formatCurrency = (n: number, currencyCode: string) =>
-  new Intl.NumberFormat('en-US', { style: 'currency', currency: currencyCode, minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(n);
 
 export type FreqOption = 'once' | 'monthly' | 'yearly';
 
 export function StripePaymentProvider({ finalAmount, currency, freq, donorData, children }: any) {
   const [clientSecret, setClientSecret] = useState('');
+  const [errorMsg, setErrorMsg] = useState('');
   
   useEffect(() => {
-    if (finalAmount < 1) return;
-    fetch(`https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/create-payment-intent`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${publicAnonKey}` },
-      body: JSON.stringify({ amount: finalAmount, currency: currency.toLowerCase(), donorName: `${donorData.firstName} ${donorData.lastName}`.trim(), donorEmail: donorData.email }),
-    })
-      .then(r => r.json())
-      .then(d => { if (d.clientSecret) setClientSecret(d.clientSecret); else toast.error(d.error || 'Could not initialise payment.'); })
-      .catch(() => toast.error('An unexpected error occurred.'));
-  }, [finalAmount, currency, donorData, freq]);
+    if (!finalAmount || Number.isNaN(finalAmount) || finalAmount < 1) {
+      setClientSecret('');
+      setErrorMsg('Enter a valid donation amount.');
+      return;
+    }
+
+    const controller = new AbortController();
+    setClientSecret('');
+    setErrorMsg('');
+
+    const initialisePayment = async () => {
+      try {
+        const response = await fetch(`${supabaseUrl}/functions/v1/make-server-2a4be611/create-payment-intent`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${publicAnonKey}` },
+          body: JSON.stringify({ amount: finalAmount, currency: currency.toLowerCase(), donorName: `${donorData.firstName} ${donorData.lastName}`.trim(), donorEmail: donorData.email }),
+          signal: controller.signal,
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || !data.clientSecret) {
+          const error = data.details || data.error || 'Could not initialise payment.';
+          throw new Error(error);
+        }
+        setClientSecret(data.clientSecret);
+      } catch (error) {
+        if (controller.signal.aborted) return;
+        const message = error instanceof Error ? error.message : 'An unexpected network error occurred.';
+        setErrorMsg(message);
+        toast.error(message);
+      }
+    };
+
+    void initialisePayment();
+    return () => controller.abort();
+  }, [finalAmount, currency, freq]); // REMOVED donorData to prevent infinite Stripe reload on keystrokes
+
+  if (errorMsg) {
+    return (
+      <div className="px-6 py-12 flex flex-col items-center justify-center space-y-4">
+        <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+          <Lock className="w-6 h-6 text-red-600" />
+        </div>
+        <p className="text-sm font-semibold text-red-600 text-center">{errorMsg}</p>
+        <button onClick={() => { setErrorMsg(''); setClientSecret(''); }} className="text-xs text-emerald-600 font-semibold hover:underline">Try Again</button>
+      </div>
+    );
+  }
 
   if (!clientSecret) return (
     <div className="px-6 py-12 flex flex-col items-center justify-center space-y-4">
@@ -37,7 +73,7 @@ export function StripePaymentProvider({ finalAmount, currency, freq, donorData, 
     </div>
   );
 
-  return <Elements stripe={stripePromise} options={{ clientSecret, appearance: { theme: 'stripe' } }}>{children}</Elements>;
+  return <Elements key={clientSecret} stripe={stripePromise} options={{ clientSecret, appearance: { theme: 'stripe' } }}>{children}</Elements>;
 }
 
 export interface StripeFormProps {
@@ -81,12 +117,12 @@ export function StripeCardForm({ donorData, setDonorData, finalAmount, freq, set
       } else if (paymentIntent?.status === 'succeeded' || paymentIntent?.status === 'requires_capture') {
         try {
           // Record donation in Postgres and trigger automated Email Receipt
-          await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/donations`, {
+          await fetch(`${supabaseUrl}/functions/v1/make-server-2a4be611/donations`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${publicAnonKey}` },
             body: JSON.stringify({
               amount: finalAmount, 
-              currency: 'USD', // Stripe amount was approximated to USD
+              currency: paymentIntent.currency?.toUpperCase() || 'USD',
               paymentMethod: 'card',
               donorName: `${donorData.firstName} ${donorData.lastName}`.trim(),
               donorEmail: donorData.email,

@@ -1,10 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { createClient } from '@supabase/supabase-js';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { Search, X, Loader, ArrowRight, ExternalLink , Heart } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 
-const supabase = createClient(`https://${projectId}.supabase.co`, publicAnonKey);
+const apiBase = `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611`;
 
 export function GlobalSearch({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) {
   const [query, setQuery] = useState('');
@@ -50,24 +49,34 @@ export function GlobalSearch({ isOpen, onClose }: { isOpen: boolean, onClose: ()
     const delayTimer = setTimeout(async () => {
       setLoading(true);
       try {
-        const searchTerm = `%${query}%`;
         const res: any[] = [];
+        const requestOptions = { headers: { Authorization: `Bearer ${publicAnonKey}` } };
+        const [programsResponse, newsResponse, eventsResponse, teamResponse] = await Promise.all([
+          fetch(`${apiBase}/programs`, requestOptions),
+          fetch(`${apiBase}/news`, requestOptions),
+          fetch(`${apiBase}/events`, requestOptions),
+          fetch(`${apiBase}/team`, requestOptions),
+        ]);
+        const [programsData, newsData, eventsData, teamData] = await Promise.all([
+          programsResponse.ok ? programsResponse.json() : { programs: [] },
+          newsResponse.ok ? newsResponse.json() : { news: [] },
+          eventsResponse.ok ? eventsResponse.json() : { events: [] },
+          teamResponse.ok ? teamResponse.json() : { team: [] },
+        ]);
+        const matches = (value: unknown) => String(value || '').toLowerCase().includes(query.trim().toLowerCase());
+        const readValue = (item: any, field: string) => item.value?.[field] ?? item[field] ?? '';
 
         // Search Programs
-        const { data: programs } = await supabase.from('programs').select('id, title, description').ilike('title', searchTerm).limit(3);
-        if (programs) programs.forEach(p => res.push({ type: 'Program', title: p.title, desc: p.description || '', link: `/programs/${p.id}` }));
+        (programsData.programs || []).filter((p: any) => matches(readValue(p, 'title'))).slice(0, 3).forEach((p: any) => res.push({ type: 'Program', title: readValue(p, 'title'), desc: readValue(p, 'description'), link: `/programs/${p.key || p.id}` }));
 
         // Search News
-        const { data: news } = await supabase.from('news').select('id, title, excerpt').ilike('title', searchTerm).limit(3);
-        if (news) news.forEach(n => res.push({ type: 'News', title: n.title, desc: n.excerpt || '', link: `/news/${n.id}` }));
+        (newsData.news || []).filter((n: any) => matches(readValue(n, 'title'))).slice(0, 3).forEach((n: any) => res.push({ type: 'News', title: readValue(n, 'title'), desc: readValue(n, 'excerpt') || readValue(n, 'content'), link: `/news/${n.key || n.id}` }));
 
         // Search Events
-        const { data: events } = await supabase.from('events').select('id, title, description').ilike('title', searchTerm).limit(3);
-        if (events) events.forEach(e => res.push({ type: 'Event', title: e.title, desc: e.description || '', link: `/#events` }));
+        (eventsData.events || []).filter((e: any) => matches(readValue(e, 'title'))).slice(0, 3).forEach((e: any) => res.push({ type: 'Event', title: readValue(e, 'title'), desc: readValue(e, 'description'), link: '/#events' }));
 
         // Search Team
-        const { data: team } = await supabase.from('team').select('id, name, role').ilike('name', searchTerm).limit(3);
-        if (team) team.forEach(t => res.push({ type: 'Team', title: t.name, desc: t.role || '', link: `/team` }));
+        (teamData.team || []).filter((t: any) => matches(readValue(t, 'name'))).slice(0, 3).forEach((t: any) => res.push({ type: 'Team', title: readValue(t, 'name'), desc: readValue(t, 'role'), link: '/team' }));
 
         setResults(res);
       } catch (err) {

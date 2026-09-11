@@ -121,6 +121,9 @@ body {
 }
 
 @layer base {
+  html {
+    font-size: 20px;
+  }
   * {
     border-color: var(--border);
   }
@@ -757,3 +760,8 @@ html.dark { color-scheme: dark; }
 .dark ::-webkit-scrollbar-track { background: #0f172a; }
 .dark ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
 .dark ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+/* ── Global Text Alignment ─────────────────────────────────────────── */
+p, .prose p, .content p, .body-text, article p, section p {
+  text-align: justify;
+}

@@ -374,7 +374,7 @@ app.post('/make-server-2a4be611/create-payment-intent', async (c) => {
 
     if (insertError) {
       console.error('Failed to create pending donation:', insertError)
-      return c.json({ error: 'Database error' }, 500)
+      return c.json({ error: 'Database error', details: insertError.message, hint: insertError.hint }, 500)
     }
 
     // Create a payment intent and attach the internal reference so webhook can locate it
@@ -442,7 +442,7 @@ app.post('/make-server-2a4be611/create-checkout-session', async (c) => {
 
     if (insertError) {
       console.error('Failed to create pending donation:', insertError)
-      return c.json({ error: 'Database error' }, 500)
+      return c.json({ error: 'Database error', details: insertError.message, hint: insertError.hint }, 500)
     }
 
     const sessionConfig: Stripe.Checkout.SessionCreateParams = {
@@ -1298,16 +1298,20 @@ app.post('/make-server-2a4be611/admin/signup', withRateLimit('admin-signup', 5, 
       return c.json({ error: error.message }, 400)
     }
 
-    // Store user info in KV
-    const userId = `admin_user:${data.user.id}`
-    await kv.set(userId, {
-      id: data.user.id,
-      email,
-      name: name || email.split('@')[0],
-      role: userRole,
-      status: userStatus,
-      createdAt: new Date().toISOString()
-    })
+    // Store user info in Postgres admin_users table
+    const { error: insertError } = await supabase
+      .from('admin_users')
+      .insert({
+        id: data.user.id,
+        email: email,
+        name: name || email.split('@')[0],
+        role: userRole,
+        status: userStatus
+      })
+
+    if (insertError) {
+      console.error('Failed to insert into admin_users table:', insertError)
+    }
 
     // Audit log
     const auditId = `audit:${crypto.randomUUID()}`
@@ -1331,11 +1335,19 @@ app.post('/make-server-2a4be611/admin/signup', withRateLimit('admin-signup', 5, 
 app.get('/make-server-2a4be611/admin/users/:userId/status', async (c) => {
   try {
     const userId = c.req.param('userId')
-    const user = await kv.get(`admin_user:${userId}`)
-    if (!user) {
-      // If not in KV, default to active to prevent CLI-created users from being locked out
-      return c.json({ success: true, status: 'active', role: 'viewer' })
+    
+    // Check postgres admin_users table
+    const { data: user, error } = await supabase
+      .from('admin_users')
+      .select('status, role')
+      .eq('id', userId)
+      .single()
+
+    if (error || !user) {
+      // If not in postgres, default to viewer to prevent locked out
+      return c.json({ success: true, status: 'pending', role: 'viewer' })
     }
+    
     return c.json({ success: true, status: user.status, role: user.role })
   } catch (error) {
     console.error('Error fetching user status:', error)
@@ -1443,7 +1455,7 @@ app.get('/make-server-2a4be611/admin/volunteers', requireAdmin, async (c) => {
 })
 
 // Update volunteer status (admin)
-app.patch('/make-server-2a4be611/admin/volunteers/:id', async (c) => {
+app.patch('/make-server-2a4be611/admin/volunteers/:id', requireAdmin, async (c) => {
   try {
     const id = c.req.param('id')
     const body = await c.req.json()
@@ -1672,7 +1684,7 @@ app.post('/make-server-2a4be611/news/bulk-delete', requireAdmin, async (c) => {
 })
 
 // Bulk update contact status
-app.post('/make-server-2a4be611/admin/contacts/bulk-update', async (c) => {
+app.post('/make-server-2a4be611/admin/contacts/bulk-update', requireAdmin, async (c) => {
   try {
     const body = await c.req.json()
     const { ids, status } = body
@@ -1697,7 +1709,7 @@ app.post('/make-server-2a4be611/admin/contacts/bulk-update', async (c) => {
 })
 
 // Bulk update volunteer status
-app.post('/make-server-2a4be611/admin/volunteers/bulk-update', async (c) => {
+app.post('/make-server-2a4be611/admin/volunteers/bulk-update', requireAdmin, async (c) => {
   try {
     const body = await c.req.json()
     const { ids, status } = body
@@ -1722,7 +1734,7 @@ app.post('/make-server-2a4be611/admin/volunteers/bulk-update', async (c) => {
 })
 
 // Update contact status (admin)
-app.put('/make-server-2a4be611/admin/contacts/:id/status', async (c) => {
+app.put('/make-server-2a4be611/admin/contacts/:id/status', requireAdmin, async (c) => {
   try {
     const id = c.req.param('id')
     const body = await c.req.json()
@@ -1748,7 +1760,7 @@ app.put('/make-server-2a4be611/admin/contacts/:id/status', async (c) => {
 })
 
 // Delete contact (admin)
-app.delete('/make-server-2a4be611/admin/contacts/:id', async (c) => {
+app.delete('/make-server-2a4be611/admin/contacts/:id', requireAdmin, async (c) => {
   try {
     const id = c.req.param('id')
     await kv.del(id)
@@ -1761,7 +1773,7 @@ app.delete('/make-server-2a4be611/admin/contacts/:id', async (c) => {
 })
 
 // Reply to contact via email (admin)
-app.post('/make-server-2a4be611/admin/contacts/:id/reply', async (c) => {
+app.post('/make-server-2a4be611/admin/contacts/:id/reply', requireAdmin, async (c) => {
   try {
     const id = c.req.param('id')
     const body = await c.req.json()
@@ -1830,7 +1842,7 @@ app.post('/make-server-2a4be611/admin/contacts/:id/reply', async (c) => {
 })
 
 // Bulk delete contacts (admin)
-app.post('/make-server-2a4be611/admin/contacts/bulk-delete', async (c) => {
+app.post('/make-server-2a4be611/admin/contacts/bulk-delete', requireAdmin, async (c) => {
   try {
     const body = await c.req.json()
     const { ids } = body
@@ -1849,7 +1861,7 @@ app.post('/make-server-2a4be611/admin/contacts/bulk-delete', async (c) => {
 })
 
 // Update volunteer status (admin)
-app.put('/make-server-2a4be611/admin/volunteers/:id/status', async (c) => {
+app.put('/make-server-2a4be611/admin/volunteers/:id/status', requireAdmin, async (c) => {
   try {
     const id = c.req.param('id')
     const body = await c.req.json()
@@ -1904,7 +1916,7 @@ app.put('/make-server-2a4be611/admin/volunteers/:id/status', async (c) => {
 })
 
 // Delete volunteer (admin)
-app.delete('/make-server-2a4be611/admin/volunteers/:id', async (c) => {
+app.delete('/make-server-2a4be611/admin/volunteers/:id', requireAdmin, async (c) => {
   try {
     const id = c.req.param('id')
     await kv.del(id)
@@ -1917,7 +1929,7 @@ app.delete('/make-server-2a4be611/admin/volunteers/:id', async (c) => {
 })
 
 // Bulk delete volunteers (admin)
-app.post('/make-server-2a4be611/admin/volunteers/bulk-delete', async (c) => {
+app.post('/make-server-2a4be611/admin/volunteers/bulk-delete', requireAdmin, async (c) => {
   try {
     const body = await c.req.json()
     const { ids } = body
@@ -2169,7 +2181,7 @@ app.get('/make-server-2a4be611/admin/gallery', async (c) => {
 })
 
 // Create gallery image (admin)
-app.post('/make-server-2a4be611/admin/gallery', async (c) => {
+app.post('/make-server-2a4be611/admin/gallery', requireAdmin, async (c) => {
   try {
     const body = await c.req.json()
     const { title, description, imageUrl, category } = body
@@ -2196,7 +2208,7 @@ app.post('/make-server-2a4be611/admin/gallery', async (c) => {
 })
 
 // Update gallery image (admin)
-app.put('/make-server-2a4be611/admin/gallery/:id', async (c) => {
+app.put('/make-server-2a4be611/admin/gallery/:id', requireAdmin, async (c) => {
   try {
     const id = c.req.param('id')
     const body = await c.req.json()
@@ -2225,7 +2237,7 @@ app.put('/make-server-2a4be611/admin/gallery/:id', async (c) => {
 })
 
 // Delete gallery image (admin)
-app.delete('/make-server-2a4be611/admin/gallery/:id', async (c) => {
+app.delete('/make-server-2a4be611/admin/gallery/:id', requireAdmin, async (c) => {
   try {
     const id = c.req.param('id')
     
@@ -2244,8 +2256,8 @@ app.delete('/make-server-2a4be611/admin/gallery/:id', async (c) => {
   }
 })
 
-// Bulk delete gallery images (admin)
-app.post('/make-server-2a4be611/admin/gallery/bulk-delete', async (c) => {
+// Bulk delete gallery images
+app.post('/make-server-2a4be611/admin/gallery/bulk-delete', requireAdmin, async (c) => {
   try {
     const body = await c.req.json()
     const { ids } = body
@@ -2278,14 +2290,14 @@ app.get('/make-server-2a4be611/stories', async (c) => {
     
     const stories = await kv.getByPrefix('story:')
     stories.sort((a, b) => new Date(b.value.date).getTime() - new Date(a.value.date).getTime())
-    return c.json({ stories: stories.map(s => ({ id: s.key, ...s.value })) })
+    return c.json({ stories: stories.map(s => ({ ...s.value, id: s.key, key: s.key })) })
   } catch (error) {
     console.error('Error fetching stories:', error)
     return c.json({ error: 'Failed to fetch stories', details: String(error) }, 500)
   }
 })
 
-app.post('/make-server-2a4be611/admin/stories', async (c) => {
+app.post('/make-server-2a4be611/admin/stories', requireAdmin, async (c) => {
   try {
     const body = await c.req.json()
     const { name, title, story, image, category, impact } = body
@@ -2298,7 +2310,7 @@ app.post('/make-server-2a4be611/admin/stories', async (c) => {
   }
 })
 
-app.put('/make-server-2a4be611/admin/stories/:id', async (c) => {
+app.put('/make-server-2a4be611/admin/stories/:id', requireAdmin, async (c) => {
   try {
     const id = c.req.param('id')
     const body = await c.req.json()
@@ -2312,7 +2324,7 @@ app.put('/make-server-2a4be611/admin/stories/:id', async (c) => {
   }
 })
 
-app.delete('/make-server-2a4be611/admin/stories/:id', async (c) => {
+app.delete('/make-server-2a4be611/admin/stories/:id', requireAdmin, async (c) => {
   try {
     const id = c.req.param('id')
     await kv.del(id)
@@ -2337,14 +2349,14 @@ app.get('/make-server-2a4be611/team', async (c) => {
     
     const team = await kv.getByPrefix('team:')
     team.sort((a, b) => (a.value.order || 999) - (b.value.order || 999))
-    return c.json({ team: team.map(t => ({ id: t.key, ...t.value })) })
+    return c.json({ team: team.map(t => ({ ...t.value, id: t.key, key: t.key })) })
   } catch (error) {
     console.error('Error fetching team:', error)
     return c.json({ error: 'Failed to fetch team', details: String(error) }, 500)
   }
 })
 
-app.post('/make-server-2a4be611/admin/team', async (c) => {
+app.post('/make-server-2a4be611/admin/team', requireAdmin, async (c) => {
   try {
     const body = await c.req.json()
     const { name, role, department, bio, image, email, linkedin, twitter, order } = body
@@ -2357,7 +2369,7 @@ app.post('/make-server-2a4be611/admin/team', async (c) => {
   }
 })
 
-app.put('/make-server-2a4be611/admin/team/:id', async (c) => {
+app.put('/make-server-2a4be611/admin/team/:id', requireAdmin, async (c) => {
   try {
     const id = c.req.param('id')
     const body = await c.req.json()
@@ -2371,10 +2383,11 @@ app.put('/make-server-2a4be611/admin/team/:id', async (c) => {
   }
 })
 
-app.delete('/make-server-2a4be611/admin/team/:id', async (c) => {
+app.delete('/make-server-2a4be611/admin/team/:id', requireAdmin, async (c) => {
   try {
     const id = c.req.param('id')
-    await kv.del(id)
+    const teamKey = id.startsWith('team:') ? id : `team:${id}`
+    await kv.del(teamKey)
     return c.json({ success: true, message: 'Team member deleted successfully' })
   } catch (error) {
     console.error('Error deleting team member:', error)
@@ -2396,14 +2409,14 @@ app.get('/make-server-2a4be611/events', async (c) => {
     
     const events = await kv.getByPrefix('event:')
     events.sort((a, b) => new Date(b.value.date).getTime() - new Date(a.value.date).getTime())
-    return c.json({ events: events.map(e => ({ id: e.key, ...e.value })) })
+    return c.json({ events: events.map(e => ({ ...e.value, id: e.key, key: e.key })) })
   } catch (error) {
     console.error('Error fetching events:', error)
     return c.json({ error: 'Failed to fetch events', details: String(error) }, 500)
   }
 })
 
-app.post('/make-server-2a4be611/admin/events', async (c) => {
+app.post('/make-server-2a4be611/admin/events', requireAdmin, async (c) => {
   try {
     const body = await c.req.json()
     const { title, description, date, time, location, image, category, capacity, status } = body
@@ -2416,7 +2429,7 @@ app.post('/make-server-2a4be611/admin/events', async (c) => {
   }
 })
 
-app.put('/make-server-2a4be611/admin/events/:id', async (c) => {
+app.put('/make-server-2a4be611/admin/events/:id', requireAdmin, async (c) => {
   try {
     const id = c.req.param('id')
     const body = await c.req.json()
@@ -2430,7 +2443,7 @@ app.put('/make-server-2a4be611/admin/events/:id', async (c) => {
   }
 })
 
-app.delete('/make-server-2a4be611/admin/events/:id', async (c) => {
+app.delete('/make-server-2a4be611/admin/events/:id', requireAdmin, async (c) => {
   try {
     const id = c.req.param('id')
     await kv.del(id)
@@ -2454,14 +2467,14 @@ app.get('/make-server-2a4be611/partners', async (c) => {
     }
     
     const partners = await kv.getByPrefix('partner:')
-    return c.json({ partners: partners.map(p => ({ id: p.key, ...p.value })) })
+    return c.json({ partners: partners.map(p => ({ ...p.value, id: p.key, key: p.key })) })
   } catch (error) {
     console.error('Error fetching partners:', error)
     return c.json({ error: 'Failed to fetch partners', details: String(error) }, 500)
   }
 })
 
-app.post('/make-server-2a4be611/admin/partners', async (c) => {
+app.post('/make-server-2a4be611/admin/partners', requireAdmin, async (c) => {
   try {
     const body = await c.req.json()
     const { name, description, logo, website, category, since } = body
@@ -2474,7 +2487,7 @@ app.post('/make-server-2a4be611/admin/partners', async (c) => {
   }
 })
 
-app.put('/make-server-2a4be611/admin/partners/:id', async (c) => {
+app.put('/make-server-2a4be611/admin/partners/:id', requireAdmin, async (c) => {
   try {
     const id = c.req.param('id')
     const body = await c.req.json()
@@ -2488,7 +2501,7 @@ app.put('/make-server-2a4be611/admin/partners/:id', async (c) => {
   }
 })
 
-app.delete('/make-server-2a4be611/admin/partners/:id', async (c) => {
+app.delete('/make-server-2a4be611/admin/partners/:id', requireAdmin, async (c) => {
   try {
     const id = c.req.param('id')
     await kv.del(id)
@@ -2510,7 +2523,7 @@ app.get('/make-server-2a4be611/impact-stats', async (c) => {
   }
 })
 
-app.put('/make-server-2a4be611/admin/impact-stats', async (c) => {
+app.put('/make-server-2a4be611/admin/impact-stats', requireAdmin, async (c) => {
   try {
     const body = await c.req.json()
     await kv.set('impact-stats', body)
@@ -2534,14 +2547,14 @@ app.get('/make-server-2a4be611/reports', async (c) => {
     
     const reports = await kv.getByPrefix('report:')
     reports.sort((a, b) => parseInt(b.value.year) - parseInt(a.value.year))
-    return c.json({ reports: reports.map(r => ({ id: r.key, ...r.value })) })
+    return c.json({ reports: reports.map(r => ({ ...r.value, id: r.key, key: r.key })) })
   } catch (error) {
     console.error('Error fetching reports:', error)
     return c.json({ error: 'Failed to fetch reports', details: String(error) }, 500)
   }
 })
 
-app.post('/make-server-2a4be611/admin/reports', async (c) => {
+app.post('/make-server-2a4be611/admin/reports', requireAdmin, async (c) => {
   try {
     const body = await c.req.json()
     const { title, year, fileUrl, description, fileSize } = body
@@ -2554,7 +2567,7 @@ app.post('/make-server-2a4be611/admin/reports', async (c) => {
   }
 })
 
-app.put('/make-server-2a4be611/admin/reports/:id', async (c) => {
+app.put('/make-server-2a4be611/admin/reports/:id', requireAdmin, async (c) => {
   try {
     const id = c.req.param('id')
     const body = await c.req.json()
@@ -2568,7 +2581,7 @@ app.put('/make-server-2a4be611/admin/reports/:id', async (c) => {
   }
 })
 
-app.delete('/make-server-2a4be611/admin/reports/:id', async (c) => {
+app.delete('/make-server-2a4be611/admin/reports/:id', requireAdmin, async (c) => {
   try {
     const id = c.req.param('id')
     await kv.del(id)
@@ -2592,14 +2605,14 @@ app.get('/make-server-2a4be611/opportunities', async (c) => {
     }
     
     const opportunities = await kv.getByPrefix('opportunity:')
-    return c.json({ opportunities: opportunities.map(o => ({ id: o.key, ...o.value })) })
+    return c.json({ opportunities: opportunities.map(o => ({ ...o.value, id: o.key, key: o.key })) })
   } catch (error) {
     console.error('Error fetching opportunities:', error)
     return c.json({ error: 'Failed to fetch opportunities', details: String(error) }, 500)
   }
 })
 
-app.post('/make-server-2a4be611/admin/opportunities', async (c) => {
+app.post('/make-server-2a4be611/admin/opportunities', requireAdmin, async (c) => {
   try {
     const body = await c.req.json()
     const { title, description, requirements, timeCommitment, location, category, openPositions, benefits } = body
@@ -2612,7 +2625,7 @@ app.post('/make-server-2a4be611/admin/opportunities', async (c) => {
   }
 })
 
-app.put('/make-server-2a4be611/admin/opportunities/:id', async (c) => {
+app.put('/make-server-2a4be611/admin/opportunities/:id', requireAdmin, async (c) => {
   try {
     const id = c.req.param('id')
     const body = await c.req.json()
@@ -2626,7 +2639,7 @@ app.put('/make-server-2a4be611/admin/opportunities/:id', async (c) => {
   }
 })
 
-app.delete('/make-server-2a4be611/admin/opportunities/:id', async (c) => {
+app.delete('/make-server-2a4be611/admin/opportunities/:id', requireAdmin, async (c) => {
   try {
     const id = c.req.param('id')
     await kv.del(id)
@@ -2651,14 +2664,14 @@ app.get('/make-server-2a4be611/faqs', async (c) => {
     
     const faqs = await kv.getByPrefix('faq:')
     faqs.sort((a, b) => (a.value.order || 999) - (b.value.order || 999))
-    return c.json({ faqs: faqs.map(f => ({ id: f.key, ...f.value })) })
+    return c.json({ faqs: faqs.map(f => ({ ...f.value, id: f.key, key: f.key })) })
   } catch (error) {
     console.error('Error fetching FAQs:', error)
     return c.json({ error: 'Failed to fetch FAQs', details: String(error) }, 500)
   }
 })
 
-app.post('/make-server-2a4be611/admin/faqs', async (c) => {
+app.post('/make-server-2a4be611/admin/faqs', requireAdmin, async (c) => {
   try {
     const body = await c.req.json()
     const { question, answer, category, order } = body
@@ -2671,7 +2684,7 @@ app.post('/make-server-2a4be611/admin/faqs', async (c) => {
   }
 })
 
-app.put('/make-server-2a4be611/admin/faqs/:id', async (c) => {
+app.put('/make-server-2a4be611/admin/faqs/:id', requireAdmin, async (c) => {
   try {
     const id = c.req.param('id')
     const body = await c.req.json()
@@ -2685,7 +2698,7 @@ app.put('/make-server-2a4be611/admin/faqs/:id', async (c) => {
   }
 })
 
-app.delete('/make-server-2a4be611/admin/faqs/:id', async (c) => {
+app.delete('/make-server-2a4be611/admin/faqs/:id', requireAdmin, async (c) => {
   try {
     const id = c.req.param('id')
     await kv.del(id)
@@ -2710,14 +2723,14 @@ app.get('/make-server-2a4be611/resources', async (c) => {
     
     const resources = await kv.getByPrefix('resource:')
     resources.sort((a, b) => new Date(b.value.date).getTime() - new Date(a.value.date).getTime())
-    return c.json({ resources: resources.map(r => ({ id: r.key, ...r.value })) })
+    return c.json({ resources: resources.map(r => ({ ...r.value, id: r.key, key: r.key })) })
   } catch (error) {
     console.error('Error fetching resources:', error)
     return c.json({ error: 'Failed to fetch resources', details: String(error) }, 500)
   }
 })
 
-app.post('/make-server-2a4be611/admin/resources', async (c) => {
+app.post('/make-server-2a4be611/admin/resources', requireAdmin, async (c) => {
   try {
     const body = await c.req.json()
     const { title, description, fileUrl, fileType, fileSize, category } = body
@@ -2730,7 +2743,7 @@ app.post('/make-server-2a4be611/admin/resources', async (c) => {
   }
 })
 
-app.put('/make-server-2a4be611/admin/resources/:id', async (c) => {
+app.put('/make-server-2a4be611/admin/resources/:id', requireAdmin, async (c) => {
   try {
     const id = c.req.param('id')
     const body = await c.req.json()
@@ -2744,7 +2757,7 @@ app.put('/make-server-2a4be611/admin/resources/:id', async (c) => {
   }
 })
 
-app.delete('/make-server-2a4be611/admin/resources/:id', async (c) => {
+app.delete('/make-server-2a4be611/admin/resources/:id', requireAdmin, async (c) => {
   try {
     const id = c.req.param('id')
     await kv.del(id)
@@ -2778,11 +2791,11 @@ app.get('/make-server-2a4be611/pages', async (c) => {
         { key: 'page:default-3', value: { title: 'Refund Policy', slug: 'refund-policy', content: '<h2>Refund Policy</h2><p>Donations are generally non-refundable. Please contact us if you believe a refund is warranted.</p>', published: true, createdAt: now, updatedAt: now } },
       ]
       await kv.mset(defaults)
-      return c.json({ pages: defaults.map(d => ({ id: d.key, ...d.value })) })
+      return c.json({ pages: defaults.map(d => ({ ...d.value, id: d.key, key: d.key })) })
     }
 
     pages.sort((a: any, b: any) => new Date(b.value.updatedAt || b.value.createdAt).getTime() - new Date(a.value.updatedAt || a.value.createdAt).getTime())
-    return c.json({ pages: pages.map((p: any) => ({ id: p.key, ...p.value })) })
+    return c.json({ pages: pages.map((p: any) => ({ ...p.value, id: p.key, key: p.key })) })
   } catch (error) {
     console.error('Error fetching pages:', error)
     return c.json({ error: 'Failed to fetch pages', details: String(error) }, 500)
@@ -2796,14 +2809,14 @@ app.get('/make-server-2a4be611/pages/:slug', async (c) => {
     const pages = await kv.getByPrefix('page:')
     const match = pages.find((p: any) => p.value?.slug === slug)
     if (!match) return c.json({ error: 'Page not found' }, 404)
-    return c.json({ page: { id: match.key, ...match.value } })
+    return c.json({ page: { ...match.value, id: match.key, key: match.key } })
   } catch (error) {
     console.error('Error fetching page by slug:', error)
     return c.json({ error: 'Failed to fetch page', details: String(error) }, 500)
   }
 })
 
-app.post('/make-server-2a4be611/pages', async (c) => {
+app.post('/make-server-2a4be611/pages', requireAdmin, async (c) => {
   try {
     const body = await c.req.json()
     const { title, slug, content, published } = body
@@ -2818,7 +2831,7 @@ app.post('/make-server-2a4be611/pages', async (c) => {
   }
 })
 
-app.put('/make-server-2a4be611/pages/:id', async (c) => {
+app.put('/make-server-2a4be611/pages/:id', requireAdmin, async (c) => {
   try {
     const id = c.req.param('id')
     const body = await c.req.json()
@@ -2832,7 +2845,7 @@ app.put('/make-server-2a4be611/pages/:id', async (c) => {
   }
 })
 
-app.delete('/make-server-2a4be611/pages/:id', async (c) => {
+app.delete('/make-server-2a4be611/pages/:id', requireAdmin, async (c) => {
   try {
     const id = c.req.param('id')
     await kv.del(id)
@@ -3532,7 +3545,7 @@ app.delete('/make-server-2a4be611/admin/users/:id', requireAdmin, async (c) => {
 })
 
 // Bulk update user status
-app.post('/make-server-2a4be611/admin/users/bulk-status', async (c) => {
+app.post('/make-server-2a4be611/admin/users/bulk-status', requireAdmin, async (c) => {
   try {
     const body = await c.req.json()
     const { ids, status } = body
@@ -3561,7 +3574,7 @@ app.post('/make-server-2a4be611/admin/users/bulk-status', async (c) => {
 })
 
 // Bulk update user roles
-app.post('/make-server-2a4be611/admin/users/bulk-role', async (c) => {
+app.post('/make-server-2a4be611/admin/users/bulk-role', requireAdmin, async (c) => {
   try {
     const body = await c.req.json()
     const { ids, role } = body
@@ -3596,7 +3609,7 @@ app.post('/make-server-2a4be611/admin/users/bulk-role', async (c) => {
 })
 
 // Bulk delete users
-app.post('/make-server-2a4be611/admin/users/bulk-delete', async (c) => {
+app.post('/make-server-2a4be611/admin/users/bulk-delete', requireAdmin, async (c) => {
   try {
     const body = await c.req.json()
     const { ids } = body
@@ -3623,7 +3636,7 @@ app.post('/make-server-2a4be611/admin/users/bulk-delete', async (c) => {
 })
 
 // Reset user password
-app.post('/make-server-2a4be611/admin/users/:id/reset-password', async (c) => {
+app.post('/make-server-2a4be611/admin/users/:id/reset-password', requireAdmin, async (c) => {
   try {
     const id = c.req.param('id')
     const body = await c.req.json()
@@ -3666,7 +3679,7 @@ app.post('/make-server-2a4be611/admin/users/:id/reset-password', async (c) => {
 })
 
 // Track user login
-app.post('/make-server-2a4be611/admin/users/:id/track-login', async (c) => {
+app.post('/make-server-2a4be611/admin/users/:id/track-login', requireAdmin, async (c) => {
   try {
     const id = c.req.param('id')
     const userId = `admin_user:${id}`

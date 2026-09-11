@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { projectId } from '../utils/supabase/info';
 import { Heart, Trophy, Sparkles } from 'lucide-react';
-import { formatCurrency } from './StripeShared';
+import { formatCurrency } from '../utils/formatCurrency';
 
 interface Donor {
   name: string;
