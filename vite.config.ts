@@ -1,13 +1,11 @@
 
   import { defineConfig } from 'vite';
   import react from '@vitejs/plugin-react-swc';
-  import sitemap from 'vite-plugin-sitemap';
   import path from 'path';
 
   export default defineConfig({
     plugins: [
-      react(),
-      sitemap({ hostname: 'https://restikirya.org', outDir: 'build' })
+      react()
     ],
     css: {
       // Disable CSS source maps to prevent PostCSS from choking on the

@@ -122,7 +122,7 @@ body {
 
 @layer base {
   html {
-    font-size: 20px;
+    font-size: 16px;
   }
   * {
     border-color: var(--border);

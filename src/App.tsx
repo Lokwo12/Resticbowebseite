@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate, useLocation, Link } from 'react-router-dom';
-import React, { useEffect } from 'react';
+import React from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from './components/ui/sonner';
 import { Header } from './components/Header';
@@ -40,7 +40,6 @@ import { VolunteerPage } from './components/VolunteerPage';
 import { FAQPage } from './components/FAQPage';
 import { PartnersPage } from './components/PartnersPage';
 import { OpportunitiesPage } from './components/OpportunitiesPage';
-import { projectId, publicAnonKey } from './utils/supabase/info';
 import { DonationModal } from './components/DonationModal';
 import { DonationModalProvider } from './components/DonationModalContext';
 import { CardPaymentPage } from './components/CardPaymentPage';
@@ -61,6 +60,7 @@ function PageTitleManager() {
 
   const titleMap: Record<string, string> = {
       '/': 'Home | Resti Kiryandongo CBO',
+      '/admin': 'Admin Dashboard | Resti Kiryandongo',
       '/super-secret-admin-route': 'Admin Dashboard | Resti Kiryandongo',
       '/privacy': 'Privacy Policy | Resti Kiryandongo',
       '/terms': 'Terms of Service | Resti Kiryandongo',
@@ -91,26 +91,6 @@ function PageTitleManager() {
 }
 
 function HomePage() {
-  useEffect(() => {
-    const initializeData = async () => {
-      try {
-        await fetch(
-          `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/initialize`,
-          {
-            method: 'POST',
-            headers: {
-              Authorization: `Bearer ${publicAnonKey}`,
-            },
-          }
-        );
-      } catch (err) {
-        console.error('Error initializing data:', err);
-      }
-    };
-
-    initializeData();
-  }, []);
-
   return (
     <div className="min-h-screen bg-white overflow-x-hidden w-full">
       <Header />
@@ -225,6 +205,7 @@ export default function App() {
     <div id="main-content" className="min-h-screen flex flex-col overflow-x-hidden w-full">
       <Routes>
         <Route path="/" element={<HomePage />} />
+        <Route path="/admin" element={<AdminPage />} />
         <Route path="/super-secret-admin-route" element={<AdminPage />} />
         <Route path="/privacy" element={<MainLayout><LegalPage type="privacy" /></MainLayout>} />
         <Route path="/terms" element={<MainLayout><LegalPage type="terms" /></MainLayout>} />

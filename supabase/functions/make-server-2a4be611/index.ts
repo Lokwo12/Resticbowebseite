@@ -2958,22 +2958,22 @@ app.post('/make-server-2a4be611/initialize', async (c) => {
 
       // Add sample team members
       await kv.set('team:1', {
-        name: 'Dr. Patricia Nalubega',
-        role: 'Executive Director',
-        department: 'leadership',
-        bio: 'With over 15 years of experience in community development, Dr. Nalubega leads our organization with passion and dedication.',
-        image: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=800',
-        email: 'director@restikirya.org',
+        name: 'Grace Auma',
+        role: 'Finance Manager',
+        department: 'finance',
+        bio: 'Grace manages our financial systems ensuring transparency and accountability in all operations.',
+        image: 'https://images.unsplash.com/photo-1531123897727-8f129e1688ce?w=400&q=80',
+        email: 'finance@restikirya.org',
         order: 1
       })
 
       await kv.set('team:2', {
-        name: 'Moses Katende',
-        role: 'Programs Coordinator',
+        name: 'Samuel Okello',
+        role: 'Field Officer',
         department: 'programs',
-        bio: 'Moses oversees all our community programs ensuring quality delivery and measurable impact.',
-        image: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=800',
-        email: 'programs@restikirya.org',
+        bio: 'Samuel works directly with communities, coordinating field activities and monitoring programme outcomes.',
+        image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&q=80',
+        email: 'field@restikirya.org',
         order: 2
       })
 

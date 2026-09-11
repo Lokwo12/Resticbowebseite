@@ -887,128 +887,23 @@ export function DonationModal() {
 
               {/* ── CARD ────────────────────────────────────────── */}
               {method === 'card' && (
-                stripePromise ? (
-                  <StripePaymentProvider finalAmount={finalAmount} currency="USD" freq={freq} donorData={donorData}>
-                    <div className="space-y-3">
-                      <StripeCardForm
-                        donorData={donorData}
-                        setDonorData={setDonorData}
-                        finalAmount={finalAmount}
-                        freq={freq}
-                        setDone={setDone}
-                        submitting={submitting}
-                        setSubmitting={setSubmitting}
-                        inp={inp}
-                        lbl={lbl}
-                        formatAmt={formatUSD}
-                        onBack={() => setStep(2)}
-                      />
-                    </div>
-                  </StripePaymentProvider>
-                ) : (
-                  /* Full card form layout — Stripe key not yet configured */
-                  <div>
-                    {/* Branded header */}
-                    <div
-                      className="px-6 py-5 flex items-center justify-between"
-                      style={{ background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)' }}
-                    >
-                      <div>
-                        <p className="text-white font-bold text-sm">Secure Card Payment</p>
-                        <p className="text-gray-400 text-xs mt-0.5">End-to-end encrypted · Powered by Stripe</p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="rounded-md px-2 py-1 text-[10px] font-black italic tracking-tight text-white min-w-[32px] text-center" style={{ background: '#1434CB' }}>VISA</span>
-                        <span className="rounded-md px-2 py-1 text-[10px] font-black text-white min-w-[32px] text-center" style={{ background: '#EB001B' }}>MC</span>
-                        <span className="rounded-md px-2 py-1 text-[10px] font-black text-white min-w-[36px] text-center" style={{ background: '#007BC1' }}>AMEX</span>
-                      </div>
-                    </div>
-
-                    {/* Amount summary */}
-                    <div className="mx-6 mt-5 bg-emerald-50 border border-emerald-100 rounded-xl px-4 py-3 flex items-center justify-between">
-                      <div>
-                        <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-0.5">Donation Amount</p>
-                        <p className="text-lg font-bold text-emerald-700">{formatAmt(finalAmount)}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-[10px] text-gray-400 uppercase tracking-wider mb-0.5">Frequency</p>
-                        <p className="text-xs font-semibold text-gray-700">{freq === 'once' ? 'One-time' : 'Monthly'}</p>
-                      </div>
-                    </div>
-
-                    {/* Form fields */}
-                    <div className="px-6 pt-4 pb-6 space-y-4">
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="space-y-1.5">
-                          <label className={lbl}>First Name</label>
-                          <input className={inp} style={inpStyle} placeholder="John"
-                            value={donorData.firstName} onChange={e => setDonorData(p => ({ ...p, firstName: e.target.value }))} />
-                        </div>
-                        <div className="space-y-1.5">
-                          <label className={lbl}>Last Name</label>
-                          <input className={inp} style={inpStyle} placeholder="Smith"
-                            value={donorData.lastName} onChange={e => setDonorData(p => ({ ...p, lastName: e.target.value }))} />
-                        </div>
-                      </div>
-
-                      <div className="space-y-1.5">
-                        <label className={lbl}>Email Address</label>
-                        <input type="email" className={inp} style={inpStyle} placeholder="you@example.com"
-                          value={donorData.email} onChange={e => setDonorData(p => ({ ...p, email: e.target.value }))} />
-                      </div>
-
-                      {/* Card field placeholders */}
-                      <div className="space-y-1.5">
-                        <label className={lbl}>Card Number</label>
-                        <div className="w-full border border-amber-200 rounded-xl px-4 bg-amber-50 flex items-center" style={{ height: 44 }}>
-                          <p className="text-xs text-amber-700 font-medium">
-                            Add <code className="font-mono bg-amber-100 px-1 py-0.5 rounded">VITE_STRIPE_PUBLISHABLE_KEY</code> to your <code className="font-mono bg-amber-100 px-1 py-0.5 rounded">.env</code> file to enable card input.
-                          </p>
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="space-y-1.5">
-                          <label className={lbl}>Expiry Date</label>
-                          <div className="w-full border border-amber-200 rounded-xl px-4 bg-amber-50 flex items-center" style={{ height: 44 }}>
-                            <p className="text-xs text-amber-400">MM / YY</p>
-                          </div>
-                        </div>
-                        <div className="space-y-1.5">
-                          <label className={lbl}>CVC</label>
-                          <div className="w-full border border-amber-200 rounded-xl px-4 bg-amber-50 flex items-center" style={{ height: 44 }}>
-                            <p className="text-xs text-amber-400">CVC</p>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="bg-emerald-50 border border-emerald-100 rounded-lg px-3 py-2 flex items-center gap-2">
-                        <Lock size={12} className="text-emerald-600 shrink-0" />
-                        <p className="text-xs text-emerald-700 leading-tight">
-                          256-bit SSL encrypted · Powered by Stripe · Your card data is handled securely and never stored on our servers.
-                        </p>
-                      </div>
-
-                      <div className="flex gap-3">
-                        <button
-                          type="button"
-                          onClick={() => setStep(2)}
-                          className="w-1/3 bg-white border border-gray-200 hover:bg-gray-50 hover:border-gray-300 text-gray-600 font-semibold rounded-xl text-sm transition-all duration-200 flex items-center justify-center"
-                          style={btnStyle}
-                        >
-                          Back
-                        </button>
-                        <button
-                          type="button"
-                          disabled
-                          className="w-2/3 bg-emerald-600 text-white font-semibold rounded-xl text-sm shadow-lg shadow-emerald-200/50 flex items-center justify-center gap-2 opacity-40 cursor-not-allowed"
-                          style={btnStyle}
-                        >
-                          <Lock size={14} /> Donate {formatAmt(finalAmount)}
-                        </button>
-                      </div>
-                    </div>
+                <StripePaymentProvider finalAmount={finalAmount} currency="USD" freq={freq} donorData={donorData}>
+                  <div className="space-y-3">
+                    <StripeCardForm
+                      donorData={donorData}
+                      setDonorData={setDonorData}
+                      finalAmount={finalAmount}
+                      freq={freq}
+                      setDone={setDone}
+                      submitting={submitting}
+                      setSubmitting={setSubmitting}
+                      inp={inp}
+                      lbl={lbl}
+                      formatAmt={formatUSD}
+                      onBack={() => setStep(2)}
+                    />
                   </div>
-                )
+                </StripePaymentProvider>
               )}
 
               {/* ── PAYPAL ──────────────────────────────────────── */}

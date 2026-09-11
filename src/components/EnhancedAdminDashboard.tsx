@@ -139,6 +139,13 @@ const NAVIGATION_ITEMS = [
 export function EnhancedAdminDashboard() {
   const confirmDialog = useConfirm();
   const [loginLogo, setLoginLogo] = useState('/logo.png');
+  const [loginSiteName, setLoginSiteName] = useState('Resti Kiryandongo CBO');
+  const [loginTagline, setLoginTagline] = useState('Empowering Communities, Transforming Lives');
+  const [loginStats, setLoginStats] = useState([
+    { label: 'Families Supported', value: '500+' },
+    { label: 'Active Programs', value: '10+' },
+    { label: 'Volunteers', value: '50+' },
+  ]);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
   const [accessToken, setAccessToken] = useState('');
@@ -525,7 +532,7 @@ export function EnhancedAdminDashboard() {
   };
 
   useEffect(() => {
-    // Unauthenticated fetch to site-settings to get logoUrl before login
+    // Load public site branding and current hero stats before login.
     fetch(`https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/site-settings`, {
       headers: {
         Authorization: `Bearer ${publicAnonKey}`,
@@ -533,11 +540,17 @@ export function EnhancedAdminDashboard() {
     })
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
-        if (data?.settings?.general?.logoUrl) {
-          const fetchedLogo = data.settings.general.logoUrl;
+        const settings = data?.settings;
+        if (settings?.general) {
+          const fetchedLogo = settings.general.logoUrl;
           if (fetchedLogo && !fetchedLogo.includes('figma:asset')) {
             setLoginLogo(fetchedLogo);
           }
+          if (settings.general.siteName) setLoginSiteName(settings.general.siteName);
+          if (settings.general.tagline) setLoginTagline(settings.general.tagline);
+        }
+        if (Array.isArray(settings?.hero?.stats) && settings.hero.stats.length > 0) {
+          setLoginStats(settings.hero.stats.slice(0, 3));
         }
       })
       .catch((err) => console.error('Error loading login logo:', err));
@@ -662,8 +675,11 @@ export function EnhancedAdminDashboard() {
         // Fetch user status from backend to verify approval
         const statusRes = await fetch(
           `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/users/${data.user.id}/status`,
-          { headers: { Authorization: `Bearer ${publicAnonKey}` } }
+          { headers: { Authorization: `Bearer ${data.session.access_token}` } }
         );
+        if (!statusRes.ok) {
+          throw new Error('Unable to verify administrator access. Please try again or contact a super admin.');
+        }
         const statusData = await statusRes.json();
         
         if (statusData.status && statusData.status !== 'active') {
@@ -1987,18 +2003,14 @@ export function EnhancedAdminDashboard() {
           <div className="absolute top-1/2 left-1/4 w-32 h-32 bg-white/5 rounded-full" />
           <div className="relative z-10 text-center max-w-lg">
             <div className="bg-white/10 backdrop-blur-md rounded-[2.5rem] p-6 mb-8 inline-block border border-white/20 shadow-2xl hover:scale-105 transition-transform duration-500">
-              <img src={loginLogo} alt="Resti Kiryandongo CBO" className="h-16 w-16 rounded-full object-cover shadow-lg border border-slate-100/50 mx-auto" />
+              <img src={loginLogo} alt={loginSiteName} className="h-16 w-16 rounded-full object-cover shadow-lg border border-slate-100/50 mx-auto" />
             </div>
-            <h1 className="text-4xl font-extrabold text-white mb-3 tracking-tight">Resti Kiryandongo CBO</h1>
-            <p className="text-emerald-100/90 text-lg font-medium mb-10">Empowering Communities, Transforming Lives</p>
+            <h1 className="text-4xl font-extrabold text-white mb-3 tracking-tight">{loginSiteName}</h1>
+            <p className="text-emerald-100/90 text-lg font-medium mb-10">{loginTagline}</p>
             <div className="grid grid-cols-3 gap-4 mt-8">
-              {[
-                { label: 'Programs', val: '12+' },
-                { label: 'Volunteers', val: '150+' },
-                { label: 'Lives Impacted', val: '5K+' }
-              ].map(s => (
+              {loginStats.map(s => (
                 <div key={s.label} className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 border border-white/10 shadow-lg hover:bg-white/15 hover:scale-105 transition-all duration-300">
-                  <p className="text-2xl font-bold text-white">{s.val}</p>
+                  <p className="text-2xl font-bold text-white">{s.value}</p>
                   <p className="text-emerald-200 text-xs font-semibold tracking-wider uppercase mt-1">{s.label}</p>
                 </div>
               ))}

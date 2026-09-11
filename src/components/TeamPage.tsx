@@ -3,6 +3,8 @@ import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { LoadingScreen } from './LoadingScreen';
 import { Users, Mail, Linkedin, Twitter } from 'lucide-react';
 
+const CURRENT_TEAM_NAMES = new Set(['Grace Auma', 'Samuel Okello']);
+
 interface TeamMember {
   id: string;
   name: string;
@@ -44,7 +46,8 @@ export function TeamPage() {
           twitter: item.value?.twitter || item.twitter,
         }));
         
-        setTeam(mappedTeam);
+        const currentTeam = mappedTeam.filter((member: TeamMember) => CURRENT_TEAM_NAMES.has(member.name));
+        setTeam(currentTeam);
       } catch (err) {
         console.error('Error fetching team:', err);
       } finally {
@@ -57,28 +60,19 @@ export function TeamPage() {
   const fallbackTeam: TeamMember[] = [
     {
       id: '1',
-      name: 'Jane Doe',
-      role: 'Executive Director',
-      bio: 'Jane has over 10 years of experience in community development and is passionate about empowering youth.',
-      image: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80',
-      email: 'jane@resticbo.org',
-      linkedin: 'https://linkedin.com',
+      name: 'Grace Auma',
+      role: 'Finance Manager',
+      bio: 'Grace manages our financial systems ensuring transparency and accountability in all operations.',
+      image: 'https://images.unsplash.com/photo-1531123897727-8f129e1688ce?w=400&q=80',
+      email: 'finance@restikirya.org',
     },
     {
       id: '2',
-      name: 'John Smith',
-      role: 'Program Manager',
-      bio: 'John oversees all our community programs and ensures they deliver maximum impact.',
-      image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80',
-      email: 'john@resticbo.org',
-      twitter: 'https://twitter.com',
-    },
-    {
-      id: '3',
-      name: 'Alice Johnson',
-      role: 'Finance Officer',
-      bio: 'Alice manages our finances with transparency and integrity, ensuring every donation is used effectively.',
-      image: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80',
+      name: 'Samuel Okello',
+      role: 'Field Officer',
+      bio: 'Samuel works directly with communities, coordinating field activities and monitoring programme outcomes.',
+      image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&q=80',
+      email: 'field@restikirya.org',
     }
   ];
 

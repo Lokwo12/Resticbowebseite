@@ -336,27 +336,23 @@ export function Donation() {
                   ) : (
                     <>
                       {method === 'card' && (
-                        stripePromise ? (
-                          <StripePaymentProvider finalAmount={finalAmount} currency={currency} freq={freq} donorData={donorData}>
-                            <div className="bg-white border border-gray-100 rounded-2xl p-2 md:p-6 shadow-sm">
-                              <StripeCardForm
-                                donorData={donorData}
-                                setDonorData={setDonorData}
-                                finalAmount={finalAmount}
-                                freq={freq}
-                                setDone={setDone}
-                                submitting={submitting}
-                                setSubmitting={setSubmitting}
-                                inp="w-full border border-gray-200 rounded-xl px-4 text-sm font-normal outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-50 transition-all placeholder:text-gray-400 bg-white text-gray-800"
-                                lbl="block text-xs font-semibold text-gray-600 mb-1.5 tracking-wide uppercase"
-                                onBack={() => setStep(1)}
-                                formatAmt={formatAmt}
-                              />
-                            </div>
-                          </StripePaymentProvider>
-                        ) : (
-                          <p className="text-xs text-amber-600 text-center">Stripe not configured</p>
-                        )
+                        <StripePaymentProvider finalAmount={finalAmount} currency={currency} freq={freq} donorData={donorData}>
+                          <div className="bg-white border border-gray-100 rounded-2xl p-2 md:p-6 shadow-sm">
+                            <StripeCardForm
+                              donorData={donorData}
+                              setDonorData={setDonorData}
+                              finalAmount={finalAmount}
+                              freq={freq}
+                              setDone={setDone}
+                              submitting={submitting}
+                              setSubmitting={setSubmitting}
+                              inp="w-full border border-gray-200 rounded-xl px-4 text-sm font-normal outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-50 transition-all placeholder:text-gray-400 bg-white text-gray-800"
+                              lbl="block text-xs font-semibold text-gray-600 mb-1.5 tracking-wide uppercase"
+                              onBack={() => setStep(1)}
+                              formatAmt={formatAmt}
+                            />
+                          </div>
+                        </StripePaymentProvider>
                       )}
 
                       {method === 'paypal' && (

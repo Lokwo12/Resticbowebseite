@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Users, Mail, Linkedin, Twitter } from 'lucide-react';
+import { Users, Mail, Linkedin, Twitter, ArrowRight } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { Card } from './ui/card';
 import { Badge } from './ui/badge';
@@ -18,11 +19,12 @@ interface TeamMember {
 }
 
 const FALLBACK_TEAM = [
-  { id: 'tm1', name: 'Dr. Patricia Nalubega', role: 'Executive Director', department: 'leadership', bio: 'With over 15 years in community development, Dr. Nalubega leads our organisation with passion and dedication.', image: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&q=80', email: 'director@restikirya.org', order: 1 },
-  { id: 'tm2', name: 'Moses Katende', role: 'Programs Coordinator', department: 'programs', bio: 'Moses oversees all community programmes, ensuring quality delivery and measurable impact.', image: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=400&q=80', email: 'programs@restikirya.org', order: 2 },
   { id: 'tm3', name: 'Grace Auma', role: 'Finance Manager', department: 'finance', bio: 'Grace manages our financial systems ensuring transparency and accountability in all operations.', image: 'https://images.unsplash.com/photo-1531123897727-8f129e1688ce?w=400&q=80', email: 'finance@restikirya.org', order: 3 },
   { id: 'tm4', name: 'Samuel Okello', role: 'Field Officer', department: 'programs', bio: 'Samuel works directly with communities, coordinating field activities and monitoring programme outcomes.', image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&q=80', email: 'field@restikirya.org', order: 4 },
 ];
+
+const CURRENT_TEAM_NAMES = new Set(['Grace Auma', 'Samuel Okello']);
+
 export function Team() {
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>(FALLBACK_TEAM as any);
   const [loading, setLoading] = useState(false);
@@ -82,7 +84,8 @@ export function Team() {
         const members = data.team || [];
         // Sort by order field
         members.sort((a: TeamMember, b: TeamMember) => (a.order || 999) - (b.order || 999));
-        setTeamMembers(members);
+        const currentMembers = members.filter((member: TeamMember) => CURRENT_TEAM_NAMES.has(member.name));
+        setTeamMembers(currentMembers.length > 0 ? currentMembers : FALLBACK_TEAM as any);
       } else {
         console.error('Failed to fetch team members');
         console.warn("Team API error, keeping fallback data.");
@@ -100,7 +103,6 @@ export function Team() {
   const uniqueDepartments = Array.from(new Set(allDepartments));
   const departments = ['all', ...uniqueDepartments];
 
-  // Filter team members based on selected department
   const filteredMembers = selectedDepartment === 'all'
     ? teamMembers
     : teamMembers.filter(member => member.department === selectedDepartment);
@@ -204,58 +206,33 @@ export function Team() {
                       <p className="text-lg text-emerald-600 mb-4">{member.role}</p>
 
                       {member.bio && (
-                        <p className="text-gray-600 text-base leading-relaxed mb-6">
+                        <p className="text-gray-600 text-base leading-relaxed mb-6 line-clamp-2">
                           {member.bio}
                         </p>
                       )}
 
-                      {/* Social Links */}
-                      {(member.email || member.linkedin || member.twitter) && (
-                        <div className="flex items-center gap-4 pt-4 border-t border-gray-100">
-                          {member.email && (
-                            <a
-                              href={`mailto:${member.email}`}
-                              className="text-gray-400 hover:text-emerald-600 transition-colors duration-300"
-                              title="Send Email"
-                            >
-                              <Mail size={20} />
-                            </a>
-                          )}
-                          {member.linkedin && (
-                            <a
-                              href={member.linkedin}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-gray-400 hover:text-emerald-600 transition-colors duration-300"
-                              title="LinkedIn Profile"
-                            >
-                              <Linkedin size={20} />
-                            </a>
-                          )}
-                          {member.twitter && (
-                            <a
-                              href={member.twitter}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-gray-400 hover:text-emerald-600 transition-colors duration-300"
-                              title="Twitter Profile"
-                            >
-                              <Twitter size={20} />
-                            </a>
-                          )}
-                        </div>
-                      )}
+                      <Link to="/team" className="text-emerald-600 font-medium hover:text-emerald-700 inline-flex items-center transition-colors">
+                        View full profile <ArrowRight className="ml-2 w-4 h-4" />
+                      </Link>
                     </div>
                   </Card>
                 ))}
               </div>
             ) : (
-              <div className="text-center py-12">
-                <p className="text-gray-500 text-xl">
-                  No team members found in this department.
-                </p>
+              <div className="text-center py-10 text-gray-500">
+                No team members found in this department.
               </div>
             )}
+
+            {/* Link to Full Team Page */}
+            <div className="mt-16 text-center">
+              <Link 
+                to="/team" 
+                className="inline-flex items-center justify-center px-8 py-3.5 border border-transparent text-base font-medium rounded-full text-white bg-emerald-600 hover:bg-emerald-700 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
+              >
+                Meet the Full Team <ArrowRight className="ml-2 w-5 h-5" />
+              </Link>
+            </div>
           </>
         )}
 
