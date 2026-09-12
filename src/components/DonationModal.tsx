@@ -32,14 +32,6 @@ const CURRENCIES = [
 const formatUSD = (n: number) =>
   new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(n);
 
-const IMPACT_HINTS: Record<number, string> = {
-  5: 'Provides a hot meal for a child every day for a week',
-  10: 'Provides school supplies for one child for a term',
-  25: 'Covers basic healthcare for a family of four',
-  50: 'Feeds a family nutritious meals for a full month',
-  100: 'Seeds a small-holder farm for one growing season',
-  250: 'Builds a clean water point serving a village',
-};
 
 const USSD_STEPS: Record<'mtn' | 'airtel', { title: string; steps: string[] }> = {
   mtn: {
@@ -51,7 +43,7 @@ const USSD_STEPS: Record<'mtn' | 'airtel', { title: string; steps: string[] }> =
       'Enter the UGX equivalent of your donation amount',
       'Enter your MTN MoMo PIN to confirm',
       'You will receive an SMS confirmation receipt',
-      'Screenshot your SMS & email it to donate@resticbo.org',
+      'Screenshot your SMS & email it to info@restikirya.org',
     ],
   },
   airtel: {
@@ -63,7 +55,7 @@ const USSD_STEPS: Record<'mtn' | 'airtel', { title: string; steps: string[] }> =
       'Enter the UGX equivalent of your donation amount',
       'Enter your Airtel Money PIN to confirm',
       'You will receive an SMS confirmation receipt',
-      'Screenshot your SMS & email it to donate@resticbo.org',
+      'Screenshot your SMS & email it to info@restikirya.org',
     ],
   },
 };
@@ -72,7 +64,7 @@ const DEFAULT_CONFIG = {
   merchantMTN: '0772 000 000',
   merchantAirtel: '0701 000 000',
   bankName: 'Stanbic Bank Uganda',
-  accountName: 'Resti Kiryandongo CBO',
+  accountName: 'RESTI CBO',
   accountNumber: '9030012345678',
   branch: 'Kiryandongo Branch',
   swiftCode: 'SBICUGKX',
@@ -112,12 +104,18 @@ export function DonationModal() {
   const [mobileRef, setMobileRef] = useState('');
   const [mobileWaiting, setMobileWaiting] = useState(false);
    const [config, setConfig] = useState(DEFAULT_CONFIG);
+  const [donationBreakdown, setDonationBreakdown] = useState<any>(null);
   const [logoUrl, setLogoUrl] = useState('/logo.png');
   const [donorData, setDonorData] = useState({ firstName: '', lastName: '', email: '', phone: '' });
   const [currency, setCurrency] = useState('USD');
   const shouldLockBackground = isOpen;
 
   const finalAmount = isCustom ? (parseInt(customAmount.replace(/\D/g, '')) || 0) : amount;
+  const IMPACT_HINTS: Record<number, string> = {
+    [Number(donationBreakdown?.tier1?.amount) || 10]: donationBreakdown?.tier1?.description || 'Provides school supplies for one child for a term',
+    [Number(donationBreakdown?.tier2?.amount) || 50]: donationBreakdown?.tier2?.description || 'Supplies a family with a sustainable agriculture starter kit (seeds and tools)',
+    [Number(donationBreakdown?.tier3?.amount) || 100]: donationBreakdown?.tier3?.description || 'Funds clean water access or a micro-loan for a women\'s business cooperative',
+  };
   const impactHint = !isCustom ? IMPACT_HINTS[amount] : null;
   const formatAmt = (n: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency, minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(n);
   const currencySymbol = CURRENCIES.find(c => c.code === currency)?.symbol ?? '$';
@@ -151,6 +149,7 @@ export function DonationModal() {
       .then(r => r.ok ? r.json() : null)
       .then(data => {
         if (data?.settings?.donation) setConfig(p => ({ ...p, ...data.settings.donation }));
+        if (data?.settings?.donation_breakdown) setDonationBreakdown(data.settings.donation_breakdown);
         if (data?.settings?.general?.logoUrl) {
           const fetchedLogo = data.settings.general.logoUrl;
           setLogoUrl(fetchedLogo && !fetchedLogo.includes('figma:asset') ? fetchedLogo : '/logo.png');
@@ -406,7 +405,7 @@ export function DonationModal() {
           <div className="relative z-10 space-y-4">
             <h3 className="text-3xl font-heading font-bold text-white leading-tight drop-shadow-md">Your support transforms lives.</h3>
             <p className="text-emerald-100/90 text-sm font-medium leading-relaxed">
-              90% of your gift goes directly to community programs in Kiryandongo District, funding education, healthcare, and sustainable agriculture.
+              Based on our latest financial disclosures, 90% of your gift goes directly to community programs in Kiryandongo District, funding education, healthcare, and sustainable agriculture, with only 10% used for essential administrative overhead.
             </p>
           </div>
         </div>
@@ -439,7 +438,7 @@ export function DonationModal() {
             </div>
             <div className="space-y-1">
               <h2 className="font-heading text-xl font-bold text-[#0A192F] tracking-tight">Support Our Mission</h2>
-              <p className="text-[10px] text-gray-500 font-medium uppercase tracking-[0.2em] opacity-70">Resti Kiryandongo District</p>
+              <p className="text-[10px] text-gray-500 font-medium uppercase tracking-[0.2em] opacity-70">RESTI CBO</p>
             </div>
           </div>
 
@@ -475,7 +474,7 @@ export function DonationModal() {
                   {donorData.email && <span className="block mt-1">Receipt sent to <strong>{donorData.email}</strong>.</span>}
                 </p>
               </div>
-              <p className="text-xs text-gray-400 leading-relaxed">90% of your gift goes directly to community programs in Kiryandongo District, Uganda.</p>
+              <p className="text-xs text-gray-400 leading-relaxed">Based on our financial reports, 90% of your gift goes directly to community programs in Kiryandongo District.</p>
               <button
                 onClick={() => {
                   handleClose();
@@ -607,7 +606,7 @@ export function DonationModal() {
                   </button>
                 </div>
                 <p className="text-[10px] leading-relaxed" style={{ color: method === 'mtn' ? '#92400e' : '#991b1b' }}>
-                  Send your SMS screenshot to <strong>donate@resticbo.org</strong> with this reference.
+                  Send your SMS screenshot to <strong>info@restikirya.org</strong> with this reference.
                 </p>
               </div>
 
@@ -959,7 +958,7 @@ export function DonationModal() {
                               const merchantEmail = PAYPAL_MERCHANT_EMAIL;
                               const purchaseUnit: any = {
                                 amount: { value: finalAmount.toFixed(2), currency_code: 'USD' },
-                                description: `Resti Kiryandongo CBO – ${freq === 'once' ? 'One-time' : 'Monthly'} donation`,
+                                description: `RESTI CBO – ${freq === 'once' ? 'One-time' : 'Monthly'} donation`,
                               };
                               
                               if (merchantEmail) {

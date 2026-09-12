@@ -18,15 +18,10 @@ interface TeamMember {
   order: number;
 }
 
-const FALLBACK_TEAM = [
-  { id: 'tm3', name: 'Grace Auma', role: 'Finance Manager', department: 'finance', bio: 'Grace manages our financial systems ensuring transparency and accountability in all operations.', image: 'https://images.unsplash.com/photo-1531123897727-8f129e1688ce?w=400&q=80', email: 'finance@restikirya.org', order: 3 },
-  { id: 'tm4', name: 'Samuel Okello', role: 'Field Officer', department: 'programs', bio: 'Samuel works directly with communities, coordinating field activities and monitoring programme outcomes.', image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&q=80', email: 'field@restikirya.org', order: 4 },
-];
 
-const CURRENT_TEAM_NAMES = new Set(['Grace Auma', 'Samuel Okello']);
 
 export function Team() {
-  const [teamMembers, setTeamMembers] = useState<TeamMember[]>(FALLBACK_TEAM as any);
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedDepartment, setSelectedDepartment] = useState('all');
   const [sectionSettings, setSectionSettings] = useState({
@@ -80,12 +75,9 @@ export function Team() {
 
       if (response.ok) {
         const data = await response.json();
-        // Backend returns { team: [...] }
-        const members = data.team || [];
-        // Sort by order field
+        const members = Array.isArray(data.team) ? data.team : [];
         members.sort((a: TeamMember, b: TeamMember) => (a.order || 999) - (b.order || 999));
-        const currentMembers = members.filter((member: TeamMember) => CURRENT_TEAM_NAMES.has(member.name));
-        setTeamMembers(currentMembers.length > 0 ? currentMembers : FALLBACK_TEAM as any);
+        setTeamMembers(members.filter((member: TeamMember) => member.name));
       } else {
         console.error('Failed to fetch team members');
         console.warn("Team API error, keeping fallback data.");
@@ -127,8 +119,8 @@ export function Team() {
           <div className="inline-flex items-center justify-center w-16 h-16 bg-emerald-100 rounded-full mb-6">
             <Users className="text-emerald-600" size={32} />
           </div>
-          <h2 className="text-emerald-600 mb-4">{sectionSettings.title}</h2>
-          <p className="text-gray-600 max-w-3xl mx-auto text-xl">
+          <h2 className="text-4xl md:text-5xl font-bold font-heading text-emerald-600 mb-4 tracking-tight">{sectionSettings.title}</h2>
+          <p className="text-gray-600 max-w-2xl mx-auto text-base md:text-lg font-normal leading-relaxed tracking-normal">
             {sectionSettings.description}
           </p>
         </div>

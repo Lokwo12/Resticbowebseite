@@ -8,13 +8,9 @@ const client = () => createClient(
 // Helper to determine which SQL table to use based on key prefix
 const getTableInfo = (key: string) => {
   if (key.startsWith('admin_user:')) return { table: 'admin_users', id: key.split(':')[1] || key };
-  if (key.startsWith('program:')) return { table: 'programs', id: key.split(':')[1] || key };
-  if (key.startsWith('news:')) return { table: 'news', id: key.split(':')[1] || key };
   if (key.startsWith('contact:')) return { table: 'contacts', id: key.split(':')[1] || key };
   if (key.startsWith('volunteer:')) return { table: 'volunteers', id: key.split(':')[1] || key };
   if (key.startsWith('newsletter:')) return { table: 'newsletters', id: key.split(':')[1] || key };
-  if (key.startsWith('gallery:')) return { table: 'gallery', id: key.split(':')[1] || key };
-  if (key.startsWith('story:')) return { table: 'stories', id: key.split(':')[1] || key };
   if (key.startsWith('team:')) return { table: 'team', id: key.split(':')[1] || key };
   if (key.startsWith('event:')) return { table: 'events', id: key.split(':')[1] || key };
   if (key.startsWith('partner:')) return { table: 'partners', id: key.split(':')[1] || key };

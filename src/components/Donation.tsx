@@ -30,7 +30,7 @@ const DEFAULT_DONATION_CONFIG = {
   merchantMTN: '0772 000 000',
   merchantAirtel: '0701 000 000',
   bankName: 'Stanbic Bank Uganda',
-  accountName: 'Resti Kiryandongo CBO',
+  accountName: 'RESTI CBO',
   accountNumber: '9030012345678',
   branch: 'Kiryandongo Branch',
   swiftCode: 'SBICUGKX',
@@ -51,6 +51,7 @@ export function Donation() {
   const [mobileWaiting, setMobileWaiting] = useState(false);
   const [done, setDone] = useState(false);
   const [donationConfig, setDonationConfig] = useState(DEFAULT_DONATION_CONFIG);
+  const [donationBreakdown, setDonationBreakdown] = useState<any>(null);
   const [donorData, setDonorData] = useState({ firstName: '', lastName: '', email: '', phone: '' });
 
   const formRef = useRef<HTMLFormElement>(null);
@@ -61,7 +62,10 @@ export function Donation() {
       signal: AbortSignal.timeout(6000),
     })
       .then(r => r.ok ? r.json() : null)
-      .then(data => { if (data?.settings?.donation) setDonationConfig(prev => ({ ...prev, ...data.settings.donation })); })
+      .then(data => { 
+        if (data?.settings?.donation) setDonationConfig(prev => ({ ...prev, ...data.settings.donation }));
+        if (data?.settings?.donation_breakdown) setDonationBreakdown(data.settings.donation_breakdown);
+      })
       .catch(() => { });
   }, []);
 
@@ -140,12 +144,9 @@ export function Donation() {
   const lbl = 'block text-xs font-semibold text-gray-600 mb-1.5 tracking-wide uppercase';
 
   const IMPACT_HINTS: Record<number, string> = {
-    5: 'Provides a hot meal for a child every day for a week',
-    10: 'Provides school supplies for one child for a term',
-    25: 'Covers basic healthcare for a family of four',
-    50: 'Feeds a family nutritious meals for a full month',
-    100: 'Seeds a small-holder farm for one growing season',
-    250: 'Builds a clean water point serving a village',
+    [Number(donationBreakdown?.tier1?.amount) || 10]: donationBreakdown?.tier1?.description || 'Provides school supplies for one child for a term',
+    [Number(donationBreakdown?.tier2?.amount) || 50]: donationBreakdown?.tier2?.description || 'Supplies a family with a sustainable agriculture starter kit (seeds and tools)',
+    [Number(donationBreakdown?.tier3?.amount) || 100]: donationBreakdown?.tier3?.description || 'Funds clean water access or a micro-loan for a women\'s business cooperative',
   };
   const impactHint = !isCustom ? IMPACT_HINTS[amount] : null;
 
@@ -177,11 +178,11 @@ export function Donation() {
             <div className="bg-gradient-to-br from-emerald-600 to-teal-700 text-white rounded-3xl p-8 shadow-xl relative overflow-hidden h-full flex flex-col justify-between">
               <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_top_right,white,transparent)]"></div>
               <div>
-                <div className="font-bold text-lg mb-2">Resticbo Community Foundation</div>
+                <div className="font-bold text-lg mb-2">Refugee Empowerment For Sustainable Transformation Initiative CBO (RESTI)</div>
                 <div className="text-emerald-100 text-sm mb-6">Registered CBO - Uganda NGO Bureau</div>
                 <h3 className="text-3xl font-bold mb-4 leading-snug">Why Your Support Matters</h3>
                 <p className="text-emerald-50 text-sm leading-relaxed mb-6">
-                  Every contribution helps us provide essential services to vulnerable families. 90% of all donations go directly to our community programs.
+                  Every contribution helps us provide essential services to vulnerable families. Based on our latest financial disclosures, 90% of all public donations go directly to community programs, with only 10% used for essential administrative overhead.
                 </p>
                 <div className="grid grid-cols-2 gap-4 mb-6">
                   <div className="bg-white/10 rounded-xl p-4 backdrop-blur-sm">

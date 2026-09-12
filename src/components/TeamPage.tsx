@@ -3,8 +3,6 @@ import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { LoadingScreen } from './LoadingScreen';
 import { Users, Mail, Linkedin, Twitter } from 'lucide-react';
 
-const CURRENT_TEAM_NAMES = new Set(['Grace Auma', 'Samuel Okello']);
-
 interface TeamMember {
   id: string;
   name: string;
@@ -32,9 +30,8 @@ export function TeamPage() {
           }
         );
         const data = await response.json();
-        const teamData = data.team || [];
-        
-        // Map data if needed (handling key vs id)
+        const teamData = Array.isArray(data.team) ? data.team : [];
+
         const mappedTeam = teamData.map((item: any) => ({
           id: item.key || item.id || '',
           name: item.value?.name || item.name || '',
@@ -45,9 +42,8 @@ export function TeamPage() {
           linkedin: item.value?.linkedin || item.linkedin,
           twitter: item.value?.twitter || item.twitter,
         }));
-        
-        const currentTeam = mappedTeam.filter((member: TeamMember) => CURRENT_TEAM_NAMES.has(member.name));
-        setTeam(currentTeam);
+
+        setTeam(mappedTeam.filter((member: TeamMember) => member.name));
       } catch (err) {
         console.error('Error fetching team:', err);
       } finally {
@@ -57,26 +53,7 @@ export function TeamPage() {
     fetchTeam();
   }, []);
 
-  const fallbackTeam: TeamMember[] = [
-    {
-      id: '1',
-      name: 'Grace Auma',
-      role: 'Finance Manager',
-      bio: 'Grace manages our financial systems ensuring transparency and accountability in all operations.',
-      image: 'https://images.unsplash.com/photo-1531123897727-8f129e1688ce?w=400&q=80',
-      email: 'finance@restikirya.org',
-    },
-    {
-      id: '2',
-      name: 'Samuel Okello',
-      role: 'Field Officer',
-      bio: 'Samuel works directly with communities, coordinating field activities and monitoring programme outcomes.',
-      image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&q=80',
-      email: 'field@restikirya.org',
-    }
-  ];
-
-  const displayTeam = team.length > 0 ? team : fallbackTeam;
+  const displayTeam = team;
 
   if (loading) return <LoadingScreen />;
 

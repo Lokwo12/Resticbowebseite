@@ -49,7 +49,13 @@ export function PartnersPage() {
           type: item.value?.type || item.type || 'Partner',
         }));
         
-        setPartners(mappedPartners);
+        setPartners(mappedPartners.filter((p: Partner) => 
+          p.name && 
+          !p.name.toLowerCase().includes('ghi') && 
+          !p.name.toLowerCase().includes('udf') &&
+          !p.name.toLowerCase().includes('global health') &&
+          !p.name.toLowerCase().includes('uganda development')
+        ));
       } catch (err) {
         console.error('Error fetching partners:', err);
       } finally {

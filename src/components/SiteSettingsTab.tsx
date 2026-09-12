@@ -1948,6 +1948,50 @@ export function SiteSettingsTab({ settings: initialSettings, onUpdate, accessTok
                   ))}
                 </div>
               </div>
+
+              {/* Donation Impact Breakdown */}
+              <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-lg">
+                <h4 className="text-sm font-semibold text-gray-800 mb-3">Donation Impact Breakdown</h4>
+                <p className="text-xs text-gray-500 mb-4">Set the dollar amounts and their descriptions.</p>
+                <div className="space-y-6">
+                  {[1, 2, 3].map((tierNum) => {
+                    const tierKey = `tier${tierNum}` as 'tier1' | 'tier2' | 'tier3';
+                    const amount = settings.donation_breakdown?.[tierKey]?.amount || '';
+                    const desc = settings.donation_breakdown?.[tierKey]?.description || '';
+                    
+                    return (
+                      <div key={tierKey} className="pb-4 border-b border-emerald-100 last:border-0 last:pb-0">
+                        <div className="flex gap-4 mb-2">
+                          <div className="w-24">
+                            <label className="block text-xs text-gray-600 mb-1">Amount ($)</label>
+                            <input
+                              type="number"
+                              value={amount}
+                              onChange={(e) => {
+                                const bd = settings.donation_breakdown || { tier1: { amount: '', description: '' }, tier2: { amount: '', description: '' }, tier3: { amount: '', description: '' } };
+                                setSettings({ ...settings, donation_breakdown: { ...bd, [tierKey]: { ...bd[tierKey], amount: e.target.value } } });
+                              }}
+                              className="w-full px-3 py-1.5 border rounded-lg focus:ring-2 focus:ring-emerald-500 text-sm"
+                            />
+                          </div>
+                          <div className="flex-1">
+                            <label className="block text-xs text-gray-600 mb-1">Description</label>
+                            <input
+                              type="text"
+                              value={desc}
+                              onChange={(e) => {
+                                const bd = settings.donation_breakdown || { tier1: { amount: '', description: '' }, tier2: { amount: '', description: '' }, tier3: { amount: '', description: '' } };
+                                setSettings({ ...settings, donation_breakdown: { ...bd, [tierKey]: { ...bd[tierKey], description: e.target.value } } });
+                              }}
+                              className="w-full px-3 py-1.5 border rounded-lg focus:ring-2 focus:ring-emerald-500 text-sm"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
           </Card>
         </TabsContent>

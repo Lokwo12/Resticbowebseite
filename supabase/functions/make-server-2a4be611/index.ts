@@ -13,9 +13,15 @@ import { getMtnAccessToken, getAirtelAccessToken } from './tokens.ts'
 const app = new Hono()
 
 // ── CORS: restrict to approved origins only ──────────────────────────────────
-const ALLOWED_ORIGINS = (
-  Deno.env.get('ALLOWED_ORIGINS') || ''
-).split(',').filter(Boolean)
+const configuredOrigins = (Deno.env.get('ALLOWED_ORIGINS') || '')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean)
+const ALLOWED_ORIGINS = Array.from(new Set([
+  ...configuredOrigins,
+  'https://restikirya.org',
+  'https://www.restikirya.org',
+]))
 
 if (ALLOWED_ORIGINS.length === 0) {
   console.warn('WARNING: ALLOWED_ORIGINS is not set. API will reject all CORS requests.')
@@ -2935,47 +2941,9 @@ app.post('/make-server-2a4be611/initialize', async (c) => {
         date: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString()
       })
 
-      // Add sample impact stories
-      await kv.set('story:1', {
-        name: 'Sarah Akello',
-        title: 'Education Program Graduate',
-        story: 'When I joined the education support program, I was struggling to afford school supplies. Thanks to Resti Kiryandongo CBO, I received books, uniforms, and tutoring. Today, I\'m in my final year of university studying to become a teacher.',
-        image: 'https://images.unsplash.com/photo-1531123897727-8f129e1688ce?w=800',
-        category: 'education',
-        impact: 'Now pursuing higher education and planning to give back to the community as a teacher',
-        date: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString()
-      })
+      // Impact stories seed removed per user request
 
-      await kv.set('story:2', {
-        name: 'James Okello',
-        title: 'Small Business Owner',
-        story: 'The microfinance and skills training program changed my life. I learned tailoring and received a small loan to buy a sewing machine. My business now supports my family and I employ two other community members.',
-        image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800',
-        category: 'development',
-        impact: 'Started successful tailoring business employing 2 people',
-        date: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString()
-      })
-
-      // Add sample team members
-      await kv.set('team:1', {
-        name: 'Grace Auma',
-        role: 'Finance Manager',
-        department: 'finance',
-        bio: 'Grace manages our financial systems ensuring transparency and accountability in all operations.',
-        image: 'https://images.unsplash.com/photo-1531123897727-8f129e1688ce?w=400&q=80',
-        email: 'finance@restikirya.org',
-        order: 1
-      })
-
-      await kv.set('team:2', {
-        name: 'Samuel Okello',
-        role: 'Field Officer',
-        department: 'programs',
-        bio: 'Samuel works directly with communities, coordinating field activities and monitoring programme outcomes.',
-        image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&q=80',
-        email: 'field@restikirya.org',
-        order: 2
-      })
+      // Team members seed removed per user request
 
       // Add sample events
       await kv.set('event:1', {

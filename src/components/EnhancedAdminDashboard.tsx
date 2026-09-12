@@ -886,14 +886,19 @@ export function EnhancedAdminDashboard() {
           { headers: { Authorization: `Bearer ${publicAnonKey}` } }
         );
         const data = await response.json();
-        setTeam(data.team || []);
+        const rawTeam = Array.isArray(data.team) ? data.team : [];
+        setTeam(rawTeam.filter((t: any) => t.name));
       } else if (activeTab === 'stories') {
         const response = await fetch(
           `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/stories`,
           { headers: { Authorization: `Bearer ${publicAnonKey}` } }
         );
         const data = await response.json();
-        setStories(data.stories || []);
+        const rawStories = data.stories || [];
+        setStories(rawStories.filter((s: any) => 
+          !['story:1', 'story:2', '1', '2'].includes(s.id) &&
+          (!s.name || !s.name.toLowerCase().includes('john'))
+        ));
       } else if (activeTab === 'impact') {
         const response = await fetch(
           `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/impact-stats`,
@@ -933,7 +938,13 @@ export function EnhancedAdminDashboard() {
           ...item.value,
           ...item
         }));
-        setPartners(mappedPartners);
+        setPartners(mappedPartners.filter((p: any) => 
+          p.name && 
+          !p.name.toLowerCase().includes('ghi') && 
+          !p.name.toLowerCase().includes('udf') &&
+          !p.name.toLowerCase().includes('global health') &&
+          !p.name.toLowerCase().includes('uganda development')
+        ));
       } else if (activeTab === 'opportunities') {
         const response = await fetch(
           `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/opportunities`,
@@ -5925,6 +5936,7 @@ export function EnhancedAdminDashboard() {
           editingItem={editingItem}
           onSuccess={loadData}
           userRole={userRole}
+          accessToken={accessToken || publicAnonKey}
         />
       )}
 
@@ -5938,6 +5950,7 @@ export function EnhancedAdminDashboard() {
           editingItem={editingItem}
           onSuccess={loadData}
           userRole={userRole}
+          accessToken={accessToken || publicAnonKey}
         />
       )}
 
@@ -5948,6 +5961,7 @@ export function EnhancedAdminDashboard() {
           currentStats={impactStats?.value}
           onSuccess={loadData}
           userRole={userRole}
+          accessToken={accessToken || publicAnonKey}
         />
       )}
 
@@ -5961,6 +5975,7 @@ export function EnhancedAdminDashboard() {
           editingItem={editingItem}
           onSuccess={loadData}
           userRole={userRole}
+          accessToken={accessToken || publicAnonKey}
         />
       )}
 
@@ -5974,6 +5989,7 @@ export function EnhancedAdminDashboard() {
           editingItem={editingItem}
           onSuccess={loadData}
           userRole={userRole}
+          accessToken={accessToken || publicAnonKey}
         />
       )}
 
@@ -5987,6 +6003,7 @@ export function EnhancedAdminDashboard() {
           editingItem={editingItem}
           onSuccess={loadData}
           userRole={userRole}
+          accessToken={accessToken || publicAnonKey}
         />
       )}
 
@@ -6000,6 +6017,7 @@ export function EnhancedAdminDashboard() {
           editingItem={editingItem}
           onSuccess={loadData}
           userRole={userRole}
+          accessToken={accessToken || publicAnonKey}
         />
       )}
 
@@ -6013,6 +6031,7 @@ export function EnhancedAdminDashboard() {
           editingItem={editingItem}
           onSuccess={loadData}
           userRole={userRole}
+          accessToken={accessToken || publicAnonKey}
         />
       )}
 
@@ -6026,6 +6045,7 @@ export function EnhancedAdminDashboard() {
           editingItem={editingItem}
           onSuccess={loadData}
           userRole={userRole}
+          accessToken={accessToken || publicAnonKey}
         />
       )}
 
@@ -6042,6 +6062,7 @@ export function EnhancedAdminDashboard() {
             logActivity(editingItem ? 'updated' : 'created', 'Pages', editingItem ? `Updated page: ${editingItem.title}` : 'Created new page');
           }}
           userRole={userRole}
+          accessToken={accessToken || publicAnonKey}
         />
       )}
 

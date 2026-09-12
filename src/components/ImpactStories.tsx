@@ -64,7 +64,11 @@ export function ImpactStories() {
       
       if (response.ok) {
         const data = await response.json();
-        setStories(data.stories || []);
+        const rawStories = data.stories || [];
+        setStories(rawStories.filter((s: Story) => 
+          !['story:1', 'story:2', '1', '2'].includes(s.id) &&
+          (!s.name || !s.name.toLowerCase().includes('john'))
+        ));
       }
     } catch (error) {
       console.error('Error fetching stories:', error);

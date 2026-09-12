@@ -101,7 +101,14 @@ export function TeamFormDialog({ show, onClose, editingItem, onSuccess, userRole
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken || publicAnonKey}` },
         body: JSON.stringify(formData)
       });
-      if (!response.ok) throw new Error('Failed to save');
+      if (!response.ok) {
+        let errMsg = 'Failed to save';
+        try {
+          const errData = await response.json();
+          errMsg = errData.error || errData.details || errMsg;
+        } catch (e) {}
+        throw new Error(errMsg);
+      }
       toast.success(editingItem ? 'Team member updated' : 'Team member added');
       onSuccess();
       onClose();
@@ -336,7 +343,14 @@ export function StoryFormDialog({ show, onClose, editingItem, onSuccess, userRol
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken || publicAnonKey}` },
         body: JSON.stringify(formData)
       });
-      if (!response.ok) throw new Error('Failed to save');
+      if (!response.ok) {
+        let errMsg = 'Failed to save';
+        try {
+          const errData = await response.json();
+          errMsg = errData.error || errData.details || errMsg;
+        } catch (e) {}
+        throw new Error(errMsg);
+      }
       toast.success(editingItem ? 'Story updated' : 'Story added');
       onSuccess();
       onClose();
@@ -515,7 +529,14 @@ export function ImpactStatsFormDialog({ show, onClose, currentStats, onSuccess, 
           body: JSON.stringify(formData)
         }
       );
-      if (!response.ok) throw new Error('Failed to save');
+      if (!response.ok) {
+        let errMsg = 'Failed to save';
+        try {
+          const errData = await response.json();
+          errMsg = errData.error || errData.details || errMsg;
+        } catch (e) {}
+        throw new Error(errMsg);
+      }
       toast.success('Impact statistics updated');
       onSuccess();
       onClose();

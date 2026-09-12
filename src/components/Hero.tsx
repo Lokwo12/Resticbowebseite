@@ -216,7 +216,7 @@ export function Hero() {
         onMouseEnter={() => setIsPaused(true)}
         onMouseLeave={() => setIsPaused(false)}
       >
-        <div className="grid lg:grid-cols-2 gap-12 items-center">
+        <div className="flex flex-col items-center justify-center text-center w-full max-w-6xl mx-auto">
           {/* Text Content */}
           <motion.div 
             initial="hidden"
@@ -226,40 +226,44 @@ export function Hero() {
               hidden: { opacity: 0 },
               visible: { opacity: 1, transition: { staggerChildren: 0.15 } }
             }}
-            className="space-y-6"
+            className="space-y-8 flex flex-col items-center w-full"
           >
             <motion.div 
               variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}
-              className="inline-block bg-emerald-500/90 backdrop-blur-sm text-white px-4 py-2 rounded-full text-base hover:scale-105 transition-transform duration-300 shadow-premium-soft hover:shadow-2xl"
+              className="inline-block bg-emerald-500/90 backdrop-blur-sm text-white px-6 py-2.5 sm:py-3 rounded-full text-lg sm:text-xl font-bold hover:scale-105 transition-transform duration-300 shadow-premium-soft hover:shadow-2xl tracking-wide uppercase"
             >
               {settings.badgeText}
             </motion.div>
             <motion.h1 
               variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease: "easeOut" } } }}
-              className="text-4xl sm:text-5xl lg:text-7xl text-white drop-shadow-2xl"
+              className="text-5xl sm:text-6xl lg:text-8xl text-white drop-shadow-2xl font-bold font-heading tracking-tight leading-tight w-full"
             >
-              {settings.title}
+              {settings.title?.split(/(Resti)/i).map((part, i) => 
+                part.toLowerCase() === 'resti' ? (
+                  <span key={i} className="font-extrabold text-emerald-300 drop-shadow-[0_0_20px_rgba(16,185,129,0.8)] tracking-normal">{part}</span>
+                ) : part
+              )}
             </motion.h1>
             <motion.p 
               variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease: "easeOut" } } }}
-              className="text-lg sm:text-2xl text-white/95 drop-shadow-premium-soft hover:shadow-2xl transition-all duration-300"
+              className="text-lg sm:text-xl font-sans font-normal tracking-normal leading-relaxed text-emerald-50 drop-shadow-md max-w-2xl mx-auto"
             >
               {settings.subtitle}
             </motion.p>
             <motion.div 
               variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease: "easeOut" } } }}
-              className="flex flex-col sm:flex-row gap-4"
+              className="flex flex-col sm:flex-row gap-4 justify-center w-full mt-4"
             >
               <button
                 onClick={openDonationModal}
-                className="group bg-emerald-600 text-white px-8 py-4 rounded-lg hover:bg-emerald-700 transition-all duration-300 flex items-center justify-center gap-2 hover:shadow-2xl hover:-translate-y-0.5 shadow-premium-soft hover:shadow-2xl transition-all duration-300"
+                className="group bg-emerald-600 text-white px-8 py-4 rounded-lg hover:bg-emerald-700 transition-all duration-300 flex items-center justify-center gap-2 hover:shadow-2xl hover:-translate-y-0.5 shadow-premium-soft transition-all duration-300"
               >
                 {settings.primaryButtonText}
                 <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform duration-300" />
               </button>
               <button
                 onClick={scrollToAbout}
-                className="border-2 border-white bg-white/10 backdrop-blur-sm text-white px-8 py-4 rounded-lg hover:bg-white/20 transition-all duration-300 hover:shadow-2xl hover:-translate-y-0.5 shadow-premium-soft hover:shadow-2xl transition-all duration-300"
+                className="border-2 border-white bg-white/10 backdrop-blur-sm text-white px-8 py-4 rounded-lg hover:bg-white/20 transition-all duration-300 hover:shadow-2xl hover:-translate-y-0.5 shadow-premium-soft transition-all duration-300"
               >
                 {settings.secondaryButtonText}
               </button>
@@ -269,7 +273,7 @@ export function Hero() {
             <motion.div 
               variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease: "easeOut" } } }}
               ref={statsRef} 
-              className="grid grid-cols-3 gap-3 sm:gap-6 pt-8"
+              className="grid grid-cols-3 gap-3 sm:gap-6 pt-12 w-full max-w-3xl mx-auto"
             >
               {(settings.stats || []).map((stat, index) => {
                 const { num, suffix } = parseStatValue(stat.value || '');
@@ -277,36 +281,6 @@ export function Hero() {
                   <StatCounter key={index} num={num} suffix={suffix} label={stat.label} visible={statsVisible} delay={index * 200} />
                 );
               })}
-            </motion.div>
-          </motion.div>
-
-          {/* Image */}
-          <motion.div 
-            initial={{ opacity: 0, x: 40 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 1, ease: "easeOut", delay: 0.4 }}
-            className="relative"
-          >
-            <div className="aspect-video sm:aspect-square rounded-3xl overflow-hidden shadow-2xl hover:shadow-3xl transition-all duration-500 ring-8 ring-white/10 group">
-              <img
-                src={settings.imageUrl}
-                alt="Community empowerment"
-                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-              />
-            </div>
-            <motion.div 
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.8, delay: 1 }}
-              className="absolute -bottom-6 -right-2 lg:-right-6 bg-white p-6 rounded-xl shadow-2xl hidden lg:block hover:shadow-3xl hover:-translate-y-1 transition-all duration-300"
-            >
-              <div className="text-3xl">🤝</div>
-              <div className="mt-2">
-                <div className="text-sm text-gray-600">Community Impact</div>
-                <div className="text-emerald-600">Growing Daily</div>
-              </div>
             </motion.div>
           </motion.div>
         </div>

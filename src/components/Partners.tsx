@@ -73,7 +73,14 @@ export function Partners() {
       
       if (response.ok) {
         const data = await response.json();
-        setPartners(data.partners || []);
+        const rawPartners = data.partners || [];
+        setPartners(rawPartners.filter((p: Partner) => 
+          p.name && 
+          !p.name.toLowerCase().includes('ghi') && 
+          !p.name.toLowerCase().includes('udf') &&
+          !p.name.toLowerCase().includes('global health') &&
+          !p.name.toLowerCase().includes('uganda development')
+        ));
       }
     } catch (error) {
       console.error('Error fetching partners:', error);

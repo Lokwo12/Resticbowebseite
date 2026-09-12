@@ -59,33 +59,32 @@ function PageTitleManager() {
   const { pathname } = useLocation();
 
   const titleMap: Record<string, string> = {
-      '/': 'Home | Resti Kiryandongo CBO',
-      '/admin': 'Admin Dashboard | Resti Kiryandongo',
-      '/super-secret-admin-route': 'Admin Dashboard | Resti Kiryandongo',
-      '/privacy': 'Privacy Policy | Resti Kiryandongo',
-      '/terms': 'Terms of Service | Resti Kiryandongo',
-      '/refund': 'Refund Policy | Resti Kiryandongo',
-      '/news': 'Latest News | Resti Kiryandongo',
-      '/stories': 'Impact Stories | Resti Kiryandongo',
-      '/team': 'Our Team | Resti Kiryandongo',
-      '/reports': 'Impact Reports | Resti Kiryandongo',
-      '/impact-dashboard': 'Impact Dashboard | Resti Kiryandongo',
-      '/volunteer': 'Volunteer | Resti Kiryandongo',
-      '/faqs': 'Frequently Asked Questions | Resti Kiryandongo',
-      '/partners': 'Our Partners | Resti Kiryandongo',
-      '/opportunities': 'Opportunities | Resti Kiryandongo',
+      '/': 'Home | RESTI CBO',
+      '/admin': 'Admin Dashboard | RESTI CBO',
+      '/privacy': 'Privacy Policy | RESTI CBO',
+      '/terms': 'Terms of Service | RESTI CBO',
+      '/refund': 'Refund Policy | RESTI CBO',
+      '/news': 'Latest News | RESTI CBO',
+      '/stories': 'Impact Stories | RESTI CBO',
+      '/team': 'Our Team | RESTI CBO',
+      '/reports': 'Impact Reports | RESTI CBO',
+      '/impact-dashboard': 'Impact Dashboard | RESTI CBO',
+      '/volunteer': 'Volunteer | RESTI CBO',
+      '/faqs': 'Frequently Asked Questions | RESTI CBO',
+      '/partners': 'Our Partners | RESTI CBO',
+      '/opportunities': 'Opportunities | RESTI CBO',
       '/donate': 'Donate | Support Our Mission',
-      '/contact': 'Contact Us | Resti Kiryandongo',
-      '/financials': 'Financial Transparency | Resti Kiryandongo',
-      '/about': 'About Us | Resti Kiryandongo',
-      '/events': 'Events Calendar | Resti Kiryandongo',
-      '/resources': 'Resources & Downloads | Resti Kiryandongo',
+      '/contact': 'Contact Us | RESTI CBO',
+      '/financials': 'Financial Transparency | RESTI CBO',
+      '/about': 'About Us | RESTI CBO',
+      '/events': 'Events Calendar | RESTI CBO',
+      '/resources': 'Resources & Downloads | RESTI CBO',
     };
 
-    let title = titleMap[pathname] || 'Resti Kiryandongo CBO';
-    if (pathname.startsWith('/news/')) title = 'News Article | Resti Kiryandongo';
-    else if (pathname.startsWith('/programs/')) title = 'Program Details | Resti Kiryandongo';
-    else if (pathname.startsWith('/pages/')) title = 'Page | Resti Kiryandongo';
+    let title = titleMap[pathname] || 'RESTI CBO';
+    if (pathname.startsWith('/news/')) title = 'News Article | RESTI CBO';
+    else if (pathname.startsWith('/programs/')) title = 'Program Details | RESTI CBO';
+    else if (pathname.startsWith('/pages/')) title = 'Page | RESTI CBO';
 
   return <SEO title={title} />;
 }
@@ -206,7 +205,6 @@ export default function App() {
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/admin" element={<AdminPage />} />
-        <Route path="/super-secret-admin-route" element={<AdminPage />} />
         <Route path="/privacy" element={<MainLayout><LegalPage type="privacy" /></MainLayout>} />
         <Route path="/terms" element={<MainLayout><LegalPage type="terms" /></MainLayout>} />
         <Route path="/refund" element={<MainLayout><LegalPage type="refund" /></MainLayout>} />

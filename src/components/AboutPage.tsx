@@ -32,7 +32,7 @@ const iconMap: Record<string, typeof Heart> = {
 
 
 const DEFAULT_ABOUT_SETTINGS: AboutSettings = {
-  title: 'About Resti Kiryandongo CBO',
+  title: 'About Refugee Empowerment For Sustainable Transformation Initiative CBO (RESTI)',
   intro: 'Founded with a mission to empower and uplift communities in Kiryandongo District, we are a community-based organization dedicated to creating sustainable positive change through collaborative action and locally-driven solutions.',
   mission: 'To empower communities in Kiryandongo through sustainable development programs in education, healthcare, and economic empowerment, fostering self-reliance and improved quality of life for all.',
   vision: 'A thriving, self-sustaining community where every individual has access to quality education, healthcare, and opportunities for economic prosperity.',
@@ -43,14 +43,14 @@ const DEFAULT_ABOUT_SETTINGS: AboutSettings = {
     { icon: 'Award', title: 'Excellence', description: 'Committed to delivering high-quality programs and services.' }
   ],
   story: [
-    'Resti Kiryandongo CBO was born from a shared vision among community members who recognized the need for organized, sustainable development initiatives in our district. What started as small-scale educational support has grown into a comprehensive community development organization.',
+    'Refugee Empowerment For Sustainable Transformation Initiative CBO (RESTI) was born from a shared vision among community members who recognized the need for organized, sustainable development initiatives in our district. What started as small-scale educational support has grown into a comprehensive community development organization.',
     'Today, we work closely with local government, international partners, and most importantly, the communities we serve, to identify needs, develop solutions, and implement programs that create lasting positive change. Our grassroots approach ensures that every initiative is community-driven and culturally appropriate.'
   ],
   heroVideoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-children-running-in-a-field-of-grass-32773-large.mp4',
   missionVideoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-hands-planting-a-seedling-in-the-soil-31518-large.mp4',
   timeline: [
     { year: '2015', title: 'The Beginning', desc: 'A small group of community members gathered to discuss challenges in local education.' },
-    { year: '2017', title: 'Official Registration', desc: 'Resti Kiryandongo was officially registered as a CBO, launching our first agriculture initiative.' },
+    { year: '2017', title: 'Official Registration', desc: 'RESTI was officially registered as a CBO, launching our first agriculture initiative.' },
     { year: '2020', title: 'Healthcare Expansion', desc: 'Partnered with local clinics to provide free health screenings to over 5,000 residents.' },
     { year: '2023', title: 'Education Hub', desc: 'Opened a community learning center equipped with modern resources for youth.' },
     { year: 'Present', title: 'Sustainable Future', desc: 'Continuing to expand our reach, directly impacting over 20,000 lives annually.' }
@@ -205,36 +205,41 @@ export function AboutPage() {
         </div>
       </section>
 
-      {/* ── CORE VALUES ── */}
+      {/* ── THE WAY WE WORK (Replaced Core Values) ── */}
       <section className="py-24 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-3xl mx-auto mb-16">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
             <h2 className="text-sm font-bold text-emerald-600 uppercase tracking-widest mb-2">Guiding Principles</h2>
-            <h3 className="text-3xl md:text-5xl font-bold font-heading text-gray-900">Our Core Values</h3>
+            <h3 className="text-3xl md:text-5xl font-bold font-heading text-gray-900">The Way We Work</h3>
           </div>
 
           <div 
             ref={valuesRef}
-            className="max-w-3xl mx-auto space-y-10"
+            className={`transition-all duration-1000 ${valuesVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`}
           >
-            {settings.values?.map((val, idx) => {
-              const Icon = iconMap[val.icon] || Heart;
-              return (
-                <div 
-                  key={idx}
-                  className={`flex gap-6 items-start transition-all duration-700 ${valuesVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`}
-                  style={{ transitionDelay: `${idx * 150}ms` }}
-                >
-                  <div className="shrink-0 mt-1 w-12 h-12 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-600">
-                    <Icon size={24} />
-                  </div>
-                  <div>
-                    <h4 className="text-2xl font-bold text-gray-900 mb-3">{val.title}</h4>
-                    <p className="text-gray-700 text-lg leading-relaxed">{val.description}</p>
-                  </div>
-                </div>
-              );
-            })}
+            <div className="bg-white p-8 md:p-12 rounded-3xl shadow-premium-soft border border-gray-100">
+              <div className="space-y-8 text-gray-700 text-lg leading-relaxed font-normal">
+                <p className="text-xl font-medium text-gray-800">
+                  Our values guide how we carry out our daily work and how we interact with each other, with communities, and with partners.
+                </p>
+                <p>
+                  <strong className="text-emerald-800 text-xl block mb-2">We value people.</strong>
+                  All people have inherent dignity and potential. We place communities at the centre of our work, treating everyone with respect regardless of ethnicity, gender, religion, age, or displacement status. We seek to enable people to live normal and peaceful lives, develop their potential, and build hope for the future.
+                </p>
+                <p>
+                  <strong className="text-emerald-800 text-xl block mb-2">We are committed.</strong>
+                  We aim for lasting change, not short-term assistance. We stay with communities beyond the initial crisis, supporting them as they move from relief to recovery and from potential to sustainable transformation.
+                </p>
+                <p>
+                  <strong className="text-emerald-800 text-xl block mb-2">We are good stewards.</strong>
+                  We use the resources entrusted to us in the most responsible, efficient, and transparent way. We are accountable to the communities we serve and to the partners and donors who support our work.
+                </p>
+                <p>
+                  <strong className="text-emerald-800 text-xl block mb-2">We serve with integrity.</strong>
+                  We uphold high standards of personal and organizational integrity. We are open and honest in how we deal and communicate with stakeholders, and we treat people with respect in all our interactions.
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </section>
