@@ -1,10 +1,16 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { BookOpen, Search, ArrowRight, Heart } from 'lucide-react';
+import { 
+  BookOpen, Search, ArrowRight, Heart, X, CheckCircle2, 
+  MapPin, Users, Sparkles, ExternalLink, Calendar
+} from 'lucide-react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { SEO } from './SEO';
 import { LoadingScreen } from './LoadingScreen';
 import { useDonationModal } from './DonationModalContext';
+import { Button } from './ui/button';
+import { Badge } from './ui/badge';
+import { DETAILED_FALLBACK_PROGRAMS } from './ProgramDetail';
 
 interface Program {
   key: string;
@@ -12,80 +18,38 @@ interface Program {
     id?: string;
     title: string;
     description: string;
+    content?: string;
     image: string;
     category: string;
     createdAt?: string;
+    location?: string;
+    beneficiaries?: string;
+    objectives?: string[];
+    keyActivities?: { title: string; desc: string }[];
+    impactMetrics?: { label: string; value: string; subtext?: string }[];
   };
 }
 
-const FALLBACK_PROGRAMS: Program[] = [
-  {
-    key: 'education',
+const FALLBACK_PROGRAMS: Program[] = Object.keys(DETAILED_FALLBACK_PROGRAMS).map((key) => {
+  const p = DETAILED_FALLBACK_PROGRAMS[key];
+  return {
+    key: p.id,
     value: {
-      id: 'education',
-      title: 'Education & Literacy',
-      description: 'Providing quality education support, school supplies, and tutoring to children and young adults in Kiryandongo District to unlock their potential.',
-      image: 'https://images.unsplash.com/photo-1666281269793-da06484657e8?w=600&q=80',
-      category: 'Education',
-      createdAt: '2026-01-01',
-    },
-  },
-  {
-    key: 'healthcare',
-    value: {
-      id: 'healthcare',
-      title: 'Community Health & Nutrition',
-      description: 'Running mobile health clinics, maternal care programmes, and nutrition campaigns to improve health outcomes for vulnerable families.',
-      image: 'https://images.unsplash.com/photo-1706806595136-5afefb45da1a?w=600&q=80',
-      category: 'Healthcare',
-      createdAt: '2026-01-01',
-    },
-  },
-  {
-    key: 'livelihoods',
-    value: {
-      id: 'livelihoods',
-      title: 'Sustainable Livelihoods',
-      description: 'Equipping households with vocational skills, microfinance access, and agricultural training to achieve economic independence.',
-      image: 'https://images.unsplash.com/photo-1761466977752-de51b3ecce84?w=600&q=80',
-      category: 'Livelihoods',
-      createdAt: '2026-01-01',
-    },
-  },
-  {
-    key: 'wash',
-    value: {
-      id: 'wash',
-      title: 'Clean Water & Sanitation (WASH)',
-      description: 'Building boreholes, latrines, and hygiene education hubs to ensure safe water and dignified sanitation for every household.',
-      image: 'https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=600&q=80',
-      category: 'Community',
-      createdAt: '2026-01-01',
-    },
-  },
-  {
-    key: 'women',
-    value: {
-      id: 'women',
-      title: 'Women Empowerment',
-      description: 'Supporting women through savings groups, legal aid, gender-based violence prevention, and leadership training programmes.',
-      image: 'https://images.unsplash.com/photo-1573497620053-ea5300f94f21?w=600&q=80',
-      category: 'Community',
-      createdAt: '2026-01-01',
-    },
-  },
-  {
-    key: 'youth',
-    value: {
-      id: 'youth',
-      title: 'Youth Development',
-      description: 'Mentorship, sports, arts, and civic engagement programmes that build confidence and purpose in the next generation.',
-      image: 'https://images.unsplash.com/photo-1641569707854-c80945fb4719?w=600&q=80',
-      category: 'Education',
-      createdAt: '2026-01-01',
-    },
-  },
-];
+      id: p.id,
+      title: p.title,
+      description: p.description,
+      content: p.content,
+      image: p.image,
+      category: p.category,
+      createdAt: p.createdAt,
+      location: p.location,
+      beneficiaries: p.beneficiaries,
+      objectives: p.objectives,
+      keyActivities: p.keyActivities,
+      impactMetrics: p.impactMetrics,
+    }
+  };
+});
 
 export function ProgramsPage() {
   const { open: openDonationModal } = useDonationModal();
@@ -93,6 +57,7 @@ export function ProgramsPage() {
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [previewProgram, setPreviewProgram] = useState<any | null>(null);
 
   useEffect(() => {
     fetchPrograms();
@@ -113,7 +78,28 @@ export function ProgramsPage() {
         const data = await response.json();
         const fetched: Program[] = data.programs || [];
         if (fetched.length > 0) {
-          setPrograms(fetched);
+          // Merge API programs with fallback enrichments if needed
+          const merged = fetched.map(f => {
+            const rawKey = (f.value?.id || f.key || '').replace(/^program:/, '').toLowerCase();
+            const fallback = DETAILED_FALLBACK_PROGRAMS[rawKey];
+            if (fallback) {
+              return {
+                ...f,
+                value: {
+                  ...fallback,
+                  ...f.value,
+                  content: f.value?.content || fallback.content,
+                  objectives: f.value?.objectives || fallback.objectives,
+                  keyActivities: f.value?.keyActivities || fallback.keyActivities,
+                  impactMetrics: f.value?.impactMetrics || fallback.impactMetrics,
+                  beneficiaries: f.value?.beneficiaries || fallback.beneficiaries,
+                  location: f.value?.location || fallback.location,
+                }
+              };
+            }
+            return f;
+          });
+          setPrograms(merged);
         }
       }
     } catch (err) {
@@ -130,7 +116,8 @@ export function ProgramsPage() {
     const categoryMatch = selectedCategory === 'all' || (program.value.category || '').toLowerCase() === selectedCategory;
     const titleMatch = (program.value.title || '').toLowerCase().includes(searchQuery.toLowerCase());
     const descMatch = (program.value.description || '').toLowerCase().includes(searchQuery.toLowerCase());
-    return categoryMatch && (titleMatch || descMatch);
+    const contentMatch = (program.value.content || '').toLowerCase().includes(searchQuery.toLowerCase());
+    return categoryMatch && (titleMatch || descMatch || contentMatch);
   });
 
   if (loading) return <LoadingScreen />;
@@ -139,26 +126,27 @@ export function ProgramsPage() {
     <div className="bg-slate-50 min-h-screen pb-24" style={{ paddingTop: '120px' }}>
       <SEO 
         title="Our Programs | RESTI — Refugee Empowerment For Sustainable Transformation Initiative" 
-        description="Explore our community programs in education, healthcare, sustainable livelihoods, and community development in Kiryandongo District, Uganda." 
+        description="Explore our community programs in education, healthcare, sustainable livelihoods, clean water, and women empowerment in Kiryandongo District, Uganda." 
       />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        
         {/* Header Hero */}
         <div className="text-center max-w-3xl mx-auto mb-12">
           <div className="inline-flex items-center gap-2 bg-emerald-100 text-emerald-700 text-sm font-semibold px-4 py-2 rounded-full mb-4">
             <BookOpen size={16} />
-            Our Initiatives
+            Our Core Initiatives
           </div>
-          <h1 className="text-4xl sm:text-5xl font-extrabold text-slate-900 tracking-tight mb-4">
+          <h1 className="text-4xl sm:text-5xl font-extrabold text-slate-900 tracking-tight mb-4 font-heading">
             Community-Driven Programs
           </h1>
           <p className="text-lg text-slate-600 leading-relaxed">
-            We deliver targeted, high-impact programs designed to empower vulnerable families, refugees, and host communities across Kiryandongo District.
+            We deliver targeted, high-impact programs designed to empower vulnerable families, refugees, and host communities across Kiryandongo District, Uganda.
           </p>
         </div>
 
         {/* Filter and Search Bar */}
-        <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm border border-slate-100 mb-10 flex flex-col md:flex-row gap-4 items-center justify-between">
+        <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-xs border border-slate-100 mb-10 flex flex-col md:flex-row gap-4 items-center justify-between">
           {/* Category Pills */}
           <div className="flex flex-wrap gap-2 w-full md:w-auto">
             {categories.map(cat => (
@@ -195,18 +183,24 @@ export function ProgramsPage() {
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {filteredPrograms.map((program) => {
               const programId = (program.value?.id || program.key || '').replace(/^program:/, '');
+              const pVal = program.value;
               return (
                 <div
                   key={program.key || programId}
-                  className="card-lift group bg-white border border-slate-100 rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col h-full"
+                  className="card-lift group bg-white border border-slate-100 rounded-3xl overflow-hidden shadow-xs hover:shadow-xl transition-all duration-300 flex flex-col h-full"
                 >
-                  {program.value.image ? (
+                  {pVal.image ? (
                     <div className="relative aspect-video overflow-hidden bg-slate-100 border-b border-slate-100 flex items-center justify-center">
                       <img
-                        src={program.value.image}
-                        alt={program.value.title}
+                        src={pVal.image}
+                        alt={pVal.title}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
                       />
+                      <div className="absolute top-3 left-3">
+                        <span className="inline-block px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-white/90 backdrop-blur-md text-emerald-800 shadow-xs border border-white/40">
+                          {pVal.category || 'General'}
+                        </span>
+                      </div>
                     </div>
                   ) : (
                     <div className="relative aspect-video bg-emerald-50 border-b border-emerald-100 flex items-center justify-center text-emerald-600">
@@ -214,27 +208,33 @@ export function ProgramsPage() {
                     </div>
                   )}
 
-                  <div className="p-6 sm:p-8 flex-1 flex flex-col justify-between">
+                  <div className="p-6 sm:p-7 flex-1 flex flex-col justify-between">
                     <div>
-                      <div className="inline-block px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider bg-emerald-50 text-emerald-700 mb-3">
-                        {program.value.category || 'General'}
-                      </div>
-                      <h2 className="text-xl sm:text-2xl font-bold text-slate-900 mb-3 group-hover:text-emerald-600 transition-colors">
-                        {program.value.title}
+                      <h2 className="text-xl sm:text-2xl font-bold font-heading text-slate-900 mb-3 group-hover:text-emerald-600 transition-colors">
+                        {pVal.title}
                       </h2>
-                      <p className="text-slate-600 text-sm sm:text-base leading-relaxed mb-6 line-clamp-3">
-                        {program.value.description}
+                      <p className="text-slate-600 text-sm leading-relaxed mb-6 line-clamp-3">
+                        {pVal.description}
                       </p>
                     </div>
 
-                    <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
-                      <Link
-                        to={`/programs/${programId}`}
-                        className="text-emerald-600 hover:text-emerald-700 font-semibold text-sm inline-flex items-center gap-1.5 group/link"
-                      >
-                        Read Full Program
-                        <ArrowRight size={16} className="group-hover/link:translate-x-1 transition-transform" />
-                      </Link>
+                    <div className="pt-4 border-t border-slate-100 flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <Link
+                          to={`/programs/${programId}`}
+                          className="text-emerald-700 hover:text-emerald-800 font-bold text-xs sm:text-sm inline-flex items-center gap-1.5 group/link"
+                        >
+                          View Full Program
+                          <ArrowRight size={15} className="group-hover/link:translate-x-1 transition-transform" />
+                        </Link>
+                        <button
+                          type="button"
+                          onClick={() => setPreviewProgram({ ...pVal, id: programId })}
+                          className="text-xs font-semibold text-slate-500 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 px-2.5 py-1 rounded-lg transition-colors"
+                        >
+                          Quick View
+                        </button>
+                      </div>
 
                       <button
                         type="button"
@@ -268,9 +268,9 @@ export function ProgramsPage() {
         {/* Support Banner */}
         <div className="mt-16 bg-gradient-to-r from-emerald-600 to-teal-700 rounded-3xl p-8 sm:p-12 text-white text-center sm:text-left flex flex-col sm:flex-row items-center justify-between gap-6 shadow-xl">
           <div>
-            <h3 className="text-2xl sm:text-3xl font-bold mb-2">Want to support these programs?</h3>
+            <h3 className="text-2xl sm:text-3xl font-bold mb-2">Want to support these community programs?</h3>
             <p className="text-emerald-100 text-sm sm:text-base max-w-xl">
-              100% of your public contributions go straight to field resources, tools, education supplies, and medical equipment.
+              100% of your charitable contributions go directly to field resources, classroom supplies, clinic equipment, and borehole rehabilitation.
             </p>
           </div>
           <button
@@ -282,6 +282,154 @@ export function ProgramsPage() {
           </button>
         </div>
       </div>
+
+      {/* ========================================================= */}
+      {/* QUICK VIEW SLIDEOVER / MODAL */}
+      {/* ========================================================= */}
+      {previewProgram && (
+        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto animate-fade-in">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-3xl w-full overflow-hidden border border-slate-200 my-8 max-h-[90vh] flex flex-col">
+            
+            {/* Modal Header */}
+            <div className="px-6 py-4 bg-slate-900 text-white flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-2">
+                <span className="bg-emerald-500 text-white font-bold text-xs uppercase px-2.5 py-0.5 rounded-full">
+                  {previewProgram.category || 'Program'}
+                </span>
+                <span className="text-sm font-bold text-slate-200 truncate max-w-md">
+                  {previewProgram.title}
+                </span>
+              </div>
+              <button
+                onClick={() => setPreviewProgram(null)}
+                className="text-slate-400 hover:text-white p-1 rounded-lg transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Modal Scrollable Body */}
+            <div className="p-6 sm:p-8 overflow-y-auto space-y-6">
+              {/* Media image if present */}
+              {previewProgram.image && (
+                <div className="h-48 sm:h-64 rounded-2xl overflow-hidden bg-slate-100">
+                  <img
+                    src={previewProgram.image}
+                    alt={previewProgram.title}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              )}
+
+              <div>
+                <h2 className="text-2xl font-bold text-slate-900 font-heading mb-2">
+                  {previewProgram.title}
+                </h2>
+                <p className="text-slate-600 text-sm sm:text-base leading-relaxed">
+                  {previewProgram.description}
+                </p>
+              </div>
+
+              {/* Detailed Content / Story */}
+              {previewProgram.content && (
+                <div className="bg-slate-50 rounded-2xl p-5 border border-slate-100">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
+                    Program Overview & Background
+                  </h4>
+                  <p className="text-slate-700 text-sm leading-relaxed whitespace-pre-line">
+                    {previewProgram.content}
+                  </p>
+                </div>
+              )}
+
+              {/* Strategic Objectives */}
+              {previewProgram.objectives && previewProgram.objectives.length > 0 && (
+                <div>
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">
+                    Strategic Goals & Objectives
+                  </h4>
+                  <div className="space-y-2">
+                    {previewProgram.objectives.map((obj: string, i: number) => (
+                      <div key={i} className="flex items-start gap-2.5 text-xs sm:text-sm text-slate-700">
+                        <CheckCircle2 size={16} className="text-emerald-600 shrink-0 mt-0.5" />
+                        <span>{obj}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Key Field Activities */}
+              {previewProgram.keyActivities && previewProgram.keyActivities.length > 0 && (
+                <div>
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">
+                    Key Field Activities
+                  </h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {previewProgram.keyActivities.map((act: any, aIdx: number) => (
+                      <div key={aIdx} className="p-3.5 rounded-xl bg-slate-50 border border-slate-100 text-xs">
+                        <p className="font-bold text-slate-900 mb-1">
+                          {typeof act === 'object' ? act.title : act}
+                        </p>
+                        {typeof act === 'object' && act.desc && (
+                          <p className="text-slate-500 leading-relaxed">{act.desc}</p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Beneficiaries and Location Meta */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-slate-100 text-xs">
+                {previewProgram.beneficiaries && (
+                  <div className="flex items-center gap-2 text-slate-600">
+                    <Users size={16} className="text-emerald-600 shrink-0" />
+                    <span><strong>Target:</strong> {previewProgram.beneficiaries}</span>
+                  </div>
+                )}
+                {previewProgram.location && (
+                  <div className="flex items-center gap-2 text-slate-600">
+                    <MapPin size={16} className="text-emerald-600 shrink-0" />
+                    <span><strong>Location:</strong> {previewProgram.location}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Modal Actions Footer */}
+            <div className="p-4 sm:p-6 bg-slate-50 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3 shrink-0">
+              <Link 
+                to={`/programs/${previewProgram.id}`}
+                className="flex-1 sm:flex-initial"
+              >
+                <Button className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm">
+                  View Full Program Page <ArrowRight size={14} className="ml-1.5" />
+                </Button>
+              </Link>
+              
+              <div className="flex items-center gap-2 w-full sm:w-auto">
+                <Button 
+                  onClick={openDonationModal}
+                  variant="outline" 
+                  className="flex-1 sm:flex-initial text-rose-600 border-rose-200 hover:bg-rose-50 text-xs font-semibold"
+                >
+                  <Heart size={14} className="mr-1.5" /> Support
+                </Button>
+                <Button
+                  onClick={() => setPreviewProgram(null)}
+                  variant="outline"
+                  className="flex-1 sm:flex-initial text-slate-600 text-xs"
+                >
+                  Close
+                </Button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

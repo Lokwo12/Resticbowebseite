@@ -208,9 +208,9 @@ export function Programs() {
                 </p>
                 <Link 
                   to={`/programs/${(program.value as any)?.id || program.key.replace(/^program:/, '')}`}
-                  className="text-emerald-600 hover:text-emerald-700 font-medium inline-flex items-center gap-1 group/link"
+                  className="text-emerald-700 hover:text-emerald-800 font-bold inline-flex items-center gap-1.5 group/link text-sm"
                 >
-                  Learn More
+                  View Full Program & Details
                   <span className="group-hover/link:translate-x-1 transition-transform duration-200">→</span>
                 </Link>
               </div>
