@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { toast } from 'sonner';
-import { Save, RefreshCw, Plus, Trash2, Upload, BarChart, Code, PieChart, TrendingUp, DollarSign, FileText, Heart, ShieldCheck, Sparkles, Globe, Eye, HelpCircle, Users, LayoutDashboard, HandHeart, Settings, Search, ExternalLink } from 'lucide-react';
+import { Save, RefreshCw, Plus, Trash2, Upload, BarChart, Code, PieChart, TrendingUp, DollarSign, FileText, Heart, ShieldCheck, Sparkles, Globe, Eye, HelpCircle, Users, LayoutDashboard, HandHeart, Settings, Search, ExternalLink, ChevronDown, ChevronUp } from 'lucide-react';
 import { Card } from './ui/card';
 import { Button } from './ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
@@ -122,6 +122,7 @@ export function SiteSettingsTab({ settings: initialSettings, onUpdate, accessTok
   const [activeSection, setActiveSection] = useState('general');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchFilter, setSearchFilter] = useState('');
+  const [isNavHidden, setIsNavHidden] = useState(false);
   const [logoUploading, setLogoUploading] = useState(false);
 
   useEffect(() => {
@@ -388,22 +389,61 @@ export function SiteSettingsTab({ settings: initialSettings, onUpdate, accessTok
       <Tabs value={activeSection} onValueChange={setActiveSection}>
         {/* Categorized Sub-tab Selector */}
         <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm space-y-3">
-          {/* Category Filter Pills & Search */}
+          {/* Category Dropdown, Filter Pills & Search */}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-slate-800">
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 scrollbar-none">
-              {SETTING_CATEGORIES.map((cat) => (
-                <button
-                  key={cat.id}
-                  onClick={() => setSelectedCategory(cat.id)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition ${
-                    selectedCategory === cat.id
-                      ? 'bg-slate-900 text-white dark:bg-emerald-600 dark:text-white shadow-sm'
-                      : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
-                  }`}
+            <div className="flex items-center gap-2 flex-wrap">
+              {/* Dropdown Category Selector */}
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs text-slate-400 font-semibold uppercase tracking-wider hidden sm:inline">Category:</span>
+                <select
+                  value={selectedCategory}
+                  onChange={(e) => setSelectedCategory(e.target.value)}
+                  className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 outline-none focus:ring-1 focus:ring-emerald-500 cursor-pointer"
                 >
-                  {cat.label}
-                </button>
-              ))}
+                  {SETTING_CATEGORIES.map((cat) => (
+                    <option key={cat.id} value={cat.id}>
+                      {cat.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Category Filter Pills (hidden on mobile, visible on tablet+) */}
+              <div className="hidden lg:flex items-center gap-1 overflow-x-auto pb-0">
+                {SETTING_CATEGORIES.map((cat) => (
+                  <button
+                    key={cat.id}
+                    onClick={() => setSelectedCategory(cat.id)}
+                    className={`px-2.5 py-1 rounded-xl text-xs font-semibold whitespace-nowrap transition ${
+                      selectedCategory === cat.id
+                        ? 'bg-slate-900 text-white dark:bg-emerald-600 dark:text-white shadow-sm'
+                        : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
+                    }`}
+                  >
+                    {cat.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Hide / Dropdown Module Grid Toggle */}
+              <button
+                type="button"
+                onClick={() => setIsNavHidden(!isNavHidden)}
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-medium text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 transition ml-auto sm:ml-0"
+                title={isNavHidden ? 'Click to show all module cards' : 'Click to hide module cards'}
+              >
+                {isNavHidden ? (
+                  <>
+                    <ChevronDown size={13} className="text-emerald-500" />
+                    <span>Dropdown Grid</span>
+                  </>
+                ) : (
+                  <>
+                    <ChevronUp size={13} className="text-slate-400" />
+                    <span>Hide Grid</span>
+                  </>
+                )}
+              </button>
             </div>
 
             <div className="relative flex items-center shrink-0 w-full md:w-56">
@@ -427,33 +467,58 @@ export function SiteSettingsTab({ settings: initialSettings, onUpdate, accessTok
             </div>
           </div>
 
-          {/* Tab Triggers Grid */}
-          <TabsList className="bg-transparent p-0 h-auto grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-2 w-full">
-            {visibleSections.map((sec) => {
-              const Icon = sec.icon;
-              const isSelected = activeSection === sec.id;
-              return (
-                <TabsTrigger
-                  key={sec.id}
-                  value={sec.id}
-                  className={`h-auto flex flex-col items-center justify-center p-2.5 rounded-xl border text-center transition-all ${
-                    isSelected
-                      ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700 shadow-sm font-semibold'
-                      : 'bg-slate-50/70 dark:bg-slate-800/50 text-slate-600 dark:text-slate-400 border-slate-200/80 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-200'
-                  }`}
-                  title={sec.desc}
-                >
-                  <Icon
-                    size={18}
-                    className={`mb-1.5 shrink-0 ${
-                      isSelected ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400'
+          {/* Quick Jump Dropdown when grid is hidden */}
+          {isNavHidden && (
+            <div className="flex items-center justify-between p-2.5 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200/80 dark:border-slate-700/60">
+              <div className="flex items-center gap-2">
+                <ActiveIcon size={16} className="text-emerald-500 shrink-0" />
+                <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">
+                  Editing: {activeSectionInfo?.label || activeSection}
+                </span>
+              </div>
+              <select
+                value={activeSection}
+                onChange={(e) => setActiveSection(e.target.value)}
+                className="px-3 py-1 rounded-lg text-xs font-medium bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 outline-none focus:ring-1 focus:ring-emerald-500 cursor-pointer"
+              >
+                {SETTING_SECTIONS.map((sec) => (
+                  <option key={sec.id} value={sec.id}>
+                    {sec.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Tab Triggers Grid (Hideable / Dropdown) */}
+          {!isNavHidden && (
+            <TabsList className="bg-transparent p-0 h-auto grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-2 w-full">
+              {visibleSections.map((sec) => {
+                const Icon = sec.icon;
+                const isSelected = activeSection === sec.id;
+                return (
+                  <TabsTrigger
+                    key={sec.id}
+                    value={sec.id}
+                    className={`h-auto flex flex-col items-center justify-center p-2.5 rounded-xl border text-center transition-all ${
+                      isSelected
+                        ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700 shadow-sm font-semibold'
+                        : 'bg-slate-50/70 dark:bg-slate-800/50 text-slate-600 dark:text-slate-400 border-slate-200/80 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-200'
                     }`}
-                  />
-                  <span className="text-xs leading-tight line-clamp-1">{sec.label}</span>
-                </TabsTrigger>
-              );
-            })}
-          </TabsList>
+                    title={sec.desc}
+                  >
+                    <Icon
+                      size={18}
+                      className={`mb-1.5 shrink-0 ${
+                        isSelected ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400'
+                      }`}
+                    />
+                    <span className="text-xs leading-tight line-clamp-1">{sec.label}</span>
+                  </TabsTrigger>
+                );
+              })}
+            </TabsList>
+          )}
         </div>
 
         {/* ===== HEADER & ANNOUNCEMENT BAR ===== */}

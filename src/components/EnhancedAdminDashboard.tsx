@@ -212,6 +212,7 @@ export function EnhancedAdminDashboard() {
   const [analytics, setAnalytics] = useState<Analytics | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [sidebarSearch, setSidebarSearch] = useState('');
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
   const [showNotifications, setShowNotifications] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
@@ -2374,6 +2375,37 @@ export function EnhancedAdminDashboard() {
     }),
   })).filter((group) => group.items.length > 0);
 
+  // Category dropdown/accordion state handlers
+  const isGroupOpen = (groupId: string, items: any[]) => {
+    if (sidebarSearch.trim()) return true; // Keep expanded when searching
+    if (openGroups[groupId] !== undefined) return openGroups[groupId];
+    // Default: keep the active group open, others collapsed
+    return items.some((item) => item.id === activeTab);
+  };
+
+  const toggleGroup = (groupId: string, currentlyOpen: boolean) => {
+    setOpenGroups((prev) => ({
+      ...prev,
+      [groupId]: !currentlyOpen,
+    }));
+  };
+
+  const expandAllGroups = () => {
+    const allOpen: Record<string, boolean> = {};
+    NAVIGATION_GROUPS.forEach((g) => {
+      allOpen[g.id] = true;
+    });
+    setOpenGroups(allOpen);
+  };
+
+  const collapseAllGroups = () => {
+    const allClosed: Record<string, boolean> = {};
+    NAVIGATION_GROUPS.forEach((g) => {
+      allClosed[g.id] = false;
+    });
+    setOpenGroups(allClosed);
+  };
+
   return (
     <div className="min-h-screen bg-slate-100">
       {/* Top Navigation Bar */}
@@ -2589,8 +2621,32 @@ export function EnhancedAdminDashboard() {
             </div>
           </div>
 
-          {/* Navigation Groups */}
-          <div className="flex-1 overflow-y-auto px-3 py-3 space-y-4">
+          {/* Categories Header with quick expand/collapse controls */}
+          <div className="px-3 pt-2 pb-1.5 flex items-center justify-between text-[10px] uppercase tracking-wider text-slate-400 border-b border-slate-800/60">
+            <span className="font-bold text-slate-400">Navigation</span>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={expandAllGroups}
+                className="hover:text-emerald-400 text-[10px] font-semibold transition"
+                title="Expand all category dropdowns"
+              >
+                Expand
+              </button>
+              <span className="text-slate-600">•</span>
+              <button
+                type="button"
+                onClick={collapseAllGroups}
+                className="hover:text-emerald-400 text-[10px] font-semibold transition"
+                title="Hide all category dropdowns"
+              >
+                Hide All
+              </button>
+            </div>
+          </div>
+
+          {/* Navigation Groups (Collapsible / Dropdown) */}
+          <div className="flex-1 overflow-y-auto px-3 py-2 space-y-2">
             {filteredGroups.length === 0 ? (
               <div className="p-4 text-center">
                 <p className="text-xs text-slate-500">No modules match "{sidebarSearch}"</p>
@@ -2602,72 +2658,109 @@ export function EnhancedAdminDashboard() {
                 </button>
               </div>
             ) : (
-              filteredGroups.map((group) => (
-                <div key={group.id} className="space-y-1">
-                  <div className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center justify-between">
-                    <span>{group.title}</span>
-                    <span className="text-[10px] font-mono text-slate-600 font-normal">
-                      {group.items.length}
-                    </span>
-                  </div>
-                  <nav className="space-y-0.5">
-                    {group.items.map((item) => {
-                      const Icon = item.icon;
-                      const isActive = activeTab === item.id;
-                      const badge = getBadgeCount(item.badgeKey);
+              filteredGroups.map((group) => {
+                const isOpen = isGroupOpen(group.id, group.items);
+                const groupBadgeTotal = group.items.reduce(
+                  (total, item) => total + getBadgeCount(item.badgeKey),
+                  0
+                );
+                const hasActiveTab = group.items.some((item) => item.id === activeTab);
 
-                      return (
-                        <button
-                          key={item.id}
-                          onClick={() => {
-                            setActiveTab(item.id);
-                            if (window.innerWidth < 1024) setSidebarOpen(false);
-                          }}
-                          className={`w-full flex items-center justify-between px-3 py-2 rounded-xl transition-all duration-150 group relative text-left ${
-                            isActive
-                              ? 'text-white font-semibold shadow-md'
-                              : 'text-slate-400 hover:bg-slate-800/80 hover:text-slate-200'
+                return (
+                  <div key={group.id} className="space-y-1">
+                    {/* Category Dropdown Trigger */}
+                    <button
+                      type="button"
+                      onClick={() => toggleGroup(group.id, isOpen)}
+                      className={`w-full px-2.5 py-1.5 text-[11px] font-bold uppercase tracking-wider rounded-xl transition flex items-center justify-between group cursor-pointer ${
+                        hasActiveTab
+                          ? 'text-white bg-slate-800/70 border border-slate-700/50'
+                          : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 border border-transparent'
+                      }`}
+                      title={isOpen ? `Click to hide ${group.title}` : `Click to dropdown ${group.title}`}
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span
+                          className={`text-slate-500 group-hover:text-emerald-400 transition-transform duration-200 ${
+                            isOpen ? 'rotate-90 text-emerald-400' : ''
                           }`}
-                          style={
-                            isActive
-                              ? {
-                                  backgroundColor: item.accentBg || '#2f5496',
-                                  boxShadow: `0 3px 12px ${item.accentBg || '#2f5496'}40`,
-                                }
-                              : {}
-                          }
-                          title={item.description}
                         >
-                          {isActive && (
-                            <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 rounded-r-full bg-white" />
-                          )}
-                          <div className="flex items-center gap-2.5 min-w-0">
-                            <Icon
-                              size={16}
-                              className={`shrink-0 ${
-                                isActive ? 'text-white' : 'text-slate-400 group-hover:text-emerald-400'
-                              }`}
-                            />
-                            <span className="text-xs truncate">{item.label}</span>
-                          </div>
+                          <ChevronRight size={13} />
+                        </span>
+                        <span className="truncate">{group.title}</span>
+                        {groupBadgeTotal > 0 && !isOpen && (
+                          <span className="ml-1 text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                            {groupBadgeTotal}
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-[10px] font-mono text-slate-500 font-normal px-1.5 py-0.5 rounded bg-slate-800/70 border border-slate-700/50">
+                        {group.items.length}
+                      </span>
+                    </button>
 
-                          {badge > 0 && (
-                            <span
-                              className={`ml-2 text-[10px] font-bold px-1.5 py-0.5 rounded-full shrink-0 ${
+                    {/* Dropdown Items */}
+                    {isOpen && (
+                      <nav className="space-y-0.5 pl-2.5 border-l border-slate-800 ml-3.5 my-1 transition-all duration-200">
+                        {group.items.map((item) => {
+                          const Icon = item.icon;
+                          const isActive = activeTab === item.id;
+                          const badge = getBadgeCount(item.badgeKey);
+
+                          return (
+                            <button
+                              key={item.id}
+                              onClick={() => {
+                                setActiveTab(item.id);
+                                if (window.innerWidth < 1024) setSidebarOpen(false);
+                              }}
+                              className={`w-full flex items-center justify-between px-2.5 py-2 rounded-xl transition-all duration-150 group relative text-left ${
                                 isActive
-                                  ? 'bg-white text-slate-900'
-                                  : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                                  ? 'text-white font-semibold shadow-md'
+                                  : 'text-slate-400 hover:bg-slate-800/80 hover:text-slate-200'
                               }`}
+                              style={
+                                isActive
+                                  ? {
+                                      backgroundColor: item.accentBg || '#2f5496',
+                                      boxShadow: `0 3px 12px ${item.accentBg || '#2f5496'}40`,
+                                    }
+                                  : {}
+                              }
+                              title={item.description}
                             >
-                              {badge}
-                            </span>
-                          )}
-                        </button>
-                      );
-                    })}
-                  </nav>
-                </div>
-              ))
+                              {isActive && (
+                                <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 rounded-r-full bg-white" />
+                              )}
+                              <div className="flex items-center gap-2.5 min-w-0">
+                                <Icon
+                                  size={15}
+                                  className={`shrink-0 ${
+                                    isActive ? 'text-white' : 'text-slate-400 group-hover:text-emerald-400'
+                                  }`}
+                                />
+                                <span className="text-xs truncate">{item.label}</span>
+                              </div>
+
+                              {badge > 0 && (
+                                <span
+                                  className={`ml-2 text-[10px] font-bold px-1.5 py-0.5 rounded-full shrink-0 ${
+                                    isActive
+                                      ? 'bg-white text-slate-900'
+                                      : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                                  }`}
+                                >
+                                  {badge}
+                                </span>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </nav>
+                    )}
+                  </div>
+                );
+              })
             )}
 
             {/* Super Admin Users Tab */}
