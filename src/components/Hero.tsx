@@ -31,17 +31,87 @@ function parseStatValue(val: string): { num: number; suffix: string } {
 // Animated stat counter tile
 function StatCounter({ num, suffix, label, visible, delay }: { num: number; suffix: string; label: string; visible: boolean; delay: number }) {
   const count = useCountUp(num, 1800, visible);
+  const displayVal = num === 0 ? '0' : (count >= 1000 ? count.toLocaleString() : count) + suffix;
+
   return (
     <div
-      className="group hover:scale-105 transition-all duration-500 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-emerald-500/30 p-2.5 sm:p-4 rounded-xl sm:rounded-2xl shadow-premium-soft hover:shadow-2xl transition-all duration-300 backdrop-blur-md"
+      className="group bg-slate-900/50 hover:bg-slate-900/70 border border-white/10 hover:border-emerald-500/35 p-3.5 sm:p-5 rounded-2xl shadow-xl backdrop-blur-md transition-all duration-300 hover:-translate-y-1"
       style={{ animationDelay: `${delay}ms` }}
     >
-      <div className={`text-2xl sm:text-3xl font-extrabold font-heading tracking-tight text-emerald-400 group-hover:text-emerald-300 transition-colors duration-300 drop-shadow-premium-soft transition-all duration-300 ${visible ? 'counter-animated' : ''}`}>
-        {visible ? count : 0}{suffix}
+      <div className={`text-2xl sm:text-3xl lg:text-4xl font-extrabold font-heading tracking-tight bg-gradient-to-r from-emerald-300 via-teal-200 to-emerald-400 bg-clip-text text-transparent group-hover:from-emerald-200 group-hover:to-teal-100 transition-all duration-300 ${visible ? 'counter-animated' : ''}`}>
+        {visible ? displayVal : '0'}
       </div>
-      <div className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-white/80 group-hover:text-white transition-colors duration-300 mt-1 break-words leading-tight">{label}</div>
+      <div className="text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-slate-300 group-hover:text-white transition-colors duration-300 mt-1.5 break-words leading-tight">
+        {label}
+      </div>
     </div>
   );
+}
+
+// Parse organization acronym (RESTI) and full expanded title
+function parseHeroTitle(rawTitle: string): { acronym: string; expandedTitle: string } {
+  const defaultAcronym = 'RESTI';
+  const defaultExpanded = 'Refugee Empowerment For Sustainable Transformation Initiative';
+
+  if (!rawTitle) {
+    return { acronym: defaultAcronym, expandedTitle: defaultExpanded };
+  }
+
+  const cleaned = rawTitle.replace(/["“”'']/g, '').trim();
+
+  // If title starts with RESTI followed by the expanded name
+  const restiRegex = /(?:^|\s)RESTI(?:\s*[:-]?\s*|\s+)(.*)$/i;
+  const match = cleaned.match(restiRegex);
+  if (match && match[1]?.trim()) {
+    return {
+      acronym: defaultAcronym,
+      expandedTitle: match[1].trim()
+    };
+  }
+
+  // If title is just "RESTI"
+  if (/^RESTI$/i.test(cleaned)) {
+    return {
+      acronym: defaultAcronym,
+      expandedTitle: defaultExpanded
+    };
+  }
+
+  // If RESTI appears anywhere in the title, remove it from expandedTitle
+  if (/RESTI/i.test(cleaned)) {
+    const withoutResti = cleaned.replace(/RESTI/gi, '').replace(/\s{2,}/g, ' ').trim();
+    return {
+      acronym: defaultAcronym,
+      expandedTitle: withoutResti || defaultExpanded
+    };
+  }
+
+  return {
+    acronym: defaultAcronym,
+    expandedTitle: cleaned
+  };
+}
+
+// Parse multi-paragraph or motto subtitle cleanly
+function parseSubtitle(rawSubtitle: string): { paragraphs: string[]; motto: string | null } {
+  if (!rawSubtitle) return { paragraphs: [], motto: null };
+  const lines = rawSubtitle.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+  if (lines.length === 0) return { paragraphs: [], motto: null };
+
+  const lastLine = lines[lines.length - 1];
+  const isTagline = lines.length > 1 && (lastLine.length <= 50 || /driven by us/i.test(lastLine));
+
+  if (isTagline) {
+    return {
+      paragraphs: lines.slice(0, lines.length - 1),
+      motto: lastLine
+    };
+  }
+
+  return {
+    paragraphs: lines,
+    motto: null
+  };
 }
 
 interface HeroSettings {
@@ -54,20 +124,24 @@ interface HeroSettings {
   stats: Array<{ value: string; label: string }>;
 }
 
-const FALLBACK_BACKGROUND_IMAGES: string[] = [];
+const FALLBACK_BACKGROUND_IMAGES: string[] = [
+  'https://images.unsplash.com/photo-1606471015285-85fa1288aa4e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxhZnJpY2FuJTIwY29tbXVuaXR5JTIwZW1wb3dlcm1lbnR8ZW58MXx8fHwxNzYyNDU3NTkyfDA&ixlib=rb-4.1.0&q=80&w=1080'
+];
+
+const DEFAULT_HERO_STATS = [
+  { value: '0', label: 'Families Supported' },
+  { value: '0', label: 'Active Programs' },
+  { value: '0', label: 'Volunteers' }
+];
 
 const DEFAULT_HERO_SETTINGS: HeroSettings = {
-  badgeText: 'Making a Difference in Kiryandongo',
-  title: 'Empowering Communities Through Action',
-  subtitle: 'Resti Kiryandongo CBO is dedicated to improving lives through education, healthcare, and community development initiatives in Kiryandongo District, Uganda.',
+  badgeText: 'Turning potential into sustainable transformation',
+  title: 'Refugee Empowerment For Sustainable Transformation Initiative',
+  subtitle: 'RESTI is a community-based organization working alongside refugees and host communities to turn local skills, ideas, and potential into sustainable livelihoods, resilience, and lasting community transformation.\nDriven by Us, Built for All',
   primaryButtonText: 'Donate Now',
   secondaryButtonText: 'Learn More',
   imageUrl: 'https://images.unsplash.com/photo-1606471015285-85fa1288aa4e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxhZnJpY2FuJTIwY29tbXVuaXR5JTIwZW1wb3dlcm1lbnR8ZW58MXx8fHwxNzYyNDU3NTkyfDA&ixlib=rb-4.1.0&q=80&w=1080',
-  stats: [
-    { value: '500+', label: 'Families Supported' },
-    { value: '10+', label: 'Active Programs' },
-    { value: '50+', label: 'Volunteers' }
-  ]
+  stats: DEFAULT_HERO_STATS
 };
 
 export function Hero() {
@@ -78,7 +152,7 @@ export function Hero() {
   
   const backgroundImages = (settings as any)?.backgroundImages?.length > 0 
     ? (settings as any).backgroundImages 
-    : FALLBACK_BACKGROUND_IMAGES;
+    : (settings.imageUrl ? [settings.imageUrl] : FALLBACK_BACKGROUND_IMAGES);
 
   const [imagesLoaded, setImagesLoaded] = useState<boolean[]>(new Array(backgroundImages.length).fill(false));
   const [statsVisible, setStatsVisible] = useState(false);
@@ -157,8 +231,15 @@ export function Hero() {
     }
   };
 
+  const heroTitle = parseHeroTitle(settings.title || DEFAULT_HERO_SETTINGS.title);
+  const { paragraphs, motto } = parseSubtitle(settings.subtitle || DEFAULT_HERO_SETTINGS.subtitle);
+
+  const statsToDisplay = (settings.stats && settings.stats.length > 0)
+    ? settings.stats
+    : DEFAULT_HERO_STATS;
+
   return (
-    <section id="home" className="relative pt-32 lg:pt-40 pb-24 min-h-screen overflow-hidden">
+    <section id="home" className="relative pt-28 sm:pt-36 lg:pt-40 pb-20 sm:pb-24 min-h-screen flex items-center justify-center overflow-hidden">
       {/* Background Image Carousel */}
       <div className="absolute inset-0 z-0">
         {backgroundImages.map((image: string, index: number) => (
@@ -174,11 +255,14 @@ export function Hero() {
               backgroundRepeat: 'no-repeat',
             }}
           >
-            {/* Dark overlay for better text readability */}
-            <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/50 to-black/30"></div>
+            {/* Dark gradient overlay for high contrast & elegance */}
+            <div className="absolute inset-0 bg-gradient-to-b from-slate-950/85 via-slate-950/70 to-slate-950/95"></div>
           </div>
         ))}
       </div>
+
+      {/* Ambient background glow orb for modern depth */}
+      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] sm:w-[800px] h-[350px] sm:h-[500px] bg-emerald-500/15 rounded-full blur-3xl pointer-events-none z-0"></div>
 
       {/* Carousel Indicators */}
       <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-20 flex gap-2">
@@ -190,8 +274,8 @@ export function Hero() {
             onMouseLeave={() => setIsPaused(false)}
             className={`h-2 rounded-full transition-all duration-300 ${
               index === currentImageIndex 
-                ? 'w-8 bg-white' 
-                : 'w-2 bg-white/50 hover:bg-white/75'
+                ? 'w-8 bg-emerald-400' 
+                : 'w-2 bg-white/40 hover:bg-white/70'
             }`}
             aria-label={`Go to slide ${index + 1}`}
           />
@@ -199,24 +283,24 @@ export function Hero() {
       </div>
 
       {/* Scroll Down Indicator */}
-      <div className="absolute bottom-20 left-1/2 transform -translate-x-1/2 z-20 hidden lg:block">
+      <div className="absolute bottom-16 left-1/2 transform -translate-x-1/2 z-20 hidden xl:block">
         <button
           onClick={scrollToAbout}
-          className="flex flex-col items-center gap-2 text-white/80 hover:text-white transition-colors group animate-bounce"
+          className="flex flex-col items-center gap-1.5 text-white/70 hover:text-white transition-colors group animate-bounce"
           aria-label="Scroll to learn more"
         >
-          <span className="text-sm tracking-wider">Scroll Down</span>
-          <ChevronDown size={24} className="group-hover:translate-y-1 transition-transform" />
+          <span className="text-xs tracking-wider uppercase font-medium">Scroll Down</span>
+          <ChevronDown size={20} className="group-hover:translate-y-1 transition-transform" />
         </button>
       </div>
 
-      {/* Content */}
+      {/* Content Container */}
       <div 
-        className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 section-spacing-lg lg:py-32"
+        className="relative z-10 w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16"
         onMouseEnter={() => setIsPaused(true)}
         onMouseLeave={() => setIsPaused(false)}
       >
-        <div className="flex flex-col items-center justify-center text-center w-full max-w-6xl mx-auto">
+        <div className="flex flex-col items-center justify-center text-center w-full max-w-4xl mx-auto">
           {/* Text Content */}
           <motion.div 
             initial="hidden"
@@ -224,46 +308,81 @@ export function Hero() {
             viewport={{ once: true }}
             variants={{
               hidden: { opacity: 0 },
-              visible: { opacity: 1, transition: { staggerChildren: 0.15 } }
+              visible: { opacity: 1, transition: { staggerChildren: 0.12 } }
             }}
-            className="space-y-8 flex flex-col items-center w-full"
+            className="space-y-6 sm:space-y-7 flex flex-col items-center w-full"
           >
+            {/* Elegant Hero Status Badge */}
             <motion.div 
-              variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}
-              className="inline-block bg-emerald-500/90 backdrop-blur-sm text-white px-6 py-2.5 sm:py-3 rounded-full text-lg sm:text-xl font-bold hover:scale-105 transition-transform duration-300 shadow-premium-soft hover:shadow-2xl tracking-wide uppercase"
+              variants={{ hidden: { opacity: 0, y: 15 }, visible: { opacity: 1, y: 0 } }}
+              className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full bg-slate-900/60 border border-emerald-500/30 backdrop-blur-md shadow-md text-emerald-300 hover:border-emerald-400/50 transition-all duration-300"
             >
-              {settings.badgeText}
+              <span className="relative flex h-2.5 w-2.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-400"></span>
+              </span>
+              <span className="text-xs sm:text-sm font-semibold tracking-wide">
+                {settings.badgeText}
+              </span>
             </motion.div>
-            <motion.h1 
-              variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease: "easeOut" } } }}
-              className="text-5xl sm:text-6xl lg:text-8xl text-white drop-shadow-2xl font-bold font-heading tracking-tight leading-tight w-full"
-            >
-              {settings.title?.split(/(Resti)/i).map((part, i) => 
-                part.toLowerCase() === 'resti' ? (
-                  <span key={i} className="font-extrabold text-emerald-300 drop-shadow-[0_0_20px_rgba(16,185,129,0.8)] tracking-normal">{part}</span>
-                ) : part
-              )}
-            </motion.h1>
-            <motion.p 
-              variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease: "easeOut" } } }}
-              className="text-lg sm:text-xl font-sans font-normal tracking-normal leading-relaxed text-emerald-50 drop-shadow-md max-w-2xl mx-auto"
-            >
-              {settings.subtitle}
-            </motion.p>
+
+            {/* Title Structure: RESTI (acronym / short name) standing prominently above the expanded initiative name */}
+            <div className="flex flex-col items-center gap-2.5 sm:gap-3.5 w-full my-1">
+              {/* RESTI — Organization Short Name / Acronym */}
+              <motion.div 
+                variants={{ hidden: { opacity: 0, scale: 0.96 }, visible: { opacity: 1, scale: 1, transition: { duration: 0.7, ease: "easeOut" } } }}
+                className="inline-block"
+              >
+                <span className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black font-heading tracking-tight bg-gradient-to-r from-emerald-300 via-teal-200 to-emerald-400 bg-clip-text text-transparent drop-shadow-md select-none leading-none">
+                  {heroTitle.acronym}
+                </span>
+              </motion.div>
+
+              {/* Expanded Initiative Title standing directly below RESTI */}
+              <motion.h1 
+                variants={{ hidden: { opacity: 0, y: 15 }, visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease: "easeOut", delay: 0.1 } } }}
+                className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold font-heading text-white tracking-tight leading-snug max-w-3xl mx-auto drop-shadow-sm"
+              >
+                {heroTitle.expandedTitle}
+              </motion.h1>
+            </div>
+
+            {/* Subtitle & Tagline */}
             <motion.div 
               variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease: "easeOut" } } }}
-              className="flex flex-col sm:flex-row gap-4 justify-center w-full mt-4"
+              className="max-w-3xl mx-auto space-y-3.5"
+            >
+              <div className="space-y-3 text-base sm:text-lg md:text-xl font-sans font-normal leading-relaxed text-slate-200/90 drop-shadow-sm">
+                {paragraphs.map((para, idx) => (
+                  <p key={idx}>{para}</p>
+                ))}
+              </div>
+
+              {motto && (
+                <div className="pt-2 flex justify-center">
+                  <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-emerald-950/40 border border-emerald-500/25 text-emerald-300 backdrop-blur-md text-xs sm:text-sm font-medium tracking-wide shadow-sm">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <span className="italic font-heading">"{motto}"</span>
+                  </div>
+                </div>
+              )}
+            </motion.div>
+
+            {/* Call to Action Buttons */}
+            <motion.div 
+              variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease: "easeOut" } } }}
+              className="flex flex-col sm:flex-row gap-3.5 sm:gap-4 justify-center items-center w-full pt-2"
             >
               <button
                 onClick={openDonationModal}
-                className="group bg-emerald-600 text-white px-8 py-4 rounded-lg hover:bg-emerald-700 transition-all duration-300 flex items-center justify-center gap-2 hover:shadow-2xl hover:-translate-y-0.5 shadow-premium-soft transition-all duration-300"
+                className="w-full sm:w-auto group bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold px-8 py-3.5 sm:py-4 rounded-xl transition-all duration-300 flex items-center justify-center gap-2.5 shadow-lg shadow-emerald-950/40 hover:shadow-emerald-500/25 hover:-translate-y-0.5 active:translate-y-0"
               >
-                {settings.primaryButtonText}
-                <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform duration-300" />
+                <span>{settings.primaryButtonText}</span>
+                <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform duration-300 text-emerald-200" />
               </button>
               <button
                 onClick={scrollToAbout}
-                className="border-2 border-white bg-white/10 backdrop-blur-sm text-white px-8 py-4 rounded-lg hover:bg-white/20 transition-all duration-300 hover:shadow-2xl hover:-translate-y-0.5 shadow-premium-soft transition-all duration-300"
+                className="w-full sm:w-auto bg-white/10 hover:bg-white/15 text-white font-semibold border border-white/20 hover:border-white/35 backdrop-blur-md px-8 py-3.5 sm:py-4 rounded-xl transition-all duration-300 hover:-translate-y-0.5 shadow-md active:translate-y-0"
               >
                 {settings.secondaryButtonText}
               </button>
@@ -273,12 +392,12 @@ export function Hero() {
             <motion.div 
               variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease: "easeOut" } } }}
               ref={statsRef} 
-              className="grid grid-cols-3 gap-3 sm:gap-6 pt-12 w-full max-w-3xl mx-auto"
+              className="grid grid-cols-3 gap-3 sm:gap-6 pt-8 sm:pt-10 w-full max-w-3xl mx-auto"
             >
-              {(settings.stats || []).map((stat, index) => {
+              {statsToDisplay.map((stat, index) => {
                 const { num, suffix } = parseStatValue(stat.value || '');
                 return (
-                  <StatCounter key={index} num={num} suffix={suffix} label={stat.label} visible={statsVisible} delay={index * 200} />
+                  <StatCounter key={index} num={num} suffix={suffix} label={stat.label} visible={statsVisible} delay={index * 150} />
                 );
               })}
             </motion.div>

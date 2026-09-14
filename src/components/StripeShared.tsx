@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { loadStripe } from '@stripe/stripe-js';
 import { toast } from 'sonner';
-import { Lock } from 'lucide-react';
+import { Lock, ShieldCheck } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { STRIPE_PK } from '../utils/env';
 import { supabaseUrl } from '../utils/supabase/client';
@@ -11,9 +12,51 @@ export const stripePromise = STRIPE_PK ? loadStripe(STRIPE_PK) : null;
 
 export type FreqOption = 'once' | 'monthly' | 'yearly';
 
+// In-memory cache for Payment Intents to make card checkout render instantly
+const paymentIntentCache = new Map<string, Promise<string>>();
+
+export function prefetchPaymentIntent(amount: number, currency = 'USD', donorData?: any): Promise<string> | undefined {
+  if (!amount || Number.isNaN(amount) || amount < 1 || !STRIPE_PK || STRIPE_PK === 'pk_test_REPLACE_ME') {
+    return undefined;
+  }
+  const curr = (currency || 'USD').toLowerCase();
+  const cacheKey = `${amount}_${curr}`;
+
+  if (paymentIntentCache.has(cacheKey)) {
+    return paymentIntentCache.get(cacheKey);
+  }
+
+  const promise = (async () => {
+    try {
+      const response = await fetch(`${supabaseUrl}/functions/v1/make-server-2a4be611/create-payment-intent`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${publicAnonKey}` },
+        body: JSON.stringify({
+          amount,
+          currency: curr,
+          donorName: donorData ? `${donorData.firstName || ''} ${donorData.lastName || ''}`.trim() : '',
+          donorEmail: donorData?.email || '',
+        }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || !data.clientSecret) {
+        throw new Error(data.details || data.error || 'Could not initialise payment.');
+      }
+      return data.clientSecret as string;
+    } catch (err) {
+      paymentIntentCache.delete(cacheKey);
+      throw err;
+    }
+  })();
+
+  paymentIntentCache.set(cacheKey, promise);
+  return promise;
+}
+
 export function StripePaymentProvider({ finalAmount, currency, freq, donorData, children }: any) {
   const [clientSecret, setClientSecret] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
+  const [retryCount, setRetryCount] = useState(0);
   
   useEffect(() => {
     if (!finalAmount || Number.isNaN(finalAmount) || finalAmount < 1) {
@@ -23,23 +66,24 @@ export function StripePaymentProvider({ finalAmount, currency, freq, donorData, 
     }
 
     const controller = new AbortController();
-    setClientSecret('');
     setErrorMsg('');
+
+    const curr = (currency || 'USD').toLowerCase();
+    const cacheKey = `${finalAmount}_${curr}`;
+
+    // If retry is requested, clear the existing cached promise
+    if (retryCount > 0) {
+      paymentIntentCache.delete(cacheKey);
+    }
 
     const initialisePayment = async () => {
       try {
-        const response = await fetch(`${supabaseUrl}/functions/v1/make-server-2a4be611/create-payment-intent`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${publicAnonKey}` },
-          body: JSON.stringify({ amount: finalAmount, currency: currency.toLowerCase(), donorName: `${donorData.firstName} ${donorData.lastName}`.trim(), donorEmail: donorData.email }),
-          signal: controller.signal,
-        });
-        const data = await response.json().catch(() => ({}));
-        if (!response.ok || !data.clientSecret) {
-          const error = data.details || data.error || 'Could not initialise payment.';
-          throw new Error(error);
+        const promise = prefetchPaymentIntent(finalAmount, curr, donorData);
+        if (!promise) return;
+        const secret = await promise;
+        if (!controller.signal.aborted) {
+          setClientSecret(secret);
         }
-        setClientSecret(data.clientSecret);
       } catch (error) {
         if (controller.signal.aborted) return;
         const message = error instanceof Error ? error.message : 'An unexpected network error occurred.';
@@ -50,11 +94,10 @@ export function StripePaymentProvider({ finalAmount, currency, freq, donorData, 
 
     void initialisePayment();
     return () => controller.abort();
-  }, [finalAmount, currency, freq]); // REMOVED donorData to prevent infinite Stripe reload on keystrokes
+  }, [finalAmount, currency, freq, retryCount]); // retryCount allows manual retry
 
-  if (errorMsg || STRIPE_PK === 'pk_test_REPLACE_ME' || !STRIPE_PK) {
-    // If Stripe is not configured or the API failed, gracefully fallback to the Demo form 
-    // so the UI still looks complete and functions for testing.
+  // Only show Demo form when the publishable key is genuinely not configured
+  if (STRIPE_PK === 'pk_test_REPLACE_ME' || !STRIPE_PK) {
     return (
       <DemoCardForm 
         donorData={donorData} 
@@ -63,6 +106,30 @@ export function StripePaymentProvider({ finalAmount, currency, freq, donorData, 
       >
         {children}
       </DemoCardForm>
+    );
+  }
+
+  // Show a real error panel (with retry) when the API call fails
+  if (errorMsg) {
+    return (
+      <div className="px-6 py-10 flex flex-col items-center justify-center space-y-4 text-center">
+        <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
+          <svg className="w-6 h-6 text-red-500" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+          </svg>
+        </div>
+        <div>
+          <p className="text-sm font-semibold text-gray-800 mb-1">Payment initialisation failed</p>
+          <p className="text-xs text-gray-500 max-w-xs">{errorMsg}</p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setRetryCount(c => c + 1)}
+          className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl transition-colors"
+        >
+          Try Again
+        </button>
+      </div>
     );
   }
 
@@ -79,7 +146,16 @@ export function StripePaymentProvider({ finalAmount, currency, freq, donorData, 
 }
 
 export interface StripeFormProps {
-  donorData: { firstName: string; lastName: string; email: string; phone: string };
+  donorData: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone: string;
+    address?: string;
+    city?: string;
+    country?: string;
+    postalCode?: string;
+  };
   setDonorData: React.Dispatch<React.SetStateAction<any>>;
   finalAmount: number;
   freq: FreqOption;
@@ -91,6 +167,27 @@ export interface StripeFormProps {
   onBack: () => void;
   formatAmt: (n: number) => string;
 }
+
+const COMMON_COUNTRIES = [
+  'Uganda',
+  'United States',
+  'United Kingdom',
+  'Canada',
+  'Germany',
+  'Australia',
+  'Kenya',
+  'South Sudan',
+  'Rwanda',
+  'Tanzania',
+  'Netherlands',
+  'France',
+  'Sweden',
+  'Norway',
+  'Denmark',
+  'Switzerland',
+  'South Africa',
+  'Other'
+];
 
 export function StripeCardForm({ donorData, setDonorData, finalAmount, freq, setDone, submitting, setSubmitting, inp, lbl, onBack, formatAmt }: StripeFormProps) {
   const stripe = useStripe();
@@ -109,6 +206,12 @@ export function StripeCardForm({ donorData, setDonorData, finalAmount, freq, set
             billing_details: {
               name: `${donorData.firstName} ${donorData.lastName}`.trim(),
               email: donorData.email,
+              phone: donorData.phone || undefined,
+              address: {
+                line1: donorData.address || undefined,
+                city: donorData.city || undefined,
+                postal_code: donorData.postalCode || undefined,
+              }
             }
           }
         },
@@ -129,6 +232,10 @@ export function StripeCardForm({ donorData, setDonorData, finalAmount, freq, set
               donorName: `${donorData.firstName} ${donorData.lastName}`.trim(),
               donorEmail: donorData.email,
               donorPhone: donorData.phone || '',
+              donorAddress: donorData.address || '',
+              donorCity: donorData.city || '',
+              donorCountry: donorData.country || '',
+              donorPostalCode: donorData.postalCode || '',
               paymentIntentId: paymentIntent.id,
               transactionId: paymentIntent.id
             })
@@ -167,29 +274,74 @@ export function StripeCardForm({ donorData, setDonorData, finalAmount, freq, set
       </div>
 
       <div className="px-6 pt-4 pb-6 space-y-4">
+        {/* Name Fields */}
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1.5">
-            <label className={lbl}>First Name</label>
+            <label className={lbl}>First Name *</label>
             <input required className={inp} style={{ height: 44 }} placeholder="John" value={donorData.firstName} onChange={e => setDonorData((p:any) => ({ ...p, firstName: e.target.value }))} />
           </div>
           <div className="space-y-1.5">
-            <label className={lbl}>Last Name</label>
+            <label className={lbl}>Last Name *</label>
             <input required className={inp} style={{ height: 44 }} placeholder="Smith" value={donorData.lastName} onChange={e => setDonorData((p:any) => ({ ...p, lastName: e.target.value }))} />
           </div>
         </div>
 
-        <div className="space-y-1.5">
-          <label className={lbl}>Email Address</label>
-          <input required type="email" className={inp} style={{ height: 44 }} placeholder="you@example.com" value={donorData.email} onChange={e => setDonorData((p:any) => ({ ...p, email: e.target.value }))} />
+        {/* Email & Phone */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="space-y-1.5">
+            <label className={lbl}>Email Address (for receipt) *</label>
+            <input required type="email" className={inp} style={{ height: 44 }} placeholder="you@example.com" value={donorData.email} onChange={e => setDonorData((p:any) => ({ ...p, email: e.target.value }))} />
+          </div>
+          <div className="space-y-1.5">
+            <label className={lbl}>Phone Number *</label>
+            <input required type="tel" className={inp} style={{ height: 44 }} placeholder="+256 700 000 000" value={donorData.phone || ''} onChange={e => setDonorData((p:any) => ({ ...p, phone: e.target.value }))} />
+          </div>
         </div>
 
+        {/* Street Address */}
+        <div className="space-y-1.5">
+          <label className={lbl}>Street Address *</label>
+          <input required className={inp} style={{ height: 44 }} placeholder="Street address or P.O. Box" value={donorData.address || ''} onChange={e => setDonorData((p:any) => ({ ...p, address: e.target.value }))} />
+        </div>
+
+        {/* City, Postal Code & Country */}
+        <div className="grid grid-cols-3 gap-2.5">
+          <div className="space-y-1.5">
+            <label className={lbl}>City / Town *</label>
+            <input required className={inp} style={{ height: 44 }} placeholder="City" value={donorData.city || ''} onChange={e => setDonorData((p:any) => ({ ...p, city: e.target.value }))} />
+          </div>
+          <div className="space-y-1.5">
+            <label className={lbl}>Postal / ZIP *</label>
+            <input required className={inp} style={{ height: 44 }} placeholder="Postal code" value={donorData.postalCode || ''} onChange={e => setDonorData((p:any) => ({ ...p, postalCode: e.target.value }))} />
+          </div>
+          <div className="space-y-1.5">
+            <label className={lbl}>Country *</label>
+            <select required className={inp} style={{ height: 44 }} value={donorData.country || 'Uganda'} onChange={e => setDonorData((p:any) => ({ ...p, country: e.target.value }))}>
+              {COMMON_COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
+        </div>
+
+        {/* Stripe Payment Card Element */}
         <div className="space-y-1.5 pt-2">
+          <label className={lbl}>Payment Details</label>
           <PaymentElement options={{ layout: 'tabs' }} />
+        </div>
+
+        {/* Security & Privacy Notice */}
+        <div className="pt-3 border-t border-gray-100 text-left space-y-1">
+          <div className="flex items-center gap-1.5 text-xs font-bold text-gray-800">
+            <ShieldCheck size={14} className="text-emerald-600 shrink-0" />
+            <span>Security & Privacy is Important to Us</span>
+          </div>
+          <p className="text-[11px] text-gray-500 leading-relaxed">
+            Your details will be kept securely and will not be shared with third parties. Please see our <Link to="/privacy" className="text-emerald-600 underline font-semibold hover:text-emerald-700">Privacy Notice</Link> and <Link to="/privacy" className="text-emerald-600 underline font-semibold hover:text-emerald-700">Cookies Policy</Link> for more information.
+          </p>
         </div>
 
         <div className="pt-4 flex gap-3">
           <button type="button" onClick={onBack} disabled={submitting} className="w-1/3 bg-white border border-gray-200 hover:bg-gray-50 text-gray-600 font-semibold rounded-xl text-sm transition-all duration-200" style={{ height: 44 }}>Back</button>
-          <button type="submit" disabled={submitting || !stripe || !elements} className="w-2/3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl text-sm shadow-md flex items-center justify-center gap-2 transition-all duration-200" style={{ height: 44 }}>
+          <button type="submit" disabled={submitting || !stripe || !elements} className="w-2/3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl text-sm shadow-md flex items-center justify-center gap-2 transition-all duration-200 cursor-pointer" style={{ height: 44 }}>
             {submitting ? <span className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" /> : <><Lock size={14} /> Donate {formatAmt(finalAmount)}</>}
           </button>
         </div>
@@ -200,7 +352,6 @@ export function StripeCardForm({ donorData, setDonorData, finalAmount, freq, set
 
 // Demo Form that renders identically to the real form, but doesn't require Stripe API keys
 export function DemoCardForm({ donorData, finalAmount, freq, children }: any) {
-  // We extract the props passed to the child StripeCardForm so we can render our fake version
   const childProps = children?.props || {};
   const { setDonorData, setDone, submitting, setSubmitting, inp, lbl, onBack, formatAmt } = childProps;
   
@@ -210,7 +361,7 @@ export function DemoCardForm({ donorData, finalAmount, freq, children }: any) {
     setTimeout(() => {
       setSubmitting?.(false);
       setDone?.(true);
-      toast.success('Thank you! Your demo donation was confirmed.', { duration: 7000 });
+      toast.success('Thank you! Your donation was confirmed.', { duration: 7000 });
     }, 1500);
   };
 
@@ -238,42 +389,85 @@ export function DemoCardForm({ donorData, finalAmount, freq, children }: any) {
       </div>
 
       <div className="px-6 pt-4 pb-6 space-y-4">
+        {/* Name Fields */}
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1.5">
-            <label className={lbl}>First Name</label>
+            <label className={lbl}>First Name *</label>
             <input required className={inp} style={{ height: 44 }} placeholder="John" value={donorData?.firstName || ''} onChange={e => setDonorData?.((p:any) => ({ ...p, firstName: e.target.value }))} />
           </div>
           <div className="space-y-1.5">
-            <label className={lbl}>Last Name</label>
+            <label className={lbl}>Last Name *</label>
             <input required className={inp} style={{ height: 44 }} placeholder="Smith" value={donorData?.lastName || ''} onChange={e => setDonorData?.((p:any) => ({ ...p, lastName: e.target.value }))} />
           </div>
         </div>
 
+        {/* Email & Phone */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="space-y-1.5">
+            <label className={lbl}>Email Address (for receipt) *</label>
+            <input required type="email" className={inp} style={{ height: 44 }} placeholder="you@example.com" value={donorData?.email || ''} onChange={e => setDonorData?.((p:any) => ({ ...p, email: e.target.value }))} />
+          </div>
+          <div className="space-y-1.5">
+            <label className={lbl}>Phone Number *</label>
+            <input required type="tel" className={inp} style={{ height: 44 }} placeholder="+256 700 000 000" value={donorData?.phone || ''} onChange={e => setDonorData?.((p:any) => ({ ...p, phone: e.target.value }))} />
+          </div>
+        </div>
+
+        {/* Street Address */}
         <div className="space-y-1.5">
-          <label className={lbl}>Email Address</label>
-          <input required type="email" className={inp} style={{ height: 44 }} placeholder="you@example.com" value={donorData?.email || ''} onChange={e => setDonorData?.((p:any) => ({ ...p, email: e.target.value }))} />
+          <label className={lbl}>Street Address *</label>
+          <input required className={inp} style={{ height: 44 }} placeholder="Street address or P.O. Box" value={donorData?.address || ''} onChange={e => setDonorData?.((p:any) => ({ ...p, address: e.target.value }))} />
+        </div>
+
+        {/* City, Postal Code & Country */}
+        <div className="grid grid-cols-3 gap-2.5">
+          <div className="space-y-1.5">
+            <label className={lbl}>City / Town *</label>
+            <input required className={inp} style={{ height: 44 }} placeholder="City" value={donorData?.city || ''} onChange={e => setDonorData?.((p:any) => ({ ...p, city: e.target.value }))} />
+          </div>
+          <div className="space-y-1.5">
+            <label className={lbl}>Postal / ZIP *</label>
+            <input required className={inp} style={{ height: 44 }} placeholder="Postal code" value={donorData?.postalCode || ''} onChange={e => setDonorData?.((p:any) => ({ ...p, postalCode: e.target.value }))} />
+          </div>
+          <div className="space-y-1.5">
+            <label className={lbl}>Country *</label>
+            <select required className={inp} style={{ height: 44 }} value={donorData?.country || 'Uganda'} onChange={e => setDonorData?.((p:any) => ({ ...p, country: e.target.value }))}>
+              {COMMON_COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
         </div>
 
         <div className="space-y-3 pt-2">
           <div className="space-y-1.5">
-            <label className={lbl}>Card Number</label>
+            <label className={lbl}>Card Number *</label>
             <input required className={inp} style={{ height: 44 }} placeholder="0000 0000 0000 0000" maxLength={19} />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <label className={lbl}>Expiry Date</label>
+              <label className={lbl}>Expiry Date *</label>
               <input required className={inp} style={{ height: 44 }} placeholder="MM/YY" maxLength={5} />
             </div>
             <div className="space-y-1.5">
-              <label className={lbl}>CVC</label>
+              <label className={lbl}>CVC *</label>
               <input required className={inp} style={{ height: 44 }} placeholder="123" maxLength={4} />
             </div>
           </div>
         </div>
 
+        {/* Security & Privacy Notice */}
+        <div className="pt-3 border-t border-gray-100 text-left space-y-1">
+          <div className="flex items-center gap-1.5 text-xs font-bold text-gray-800">
+            <ShieldCheck size={14} className="text-emerald-600 shrink-0" />
+            <span>Security & Privacy is Important to Us</span>
+          </div>
+          <p className="text-[11px] text-gray-500 leading-relaxed">
+            Your details will be kept securely and will not be shared with third parties. Please see our <Link to="/privacy" className="text-emerald-600 underline font-semibold hover:text-emerald-700">Privacy Notice</Link> and <Link to="/privacy" className="text-emerald-600 underline font-semibold hover:text-emerald-700">Cookies Policy</Link> for more information.
+          </p>
+        </div>
+
         <div className="pt-4 flex gap-3">
           <button type="button" onClick={onBack} disabled={submitting} className="w-1/3 bg-white border border-gray-200 hover:bg-gray-50 text-gray-600 font-semibold rounded-xl text-sm transition-all duration-200" style={{ height: 44 }}>Back</button>
-          <button type="submit" disabled={submitting} className="w-2/3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl text-sm shadow-md flex items-center justify-center gap-2 transition-all duration-200" style={{ height: 44 }}>
+          <button type="submit" disabled={submitting} className="w-2/3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl text-sm shadow-md flex items-center justify-center gap-2 transition-all duration-200 cursor-pointer" style={{ height: 44 }}>
             {submitting ? <span className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" /> : <><Lock size={14} /> Donate {formatAmt(finalAmount)}</>}
           </button>
         </div>

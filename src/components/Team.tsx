@@ -20,8 +20,51 @@ interface TeamMember {
 
 
 
+export const FALLBACK_TEAM: TeamMember[] = [
+  {
+    id: 'kwaya-daniel-loborach',
+    name: 'Mr. Kwaya Daniel Loborach',
+    role: 'Co-Founder',
+    department: 'Executive & Finance',
+    bio: "Kwaya Daniel Loborach is Co-Founder of RESTI Uganda, bringing a strong background in Business Administration and Management.",
+    image: 'https://mxffqgefsufcdgnhjjsw.supabase.co/storage/v1/object/public/make-2a4be611-uploads/c4735251-21ab-43c3-aeef-61aa5429b5c1-Screenshot_2026-09-11_011312.png',
+    email: 'info@resticbo.org',
+    order: 1,
+  },
+  {
+    id: 'anek-immaculate',
+    name: 'Anek Immaculate',
+    role: 'Co-Founder | Research, Livelihoods & Community Engagement',
+    department: 'Programs & Operations',
+    bio: "Anek Immaculate is Co-Founder of RESTI Uganda, bringing a strong background in development studies and community programming.",
+    image: 'https://mxffqgefsufcdgnhjjsw.supabase.co/storage/v1/object/public/make-2a4be611-uploads/f8d23b1b-e4ae-44dc-9ad1-b2ec7fd7d667-WhatsApp_Image_2026-09-13_at_1.57.38_AM.jpeg',
+    email: 'info@resticbo.org',
+    order: 2,
+  },
+  {
+    id: 'otim-jackson',
+    name: 'Otim Jackson',
+    role: 'Co-Founder | Agriculture, Livelihoods & Community Extension',
+    department: 'Community Extension',
+    bio: "Otim Jackson is Co-Founder of RESTI Uganda, bringing a strong background in agriculture and livestock development.",
+    image: 'https://mxffqgefsufcdgnhjjsw.supabase.co/storage/v1/object/public/make-2a4be611-uploads/cce2a529-08ff-4a8f-91a0-fbdc38e14ced-WhatsApp_Image_2026-09-08_at_5.34.23_PM.jpeg',
+    email: 'otimjackson82@gmail.com',
+    order: 3,
+  },
+  {
+    id: 'mr-lokwo-denis',
+    name: 'Mr. Lokwo Denis',
+    role: 'Co-Founder | Technology, Digital Systems & Innovation',
+    department: 'Technology & Innovation',
+    bio: "Lokwo Denis is Co-Founder of RESTI Uganda, specializing in technology, digital systems, and innovation.",
+    image: 'https://mxffqgefsufcdgnhjjsw.supabase.co/storage/v1/object/public/make-2a4be611-uploads/e40b6cae-de18-4580-a1c7-758e6f16a541-IMG-20250908-WA0042_1_.jpg',
+    email: 'lokwodenis@gmail.com',
+    order: 4,
+  }
+];
+
 export function Team() {
-  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>(FALLBACK_TEAM);
   const [loading, setLoading] = useState(false);
   const [selectedDepartment, setSelectedDepartment] = useState('all');
   const [sectionSettings, setSectionSettings] = useState({
@@ -76,15 +119,14 @@ export function Team() {
       if (response.ok) {
         const data = await response.json();
         const members = Array.isArray(data.team) ? data.team : [];
-        members.sort((a: TeamMember, b: TeamMember) => (a.order || 999) - (b.order || 999));
-        setTeamMembers(members.filter((member: TeamMember) => member.name));
-      } else {
-        console.error('Failed to fetch team members');
-        console.warn("Team API error, keeping fallback data.");
+        const validMembers = members.filter((member: TeamMember) => member.name);
+        if (validMembers.length > 0) {
+          validMembers.sort((a: TeamMember, b: TeamMember) => (a.order || 999) - (b.order || 999));
+          setTeamMembers(validMembers);
+        }
       }
     } catch (error) {
-      console.error('Error loading team data:', error);
-      console.warn("Team API unavailable, using fallback.");
+      console.warn("Team API unavailable, keeping fallback team.", error);
     } finally {
       setLoading(false);
     }
@@ -160,55 +202,76 @@ export function Team() {
             {/* Team Members Grid */}
             {filteredMembers.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {filteredMembers.map((member) => (
-                  <Card
-                    key={member.id}
-                    className="overflow-hidden hover:shadow-2xl transition-all duration-500 group bg-white"
-                  >
-                    {/* Member Image */}
-                    <div className="relative h-72 bg-slate-50 overflow-hidden flex items-center justify-center">
-                      {member.image ? (
-                        <img
-                          src={member.image}
-                          alt={member.name}
-                          className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-700"
-                          onError={(e) => {
-                            e.currentTarget.style.display = 'none';
-                            e.currentTarget.nextElementSibling?.classList.remove('hidden');
-                          }}
-                        />
-                      ) : null}
-                      <div className={`w-full h-full flex items-center justify-center ${member.image ? 'hidden' : ''}`}>
-                        <Users className="text-white group-hover:scale-110 transition-transform duration-500" size={80} />
-                      </div>
-                      
-                      {/* Department Badge */}
-                      {member.department && (
-                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-6">
-                          <Badge className="bg-white text-emerald-700 hover:bg-emerald-600 hover:text-white transition-colors duration-300">
-                            {member.department.charAt(0).toUpperCase() + member.department.slice(1)}
-                          </Badge>
+                {filteredMembers.map((member) => {
+                  const memberId = (member.id || '').replace(/^team:/, '');
+                  const cleanBio = (member.bio || '')
+                    .replace(/\?\?/g, "'")
+                    .replace(/\uFFFD/g, "'")
+                    .replace(/â€™/g, "'")
+                    .replace(/â€"/g, "—")
+                    .trim();
+
+                  return (
+                    <Card
+                      key={member.id}
+                      className="overflow-hidden hover:shadow-2xl transition-all duration-500 group bg-white border border-slate-100 rounded-3xl flex flex-col justify-between"
+                    >
+                      <div>
+                        {/* Member Image */}
+                        <Link to={`/team/${memberId}`} className="block relative h-72 bg-slate-900 overflow-hidden">
+                          {member.image ? (
+                            <img
+                              src={member.image}
+                              alt={member.name}
+                              className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-700"
+                              onError={(e) => {
+                                e.currentTarget.style.display = 'none';
+                                e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                              }}
+                            />
+                          ) : null}
+                          <div className={`w-full h-full flex items-center justify-center bg-slate-900 text-white ${member.image ? 'hidden' : ''}`}>
+                            <Users className="text-white/60 group-hover:scale-110 transition-transform duration-500" size={80} />
+                          </div>
+                          
+                          {/* Department Badge */}
+                          {member.department && (
+                            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-slate-950/80 via-slate-950/40 to-transparent p-5">
+                              <Badge className="bg-white text-emerald-700 hover:bg-emerald-600 hover:text-white transition-colors duration-300 font-semibold text-xs">
+                                {member.department.charAt(0).toUpperCase() + member.department.slice(1)}
+                              </Badge>
+                            </div>
+                          )}
+                        </Link>
+
+                        {/* Member Info */}
+                        <div className="p-6 pb-2">
+                          <Link to={`/team/${memberId}`}>
+                            <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-1 group-hover:text-emerald-600 transition-colors font-heading">
+                              {member.name}
+                            </h3>
+                          </Link>
+                          <p className="text-emerald-600 font-medium text-sm mb-4">{member.role}</p>
+
+                          {cleanBio && (
+                            <p className="text-gray-600 text-sm leading-relaxed mb-4 line-clamp-2">
+                              {cleanBio}
+                            </p>
+                          )}
                         </div>
-                      )}
-                    </div>
+                      </div>
 
-                    {/* Member Info */}
-                    <div className="p-6">
-                      <h3 className="text-2xl text-gray-900 mb-2">{member.name}</h3>
-                      <p className="text-lg text-emerald-600 mb-4">{member.role}</p>
-
-                      {member.bio && (
-                        <p className="text-gray-600 text-base leading-relaxed mb-6 line-clamp-2">
-                          {member.bio}
-                        </p>
-                      )}
-
-                      <Link to="/team" className="text-emerald-600 font-medium hover:text-emerald-700 inline-flex items-center transition-colors">
-                        View full profile <ArrowRight className="ml-2 w-4 h-4" />
-                      </Link>
-                    </div>
-                  </Card>
-                ))}
+                      <div className="px-6 pb-6 pt-2 border-t border-slate-100">
+                        <Link 
+                          to={`/team/${memberId}`} 
+                          className="text-emerald-600 font-bold hover:text-emerald-700 text-sm inline-flex items-center gap-1.5 transition-colors group/link"
+                        >
+                          View More <ArrowRight className="w-4 h-4 group-hover/link:translate-x-1 transition-transform" />
+                        </Link>
+                      </div>
+                    </Card>
+                  );
+                })}
               </div>
             ) : (
               <div className="text-center py-10 text-gray-500">

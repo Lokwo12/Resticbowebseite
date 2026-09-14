@@ -1,10 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Heart, Send, CheckCircle2, User, Mail, Phone, MessageSquare, Briefcase, Calendar, Cake, MapPin, GraduationCap, Globe, Shield, Users, ChevronDown, Upload, FileText } from 'lucide-react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { toast } from 'sonner';
 
 export function VolunteerPage() {
+  const [volunteerSettings, setVolunteerSettings] = useState({
+    heroTitle: 'Join Our Mission',
+    heroSubtitle: 'Share your skills, make new friends, and be a part of positive change in Kiryandongo.',
+    heroImage: 'https://images.unsplash.com/photo-1641569707854-c80945fb4719?w=1600&q=80',
+    successTitle: 'Application Received!',
+    successMessage: 'Thank you for your interest in volunteering with us. We have received your application and will get back to you shortly.'
+  });
+
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -24,6 +32,26 @@ export function VolunteerPage() {
   });
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    fetch(`https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/site-settings`, {
+      headers: { Authorization: `Bearer ${publicAnonKey}` },
+      signal: AbortSignal.timeout(6000),
+    })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data?.settings?.volunteer) {
+          setVolunteerSettings(prev => ({ ...prev, ...data.settings.volunteer }));
+        } else if (data?.settings?.sections?.volunteer) {
+          setVolunteerSettings(prev => ({
+            ...prev,
+            heroTitle: data.settings.sections.volunteer.title || prev.heroTitle,
+            heroSubtitle: data.settings.sections.volunteer.description || prev.heroSubtitle
+          }));
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -106,7 +134,7 @@ export function VolunteerPage() {
       <div className="bg-emerald-950 text-white pt-44 pb-36 overflow-hidden relative antialiased">
         <div className="absolute inset-0 z-0">
           <img 
-            src="https://images.unsplash.com/photo-1641569707854-c80945fb4719?w=1600&q=80" 
+            src={volunteerSettings.heroImage || "https://images.unsplash.com/photo-1641569707854-c80945fb4719?w=1600&q=80"} 
             alt="Volunteer Background" 
             className="w-full h-full object-cover opacity-30 contrast-110"
           />
@@ -125,10 +153,10 @@ export function VolunteerPage() {
             <Heart className="text-emerald-400 animate-pulse" size={40} />
           </div>
           <h1 className="text-5xl md:text-8xl font-black mb-6 text-white tracking-tighter leading-none uppercase drop-shadow-2xl">
-            Join Our Mission
+            {volunteerSettings.heroTitle || 'Join Our Mission'}
           </h1>
           <p className="text-emerald-50/90 max-w-3xl mx-auto text-xl md:text-2xl font-medium tracking-tight leading-relaxed drop-shadow-md">
-            Share your skills, make new friends, and be a part of positive change in Kiryandongo.
+            {volunteerSettings.heroSubtitle || 'Share your skills, make new friends, and be a part of positive change in Kiryandongo.'}
           </p>
         </div>
       </div>
@@ -142,9 +170,9 @@ export function VolunteerPage() {
               <div className="inline-flex items-center justify-center w-20 h-20 bg-emerald-100 rounded-full mb-6">
                 <CheckCircle2 size={40} className="text-emerald-600" />
               </div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">Application Received!</h2>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">{volunteerSettings.successTitle || 'Application Received!'}</h2>
               <p className="text-gray-600 max-w-md mx-auto">
-                Thank you for your interest in volunteering with us. We have received your application and will get back to you shortly.
+                {volunteerSettings.successMessage || 'Thank you for your interest in volunteering with us. We have received your application and will get back to you shortly.'}
               </p>
               <button
                 onClick={() => setSubmitted(false)}

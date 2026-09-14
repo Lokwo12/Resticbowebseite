@@ -18,6 +18,7 @@ const getTableInfo = (key: string) => {
   if (key.startsWith('opportunity:')) return { table: 'opportunities', id: key.split(':')[1] || key };
   if (key.startsWith('faq:')) return { table: 'faqs', id: key.split(':')[1] || key };
   if (key.startsWith('resource:')) return { table: 'resources', id: key.split(':')[1] || key };
+  if (key.startsWith('program:')) return { table: 'programs', id: key.split(':')[1] || key };
   if (key.startsWith('page:')) return { table: 'pages', id: key.split(':')[1] || key };
   if (key === 'site_settings' || key.startsWith('site_settings:')) return { table: 'site_settings', id: 'global' };
   return { table: 'kv_store_2a4be611', id: key }; // Fallback to raw KV

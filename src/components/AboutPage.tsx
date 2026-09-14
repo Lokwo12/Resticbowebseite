@@ -32,19 +32,19 @@ const iconMap: Record<string, typeof Heart> = {
 
 
 const DEFAULT_ABOUT_SETTINGS: AboutSettings = {
-  title: 'About Refugee Empowerment For Sustainable Transformation Initiative CBO (RESTI)',
-  intro: 'Founded with a mission to empower and uplift communities in Kiryandongo District, we are a community-based organization dedicated to creating sustainable positive change through collaborative action and locally-driven solutions.',
-  mission: 'To empower communities in Kiryandongo through sustainable development programs in education, healthcare, and economic empowerment, fostering self-reliance and improved quality of life for all.',
-  vision: 'A thriving, self-sustaining community where every individual has access to quality education, healthcare, and opportunities for economic prosperity.',
+  title: 'About RESTI',
+  intro: 'Refugee Empowerment For Sustainable Transformation Initiative (RESTI) is a community-rooted organization in Kiryandongo District, Uganda. We transform vulnerable settlements through education, healthcare, sustainable livelihoods, and peacebuilding.',
+  mission: 'To empower refugees and host communities in Kiryandongo through locally-driven, sustainable programs in education, healthcare, and economic livelihoods, fostering enduring self-reliance and community cohesion.',
+  vision: 'A thriving, self-sustaining society where every refugee and community member enjoys dignity, quality education, reliable healthcare, and equal economic opportunities.',
   values: [
-    { icon: 'Heart', title: 'Compassion', description: 'We approach every initiative with empathy and understanding for community needs.' },
-    { icon: 'Users', title: 'Community', description: 'Working together with local leaders and residents to create lasting change.' },
-    { icon: 'Target', title: 'Impact', description: 'Focused on measurable outcomes that improve quality of life.' },
-    { icon: 'Award', title: 'Excellence', description: 'Committed to delivering high-quality programs and services.' }
+    { icon: 'Heart', title: 'Compassion & Dignity', description: 'We place human dignity, empathy, and active listening at the center of every community initiative.' },
+    { icon: 'Users', title: 'Community Ownership', description: 'Solutions are co-designed and driven by refugees and host communities working side-by-side.' },
+    { icon: 'Target', title: 'Sustainable Impact', description: 'Focused on long-term, measurable empowerment that builds lasting independence rather than temporary relief.' },
+    { icon: 'Award', title: 'Integrity & Transparency', description: 'Committed to rigorous accountability to our community, partners, and donors in all we do.' }
   ],
   story: [
-    'Refugee Empowerment For Sustainable Transformation Initiative CBO (RESTI) was born from a shared vision among community members who recognized the need for organized, sustainable development initiatives in our district. What started as small-scale educational support has grown into a comprehensive community development organization.',
-    'Today, we work closely with local government, international partners, and most importantly, the communities we serve, to identify needs, develop solutions, and implement programs that create lasting positive change. Our grassroots approach ensures that every initiative is community-driven and culturally appropriate.'
+    'RESTI (Refugee Empowerment For Sustainable Transformation Initiative) was founded from the lived experiences and collective determination of community members in Kiryandongo District, Uganda. Recognizing the acute challenges faced by refugee families and host communities—from fragmented educational access to economic vulnerability—we united to create a locally rooted organization dedicated to lasting transformation.',
+    'Today, RESTI collaborates closely with district leadership, local elders, refugee youth networks, and humanitarian partners. By combining grassroots trust with structured vocational programs, micro-enterprise training, and digital skills, we turn fragile situations into foundations for sustainable progress.'
   ],
   heroVideoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-children-running-in-a-field-of-grass-32773-large.mp4',
   missionVideoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-hands-planting-a-seedling-in-the-soil-31518-large.mp4',
@@ -117,14 +117,15 @@ export function AboutPage() {
           <div className="absolute inset-0 bg-gradient-to-b from-[#0A192F]/30 via-[#0A192F]/50 to-[#0A192F]/90"></div>
         </div>
 
-        <div className="relative z-10 max-w-5xl mx-auto px-4 text-center mt-20">
-          <span className="inline-block py-1 px-3 rounded-full bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-xs font-bold tracking-widest uppercase mb-6 animate-[fadeInUp_0.8s_ease-out] drop-shadow-md">
-            Our Journey
-          </span>
-          <h1 className="text-5xl md:text-7xl font-bold font-heading text-white mb-6 leading-tight animate-[fadeInUp_1s_ease-out_0.2s_both] drop-shadow-2xl">
+        <div className="relative z-10 max-w-5xl mx-auto px-4 text-center mt-16 sm:mt-20">
+          <div className="inline-flex items-center gap-2 py-1.5 px-4 rounded-full bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-xs sm:text-sm font-semibold tracking-wider uppercase mb-6 animate-[fadeInUp_0.8s_ease-out] backdrop-blur-sm">
+            <Heart size={14} className="text-emerald-400" />
+            Our Mission & Journey
+          </div>
+          <h1 className="text-3xl sm:text-5xl md:text-6xl font-extrabold font-heading text-white mb-6 leading-tight animate-[fadeInUp_1s_ease-out_0.2s_both] drop-shadow-2xl">
             {settings.title}
           </h1>
-          <p className="text-xl text-gray-200 max-w-3xl mx-auto leading-relaxed animate-[fadeInUp_1s_ease-out_0.4s_both] drop-shadow-lg font-medium">
+          <p className="text-base sm:text-lg md:text-xl text-gray-200 max-w-3xl mx-auto leading-relaxed animate-[fadeInUp_1s_ease-out_0.4s_both] drop-shadow-lg font-medium">
             {settings.intro}
           </p>
         </div>

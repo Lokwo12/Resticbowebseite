@@ -8,6 +8,8 @@ export function FloatingContact() {
   const [phone, setPhone] = useState('');
   const [whatsapp, setWhatsapp] = useState('');
 
+  const [email, setEmail] = useState('info@resticbo.org');
+
   useEffect(() => {
     const handleScroll = () => {
       // Only show after scrolling past the hero section (~600px)
@@ -27,6 +29,7 @@ export function FloatingContact() {
         if (c?.phone) setPhone(c.phone.replace(/\s/g, ''));
         if (c?.whatsappNumber) setWhatsapp(c.whatsappNumber.replace(/\D/g, ''));
         else if (c?.phone) setWhatsapp(c.phone.replace(/\D/g, ''));
+        if (c?.email) setEmail(c.email);
       })
       .catch(() => {});
   }, []);
@@ -47,7 +50,7 @@ export function FloatingContact() {
     {
       icon: Mail,
       label: 'Email',
-      href: 'mailto:info@restikirya.org',
+      href: `mailto:${email}`,
       color: 'bg-purple-500 hover:bg-purple-600',
     },
   ];

@@ -19,11 +19,11 @@ interface FAQItem {
 }
 
 const FALLBACK_FAQS = [
-  { id: 'faq1', question: 'How can I donate to Resti Kiryandongo CBO?', answer: 'You can donate through our secure online donation form, via MTN Mobile Money, Airtel Money, or bank transfer. All donations go directly to supporting our community programmes.', category: 'donations', order: 1 },
-  { id: 'faq2', question: 'Can I volunteer if I do not live in Kiryandongo?', answer: 'Yes! We welcome remote volunteers for social media, fundraising, grant writing, and online tutoring. We also have short-term on-site opportunities.', category: 'volunteering', order: 2 },
-  { id: 'faq3', question: 'What programmes do you offer?', answer: 'We offer programmes in education support, healthcare access, community development, skills training, clean water (WASH), and women empowerment.', category: 'programs', order: 3 },
-  { id: 'faq4', question: 'How do I apply for a volunteer position?', answer: 'Fill in the volunteer application form in the Get Involved section of this website or contact us directly via email or WhatsApp.', category: 'volunteering', order: 4 },
-  { id: 'faq5', question: 'Is Resti Kiryandongo CBO a registered organisation?', answer: 'Yes. We are a registered Community Based Organisation (CBO) under the Uganda NGO Bureau with all required operational certifications.', category: 'general', order: 5 },
+  { id: 'faq1', question: 'How can I donate to RESTI?', answer: 'You can donate securely through our online donation system using Credit/Debit cards via Stripe, Mobile Money via MTN and Airtel, or direct bank transfer. All contributions directly empower refugees and host community families.', category: 'donations', order: 1 },
+  { id: 'faq2', question: 'Can I volunteer if I do not live in Kiryandongo?', answer: 'Yes! We welcome both field volunteers and remote partners for digital literacy mentorship, grant proposal writing, communications, and research.', category: 'volunteering', order: 2 },
+  { id: 'faq3', question: 'What programs does RESTI implement?', answer: 'RESTI focuses on core pillars: Quality Education & Digital Inclusion, Healthcare & WASH, Sustainable Agriculture & Livelihoods, and Peacebuilding & Social Cohesion.', category: 'programs', order: 3 },
+  { id: 'faq4', question: 'How do I apply for a volunteer or partner role?', answer: 'You can submit an inquiry through our Contact page or reach out directly to info@resticbo.org with your CV or organization profile.', category: 'volunteering', order: 4 },
+  { id: 'faq5', question: 'What is RESTI and is it officially registered?', answer: 'RESTI stands for Refugee Empowerment For Sustainable Transformation Initiative. We are a formally registered Community-Based Organization (CBO) operating with district and national authorization in Kiryandongo, Uganda.', category: 'general', order: 5 },
 ];
 export function FAQ() {
   const [faqs, setFaqs] = useState<FAQItem[]>(FALLBACK_FAQS as any);

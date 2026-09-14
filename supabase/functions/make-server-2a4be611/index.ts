@@ -40,6 +40,15 @@ app.use('*', logger())
 
 // ── requireAdmin middleware ───────────────────────────────────────────────────
 // Verifies the Bearer JWT, then checks the admin_users table for active status and role.
+function normalizeAdminRole(role: string | null | undefined) {
+  return role === 'super_admin' ? 'super-admin' : role
+}
+
+function normalizeContentKey(prefix: string, id: string) {
+  const decodedId = decodeURIComponent(id)
+  return decodedId.startsWith(`${prefix}:`) ? decodedId : `${prefix}:${decodedId}`
+}
+
 async function requireAdmin(c: Context, next: Next) {
   const authHeader = c.req.header('Authorization')
   const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null
@@ -59,11 +68,12 @@ async function requireAdmin(c: Context, next: Next) {
     .eq('id', user.id)
     .single()
 
+  const role = normalizeAdminRole(admin?.role)
   if (
     adminError ||
     !admin ||
     admin.status !== 'active' ||
-    !['admin', 'super-admin'].includes(admin.role)
+    !['admin', 'super-admin'].includes(role || '')
   ) {
     return c.json({ error: 'Forbidden – administrator role required' }, 403)
   }
@@ -72,7 +82,7 @@ async function requireAdmin(c: Context, next: Next) {
   c.set('adminUser', {
     id: user.id,
     email: user.email,
-    role: admin.role,
+    role,
   })
   await next()
 }
@@ -218,17 +228,34 @@ app.get('/make-server-2a4be611/programs', async (c) => {
     
     if (c.req.query('limit') !== undefined) {
       const { data, count } = await kv.getPaginatedByPrefix('program:', limit, offset);
-      data.sort((a, b) => new Date(b.value?.timestamp || b.value?.created_at || 0).getTime() - new Date(a.value?.timestamp || a.value?.created_at || 0).getTime());
+      data.sort((a, b) => new Date(b.value?.createdAt || b.value?.timestamp || b.value?.created_at || 0).getTime() - new Date(a.value?.createdAt || a.value?.timestamp || a.value?.created_at || 0).getTime());
       return c.json({ programs: data, count, limit, offset });
     }
     
     const programs = await kv.getByPrefix('program:')
     // Filter out any invalid entries
     const validPrograms = programs.filter(p => p && p.value && p.value.title)
+    validPrograms.sort((a, b) => new Date(b.value?.createdAt || b.value?.timestamp || b.value?.created_at || 0).getTime() - new Date(a.value?.createdAt || a.value?.timestamp || a.value?.created_at || 0).getTime());
     return c.json({ programs: validPrograms })
   } catch (error) {
     console.error('Error fetching programs:', error)
     return c.json({ error: 'Failed to fetch programs', details: String(error) }, 500)
+  }
+})
+
+// Get a single program
+app.get('/make-server-2a4be611/programs/:id', async (c) => {
+  try {
+    const rawId = c.req.param('id')
+    const id = normalizeContentKey('program', rawId)
+    const program = await kv.get(id)
+    if (!program) {
+      return c.json({ error: 'Program not found' }, 404)
+    }
+    return c.json({ program: { key: id, value: program } })
+  } catch (error) {
+    console.error('Error fetching program:', error)
+    return c.json({ error: 'Failed to fetch program', details: String(error) }, 500)
   }
 })
 
@@ -356,46 +383,46 @@ app.post('/make-server-2a4be611/create-payment-intent', async (c) => {
       return c.json({ error: 'Invalid amount' }, 400)
     }
 
-    // Create a pending donation in Postgres first
+    // Create pending donation in Postgres and Stripe payment intent in parallel
     const internalReference = crypto.randomUUID()
     const donationId = `donation:${internalReference}`
     const parts = (donorName || 'Anonymous').split(' ')
     const firstName = parts[0]
     const lastName = parts.slice(1).join(' ') || ''
 
-    const { error: insertError } = await supabase.from('donations').insert({
-      id: donationId,
-      amount: Number(amount),
-      currency: (currency || 'USD').toUpperCase(),
-      method: 'card',
-      provider: 'stripe',
-      first_name: firstName,
-      last_name: lastName,
-      email: donorEmail || '',
-      status: 'pending',
-      transaction_id: internalReference,
-      provider_transaction_id: null,
-      provider_response: { createdBy: 'create-payment-intent' }
-    })
+    const [insertResult, paymentIntent] = await Promise.all([
+      supabase.from('donations').insert({
+        id: donationId,
+        amount: Number(amount),
+        currency: (currency || 'USD').toUpperCase(),
+        method: 'card',
+        provider: 'stripe',
+        first_name: firstName,
+        last_name: lastName,
+        email: donorEmail || '',
+        status: 'pending',
+        transaction_id: internalReference,
+        provider_transaction_id: null,
+        provider_response: { createdBy: 'create-payment-intent' }
+      }),
+      stripe.paymentIntents.create({
+        amount: Math.round(amount * 100), // Stripe expects amount in cents
+        currency: (currency || 'usd'),
+        metadata: {
+          restiDonationId: internalReference,
+          internalReference,
+          paymentPurpose: 'resti_donation',
+          campaignId: 'general',
+          donorName: donorName || 'Anonymous',
+          donorEmail: donorEmail || ''
+        },
+      })
+    ])
 
-    if (insertError) {
-      console.error('Failed to create pending donation:', insertError)
-      return c.json({ error: 'Database error', details: insertError.message, hint: insertError.hint }, 500)
+    if (insertResult.error) {
+      console.error('Failed to create pending donation:', insertResult.error)
+      return c.json({ error: 'Database error', details: insertResult.error.message, hint: insertResult.error.hint }, 500)
     }
-
-    // Create a payment intent and attach the internal reference so webhook can locate it
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount: Math.round(amount * 100), // Stripe expects amount in cents
-      currency: (currency || 'usd'),
-      metadata: {
-        restiDonationId: internalReference,
-        internalReference,
-        paymentPurpose: 'resti_donation',
-        campaignId: 'general',
-        donorName: donorName || 'Anonymous',
-        donorEmail: donorEmail || ''
-      },
-    })
 
     console.log(`Payment intent created: ${paymentIntent.id}`)
     return c.json({ 
@@ -570,9 +597,9 @@ app.post('/make-server-2a4be611/create-portal-session', async (c) => {
 app.delete('/make-server-2a4be611/admin/donations/:id', requireAdmin, async (c) => {
   try {
     const id = c.req.param('id')
-    const key = id.includes(':') ? id : `donation:${id}`
+    const keys = id.includes(':') ? [id] : [id, `donation:${id}`]
     // Delete from Postgres canonical donations table
-    const { error: delErr } = await supabase.from('donations').delete().eq('id', key)
+    const { error: delErr } = await supabase.from('donations').delete().in('id', keys)
     if (delErr) {
       console.error('Failed to delete donation from Postgres:', delErr)
       return c.json({ error: 'Failed to delete donation', details: delErr.message }, 500)
@@ -1354,7 +1381,7 @@ app.get('/make-server-2a4be611/admin/users/:userId/status', async (c) => {
       return c.json({ success: true, status: 'pending', role: 'viewer' })
     }
     
-    return c.json({ success: true, status: user.status, role: user.role })
+    return c.json({ success: true, status: user.status, role: normalizeAdminRole(user.role) })
   } catch (error) {
     console.error('Error fetching user status:', error)
     return c.json({ error: 'Failed to fetch status', details: String(error) }, 500)
@@ -1595,7 +1622,7 @@ app.post('/make-server-2a4be611/admin/migrate-donations-kv-to-postgres', require
 // Delete program (admin)
 app.delete('/make-server-2a4be611/programs/:id', requireAdmin, async (c) => {
   try {
-    const id = c.req.param('id')
+    const id = normalizeContentKey('program', c.req.param('id'))
     await kv.del(id)
     console.log(`Program deleted: ${id}`)
     return c.json({ success: true, message: 'Program deleted successfully' })
@@ -1608,7 +1635,7 @@ app.delete('/make-server-2a4be611/programs/:id', requireAdmin, async (c) => {
 // Update program (admin)
 app.put('/make-server-2a4be611/programs/:id', requireAdmin, async (c) => {
   try {
-    const id = c.req.param('id')
+    const id = normalizeContentKey('program', c.req.param('id'))
     const body = await c.req.json()
     const { title, description, image, category } = body
 
@@ -1660,7 +1687,7 @@ app.post('/make-server-2a4be611/programs/bulk-delete', requireAdmin, async (c) =
 // Delete news (admin)
 app.delete('/make-server-2a4be611/news/:id', requireAdmin, async (c) => {
   try {
-    const id = c.req.param('id')
+    const id = normalizeContentKey('news', c.req.param('id'))
     await kv.del(id)
     console.log(`News deleted: ${id}`)
     return c.json({ success: true, message: 'News deleted successfully' })
@@ -1956,7 +1983,7 @@ app.post('/make-server-2a4be611/admin/volunteers/bulk-delete', requireAdmin, asy
 // Update news (admin)
 app.put('/make-server-2a4be611/news/:id', requireAdmin, async (c) => {
   try {
-    const id = c.req.param('id')
+    const id = normalizeContentKey('news', c.req.param('id'))
     const body = await c.req.json()
     const { title, content, image } = body
 
@@ -2216,7 +2243,7 @@ app.post('/make-server-2a4be611/admin/gallery', requireAdmin, async (c) => {
 // Update gallery image (admin)
 app.put('/make-server-2a4be611/admin/gallery/:id', requireAdmin, async (c) => {
   try {
-    const id = c.req.param('id')
+    const id = normalizeContentKey('gallery', c.req.param('id'))
     const body = await c.req.json()
     const { title, description, imageUrl, category } = body
 
@@ -2245,7 +2272,7 @@ app.put('/make-server-2a4be611/admin/gallery/:id', requireAdmin, async (c) => {
 // Delete gallery image (admin)
 app.delete('/make-server-2a4be611/admin/gallery/:id', requireAdmin, async (c) => {
   try {
-    const id = c.req.param('id')
+    const id = normalizeContentKey('gallery', c.req.param('id'))
     
     const existing = await kv.get(id)
     if (!existing) {
@@ -2318,7 +2345,7 @@ app.post('/make-server-2a4be611/admin/stories', requireAdmin, async (c) => {
 
 app.put('/make-server-2a4be611/admin/stories/:id', requireAdmin, async (c) => {
   try {
-    const id = c.req.param('id')
+    const id = normalizeContentKey('story', c.req.param('id'))
     const body = await c.req.json()
     const existing = await kv.get(id)
     if (!existing) return c.json({ error: 'Story not found' }, 404)
@@ -2332,7 +2359,7 @@ app.put('/make-server-2a4be611/admin/stories/:id', requireAdmin, async (c) => {
 
 app.delete('/make-server-2a4be611/admin/stories/:id', requireAdmin, async (c) => {
   try {
-    const id = c.req.param('id')
+    const id = normalizeContentKey('story', c.req.param('id'))
     await kv.del(id)
     return c.json({ success: true, message: 'Story deleted successfully' })
   } catch (error) {
@@ -2362,6 +2389,31 @@ app.get('/make-server-2a4be611/team', async (c) => {
   }
 })
 
+// Get a single team member
+app.get('/make-server-2a4be611/team/:id', async (c) => {
+  try {
+    const rawId = c.req.param('id')
+    const id = normalizeContentKey('team', rawId)
+    const member = await kv.get(id)
+    if (!member) {
+      const allTeam = await kv.getByPrefix('team:')
+      const found = allTeam.find(t => 
+        t.key === id || 
+        t.key.replace(/^team:/, '') === rawId || 
+        (t.value?.name && t.value.name.toLowerCase().replace(/[^a-z0-9]+/g, '-') === rawId.toLowerCase())
+      )
+      if (found) {
+        return c.json({ member: { ...found.value, id: found.key, key: found.key } })
+      }
+      return c.json({ error: 'Team member not found' }, 404)
+    }
+    return c.json({ member: { ...member, id, key: id } })
+  } catch (error) {
+    console.error('Error fetching team member:', error)
+    return c.json({ error: 'Failed to fetch team member', details: String(error) }, 500)
+  }
+})
+
 app.post('/make-server-2a4be611/admin/team', requireAdmin, async (c) => {
   try {
     const body = await c.req.json()
@@ -2377,7 +2429,7 @@ app.post('/make-server-2a4be611/admin/team', requireAdmin, async (c) => {
 
 app.put('/make-server-2a4be611/admin/team/:id', requireAdmin, async (c) => {
   try {
-    const id = c.req.param('id')
+    const id = normalizeContentKey('team', c.req.param('id'))
     const body = await c.req.json()
     const existing = await kv.get(id)
     if (!existing) return c.json({ error: 'Team member not found' }, 404)
@@ -2391,9 +2443,8 @@ app.put('/make-server-2a4be611/admin/team/:id', requireAdmin, async (c) => {
 
 app.delete('/make-server-2a4be611/admin/team/:id', requireAdmin, async (c) => {
   try {
-    const id = c.req.param('id')
-    const teamKey = id.startsWith('team:') ? id : `team:${id}`
-    await kv.del(teamKey)
+    const id = normalizeContentKey('team', c.req.param('id'))
+    await kv.del(id)
     return c.json({ success: true, message: 'Team member deleted successfully' })
   } catch (error) {
     console.error('Error deleting team member:', error)
@@ -2437,7 +2488,7 @@ app.post('/make-server-2a4be611/admin/events', requireAdmin, async (c) => {
 
 app.put('/make-server-2a4be611/admin/events/:id', requireAdmin, async (c) => {
   try {
-    const id = c.req.param('id')
+    const id = normalizeContentKey('event', c.req.param('id'))
     const body = await c.req.json()
     const existing = await kv.get(id)
     if (!existing) return c.json({ error: 'Event not found' }, 404)
@@ -2451,7 +2502,7 @@ app.put('/make-server-2a4be611/admin/events/:id', requireAdmin, async (c) => {
 
 app.delete('/make-server-2a4be611/admin/events/:id', requireAdmin, async (c) => {
   try {
-    const id = c.req.param('id')
+    const id = normalizeContentKey('event', c.req.param('id'))
     await kv.del(id)
     return c.json({ success: true, message: 'Event deleted successfully' })
   } catch (error) {
@@ -2495,7 +2546,7 @@ app.post('/make-server-2a4be611/admin/partners', requireAdmin, async (c) => {
 
 app.put('/make-server-2a4be611/admin/partners/:id', requireAdmin, async (c) => {
   try {
-    const id = c.req.param('id')
+    const id = normalizeContentKey('partner', c.req.param('id'))
     const body = await c.req.json()
     const existing = await kv.get(id)
     if (!existing) return c.json({ error: 'Partner not found' }, 404)
@@ -2509,7 +2560,7 @@ app.put('/make-server-2a4be611/admin/partners/:id', requireAdmin, async (c) => {
 
 app.delete('/make-server-2a4be611/admin/partners/:id', requireAdmin, async (c) => {
   try {
-    const id = c.req.param('id')
+    const id = normalizeContentKey('partner', c.req.param('id'))
     await kv.del(id)
     return c.json({ success: true, message: 'Partner deleted successfully' })
   } catch (error) {
@@ -2575,7 +2626,7 @@ app.post('/make-server-2a4be611/admin/reports', requireAdmin, async (c) => {
 
 app.put('/make-server-2a4be611/admin/reports/:id', requireAdmin, async (c) => {
   try {
-    const id = c.req.param('id')
+    const id = normalizeContentKey('report', c.req.param('id'))
     const body = await c.req.json()
     const existing = await kv.get(id)
     if (!existing) return c.json({ error: 'Report not found' }, 404)
@@ -2589,7 +2640,7 @@ app.put('/make-server-2a4be611/admin/reports/:id', requireAdmin, async (c) => {
 
 app.delete('/make-server-2a4be611/admin/reports/:id', requireAdmin, async (c) => {
   try {
-    const id = c.req.param('id')
+    const id = normalizeContentKey('report', c.req.param('id'))
     await kv.del(id)
     return c.json({ success: true, message: 'Report deleted successfully' })
   } catch (error) {
@@ -2633,7 +2684,7 @@ app.post('/make-server-2a4be611/admin/opportunities', requireAdmin, async (c) =>
 
 app.put('/make-server-2a4be611/admin/opportunities/:id', requireAdmin, async (c) => {
   try {
-    const id = c.req.param('id')
+    const id = normalizeContentKey('opportunity', c.req.param('id'))
     const body = await c.req.json()
     const existing = await kv.get(id)
     if (!existing) return c.json({ error: 'Opportunity not found' }, 404)
@@ -2647,7 +2698,7 @@ app.put('/make-server-2a4be611/admin/opportunities/:id', requireAdmin, async (c)
 
 app.delete('/make-server-2a4be611/admin/opportunities/:id', requireAdmin, async (c) => {
   try {
-    const id = c.req.param('id')
+    const id = normalizeContentKey('opportunity', c.req.param('id'))
     await kv.del(id)
     return c.json({ success: true, message: 'Opportunity deleted successfully' })
   } catch (error) {
@@ -2692,7 +2743,7 @@ app.post('/make-server-2a4be611/admin/faqs', requireAdmin, async (c) => {
 
 app.put('/make-server-2a4be611/admin/faqs/:id', requireAdmin, async (c) => {
   try {
-    const id = c.req.param('id')
+    const id = normalizeContentKey('faq', c.req.param('id'))
     const body = await c.req.json()
     const existing = await kv.get(id)
     if (!existing) return c.json({ error: 'FAQ not found' }, 404)
@@ -2706,7 +2757,7 @@ app.put('/make-server-2a4be611/admin/faqs/:id', requireAdmin, async (c) => {
 
 app.delete('/make-server-2a4be611/admin/faqs/:id', requireAdmin, async (c) => {
   try {
-    const id = c.req.param('id')
+    const id = normalizeContentKey('faq', c.req.param('id'))
     await kv.del(id)
     return c.json({ success: true, message: 'FAQ deleted successfully' })
   } catch (error) {
@@ -2751,7 +2802,7 @@ app.post('/make-server-2a4be611/admin/resources', requireAdmin, async (c) => {
 
 app.put('/make-server-2a4be611/admin/resources/:id', requireAdmin, async (c) => {
   try {
-    const id = c.req.param('id')
+    const id = normalizeContentKey('resource', c.req.param('id'))
     const body = await c.req.json()
     const existing = await kv.get(id)
     if (!existing) return c.json({ error: 'Resource not found' }, 404)
@@ -2765,7 +2816,7 @@ app.put('/make-server-2a4be611/admin/resources/:id', requireAdmin, async (c) => 
 
 app.delete('/make-server-2a4be611/admin/resources/:id', requireAdmin, async (c) => {
   try {
-    const id = c.req.param('id')
+    const id = normalizeContentKey('resource', c.req.param('id'))
     await kv.del(id)
     return c.json({ success: true, message: 'Resource deleted successfully' })
   } catch (error) {
@@ -2839,7 +2890,7 @@ app.post('/make-server-2a4be611/pages', requireAdmin, async (c) => {
 
 app.put('/make-server-2a4be611/pages/:id', requireAdmin, async (c) => {
   try {
-    const id = c.req.param('id')
+    const id = normalizeContentKey('page', c.req.param('id'))
     const body = await c.req.json()
     const existing = await kv.get(id)
     if (!existing) return c.json({ error: 'Page not found' }, 404)
@@ -2853,7 +2904,7 @@ app.put('/make-server-2a4be611/pages/:id', requireAdmin, async (c) => {
 
 app.delete('/make-server-2a4be611/pages/:id', requireAdmin, async (c) => {
   try {
-    const id = c.req.param('id')
+    const id = normalizeContentKey('page', c.req.param('id'))
     await kv.del(id)
     return c.json({ success: true, message: 'Page deleted successfully' })
   } catch (error) {

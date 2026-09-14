@@ -31,23 +31,23 @@ interface ContactSettings {
 export function Footer() {
   const { open: openDonationModal } = useDonationModal();
   const [footerSettings, setFooterSettings] = useState<FooterSettings>({
-    description: 'Empowering communities through education, healthcare, and sustainable development.',
-    copyrightText: 'Resti Kiryandongo CBO. All rights reserved.',
-    taglineBottom: 'Made with ❤️ for our community'
+    description: 'Refugee Empowerment For Sustainable Transformation Initiative (RESTI) empowers refugees and host communities in Kiryandongo through education, healthcare, and sustainable livelihoods.',
+    copyrightText: 'RESTI (Refugee Empowerment For Sustainable Transformation Initiative). All rights reserved.',
+    taglineBottom: 'Turning potential into sustainable transformation'
   });
   const [generalSettings, setGeneralSettings] = useState<GeneralSettings>({
-    siteName: 'Resti Kiryandongo',
-    tagline: 'Community Based Organization',
+    siteName: 'RESTI',
+    tagline: 'Refugee Empowerment For Sustainable Transformation Initiative',
     logoUrl: logo
   });
   const [contactSettings, setContactSettings] = useState<ContactSettings>({
     address: 'Kiryandongo District, Uganda',
-    email: 'info@restikirya.org',
-    phone: '+256 XXX XXX XXX',
+    email: 'info@resticbo.org',
+    phone: '+256 700 000 000',
     socialLinks: {
-      facebook: 'https://www.facebook.com/restikiryandongo',
-      twitter: 'https://x.com/restikirya',
-      instagram: 'https://www.instagram.com/restikiryandongo'
+      facebook: 'https://www.facebook.com/resticbo',
+      twitter: 'https://x.com/resticbo',
+      instagram: 'https://www.instagram.com/resticbo'
     }
   });
 
@@ -267,8 +267,9 @@ export function Footer() {
           </div>
           
           {/* Legal Links */}
-          <div className="flex gap-4 text-base text-gray-400">
+          <div className="flex flex-wrap gap-4 text-base text-gray-400">
             <Link to="/privacy" className="hover:text-emerald-400 transition-colors">Privacy Policy</Link>
+            <Link to="/cookies" className="hover:text-emerald-400 transition-colors">Cookies Policy</Link>
             <Link to="/terms" className="hover:text-emerald-400 transition-colors">Terms of Service</Link>
             <Link to="/refund" className="hover:text-emerald-400 transition-colors">Refund Policy</Link>
           </div>

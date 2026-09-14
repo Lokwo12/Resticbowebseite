@@ -1,17 +1,38 @@
 import React, { useState, useEffect } from 'react';
 import { PayPalScriptProvider, PayPalButtons } from '@paypal/react-paypal-js';
 import { Elements, CardNumberElement, CardExpiryElement, CardCvcElement, useStripe, useElements } from '@stripe/react-stripe-js';
-import { stripePromise, StripeCardForm, StripePaymentProvider } from './StripeShared';
+import { stripePromise, StripeCardForm, StripePaymentProvider, prefetchPaymentIntent } from './StripeShared';
 import {
   X, Heart, Lock, Copy, CheckCircle, ChevronRight,
-  Phone, CreditCard, Info, Building2,
+  Phone, CreditCard, Info, Building2, ShieldCheck,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { STRIPE_PK, PAYPAL_CLIENT_ID, PAYPAL_MERCHANT_EMAIL } from '../utils/env';
 import { supabase } from '../utils/supabase/client';
 import { useDonationModal } from './DonationModalContext';
+
+const COMMON_COUNTRIES = [
+  'Uganda',
+  'United States',
+  'United Kingdom',
+  'Canada',
+  'Germany',
+  'Australia',
+  'Kenya',
+  'South Sudan',
+  'Rwanda',
+  'Tanzania',
+  'Netherlands',
+  'France',
+  'Sweden',
+  'Norway',
+  'Denmark',
+  'Switzerland',
+  'South Africa',
+  'Other'
+];
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 type PayMethod = 'card' | 'paypal' | 'mtn' | 'airtel' | 'bank';
@@ -43,7 +64,7 @@ const USSD_STEPS: Record<'mtn' | 'airtel', { title: string; steps: string[] }> =
       'Enter the UGX equivalent of your donation amount',
       'Enter your MTN MoMo PIN to confirm',
       'You will receive an SMS confirmation receipt',
-      'Screenshot your SMS & email it to info@restikirya.org',
+      'Screenshot your SMS & email it to info@resticbo.org',
     ],
   },
   airtel: {
@@ -55,7 +76,7 @@ const USSD_STEPS: Record<'mtn' | 'airtel', { title: string; steps: string[] }> =
       'Enter the UGX equivalent of your donation amount',
       'Enter your Airtel Money PIN to confirm',
       'You will receive an SMS confirmation receipt',
-      'Screenshot your SMS & email it to info@restikirya.org',
+      'Screenshot your SMS & email it to info@resticbo.org',
     ],
   },
 };
@@ -106,7 +127,16 @@ export function DonationModal() {
    const [config, setConfig] = useState(DEFAULT_CONFIG);
   const [donationBreakdown, setDonationBreakdown] = useState<any>(null);
   const [logoUrl, setLogoUrl] = useState('/logo.png');
-  const [donorData, setDonorData] = useState({ firstName: '', lastName: '', email: '', phone: '' });
+  const [donorData, setDonorData] = useState<any>({ 
+    firstName: '', 
+    lastName: '', 
+    email: '', 
+    phone: '',
+    address: '',
+    city: '',
+    country: 'Uganda',
+    postalCode: ''
+  });
   const [currency, setCurrency] = useState('USD');
   const shouldLockBackground = isOpen;
 
@@ -122,6 +152,7 @@ export function DonationModal() {
 
   useEffect(() => {
     if (isOpen) {
+      prefetchPaymentIntent(amount || 50, currency || 'USD');
       supabase.auth.getSession().then(({ data: { session } }) => {
         if (session?.user) {
           const fullName = session.user.user_metadata?.name || '';
@@ -221,7 +252,7 @@ export function DonationModal() {
     setStep(1); setDone(false); setIsCustom(false); setCustomAmount('');
     setAmount(50); setFreq('once'); setMethod('card'); setSubmitting(false);
     setBankRef(''); setMobileRef(''); setMobileWaiting(false);
-    setDonorData({ firstName: '', lastName: '', email: '', phone: '' });
+    setDonorData({ firstName: '', lastName: '', email: '', phone: '', address: '', city: '', country: 'Uganda', postalCode: '' });
   };
 
   const handleClose = () => {
@@ -232,6 +263,10 @@ export function DonationModal() {
   const handleBankSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (finalAmount < 1) { toast.error('Minimum donation is $1'); return; }
+    if (!donorData.firstName || !donorData.lastName || !donorData.email || !donorData.phone || !donorData.address || !donorData.city || !donorData.postalCode) {
+      toast.error('Please complete all required donor information fields');
+      return;
+    }
     setSubmitting(true);
     const ref = `BT-${Date.now().toString(36).toUpperCase()}`;
     try {
@@ -246,6 +281,11 @@ export function DonationModal() {
             paymentMethod: 'bank_transfer',
             donorName: `${donorData.firstName} ${donorData.lastName}`.trim(),
             donorEmail: donorData.email,
+            donorPhone: donorData.phone,
+            donorAddress: donorData.address,
+            donorCity: donorData.city,
+            donorCountry: donorData.country,
+            donorPostalCode: donorData.postalCode,
             transactionId: ref,
             message: `Bank transfer – reference: ${ref}`,
             status: 'pending',
@@ -269,7 +309,10 @@ export function DonationModal() {
   const handleMobileMoneySubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (finalAmount < 1) { toast.error('Minimum donation is $1'); return; }
-    if (!donorData.phone) { toast.error('Please enter your phone number'); return; }
+    if (!donorData.firstName || !donorData.lastName || !donorData.email || !donorData.phone || !donorData.address || !donorData.city || !donorData.postalCode) {
+      toast.error('Please complete all required donor information fields');
+      return;
+    }
     setSubmitting(true);
     try {
       const res = await fetch(
@@ -284,6 +327,10 @@ export function DonationModal() {
             currency: 'USD',
             donorName: `${donorData.firstName} ${donorData.lastName}`.trim(),
             donorEmail: donorData.email,
+            donorAddress: donorData.address,
+            donorCity: donorData.city,
+            donorCountry: donorData.country,
+            donorPostalCode: donorData.postalCode,
           }),
         },
       );
@@ -403,9 +450,24 @@ export function DonationModal() {
           </div>
           
           <div className="relative z-10 space-y-4">
-            <h3 className="text-3xl font-heading font-bold text-white leading-tight drop-shadow-md">Your support transforms lives.</h3>
-            <p className="text-emerald-100/90 text-sm font-medium leading-relaxed">
-              Based on our latest financial disclosures, 90% of your gift goes directly to community programs in Kiryandongo District, funding education, healthcare, and sustainable agriculture, with only 10% used for essential administrative overhead.
+            <div>
+              <span className="inline-block px-3 py-1 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded-full text-[11px] font-bold tracking-widest uppercase mb-2">
+                DONATE NOW
+              </span>
+              <h3 className="text-2xl lg:text-3xl font-heading font-bold text-white leading-tight drop-shadow-md">
+                Your Support Transforms Lives
+              </h3>
+            </div>
+            <div className="bg-white/10 rounded-2xl p-4 backdrop-blur-sm border border-white/15 space-y-2">
+              <p className="text-white text-xs sm:text-sm font-semibold leading-relaxed">
+                Your donation helps refugees and host communities access skills, strengthen livelihoods, and build a more resilient future. Every contribution makes a difference.
+              </p>
+              <p className="text-emerald-100/90 text-xs leading-relaxed pt-1 border-t border-white/10">
+                When you donate to RESTI, you help refugees and host communities build sustainable livelihoods, access new opportunities, and create a better future. We can’t do this without your support. Please support RESTI today.
+              </p>
+            </div>
+            <p className="text-emerald-100/80 text-xs font-medium leading-relaxed">
+              Based on our latest financial disclosures, 90% of your gift goes directly to community programs in Kiryandongo District, funding education, healthcare, and sustainable agriculture.
             </p>
           </div>
         </div>
@@ -606,7 +668,7 @@ export function DonationModal() {
                   </button>
                 </div>
                 <p className="text-[10px] leading-relaxed" style={{ color: method === 'mtn' ? '#92400e' : '#991b1b' }}>
-                  Send your SMS screenshot to <strong>info@restikirya.org</strong> with this reference.
+                  Send your SMS screenshot to <strong>info@resticbo.org</strong> with this reference.
                 </p>
               </div>
 
@@ -725,7 +787,14 @@ export function DonationModal() {
               {/* Continue button */}
               <button
                 type="button"
-                onClick={() => { if (finalAmount >= 1) setStep(2); else toast.error('Minimum donation is $1'); }}
+                onClick={() => {
+                  if (finalAmount >= 1) {
+                    prefetchPaymentIntent(finalAmount, currency, donorData);
+                    setStep(2);
+                  } else {
+                    toast.error('Minimum donation is $1');
+                  }
+                }}
                 className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl text-sm transition-all duration-200 shadow-lg shadow-emerald-200/50 flex items-center justify-center gap-2 hover:shadow-xl hover:scale-[1.01] active:scale-[0.99]"
                 style={btnStyle}
               >
@@ -771,8 +840,14 @@ export function DonationModal() {
                     <span className="text-[10px] font-semibold text-gray-500">Bank</span>
                   </div>
                 </div>
-                <div className="flex items-center gap-1 text-[10px] text-gray-400 font-medium">
-                  <Lock size={8} /> Secure &amp; Encrypted
+                <div className="pt-2 border-t border-gray-100 text-left space-y-1 w-full">
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-gray-800">
+                    <ShieldCheck size={14} className="text-emerald-600 shrink-0" />
+                    <span>Security & Privacy is Important to Us</span>
+                  </div>
+                  <p className="text-[11px] text-gray-500 leading-relaxed">
+                    Your details will be kept securely and will not be shared with third parties. Please see our <Link to="/privacy" onClick={handleClose} className="text-emerald-700 underline font-semibold hover:text-emerald-800">Privacy Notice</Link> and <Link to="/privacy" onClick={handleClose} className="text-emerald-700 underline font-semibold hover:text-emerald-800">Cookies Policy</Link> for more information.
+                  </p>
                 </div>
               </div>
             </div>
@@ -853,6 +928,17 @@ export function DonationModal() {
                     )}
                   </button>
                 ))}
+              </div>
+
+              {/* Security & Privacy Notice */}
+              <div className="pt-2 border-t border-gray-100 text-left space-y-1">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-gray-800">
+                  <ShieldCheck size={14} className="text-emerald-600 shrink-0" />
+                  <span>Security & Privacy is Important to Us</span>
+                </div>
+                <p className="text-[11px] text-gray-500 leading-relaxed">
+                  Your details will be kept securely and will not be shared with third parties. Please see our <Link to="/privacy" onClick={handleClose} className="text-emerald-700 underline font-semibold hover:text-emerald-800">Privacy Notice</Link> and <Link to="/privacy" onClick={handleClose} className="text-emerald-700 underline font-semibold hover:text-emerald-800">Cookies Policy</Link> for more information.
+                </p>
               </div>
 
               {/* Action buttons */}
@@ -1182,6 +1268,71 @@ export function DonationModal() {
                               Enter in international format, e.g. 256771234567 (no + prefix)
                             </p>
                           </div>
+
+                          {/* Address details */}
+                          <div>
+                            <label className={lbl}>Street Address *</label>
+                            <input
+                              className={inp}
+                              style={inpStyle}
+                              placeholder="Plot / Street Address"
+                              value={donorData.address}
+                              onChange={e => setDonorData(d => ({ ...d, address: e.target.value }))}
+                              required
+                            />
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <label className={lbl}>City / Town *</label>
+                              <input
+                                className={inp}
+                                style={inpStyle}
+                                placeholder="City or Town"
+                                value={donorData.city}
+                                onChange={e => setDonorData(d => ({ ...d, city: e.target.value }))}
+                                required
+                              />
+                            </div>
+                            <div>
+                              <label className={lbl}>Postal / ZIP Code</label>
+                              <input
+                                className={inp}
+                                style={inpStyle}
+                                placeholder="e.g. 256"
+                                value={donorData.postalCode}
+                                onChange={e => setDonorData(d => ({ ...d, postalCode: e.target.value }))}
+                              />
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className={lbl}>Country *</label>
+                            <select
+                              className={inp}
+                              style={inpStyle}
+                              value={donorData.country}
+                              onChange={e => setDonorData(d => ({ ...d, country: e.target.value }))}
+                              required
+                            >
+                              {COMMON_COUNTRIES.map(c => (
+                                <option key={c} value={c}>{c}</option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
+
+                        {/* Security & Privacy Notice */}
+                        <div className="p-3 bg-gray-50 border border-gray-200/80 rounded-xl flex items-start gap-2.5 text-left">
+                          <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                          <div>
+                            <p className="text-[11px] font-semibold text-gray-800">Security &amp; Privacy is Important to Us</p>
+                            <p className="text-[10px] text-gray-500 mt-0.5 leading-relaxed">
+                              Your details will be kept securely and will not be shared with third parties. Please see our{' '}
+                              <Link to="/privacy" className="text-emerald-700 underline font-medium hover:text-emerald-800">Privacy Notice</Link> and{' '}
+                              <Link to="/cookies" className="text-emerald-700 underline font-medium hover:text-emerald-800">Cookies Policy</Link> for more information.
+                            </p>
+                          </div>
                         </div>
 
                         {/* Pay button */}
@@ -1256,20 +1407,56 @@ export function DonationModal() {
                       <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest pb-1 border-b border-gray-100">Your Details</p>
                       <div className="grid grid-cols-2 gap-3">
                         <div className="space-y-1.5">
-                          <label className={lbl}>First Name</label>
+                          <label className={lbl}>First Name *</label>
                           <input required className={inp} style={inpStyle} placeholder="John"
                             value={donorData.firstName} onChange={e => setDonorData(p => ({ ...p, firstName: e.target.value }))} />
                         </div>
                         <div className="space-y-1.5">
-                          <label className={lbl}>Last Name</label>
+                          <label className={lbl}>Last Name *</label>
                           <input required className={inp} style={inpStyle} placeholder="Smith"
                             value={donorData.lastName} onChange={e => setDonorData(p => ({ ...p, lastName: e.target.value }))} />
                         </div>
                       </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1.5">
+                          <label className={lbl}>Email Address *</label>
+                          <input required type="email" className={inp} style={inpStyle} placeholder="you@example.com"
+                            value={donorData.email} onChange={e => setDonorData(p => ({ ...p, email: e.target.value }))} />
+                        </div>
+                        <div className="space-y-1.5">
+                          <label className={lbl}>Phone Number *</label>
+                          <input required type="tel" className={inp} style={inpStyle} placeholder="+256 700 000000"
+                            value={donorData.phone} onChange={e => setDonorData(p => ({ ...p, phone: e.target.value }))} />
+                        </div>
+                      </div>
+
                       <div className="space-y-1.5">
-                        <label className={lbl}>Email Address</label>
-                        <input required type="email" className={inp} style={inpStyle} placeholder="you@example.com"
-                          value={donorData.email} onChange={e => setDonorData(p => ({ ...p, email: e.target.value }))} />
+                        <label className={lbl}>Street Address *</label>
+                        <input required className={inp} style={inpStyle} placeholder="Plot / Street Address"
+                          value={donorData.address} onChange={e => setDonorData(p => ({ ...p, address: e.target.value }))} />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1.5">
+                          <label className={lbl}>City / Town *</label>
+                          <input required className={inp} style={inpStyle} placeholder="City or Town"
+                            value={donorData.city} onChange={e => setDonorData(p => ({ ...p, city: e.target.value }))} />
+                        </div>
+                        <div className="space-y-1.5">
+                          <label className={lbl}>Postal / ZIP Code</label>
+                          <input className={inp} style={inpStyle} placeholder="e.g. 256"
+                            value={donorData.postalCode} onChange={e => setDonorData(p => ({ ...p, postalCode: e.target.value }))} />
+                        </div>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className={lbl}>Country *</label>
+                        <select required className={inp} style={inpStyle}
+                          value={donorData.country} onChange={e => setDonorData(p => ({ ...p, country: e.target.value }))}>
+                          {COMMON_COUNTRIES.map(c => (
+                            <option key={c} value={c}>{c}</option>
+                          ))}
+                        </select>
                       </div>
                     </div>
 
@@ -1305,12 +1492,17 @@ export function DonationModal() {
                       </div>
                     </div>
 
-                    {/* ── Reference note ── */}
-                    <div className="flex items-start gap-3 bg-amber-50 border border-amber-100 rounded-xl px-4 py-3.5">
-                      <Info size={12} className="text-amber-500 shrink-0 mt-px" />
-                      <p className="text-[10px] text-amber-800 leading-relaxed">
-                        After clicking <strong className="font-semibold">Confirm</strong>, you will receive a unique reference number. Include it in your transfer description so we can match your payment.
-                      </p>
+                    {/* Security & Privacy Notice */}
+                    <div className="p-3 bg-gray-50 border border-gray-200/80 rounded-xl flex items-start gap-2.5 text-left">
+                      <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-[11px] font-semibold text-gray-800">Security &amp; Privacy is Important to Us</p>
+                        <p className="text-[10px] text-gray-500 mt-0.5 leading-relaxed">
+                          Your details will be kept securely and will not be shared with third parties. Please see our{' '}
+                          <Link to="/privacy" className="text-emerald-700 underline font-medium hover:text-emerald-800">Privacy Notice</Link> and{' '}
+                          <Link to="/cookies" className="text-emerald-700 underline font-medium hover:text-emerald-800">Cookies Policy</Link> for more information.
+                        </p>
+                      </div>
                     </div>
 
                     {/* ── Submit ── */}

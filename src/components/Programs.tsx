@@ -207,7 +207,7 @@ export function Programs() {
                   {program.value.description}
                 </p>
                 <Link 
-                  to={`/programs/${program.key}`}
+                  to={`/programs/${(program.value as any)?.id || program.key.replace(/^program:/, '')}`}
                   className="text-emerald-600 hover:text-emerald-700 font-medium inline-flex items-center gap-1 group/link"
                 >
                   Learn More
@@ -217,6 +217,17 @@ export function Programs() {
             </motion.div>
           ))}
         </motion.div>
+
+        {/* View All Programs CTA */}
+        <div className="mt-12 text-center">
+          <Link
+            to="/programs"
+            className="inline-flex items-center gap-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-8 py-4 rounded-xl shadow-md hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 text-base"
+          >
+            <span>Explore All Programs</span>
+            <span>→</span>
+          </Link>
+        </div>
 
         {programs.length === 0 && !error && (
           <div className="text-center py-12 animate-[fadeIn_0.5s_ease-out]">

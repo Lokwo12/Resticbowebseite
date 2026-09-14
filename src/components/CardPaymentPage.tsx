@@ -1,37 +1,72 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
-import { Lock, Heart, ArrowLeft, CreditCard, Phone, Building2, ExternalLink } from 'lucide-react';
+import { Lock, Heart, ArrowLeft, CreditCard, Phone, Building2, ExternalLink, ShieldCheck, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { STRIPE_PK, PAYPAL_CLIENT_ID, PAYPAL_MERCHANT_EMAIL } from '../utils/env';
 import { supabase } from '../utils/supabase/client';
 import { stripePromise, StripePaymentProvider, StripeCardForm } from './StripeShared';
+
 const PRESET_AMOUNTS = [10, 25, 50, 100, 250, 500];
+
+const COMMON_COUNTRIES = [
+  'Uganda',
+  'United States',
+  'United Kingdom',
+  'Canada',
+  'Germany',
+  'Australia',
+  'Kenya',
+  'South Sudan',
+  'Rwanda',
+  'Tanzania',
+  'Netherlands',
+  'France',
+  'Sweden',
+  'Norway',
+  'Denmark',
+  'Switzerland',
+  'South Africa',
+  'Other'
+];
 
 const formatUSD = (n: number) =>
   new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(n);
 
-const inp = 'w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-50 transition-all placeholder:text-gray-400 bg-white';
-const lbl = 'block text-xs font-semibold text-gray-600 mb-1';
+const inp = 'w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-50 transition-all placeholder:text-gray-400 bg-white text-gray-800';
+const lbl = 'block text-xs font-semibold text-gray-700 mb-1';
+
 interface DonorData {
   firstName: string;
   lastName: string;
   email: string;
   phone: string;
+  address: string;
+  city: string;
+  country: string;
+  postalCode: string;
 }
 
 export function CardPaymentPage() {
-  console.log('CardPaymentPage rendering. STRIPE_PK:', import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
   const navigate = useNavigate();
   const [amount, setAmount] = useState(50);
   const [customAmount, setCustomAmount] = useState('');
   const [isCustom, setIsCustom] = useState(false);
   const [method, setMethod] = useState<'card' | 'paypal' | 'mtn' | 'airtel' | 'bank'>('card');
   const [isRecurring, setIsRecurring] = useState(false);
-  const [donorData, setDonorData] = useState({ firstName: '', lastName: '', email: '', phone: '' });
+  const [donorData, setDonorData] = useState<DonorData>({
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    address: '',
+    city: '',
+    country: 'Uganda',
+    postalCode: ''
+  });
   const [submitting, setSubmitting] = useState(false);
   const [mobileRef, setMobileRef] = useState('');
   const [mobileWaiting, setMobileWaiting] = useState(false);
@@ -58,12 +93,27 @@ export function CardPaymentPage() {
 
   const handleMobileMoneySubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!donorData.firstName || !donorData.lastName || !donorData.email || !donorData.phone || !donorData.address || !donorData.city || !donorData.postalCode) {
+      toast.error('Please complete all required fields.');
+      return;
+    }
     setSubmitting(true);
     try {
       const res = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/mobile-payment/initiate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${publicAnonKey}` },
-        body: JSON.stringify({ provider: method, phone: donorData.phone, amount: finalAmount, currency: 'USD', donorName: `${donorData.firstName} ${donorData.lastName}`.trim(), donorEmail: donorData.email }),
+        body: JSON.stringify({ 
+          provider: method, 
+          phone: donorData.phone, 
+          amount: finalAmount, 
+          currency: 'USD', 
+          donorName: `${donorData.firstName} ${donorData.lastName}`.trim(), 
+          donorEmail: donorData.email,
+          donorAddress: donorData.address,
+          donorCity: donorData.city,
+          donorCountry: donorData.country,
+          donorPostalCode: donorData.postalCode
+        }),
       });
       const data = await res.json();
       if (!res.ok) { toast.error(data.error || 'Failed to initiate'); setSubmitting(false); return; }
@@ -82,6 +132,37 @@ export function CardPaymentPage() {
     } catch { toast.error('Connection error'); setSubmitting(false); }
   };
 
+  const handleBankSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!donorData.firstName || !donorData.lastName || !donorData.email || !donorData.phone || !donorData.address || !donorData.city || !donorData.postalCode) {
+      toast.error('Please complete all required fields.');
+      return;
+    }
+    setSubmitting(true);
+    try {
+      await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/donations`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${publicAnonKey}` },
+        body: JSON.stringify({
+          amount: finalAmount,
+          currency: 'USD',
+          paymentMethod: 'bank_transfer',
+          donorName: `${donorData.firstName} ${donorData.lastName}`.trim(),
+          donorEmail: donorData.email,
+          donorPhone: donorData.phone,
+          donorAddress: donorData.address,
+          donorCity: donorData.city,
+          donorCountry: donorData.country,
+          donorPostalCode: donorData.postalCode,
+          transactionId: `BT-${Date.now().toString(36).toUpperCase()}`,
+          status: 'pending'
+        })
+      });
+    } catch {}
+    setSubmitting(false);
+    setDone(true);
+  };
+
   useEffect(() => {
     if (done) {
       const timer = setTimeout(() => {
@@ -98,64 +179,118 @@ export function CardPaymentPage() {
           <div className="w-20 h-20 rounded-full bg-emerald-100 flex items-center justify-center mx-auto">
             <Heart size={36} fill="#059669" className="text-emerald-600" />
           </div>
-          <h2 className="text-2xl font-bold">Thank You!</h2>
-          <p className="text-gray-500">Your {formatUSD(finalAmount)} donation is confirmed. Redirecting...</p>
-          <button onClick={() => navigate('/donor/dashboard')} className="px-6 py-2.5 bg-emerald-600 text-white rounded-xl">Go to Donor Portal Now</button>
+          <h2 className="text-2xl font-bold text-gray-900">Thank You for Supporting RESTI!</h2>
+          <p className="text-gray-600">Your {formatUSD(finalAmount)} contribution has been registered. You are helping refugees and host communities build sustainable futures.</p>
+          <button onClick={() => navigate('/donor/dashboard')} className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl shadow-md transition-colors">Go to Donor Portal Now</button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pt-28 sm:pt-36 pb-10">
-      <div className="max-w-lg mx-auto px-4 space-y-6">
-        <button onClick={() => navigate(-1)} className="flex items-center gap-1.5 text-sm text-gray-500 font-medium">
-          <ArrowLeft size={15} /> Back
-        </button>
+    <div className="min-h-screen bg-slate-50/70 pt-28 sm:pt-34 pb-16">
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 space-y-6">
+        
+        {/* Navigation Bar Header */}
+        <div className="flex items-center justify-between">
+          <button onClick={() => navigate(-1)} className="flex items-center gap-1.5 text-sm text-gray-600 hover:text-emerald-700 font-medium transition-colors">
+            <ArrowLeft size={15} /> Back
+          </button>
+          <button 
+            onClick={() => navigate('/donor/dashboard')}
+            className="text-xs font-semibold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/80 px-3.5 py-1.5 rounded-xl transition-colors flex items-center gap-1.5 shadow-2xs"
+          >
+            <Heart size={13} fill="currentColor" className="text-emerald-600" /> Donor Portal & Receipts
+          </button>
+        </div>
 
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        {/* Mission Statement Banner */}
+        <div className="bg-gradient-to-br from-emerald-800 via-emerald-900 to-teal-950 text-white rounded-3xl p-6 sm:p-8 shadow-xl relative overflow-hidden">
+          <div className="absolute top-0 right-0 -mt-8 -mr-8 w-48 h-48 bg-emerald-400/10 rounded-full blur-2xl"></div>
+          <div className="relative z-10 space-y-3">
+            <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/15 backdrop-blur-md text-emerald-200 text-xs font-bold border border-white/20 tracking-wider">
+              <Heart size={13} fill="currentColor" className="text-emerald-400" /> DONATE NOW
+            </div>
+            <h1 className="text-xl sm:text-2xl font-black font-heading tracking-tight leading-snug">
+              Every Donation Builds Sustainable Transformation
+            </h1>
+            <p className="text-emerald-100 text-sm font-medium leading-relaxed">
+              Your donation helps refugees and host communities access skills, strengthen livelihoods, and build a more resilient future. <span className="text-emerald-300 font-semibold">Every contribution makes a difference.</span>
+            </p>
+            <p className="text-emerald-50/90 text-xs sm:text-sm leading-relaxed pt-2 border-t border-white/10">
+              When you donate to RESTI, you help refugees and host communities build sustainable livelihoods, access new opportunities, and create a better future. We can’t do this without your support. Please support RESTI today.
+            </p>
+          </div>
+        </div>
+
+        {/* Main Donation Card */}
+        <div className="bg-white rounded-3xl shadow-sm border border-slate-200/80 overflow-hidden">
+          
           {/* Amount selector */}
-          <div className="px-6 pt-6 pb-4 border-b border-gray-100 space-y-4">
-             {/* Recurring Toggle */}
-             <div className="flex bg-gray-100 rounded-lg p-1 w-full max-w-xs mx-auto mb-2">
-               <button 
-                 onClick={() => setIsRecurring(false)}
-                 className={`flex-1 py-1.5 text-xs font-bold rounded-md transition-all ${!isRecurring ? 'bg-white shadow-sm text-emerald-700' : 'text-gray-500 hover:text-gray-700'}`}
-               >
-                 One-time
-               </button>
-               <button 
-                 onClick={() => setIsRecurring(true)}
-                 className={`flex-1 py-1.5 text-xs font-bold rounded-md transition-all ${isRecurring ? 'bg-white shadow-sm text-emerald-700' : 'text-gray-500 hover:text-gray-700'}`}
-               >
-                 Monthly
-               </button>
-             </div>
+          <div className="px-6 pt-6 pb-5 border-b border-gray-100 space-y-4">
+            
+            {/* Recurring Toggle */}
+            <div className="flex bg-gray-100 rounded-xl p-1 w-full max-w-xs mx-auto">
+              <button 
+                onClick={() => setIsRecurring(false)}
+                className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all ${!isRecurring ? 'bg-white shadow-sm text-emerald-700' : 'text-gray-500 hover:text-gray-700'}`}
+              >
+                One-time
+              </button>
+              <button 
+                onClick={() => setIsRecurring(true)}
+                className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all ${isRecurring ? 'bg-white shadow-sm text-emerald-700' : 'text-gray-500 hover:text-gray-700'}`}
+              >
+                Monthly Gift
+              </button>
+            </div>
 
-             <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-3 gap-2 sm:gap-2.5">
               {PRESET_AMOUNTS.map(v => (
-                <button key={v} onClick={() => { setAmount(v); setIsCustom(false); }}
-                  className={`py-2.5 rounded-xl text-sm font-semibold border-2 transition-all ${!isCustom && amount === v ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-gray-100 bg-gray-50'}`}>
+                <button 
+                  key={v} 
+                  onClick={() => { setAmount(v); setIsCustom(false); }}
+                  className={`py-2.5 rounded-xl text-sm font-bold border-2 transition-all cursor-pointer ${
+                    !isCustom && amount === v 
+                      ? 'border-emerald-600 bg-emerald-50/70 text-emerald-700 shadow-2xs' 
+                      : 'border-gray-100 bg-gray-50/60 text-gray-700 hover:border-emerald-200'
+                  }`}
+                >
                   {formatUSD(v)}
                 </button>
               ))}
             </div>
-            <input type="number" placeholder="Custom amount" value={customAmount} onChange={e => { setCustomAmount(e.target.value); setIsCustom(true); }}
-              className={`w-full border-2 rounded-xl px-4 py-2.5 text-sm font-semibold outline-none transition-all ${isCustom ? 'border-emerald-500 bg-emerald-50' : 'border-gray-100 bg-gray-50'}`} />
+
+            <input 
+              type="number" 
+              placeholder="Enter custom amount (USD)" 
+              value={customAmount} 
+              onChange={e => { setCustomAmount(e.target.value); setIsCustom(true); }}
+              className={`w-full border-2 rounded-xl px-4 py-2.5 text-sm font-semibold outline-none transition-all ${
+                isCustom ? 'border-emerald-500 bg-emerald-50/50 text-emerald-800' : 'border-gray-100 bg-gray-50 text-gray-800 placeholder:text-gray-400'
+              }`} 
+            />
           </div>
 
-          {/* Tabs */}
-          <div className="px-6 py-4 border-b border-gray-100 flex gap-2 overflow-x-auto no-scrollbar">
+          {/* Payment Method Selector */}
+          <div className="px-6 py-3.5 border-b border-gray-100 flex gap-2 overflow-x-auto no-scrollbar bg-slate-50/40">
             {[
               { id: 'card', icon: CreditCard, label: 'Card' },
               { id: 'paypal', icon: ExternalLink, label: 'PayPal' },
-              { id: 'mtn', icon: Phone, label: 'MTN' },
-              { id: 'airtel', icon: Phone, label: 'Airtel' },
-              { id: 'bank', icon: Building2, label: 'Bank' },
+              { id: 'mtn', icon: Phone, label: 'MTN MoMo' },
+              { id: 'airtel', icon: Phone, label: 'Airtel Money' },
+              { id: 'bank', icon: Building2, label: 'Bank Wire' },
             ].map(m => (
-              <button key={m.id} onClick={() => setMethod(m.id as any)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold shrink-0 ${method === m.id ? 'bg-emerald-600 text-white shadow-md' : 'bg-gray-100 text-gray-500'}`}>
-                <m.icon size={14} /> {m.label}
+              <button 
+                key={m.id} 
+                onClick={() => setMethod(m.id as any)}
+                className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold shrink-0 transition-all cursor-pointer ${
+                  method === m.id 
+                    ? 'bg-emerald-600 text-white shadow-sm' 
+                    : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+                }`}
+              >
+                <m.icon size={13} /> {m.label}
               </button>
             ))}
           </div>
@@ -165,7 +300,12 @@ export function CardPaymentPage() {
               <>
                 {method === 'card' && (
                   isRecurring ? (
-                    <StripeCheckoutButton amount={finalAmount} isRecurring={true} donorData={donorData} setDonorData={setDonorData} />
+                    <StripeCheckoutButton 
+                      amount={finalAmount} 
+                      isRecurring={true} 
+                      donorData={donorData} 
+                      setDonorData={setDonorData} 
+                    />
                   ) : stripePromise ? (
                     <StripePaymentProvider finalAmount={finalAmount} currency="USD" freq={isRecurring ? 'monthly' : 'once'} donorData={donorData}>
                       <StripeCardForm 
@@ -187,7 +327,9 @@ export function CardPaymentPage() {
 
                 {method === 'paypal' && (
                   <div className="space-y-4">
-                     <div className="bg-blue-50 rounded-xl p-4 border border-blue-100 text-blue-800 text-sm">Secure checkout via PayPal</div>
+                     <div className="bg-blue-50 rounded-xl p-4 border border-blue-100 text-blue-800 text-xs font-medium">
+                       Complete your <strong>{formatUSD(finalAmount)}</strong> donation securely using your PayPal account or card.
+                     </div>
                      {PAYPAL_CLIENT_ID ? (
                        <PayPalScriptProvider options={{ clientId: PAYPAL_CLIENT_ID, currency: 'USD', intent: 'capture' }}>
                          <PayPalButtons
@@ -196,7 +338,7 @@ export function CardPaymentPage() {
                            createOrder={(_d, a) => {
                              const purchaseUnit: any = {
                                amount: { value: finalAmount.toFixed(2), currency_code: 'USD' },
-                               description: 'Resti Kiryandongo CBO – Donation',
+                               description: 'RESTI – Donation',
                              };
                              if (PAYPAL_MERCHANT_EMAIL) purchaseUnit.payee = { email_address: PAYPAL_MERCHANT_EMAIL };
                              return a.order.create({ intent: 'CAPTURE', purchase_units: [purchaseUnit] });
@@ -234,15 +376,19 @@ export function CardPaymentPage() {
                            onCancel={() => toast.info('Payment cancelled.')}
                          />
                        </PayPalScriptProvider>
-                     ) : <button onClick={() => window.open('https://paypal.com/donate', '_blank')} className="w-full bg-[#FFC439] py-3 rounded-xl font-bold">Continue to PayPal</button>}
+                     ) : (
+                       <button onClick={() => window.open('https://paypal.com/donate', '_blank')} className="w-full bg-[#FFC439] py-3 rounded-xl font-bold cursor-pointer">
+                         Continue to PayPal
+                       </button>
+                     )}
                   </div>
                 )}
 
                 {(method === 'mtn' || method === 'airtel') && (
-                  <form onSubmit={handleMobileMoneySubmit} className="space-y-5">
+                  <form onSubmit={handleMobileMoneySubmit} className="space-y-4">
                     {/* Carrier Header */}
                     <div 
-                      className="rounded-xl px-5 py-4 flex items-center justify-between mb-2 shadow-sm"
+                      className="rounded-xl px-5 py-3.5 flex items-center justify-between mb-2 shadow-xs"
                       style={{ 
                         background: method === 'mtn' 
                           ? 'linear-gradient(135deg, #FFCC00 0%, #F5A500 100%)' 
@@ -256,45 +402,59 @@ export function CardPaymentPage() {
                         </div>
                         <div>
                           <p className="text-xs font-bold leading-tight">{method === 'mtn' ? 'MTN Mobile Money' : 'Airtel Money'}</p>
-                          <p className="text-[10px] opacity-80">Instant PIN prompt will be sent</p>
+                          <p className="text-[10px] opacity-80">Instant phone PIN prompt</p>
                         </div>
                       </div>
                       <Lock size={14} className="opacity-60" />
                     </div>
 
-                    {/* Info Box */}
-                    <div className={`rounded-xl p-4 border text-xs leading-relaxed ${method === 'mtn' ? 'bg-amber-50 border-amber-100 text-amber-800' : 'bg-red-50 border-red-100 text-red-800'}`}>
-                      Enter your details and tap <strong>Pay Now</strong>. A PIN prompt will be sent to your phone. Simply enter your PIN to confirm your <strong>{formatUSD(finalAmount)}</strong> donation.
+                    <div className="grid grid-cols-2 gap-3">
+                      <div><label className={lbl}>First Name *</label><input required className={inp} placeholder="First name" value={donorData.firstName} onChange={e => setDonorData(p => ({ ...p, firstName: e.target.value }))} /></div>
+                      <div><label className={lbl}>Last Name *</label><input required className={inp} placeholder="Last name" value={donorData.lastName} onChange={e => setDonorData(p => ({ ...p, lastName: e.target.value }))} /></div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-3">
-                      <div><label className={lbl}>First Name</label><input required className={inp} placeholder="First name" value={donorData.firstName} onChange={e => setDonorData(p => ({ ...p, firstName: e.target.value }))} /></div>
-                      <div><label className={lbl}>Last Name</label><input required className={inp} placeholder="Last name" value={donorData.lastName} onChange={e => setDonorData(p => ({ ...p, lastName: e.target.value }))} /></div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div><label className={lbl}>Email Address (for official receipt) *</label><input required type="email" className={inp} placeholder="you@example.com" value={donorData.email} onChange={e => setDonorData(p => ({ ...p, email: e.target.value }))} /></div>
+                      <div>
+                        <label className={lbl}>Phone Number *</label>
+                        <input 
+                          required 
+                          type="tel"
+                          className={inp} 
+                          placeholder="256 700 000 000" 
+                          value={donorData.phone} 
+                          onChange={e => {
+                            let val = e.target.value.replace(/\D/g, '');
+                            if ((val.startsWith('07') && val.length > 2) || (val.startsWith('7') && !val.startsWith('256'))) {
+                               if (val.startsWith('0')) val = '256' + val.substring(1);
+                               else val = '256' + val;
+                            }
+                            setDonorData(p => ({ ...p, phone: val }));
+                          }} 
+                        />
+                      </div>
                     </div>
-                    <div><label className={lbl}>Email Address (for receipt)</label><input required type="email" className={inp} placeholder="you@example.com" value={donorData.email} onChange={e => setDonorData(p => ({ ...p, email: e.target.value }))} /></div>
+
                     <div>
-                      <label className={lbl}>Phone Number</label>
-                      <input 
-                        required 
-                        type="tel"
-                        className={inp} 
-                        placeholder="256 700 000 000" 
-                        value={donorData.phone} 
-                        onChange={e => {
-                          let val = e.target.value.replace(/\D/g, '');
-                          if ((val.startsWith('07') && val.length > 2) || (val.startsWith('7') && !val.startsWith('256'))) {
-                             if (val.startsWith('0')) val = '256' + val.substring(1);
-                             else val = '256' + val;
-                          }
-                          setDonorData(p => ({ ...p, phone: val }));
-                        }} 
-                      />
-                      <p className="text-[10px] text-gray-400 mt-1">International format (e.g. 25677...)</p>
+                      <label className={lbl}>Street Address *</label>
+                      <input required className={inp} placeholder="Street address or P.O. Box" value={donorData.address} onChange={e => setDonorData(p => ({ ...p, address: e.target.value }))} />
                     </div>
+
+                    <div className="grid grid-cols-3 gap-2.5">
+                      <div><label className={lbl}>City / Town *</label><input required className={inp} placeholder="City" value={donorData.city} onChange={e => setDonorData(p => ({ ...p, city: e.target.value }))} /></div>
+                      <div><label className={lbl}>Postal / ZIP *</label><input required className={inp} placeholder="Postal code" value={donorData.postalCode} onChange={e => setDonorData(p => ({ ...p, postalCode: e.target.value }))} /></div>
+                      <div>
+                        <label className={lbl}>Country *</label>
+                        <select required className={inp} value={donorData.country} onChange={e => setDonorData(p => ({ ...p, country: e.target.value }))}>
+                          {COMMON_COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
+                        </select>
+                      </div>
+                    </div>
+
                     <button 
                       type="submit" 
                       disabled={submitting} 
-                      className={`w-full text-white font-bold py-4 rounded-xl shadow-lg flex items-center justify-center gap-2 transition-transform active:scale-[0.98] ${method === 'mtn' ? 'bg-[#FFCC00] !text-black hover:bg-[#F5A500]' : 'bg-[#e40000] hover:bg-[#c00000]'}`}
+                      className={`w-full text-white font-bold py-3.5 rounded-xl shadow-md flex items-center justify-center gap-2 transition-transform active:scale-[0.98] cursor-pointer ${method === 'mtn' ? 'bg-[#FFCC00] !text-black hover:bg-[#F5A500]' : 'bg-[#e40000] hover:bg-[#c00000]'}`}
                     >
                       {submitting ? <span className="animate-spin w-4 h-4 border-2 border-current border-t-transparent rounded-full" /> : `Pay ${formatUSD(finalAmount)} Now`}
                     </button>
@@ -302,38 +462,100 @@ export function CardPaymentPage() {
                 )}
 
                 {method === 'bank' && (
-                  <div className="space-y-4">
-                    <div className="bg-gray-50 rounded-xl p-4 border border-gray-100 text-xs space-y-2">
-                      <p><strong>Bank:</strong> Stanbic Bank Uganda</p>
-                      <p><strong>Account:</strong> 9030012345678</p>
+                  <form onSubmit={handleBankSubmit} className="space-y-4">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div><label className={lbl}>First Name *</label><input required className={inp} placeholder="First name" value={donorData.firstName} onChange={e => setDonorData(p => ({ ...p, firstName: e.target.value }))} /></div>
+                      <div><label className={lbl}>Last Name *</label><input required className={inp} placeholder="Last name" value={donorData.lastName} onChange={e => setDonorData(p => ({ ...p, lastName: e.target.value }))} /></div>
                     </div>
-                    <button onClick={() => setDone(true)} className="w-full bg-emerald-600 text-white font-bold py-4 rounded-xl">Register Transfer</button>
-                  </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div><label className={lbl}>Email Address (for receipt) *</label><input required type="email" className={inp} placeholder="you@example.com" value={donorData.email} onChange={e => setDonorData(p => ({ ...p, email: e.target.value }))} /></div>
+                      <div><label className={lbl}>Phone Number *</label><input required type="tel" className={inp} placeholder="+256 700 000 000" value={donorData.phone} onChange={e => setDonorData(p => ({ ...p, phone: e.target.value }))} /></div>
+                    </div>
+
+                    <div>
+                      <label className={lbl}>Street Address *</label>
+                      <input required className={inp} placeholder="Street address or P.O. Box" value={donorData.address} onChange={e => setDonorData(p => ({ ...p, address: e.target.value }))} />
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-2.5">
+                      <div><label className={lbl}>City / Town *</label><input required className={inp} placeholder="City" value={donorData.city} onChange={e => setDonorData(p => ({ ...p, city: e.target.value }))} /></div>
+                      <div><label className={lbl}>Postal / ZIP *</label><input required className={inp} placeholder="Postal code" value={donorData.postalCode} onChange={e => setDonorData(p => ({ ...p, postalCode: e.target.value }))} /></div>
+                      <div>
+                        <label className={lbl}>Country *</label>
+                        <select required className={inp} value={donorData.country} onChange={e => setDonorData(p => ({ ...p, country: e.target.value }))}>
+                          {COMMON_COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="bg-gray-50 rounded-2xl p-4 border border-gray-200/70 text-xs space-y-1.5 text-gray-700">
+                      <div className="font-bold text-gray-900 border-b border-gray-200 pb-1.5 mb-1 flex items-center gap-1.5">
+                        <Building2 size={13} className="text-emerald-700" />
+                        Stanbic Bank Uganda Wire Instructions
+                      </div>
+                      <p><strong>Account Name:</strong> RESTI CBO</p>
+                      <p><strong>Account Number:</strong> 9030012345678</p>
+                      <p><strong>Branch:</strong> Kiryandongo Branch</p>
+                      <p><strong>SWIFT Code:</strong> SBICUGKX</p>
+                    </div>
+
+                    <button type="submit" disabled={submitting} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 rounded-xl transition-colors cursor-pointer shadow-sm">
+                      {submitting ? 'Registering...' : `Register ${formatUSD(finalAmount)} Bank Transfer`}
+                    </button>
+                  </form>
                 )}
               </>
             ) : (
               <div className="text-center py-10 space-y-6">
                 <div className="animate-spin w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full mx-auto" />
                 <h2 className="text-xl font-bold">Check Your Phone</h2>
-                <button onClick={() => setMobileWaiting(false)} className="text-sm text-gray-400 underline">Cancel</button>
+                <p className="text-sm text-gray-600">Please enter your Mobile Money PIN on your handset to complete the donation.</p>
+                <button onClick={() => setMobileWaiting(false)} className="text-sm text-gray-400 underline cursor-pointer">Cancel</button>
               </div>
             )}
           </div>
+        </div>
+
+        {/* Security & Privacy Callout */}
+        <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs flex items-start gap-3.5">
+          <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-700 shrink-0 mt-0.5">
+            <ShieldCheck size={20} />
+          </div>
+          <div className="space-y-1">
+            <h4 className="text-sm font-bold text-gray-900">Security & Privacy is Important to Us</h4>
+            <p className="text-xs text-gray-600 leading-relaxed">
+              Your details will be kept securely and will not be shared with third parties. Please see our <Link to="/privacy" className="text-emerald-700 font-semibold underline hover:text-emerald-800">Privacy Notice</Link> and <Link to="/privacy" className="text-emerald-700 font-semibold underline hover:text-emerald-800">Cookies Policy</Link> for more information.
+            </p>
+          </div>
+        </div>
+
+        {/* Helper link to donor portal */}
+        <div className="text-center text-xs text-slate-500 pt-1">
+          Already a supporter? <button type="button" onClick={() => navigate('/donor/dashboard')} className="text-emerald-700 hover:text-emerald-800 underline font-bold cursor-pointer">Access your Donor Portal</button> to view past gifts and download official tax receipts.
         </div>
       </div>
     </div>
   );
 }
 
-
-
-function StripeCheckoutButton({ amount, isRecurring, donorData, setDonorData }: { amount: number, isRecurring: boolean, donorData: DonorData, setDonorData: React.Dispatch<React.SetStateAction<DonorData>> }) {
+function StripeCheckoutButton({ 
+  amount, 
+  isRecurring, 
+  donorData, 
+  setDonorData 
+}: { 
+  amount: number, 
+  isRecurring: boolean, 
+  donorData: DonorData, 
+  setDonorData: React.Dispatch<React.SetStateAction<DonorData>> 
+}) {
   const [loading, setLoading] = useState(false);
 
   const handleCheckout = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!donorData.email || !donorData.firstName) {
-      toast.error('Please enter your name and email first.');
+    if (!donorData.email || !donorData.firstName || !donorData.lastName || !donorData.phone || !donorData.address || !donorData.city || !donorData.postalCode) {
+      toast.error('Please complete all required fields first.');
       return;
     }
     setLoading(true);
@@ -346,6 +568,11 @@ function StripeCheckoutButton({ amount, isRecurring, donorData, setDonorData }: 
           currency: 'usd', 
           donorName: `${donorData.firstName} ${donorData.lastName}`.trim(), 
           donorEmail: donorData.email,
+          donorPhone: donorData.phone,
+          donorAddress: donorData.address,
+          donorCity: donorData.city,
+          donorCountry: donorData.country,
+          donorPostalCode: donorData.postalCode,
           interval: isRecurring ? 'month' : undefined
         }),
       });
@@ -363,12 +590,43 @@ function StripeCheckoutButton({ amount, isRecurring, donorData, setDonorData }: 
   return (
     <form onSubmit={handleCheckout} className="space-y-4">
       <div className="grid grid-cols-2 gap-3">
-        <div><label className={lbl}>First Name</label><input required className={inp} placeholder="First name" value={donorData.firstName} onChange={(e) => setDonorData(prev => ({...prev, firstName: e.target.value}))} /></div>
-        <div><label className={lbl}>Last Name</label><input required className={inp} placeholder="Last name" value={donorData.lastName} onChange={(e) => setDonorData(prev => ({...prev, lastName: e.target.value}))} /></div>
+        <div><label className={lbl}>First Name *</label><input required className={inp} placeholder="First name" value={donorData.firstName} onChange={(e) => setDonorData(prev => ({...prev, firstName: e.target.value}))} /></div>
+        <div><label className={lbl}>Last Name *</label><input required className={inp} placeholder="Last name" value={donorData.lastName} onChange={(e) => setDonorData(prev => ({...prev, lastName: e.target.value}))} /></div>
       </div>
-      <div><label className={lbl}>Email Address (for receipt)</label><input required type="email" className={inp} placeholder="you@example.com" value={donorData.email} onChange={(e) => setDonorData(prev => ({...prev, email: e.target.value}))} /></div>
       
-      <button type="submit" disabled={loading} className="w-full bg-emerald-600 text-white font-bold py-4 rounded-xl shadow-lg flex items-center justify-center gap-2">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div><label className={lbl}>Email Address (for receipt) *</label><input required type="email" className={inp} placeholder="you@example.com" value={donorData.email} onChange={(e) => setDonorData(prev => ({...prev, email: e.target.value}))} /></div>
+        <div><label className={lbl}>Phone Number *</label><input required type="tel" className={inp} placeholder="+256 700 000 000" value={donorData.phone} onChange={(e) => setDonorData(prev => ({...prev, phone: e.target.value}))} /></div>
+      </div>
+
+      <div>
+        <label className={lbl}>Street Address *</label>
+        <input required className={inp} placeholder="Street address or P.O. Box" value={donorData.address} onChange={(e) => setDonorData(prev => ({...prev, address: e.target.value}))} />
+      </div>
+
+      <div className="grid grid-cols-3 gap-2.5">
+        <div><label className={lbl}>City / Town *</label><input required className={inp} placeholder="City" value={donorData.city} onChange={(e) => setDonorData(prev => ({...prev, city: e.target.value}))} /></div>
+        <div><label className={lbl}>Postal / ZIP *</label><input required className={inp} placeholder="Postal code" value={donorData.postalCode} onChange={(e) => setDonorData(prev => ({...prev, postalCode: e.target.value}))} /></div>
+        <div>
+          <label className={lbl}>Country *</label>
+          <select required className={inp} value={donorData.country} onChange={(e) => setDonorData(prev => ({...prev, country: e.target.value}))}>
+            {COMMON_COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
+          </select>
+        </div>
+      </div>
+
+      {/* Security & Privacy Notice */}
+      <div className="pt-2 border-t border-gray-100 text-left space-y-1">
+        <div className="flex items-center gap-1.5 text-xs font-bold text-gray-800">
+          <ShieldCheck size={14} className="text-emerald-600 shrink-0" />
+          <span>Security & Privacy is Important to Us</span>
+        </div>
+        <p className="text-[11px] text-gray-500 leading-relaxed">
+          Your details will be kept securely and will not be shared with third parties. Please see our <Link to="/privacy" className="text-emerald-600 underline font-semibold hover:text-emerald-700">Privacy Notice</Link> and <Link to="/privacy" className="text-emerald-600 underline font-semibold hover:text-emerald-700">Cookies Policy</Link> for more information.
+        </p>
+      </div>
+
+      <button type="submit" disabled={loading} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 rounded-xl shadow-md flex items-center justify-center gap-2 cursor-pointer transition-colors">
         {loading ? <span className="animate-spin w-5 h-5 border-2 border-white border-t-transparent rounded-full" /> : `Continue to ${isRecurring ? 'Monthly' : ''} Checkout`}
       </button>
     </form>

@@ -1,5 +1,6 @@
 import { X } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 
 export function PrivacyBanner() {
   const [isVisible, setIsVisible] = useState(false);
@@ -31,16 +32,12 @@ export function PrivacyBanner() {
           <p className="text-sm">
             We use cookies to enhance your browsing experience and analyze our traffic. 
             By clicking "Accept", you consent to our use of cookies.{' '}
-            <button 
-              onClick={() => {
-                const element = document.getElementById('contact');
-                if (element) element.scrollIntoView({ behavior: 'smooth' });
-                setIsVisible(false);
-              }}
-              className="text-emerald-400 hover:text-emerald-300 underline"
+            <Link 
+              to="/privacy"
+              className="text-emerald-400 hover:text-emerald-300 underline font-medium"
             >
               Learn more
-            </button>
+            </Link>
           </p>
         </div>
         <div className="flex items-center gap-3">

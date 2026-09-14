@@ -150,7 +150,7 @@ export function LiveChat() {
             <div>
               <h3 className="font-bold text-lg font-heading tracking-tight flex items-center gap-2">
                 <span className="w-2.5 h-2.5 bg-green-400 rounded-full animate-pulse border-2 border-emerald-600"></span>
-                Resti CBO Support
+                RESTI Support
               </h3>
               <p className="text-emerald-100 text-xs mt-1">We usually reply within a few hours</p>
             </div>

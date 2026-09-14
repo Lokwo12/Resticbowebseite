@@ -110,41 +110,91 @@ interface Analytics {
   growthTrends: any[];
 }
 
-// Navigation menu items
-const NAVIGATION_ITEMS = [
-  { id: 'live-chat',     label: 'Live Chat',        icon: MessageCircle,   color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496' },
-  { id: 'overview',      label: 'Dashboard',      icon: LayoutDashboard, color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496' },
-  { id: 'programs',      label: 'Programs',        icon: FileText,        color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496' },
-  { id: 'news',          label: 'News',             icon: Newspaper,       color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496' },
-  { id: 'gallery',       label: 'Gallery',          icon: ImageIcon,       color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496' },
-  { id: 'team',          label: 'Team',             icon: Users,           color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496' },
-  { id: 'stories',       label: 'Stories',          icon: MessageSquare,   color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496' },
-  { id: 'impact',        label: 'Impact Stats',     icon: TrendingUp,      color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496' },
-  { id: 'reports',       label: 'Reports',          icon: Download,        color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496' },
-  { id: 'events',        label: 'Events',           icon: Calendar,        color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496' },
-  { id: 'partners',      label: 'Partners',         icon: Handshake,       color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496' },
-  { id: 'opportunities', label: 'Opportunities',    icon: Target,          color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496' },
-  { id: 'map',           label: 'Map Locations',    icon: MapPin,          color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496' },
-  { id: 'faqs',          label: 'FAQs',             icon: HelpCircle,      color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496' },
-  { id: 'resources',     label: 'Resources',        icon: BookOpen,        color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496' },
-  { id: 'pages',         label: 'Pages',            icon: Globe,           color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496' },
-  { id: 'contacts',      label: 'Contacts',         icon: Mail,            color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496' },
-  { id: 'volunteers',    label: 'Volunteers',       icon: Heart,           color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496' },
-  { id: 'donations',     label: 'Donations',        icon: Heart,           color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496' },
-  { id: 'subscribers',   label: 'Subscribers',      icon: Send,            color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496' },
-  { id: 'settings',      label: 'Settings',         icon: Settings,        color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496' },
-  { id: 'activity-log',  label: 'Activity Log',     icon: Clock,           color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496' },
+// Navigation structure organized by logical operational modules
+export interface NavItemConfig {
+  id: string;
+  label: string;
+  icon: any;
+  color: string;
+  headerBg: string;
+  accentBg: string;
+  description: string;
+  badgeKey?: 'liveChat' | 'contacts' | 'volunteers' | 'donations';
+}
+
+export interface NavGroupConfig {
+  id: string;
+  title: string;
+  items: NavItemConfig[];
+}
+
+const NAVIGATION_GROUPS: NavGroupConfig[] = [
+  {
+    id: 'overview-group',
+    title: 'Overview & Activity',
+    items: [
+      { id: 'overview', label: 'Dashboard', icon: LayoutDashboard, color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496', description: 'Metrics & quick actions' },
+      { id: 'live-chat', label: 'Live Chat', icon: MessageCircle, color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496', description: 'Real-time visitor chats', badgeKey: 'liveChat' },
+      { id: 'activity-log', label: 'Activity Log', icon: Clock, color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496', description: 'System audit trails' },
+    ],
+  },
+  {
+    id: 'programs-group',
+    title: 'Programs & Impact',
+    items: [
+      { id: 'programs', label: 'Programs', icon: FileText, color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496', description: 'Core initiative projects' },
+      { id: 'impact', label: 'Impact Stats', icon: TrendingUp, color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496', description: 'Key performance indicators' },
+      { id: 'stories', label: 'Stories & Voices', icon: MessageSquare, color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496', description: 'Beneficiary testimonials' },
+      { id: 'reports', label: 'Reports & Audits', icon: Download, color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496', description: 'Financial & annual statements' },
+      { id: 'map', label: 'Map Locations', icon: MapPin, color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496', description: 'Field hubs & activity sites' },
+    ],
+  },
+  {
+    id: 'content-group',
+    title: 'Content & Media',
+    items: [
+      { id: 'news', label: 'News & Press', icon: Newspaper, color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496', description: 'Articles & press releases' },
+      { id: 'events', label: 'Events & Calendar', icon: Calendar, color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496', description: 'Workshops & community events' },
+      { id: 'gallery', label: 'Photo Gallery', icon: ImageIcon, color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496', description: 'Field photos & albums' },
+      { id: 'partners', label: 'Partners & Donors', icon: Handshake, color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496', description: 'Partner organizations' },
+      { id: 'opportunities', label: 'Opportunities', icon: Target, color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496', description: 'Jobs, tenders & internships' },
+    ],
+  },
+  {
+    id: 'audience-group',
+    title: 'Audience & Inquiries',
+    items: [
+      { id: 'donations', label: 'Donations Portal', icon: Heart, color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496', description: 'Donor records & contributions', badgeKey: 'donations' },
+      { id: 'volunteers', label: 'Volunteers', icon: Heart, color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496', description: 'Volunteer applications', badgeKey: 'volunteers' },
+      { id: 'contacts', label: 'Messages', icon: Mail, color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496', description: 'Contact form messages', badgeKey: 'contacts' },
+      { id: 'subscribers', label: 'Subscribers', icon: Send, color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496', description: 'Newsletter subscribers' },
+      { id: 'team', label: 'Team Members', icon: Users, color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496', description: 'Staff & leadership team' },
+    ],
+  },
+  {
+    id: 'settings-group',
+    title: 'Site Management',
+    items: [
+      { id: 'settings', label: 'Site Customizer', icon: Settings, color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496', description: 'Hero, financials, theme' },
+      { id: 'pages', label: 'Static Pages', icon: Globe, color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496', description: 'Static pages copy' },
+      { id: 'resources', label: 'Resources & Docs', icon: BookOpen, color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496', description: 'Public downloadable docs' },
+      { id: 'faqs', label: 'FAQs & Help', icon: HelpCircle, color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496', description: 'Frequently asked questions' },
+    ],
+  },
 ];
+
+// Flat list for direct lookups
+const NAVIGATION_ITEMS = NAVIGATION_GROUPS.flatMap((g) => g.items);
 
 export function EnhancedAdminDashboard() {
   const confirmDialog = useConfirm();
   const [loginLogo, setLoginLogo] = useState('/logo.png');
-  const [loginSiteName, setLoginSiteName] = useState('Resti Kiryandongo CBO');
-  const [loginTagline, setLoginTagline] = useState('Empowering Communities, Transforming Lives');
+  const [loginSiteName, setLoginSiteName] = useState('RESTI');
+  const [loginTagline, setLoginTagline] = useState('Refugee Empowerment For Sustainable Transformation Initiative');
   const [loginStats, setLoginStats] = useState([
-    { label: 'Families Supported', value: '500+' },
-    { label: 'Active Programs', value: '10+' },
-    { label: 'Volunteers', value: '50+' },
+    { label: 'Families Supported', value: '0' },
+    { label: 'Active Programs', value: '0' },
+    { label: 'Volunteers', value: '0' },
   ]);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -161,6 +211,7 @@ export function EnhancedAdminDashboard() {
   const [activeTab, setActiveTab] = useState('overview');
   const [analytics, setAnalytics] = useState<Analytics | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarSearch, setSidebarSearch] = useState('');
   const [showNotifications, setShowNotifications] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
@@ -647,7 +698,7 @@ export function EnhancedAdminDashboard() {
 
           setIsAuthenticated(true);
           setAccessToken(session.access_token);
-          setUserRole(user.user_metadata?.role || statusData.role || 'viewer');
+          setUserRole(statusData.role || user.user_metadata?.role || 'viewer');
           setUserName(user.user_metadata?.name || '');
           setUserEmail(user.email || '');
         }
@@ -698,7 +749,7 @@ export function EnhancedAdminDashboard() {
         
         // Get user metadata
         if (data.user?.user_metadata) {
-          setUserRole(data.user.user_metadata.role || statusData.role || 'viewer');
+          setUserRole(statusData.role || data.user.user_metadata.role || 'viewer');
           setUserName(data.user.user_metadata.name || '');
           setUserEmail(data.user.email || '');
         }
@@ -858,7 +909,23 @@ export function EnhancedAdminDashboard() {
           { headers: { Authorization: `Bearer ${accessToken || publicAnonKey}` } }
         );
         const data = await response.json();
-        setDonations(data.donations || []);
+        const normalizedDonations = (data.donations || []).map((donation: any) => {
+          if (donation.value) return donation;
+
+          const donorName = [donation.first_name, donation.last_name].filter(Boolean).join(' ');
+          return {
+            key: donation.id || donation.key,
+            value: {
+              ...donation,
+              donorName: donation.donorName || donorName || donation.name,
+              donorEmail: donation.donorEmail || donation.email,
+              paymentMethod: donation.paymentMethod || donation.method,
+              timestamp: donation.timestamp || donation.created_at,
+              transactionId: donation.transactionId || donation.transaction_id,
+            },
+          };
+        });
+        setDonations(normalizedDonations);
       } else if (activeTab === 'subscribers') {
         const response = await fetch(
           `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/newsletter`,
@@ -2059,7 +2126,7 @@ export function EnhancedAdminDashboard() {
               <div className="bg-white rounded-2xl p-3 inline-block shadow-sm border border-slate-100 mb-2">
                 <img src={loginLogo} alt="Logo" className="h-14 w-14 rounded-full object-cover shadow border border-slate-100/50 mx-auto" />
               </div>
-              <h2 className="text-xl font-bold text-slate-800">Resti Kiryandongo CBO</h2>
+              <h2 className="text-xl font-bold text-slate-800">{loginSiteName || 'RESTI'}</h2>
               <p className="text-slate-500 text-xs mt-0.5">Admin Dashboard Portal</p>
             </div>
             <div className="bg-white rounded-2xl shadow-xl border border-slate-100 p-8 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
@@ -2276,6 +2343,37 @@ export function EnhancedAdminDashboard() {
   const currentMenuItem = NAVIGATION_ITEMS.find(item => item.id === activeTab);
   const CurrentIcon = currentMenuItem?.icon || LayoutDashboard;
 
+  // Navigation badge counts
+  const getBadgeCount = (badgeKey?: string) => {
+    if (!badgeKey) return 0;
+    if (badgeKey === 'liveChat') {
+      return liveChats.filter((c) => c.unread || c.status === 'active').length;
+    }
+    if (badgeKey === 'contacts') {
+      return contacts.filter((c) => c.status === 'pending' || !c.read).length;
+    }
+    if (badgeKey === 'volunteers') {
+      return volunteers.filter((v) => v.status === 'pending' || !v.status).length;
+    }
+    if (badgeKey === 'donations') {
+      return donations.length;
+    }
+    return 0;
+  };
+
+  const filteredGroups = NAVIGATION_GROUPS.map((group) => ({
+    ...group,
+    items: group.items.filter((item) => {
+      if (!sidebarSearch.trim()) return true;
+      const q = sidebarSearch.toLowerCase();
+      return (
+        item.label.toLowerCase().includes(q) ||
+        item.description?.toLowerCase().includes(q) ||
+        group.title.toLowerCase().includes(q)
+      );
+    }),
+  })).filter((group) => group.items.length > 0);
+
   return (
     <div className="min-h-screen bg-slate-100">
       {/* Top Navigation Bar */}
@@ -2293,21 +2391,50 @@ export function EnhancedAdminDashboard() {
                 <img src={loginLogo} alt="Logo" className="h-9 w-9 rounded-full object-cover shrink-0 block" />
               </div>
               <div className="hidden md:block">
-                <h1 className="text-sm font-semibold text-white leading-tight">Resti Kiryandongo CBO</h1>
+                <h1 className="text-sm font-semibold text-white leading-tight">{loginSiteName || 'RESTI'}</h1>
                 <p className="text-xs text-slate-400">Admin Dashboard</p>
               </div>
+            </div>
+
+            {/* Active Module Indicator */}
+            <div className="hidden xl:flex items-center gap-2 text-xs text-slate-400 bg-slate-800/80 border border-slate-700/70 px-3 py-1.5 rounded-xl">
+              <span className="text-slate-500 font-medium">Active:</span>
+              <span className="text-emerald-400 font-semibold flex items-center gap-1.5">
+                <CurrentIcon size={14} />
+                {currentMenuItem?.label || activeTab}
+              </span>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
-            <div className="hidden md:flex items-center gap-2 bg-slate-800 border border-slate-700 px-3 py-2 rounded-xl">
-              <Search size={14} className="text-slate-400" />
+            {/* Quick search input */}
+            <div className="hidden md:flex items-center gap-2 bg-slate-800 border border-slate-700 px-3 py-1.5 rounded-xl">
+              <Search size={14} className="text-slate-400 shrink-0" />
               <input
                 type="text"
-                placeholder="Quick search..."
-                className="bg-transparent border-none outline-none text-sm w-44 text-slate-200 placeholder-slate-500"
+                placeholder="Search modules..."
+                value={sidebarSearch}
+                onChange={(e) => setSidebarSearch(e.target.value)}
+                className="bg-transparent border-none outline-none text-xs w-36 lg:w-48 text-slate-200 placeholder-slate-500"
               />
+              {sidebarSearch && (
+                <button onClick={() => setSidebarSearch('')} className="text-slate-400 hover:text-white">
+                  <X size={12} />
+                </button>
+              )}
             </div>
+
+            {/* View Live Site Link */}
+            <a
+              href="/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 hover:text-emerald-300 border border-emerald-500/30 rounded-xl text-xs font-semibold tracking-wide transition shadow-sm"
+              title="Open public website in a new tab"
+            >
+              <ExternalLink size={13} />
+              <span className="hidden sm:inline">View Live Site</span>
+            </a>
 
             {/* Bell Alarm Notification Button */}
             <div className="relative">
@@ -2433,80 +2560,181 @@ export function EnhancedAdminDashboard() {
       </div>
 
       <div className="flex pt-16">
-        {/* Sidebar */}
-        <div className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 fixed lg:static inset-y-0 left-0 z-40 w-64 bg-slate-900 border-r border-slate-700 transition-transform duration-300 overflow-y-auto mt-16 lg:mt-0`}>
-          <div className="p-4 pt-6">
-            <div className="mb-2">
-              <p className="text-xs font-semibold uppercase tracking-widest text-slate-500 mb-3 px-2">Main Menu</p>
-              <nav className="space-y-0.5">
-                {NAVIGATION_ITEMS.map((item) => {
-                  const Icon = item.icon;
-                  const isActive = activeTab === item.id;
-                  return (
-                    <button
-                      key={item.id}
-                      onClick={() => {
-                        setActiveTab(item.id);
-                        if (window.innerWidth < 1024) setSidebarOpen(false);
-                      }}
-                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-150 group relative ${
-                        isActive
-                          ? 'text-white shadow-lg'
-                          : 'text-slate-400 hover:bg-slate-800 hover:text-white'
-                      }`}
-                      style={isActive ? { backgroundColor: item.accentBg, boxShadow: `0 4px 14px ${item.accentBg}55` } : {}}
-                    >
-                      {isActive && (
-                        <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 rounded-r-full bg-white/70" />
-                      )}
-                      <Icon size={17} className={isActive ? 'text-white' : 'text-slate-500 group-hover:text-emerald-400'} />
-                      <span className="text-sm font-medium">{item.label}</span>
-                      {isActive && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-white/70" />}
-                    </button>
-                  );
-                })}
-                {userRole === 'super-admin' && (
-                  <button
-                    onClick={() => {
-                      setActiveTab('users');
-                      if (window.innerWidth < 1024) setSidebarOpen(false);
-                    }}
-                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-150 group relative ${
-                      activeTab === 'users'
-                        ? 'text-white'
-                        : 'text-slate-400 hover:bg-slate-800 hover:text-white'
-                    }`}
-                    style={activeTab === 'users' ? { backgroundColor: '#2f5496', boxShadow: '0 4px 14px #2f549655' } : {}}
-                  >
-                    {activeTab === 'users' && (
-                      <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 rounded-r-full bg-white/70" />
-                    )}
-                    <Shield size={17} className={activeTab === 'users' ? 'text-white' : 'text-slate-500 group-hover:text-emerald-400'} />
-                    <span className="text-sm font-medium">Users</span>
-                    {activeTab === 'users' && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-white/70" />}
-                  </button>
-                )}
-              </nav>
+        {/* Standardized Categorized Sidebar */}
+        <aside
+          className={`${
+            sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+          } lg:translate-x-0 fixed lg:static inset-y-0 left-0 z-40 w-64 bg-slate-900 border-r border-slate-800 transition-transform duration-300 flex flex-col mt-16 lg:mt-0 shadow-2xl shrink-0`}
+        >
+          {/* Sidebar Quick Search / Filter */}
+          <div className="p-3 border-b border-slate-800/80 bg-slate-900/90 sticky top-0 z-10">
+            <div className="relative flex items-center">
+              <Search size={13} className="absolute left-2.5 text-slate-500 pointer-events-none" />
+              <input
+                type="text"
+                value={sidebarSearch}
+                onChange={(e) => setSidebarSearch(e.target.value)}
+                placeholder="Filter navigation..."
+                className="w-full pl-8 pr-7 py-1.5 bg-slate-800 text-slate-200 placeholder-slate-500 text-xs rounded-lg border border-slate-700/70 focus:outline-none focus:border-emerald-500/60 focus:ring-1 focus:ring-emerald-500/30 transition"
+              />
+              {sidebarSearch && (
+                <button
+                  onClick={() => setSidebarSearch('')}
+                  className="absolute right-2 text-slate-400 hover:text-white p-0.5 rounded"
+                  title="Clear filter"
+                >
+                  <X size={12} />
+                </button>
+              )}
             </div>
+          </div>
 
-            {/* User badge at bottom */}
-            <div className="mt-6 p-3 bg-slate-800 rounded-xl border border-slate-700">
-              <div className="flex items-center gap-3">
-                <Avatar className="h-9 w-9 shrink-0">
-                  <AvatarFallback className="bg-gradient-to-br from-emerald-500 to-teal-600 text-white text-xs font-bold">
-                    {getUserInitials(userName)}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-white truncate">{userName || 'Admin User'}</p>
-                  <Badge className={`${getRoleBadgeColor(userRole)} border text-xs mt-0.5`}>
-                    {USER_ROLES.find(r => r.value === userRole)?.label || userRole}
-                  </Badge>
+          {/* Navigation Groups */}
+          <div className="flex-1 overflow-y-auto px-3 py-3 space-y-4">
+            {filteredGroups.length === 0 ? (
+              <div className="p-4 text-center">
+                <p className="text-xs text-slate-500">No modules match "{sidebarSearch}"</p>
+                <button
+                  onClick={() => setSidebarSearch('')}
+                  className="mt-2 text-xs text-emerald-400 hover:text-emerald-300 font-medium"
+                >
+                  Clear search filter
+                </button>
+              </div>
+            ) : (
+              filteredGroups.map((group) => (
+                <div key={group.id} className="space-y-1">
+                  <div className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center justify-between">
+                    <span>{group.title}</span>
+                    <span className="text-[10px] font-mono text-slate-600 font-normal">
+                      {group.items.length}
+                    </span>
+                  </div>
+                  <nav className="space-y-0.5">
+                    {group.items.map((item) => {
+                      const Icon = item.icon;
+                      const isActive = activeTab === item.id;
+                      const badge = getBadgeCount(item.badgeKey);
+
+                      return (
+                        <button
+                          key={item.id}
+                          onClick={() => {
+                            setActiveTab(item.id);
+                            if (window.innerWidth < 1024) setSidebarOpen(false);
+                          }}
+                          className={`w-full flex items-center justify-between px-3 py-2 rounded-xl transition-all duration-150 group relative text-left ${
+                            isActive
+                              ? 'text-white font-semibold shadow-md'
+                              : 'text-slate-400 hover:bg-slate-800/80 hover:text-slate-200'
+                          }`}
+                          style={
+                            isActive
+                              ? {
+                                  backgroundColor: item.accentBg || '#2f5496',
+                                  boxShadow: `0 3px 12px ${item.accentBg || '#2f5496'}40`,
+                                }
+                              : {}
+                          }
+                          title={item.description}
+                        >
+                          {isActive && (
+                            <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 rounded-r-full bg-white" />
+                          )}
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <Icon
+                              size={16}
+                              className={`shrink-0 ${
+                                isActive ? 'text-white' : 'text-slate-400 group-hover:text-emerald-400'
+                              }`}
+                            />
+                            <span className="text-xs truncate">{item.label}</span>
+                          </div>
+
+                          {badge > 0 && (
+                            <span
+                              className={`ml-2 text-[10px] font-bold px-1.5 py-0.5 rounded-full shrink-0 ${
+                                isActive
+                                  ? 'bg-white text-slate-900'
+                                  : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                              }`}
+                            >
+                              {badge}
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </nav>
+                </div>
+              ))
+            )}
+
+            {/* Super Admin Users Tab */}
+            {userRole === 'super-admin' && (
+              <div className="space-y-1 pt-2 border-t border-slate-800">
+                <div className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                  Access & Security
+                </div>
+                <button
+                  onClick={() => {
+                    setActiveTab('users');
+                    if (window.innerWidth < 1024) setSidebarOpen(false);
+                  }}
+                  className={`w-full flex items-center justify-between px-3 py-2 rounded-xl transition-all duration-150 group relative text-left ${
+                    activeTab === 'users'
+                      ? 'text-white font-semibold shadow-md bg-[#2f5496]'
+                      : 'text-slate-400 hover:bg-slate-800/80 hover:text-slate-200'
+                  }`}
+                >
+                  {activeTab === 'users' && (
+                    <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 rounded-r-full bg-white" />
+                  )}
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <Shield
+                      size={16}
+                      className={activeTab === 'users' ? 'text-white' : 'text-slate-400 group-hover:text-emerald-400'}
+                    />
+                    <span className="text-xs truncate">System Users</span>
+                  </div>
+                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">
+                    Super
+                  </span>
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* User Profile & Quick Action Footer */}
+          <div className="p-3 bg-slate-900 border-t border-slate-800/80 flex flex-col gap-2">
+            <a
+              href="/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-xl text-xs font-semibold text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700/90 border border-slate-700/60 transition shadow-sm"
+            >
+              <ExternalLink size={13} className="text-emerald-400" />
+              <span>Preview Live Site</span>
+            </a>
+
+            <div className="flex items-center gap-2.5 p-2 bg-slate-800/60 rounded-xl border border-slate-700/50">
+              <Avatar className="h-8 w-8 shrink-0">
+                <AvatarFallback className="bg-gradient-to-br from-emerald-500 to-teal-600 text-white text-xs font-bold">
+                  {getUserInitials(userName)}
+                </AvatarFallback>
+              </Avatar>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-semibold text-white truncate">{userName || 'Admin User'}</p>
+                <div className="flex items-center gap-1 mt-0.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
+                  <span className="text-[10px] text-slate-400 capitalize truncate">
+                    {USER_ROLES.find((r) => r.value === userRole)?.label || userRole || 'Administrator'}
+                  </span>
                 </div>
               </div>
             </div>
           </div>
-        </div>
+        </aside>
 
         {/* Main Content Area */}
         <div className={`flex-1 min-w-0 overflow-auto ${isDarkMode ? 'bg-slate-900 text-white dark-mode-override' : 'bg-slate-50'}`}>

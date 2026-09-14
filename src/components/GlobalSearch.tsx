@@ -67,7 +67,7 @@ export function GlobalSearch({ isOpen, onClose }: { isOpen: boolean, onClose: ()
         const readValue = (item: any, field: string) => item.value?.[field] ?? item[field] ?? '';
 
         // Search Programs
-        (programsData.programs || []).filter((p: any) => matches(readValue(p, 'title'))).slice(0, 3).forEach((p: any) => res.push({ type: 'Program', title: readValue(p, 'title'), desc: readValue(p, 'description'), link: `/programs/${p.key || p.id}` }));
+        (programsData.programs || []).filter((p: any) => matches(readValue(p, 'title'))).slice(0, 3).forEach((p: any) => res.push({ type: 'Program', title: readValue(p, 'title'), desc: readValue(p, 'description'), link: `/programs/${(p.value?.id || p.id || p.key || '').replace(/^program:/, '')}` }));
 
         // Search News
         (newsData.news || []).filter((n: any) => matches(readValue(n, 'title'))).slice(0, 3).forEach((n: any) => res.push({ type: 'News', title: readValue(n, 'title'), desc: readValue(n, 'excerpt') || readValue(n, 'content'), link: `/news/${n.key || n.id}` }));

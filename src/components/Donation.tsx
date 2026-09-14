@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Heart, Lock, Phone, CreditCard, ChevronRight, Building2, Shield, Star, ExternalLink, ArrowLeft } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Heart, Lock, Phone, CreditCard, ChevronRight, Building2, Shield, Star, ExternalLink, ArrowLeft, ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
-import { StripePaymentProvider, StripeCardForm, stripePromise, FreqOption } from './StripeShared';
+import { StripePaymentProvider, StripeCardForm, stripePromise, FreqOption, prefetchPaymentIntent } from './StripeShared';
 import { formatCurrency } from '../utils/formatCurrency';
 import { DonorWall } from './DonorWall';
 import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
@@ -15,7 +16,32 @@ interface DonorData {
   lastName: string;
   email: string;
   phone: string;
+  address: string;
+  city: string;
+  country: string;
+  postalCode: string;
 }
+
+const COMMON_COUNTRIES = [
+  'Uganda',
+  'United States',
+  'United Kingdom',
+  'Canada',
+  'Germany',
+  'Australia',
+  'Kenya',
+  'South Sudan',
+  'Rwanda',
+  'Tanzania',
+  'Netherlands',
+  'France',
+  'Sweden',
+  'Norway',
+  'Denmark',
+  'Switzerland',
+  'South Africa',
+  'Other'
+];
 
 const PRESET_AMOUNTS = [5, 10, 25, 50, 100, 250];
 
@@ -27,10 +53,26 @@ const CURRENCIES = [
 ];
 
 const DEFAULT_DONATION_CONFIG = {
+  badge: 'DONATE NOW',
+  title: 'Support the Community Foundation',
+  subtitle: 'Your donation helps refugees and host communities access skills, strengthen livelihoods, and build a more resilient future.',
+  secondarySubtitle: 'Every contribution makes a difference.',
+  orgName: 'Refugee Empowerment For Sustainable Transformation Initiative CBO (RESTI)',
+  orgSub: 'Registered CBO - Uganda NGO Bureau',
+  leftQuote1: 'Your donation helps refugees and host communities access skills, strengthen livelihoods, and build a more resilient future. Every contribution makes a difference.',
+  leftQuote2: 'When you donate to RESTI, you help refugees and host communities build sustainable livelihoods, access new opportunities, and create a better future. We can’t do this without your support. Please support RESTI today.',
+  whySupportTitle: 'Why Your Support Matters',
+  whySupportText: 'Every contribution helps us provide essential services to vulnerable families. Based on our latest financial disclosures, 90% of all public donations go directly to community programs, with only 10% used for essential administrative overhead.',
+  programPercentage: '90%',
+  programLabel: 'Goes to Programs',
+  familiesSupported: '0',
+  familiesLabel: 'Families Supported',
+  privacyTitle: 'Security & Privacy is Important to Us',
+  privacyText: 'Your details will be kept securely and will not be shared with third parties. Please see our Privacy Notice and Cookies Policy for more information.',
   merchantMTN: '0772 000 000',
   merchantAirtel: '0701 000 000',
   bankName: 'Stanbic Bank Uganda',
-  accountName: 'RESTI CBO',
+  accountName: 'RESTI',
   accountNumber: '9030012345678',
   branch: 'Kiryandongo Branch',
   swiftCode: 'SBICUGKX',
@@ -52,7 +94,17 @@ export function Donation() {
   const [done, setDone] = useState(false);
   const [donationConfig, setDonationConfig] = useState(DEFAULT_DONATION_CONFIG);
   const [donationBreakdown, setDonationBreakdown] = useState<any>(null);
-  const [donorData, setDonorData] = useState({ firstName: '', lastName: '', email: '', phone: '' });
+  const [donorData, setDonorData] = useState<DonorData>({ 
+    firstName: '', 
+    lastName: '', 
+    email: '', 
+    phone: '',
+    address: '',
+    city: '',
+    country: 'Uganda',
+    postalCode: ''
+  });
+  const [familiesSupported, setFamiliesSupported] = useState('0');
 
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -65,8 +117,13 @@ export function Donation() {
       .then(data => { 
         if (data?.settings?.donation) setDonationConfig(prev => ({ ...prev, ...data.settings.donation }));
         if (data?.settings?.donation_breakdown) setDonationBreakdown(data.settings.donation_breakdown);
+        if (data?.settings?.hero?.stats) {
+          const famStat = data.settings.hero.stats.find((s: any) => /families/i.test(s.label));
+          if (famStat && famStat.value !== undefined) setFamiliesSupported(famStat.value);
+        }
       })
       .catch(() => { });
+    prefetchPaymentIntent(50, 'USD');
   }, []);
 
   const finalAmount = isCustom ? (parseInt(customAmount.replace(/\D/g, '')) || 0) : amount;
@@ -78,21 +135,32 @@ export function Donation() {
     setAmount(50); setCustomAmount(''); setIsCustom(false); setFreq('once');
     setMethod('card'); setStep(1); setSubmitting(false); setDone(false);
     setMobileRef(''); setMobileWaiting(false);
-    setDonorData({ firstName: '', lastName: '', email: '', phone: '' });
+    setDonorData({ firstName: '', lastName: '', email: '', phone: '', address: '', city: '', country: 'Uganda', postalCode: '' });
   };
 
   const handleMobileMoneySubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (finalAmount < 1) { toast.error('Minimum donation is $1'); return; }
-    if (!donorData.phone) { toast.error('Please enter your phone number'); return; }
+    if (!donorData.firstName || !donorData.lastName || !donorData.email || !donorData.phone || !donorData.address || !donorData.city || !donorData.postalCode) {
+      toast.error('Please complete all required donor information fields');
+      return;
+    }
     setSubmitting(true);
     try {
       const res = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/mobile-payment/initiate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${publicAnonKey}` },
         body: JSON.stringify({
-          provider: method, phone: donorData.phone, amount: finalAmount, currency: 'USD',
-          donorName: `${donorData.firstName} ${donorData.lastName}`.trim(), donorEmail: donorData.email,
+          provider: method, 
+          phone: donorData.phone, 
+          amount: finalAmount, 
+          currency: 'USD',
+          donorName: `${donorData.firstName} ${donorData.lastName}`.trim(), 
+          donorEmail: donorData.email,
+          donorAddress: donorData.address,
+          donorCity: donorData.city,
+          donorCountry: donorData.country,
+          donorPostalCode: donorData.postalCode
         }),
       });
       const data = await res.json();
@@ -120,6 +188,10 @@ export function Donation() {
 
   const handleBankSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!donorData.firstName || !donorData.lastName || !donorData.email || !donorData.phone || !donorData.address || !donorData.city || !donorData.postalCode) {
+      toast.error('Please complete all required donor information fields');
+      return;
+    }
     setSubmitting(true);
     const ref = `BT-${Date.now().toString(36).toUpperCase()}`;
     try {
@@ -127,9 +199,18 @@ export function Donation() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${publicAnonKey}` },
         body: JSON.stringify({
-          amount: finalAmount, currency: 'USD', paymentMethod: 'bank_transfer',
-          donorName: `${donorData.firstName} ${donorData.lastName}`.trim(), donorEmail: donorData.email,
-          transactionId: ref, status: 'pending',
+          amount: finalAmount, 
+          currency: 'USD', 
+          paymentMethod: 'bank_transfer',
+          donorName: `${donorData.firstName} ${donorData.lastName}`.trim(), 
+          donorEmail: donorData.email,
+          donorPhone: donorData.phone,
+          donorAddress: donorData.address,
+          donorCity: donorData.city,
+          donorCountry: donorData.country,
+          donorPostalCode: donorData.postalCode,
+          transactionId: ref, 
+          status: 'pending',
         }),
       });
     } catch { }
@@ -160,15 +241,20 @@ export function Donation() {
 
         {/* Page header */}
         <div className="text-center mb-16">
-          <div className="inline-flex items-center gap-2 bg-emerald-100 text-emerald-700 text-sm font-semibold px-5 py-2.5 rounded-full mb-5">
-            <Heart size={14} fill="currentColor" /> Make a Difference Today
+          <div className="inline-flex items-center gap-2 bg-emerald-100 text-emerald-800 text-xs sm:text-sm font-bold px-5 py-2 rounded-full mb-4 uppercase tracking-widest shadow-2xs">
+            <Heart size={14} fill="currentColor" className="text-emerald-600" /> {donationConfig.badge || 'DONATE NOW'}
           </div>
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-gray-900 mb-4 leading-tight">
-            Support the <span className="gradient-text">Community Foundation</span>
+            {donationConfig.title || 'Support the Community Foundation'}
           </h2>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto leading-relaxed">
-            Your donation directly funds education, healthcare, and sustainable livelihoods for families in Kiryandongo District, Uganda.
+          <p className="text-base sm:text-lg text-gray-700 max-w-2xl mx-auto leading-relaxed font-medium">
+            {donationConfig.subtitle || 'Your donation helps refugees and host communities access skills, strengthen livelihoods, and build a more resilient future.'}
           </p>
+          {donationConfig.secondarySubtitle && (
+            <p className="text-sm sm:text-base text-emerald-700 font-semibold mt-2 max-w-xl mx-auto">
+              {donationConfig.secondarySubtitle}
+            </p>
+          )}
         </div>
 
         <div className="flex flex-col lg:flex-row gap-8 items-start">
@@ -178,20 +264,30 @@ export function Donation() {
             <div className="bg-gradient-to-br from-emerald-600 to-teal-700 text-white rounded-3xl p-8 shadow-xl relative overflow-hidden h-full flex flex-col justify-between">
               <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_top_right,white,transparent)]"></div>
               <div>
-                <div className="font-bold text-lg mb-2">Refugee Empowerment For Sustainable Transformation Initiative CBO (RESTI)</div>
-                <div className="text-emerald-100 text-sm mb-6">Registered CBO - Uganda NGO Bureau</div>
-                <h3 className="text-3xl font-bold mb-4 leading-snug">Why Your Support Matters</h3>
+                <div className="font-bold text-lg mb-2">{donationConfig.orgName || 'Refugee Empowerment For Sustainable Transformation Initiative CBO (RESTI)'}</div>
+                <div className="text-emerald-100 text-sm mb-5">{donationConfig.orgSub || 'Registered CBO - Uganda NGO Bureau'}</div>
+
+                <div className="bg-white/10 rounded-2xl p-4.5 backdrop-blur-sm border border-white/20 mb-6 space-y-2.5">
+                  <p className="text-white text-xs sm:text-sm font-semibold leading-relaxed">
+                    {donationConfig.leftQuote1 || 'Your donation helps refugees and host communities access skills, strengthen livelihoods, and build a more resilient future. Every contribution makes a difference.'}
+                  </p>
+                  <p className="text-emerald-100/90 text-xs leading-relaxed pt-2 border-t border-white/15">
+                    {donationConfig.leftQuote2 || 'When you donate to RESTI, you help refugees and host communities build sustainable livelihoods, access new opportunities, and create a better future. We can’t do this without your support. Please support RESTI today.'}
+                  </p>
+                </div>
+
+                <h3 className="text-2xl sm:text-3xl font-bold mb-3 leading-snug">{donationConfig.whySupportTitle || 'Why Your Support Matters'}</h3>
                 <p className="text-emerald-50 text-sm leading-relaxed mb-6">
-                  Every contribution helps us provide essential services to vulnerable families. Based on our latest financial disclosures, 90% of all public donations go directly to community programs, with only 10% used for essential administrative overhead.
+                  {donationConfig.whySupportText || 'Every contribution helps us provide essential services to vulnerable families. Based on our latest financial disclosures, 90% of all public donations go directly to community programs, with only 10% used for essential administrative overhead.'}
                 </p>
                 <div className="grid grid-cols-2 gap-4 mb-6">
                   <div className="bg-white/10 rounded-xl p-4 backdrop-blur-sm">
-                    <div className="text-2xl font-bold text-white">2,500+</div>
-                    <div className="text-emerald-200 text-xs mt-1">Families Supported</div>
+                    <div className="text-2xl font-bold text-white">{familiesSupported || donationConfig.familiesSupported || '0'}</div>
+                    <div className="text-emerald-200 text-xs mt-1">{donationConfig.familiesLabel || 'Families Supported'}</div>
                   </div>
                   <div className="bg-white/10 rounded-xl p-4 backdrop-blur-sm">
-                    <div className="text-2xl font-bold text-white">90%</div>
-                    <div className="text-emerald-200 text-xs mt-1">Goes to Programs</div>
+                    <div className="text-2xl font-bold text-white">{donationConfig.programPercentage || '90%'}</div>
+                    <div className="text-emerald-200 text-xs mt-1">{donationConfig.programLabel || 'Goes to Programs'}</div>
                   </div>
                 </div>
               </div>
@@ -202,6 +298,21 @@ export function Donation() {
                 </div>
               </div>
             </div>
+
+            {/* Security & Privacy Callout */}
+            <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm flex items-start gap-4">
+              <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center text-emerald-700 shrink-0 mt-0.5">
+                <ShieldCheck size={22} />
+              </div>
+              <div className="space-y-1">
+                <div className="font-bold text-gray-900 text-sm">{donationConfig.privacyTitle || 'Security & Privacy is Important to Us'}</div>
+                <p className="text-gray-600 text-xs leading-relaxed">
+                  {donationConfig.privacyText || 'Your details will be kept securely and will not be shared with third parties. Please see our '}
+                  <Link to="/privacy" className="text-emerald-700 font-semibold underline hover:text-emerald-800">Privacy Notice</Link> and <Link to="/cookies" className="text-emerald-700 font-semibold underline hover:text-emerald-800">Cookies Policy</Link> for more information.
+                </p>
+              </div>
+            </div>
+
             <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm flex items-center gap-4">
               <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center text-emerald-600 shrink-0">
                 <Star size={24} fill="currentColor" />
@@ -270,7 +381,14 @@ export function Donation() {
                   </div>
 
                   <button type="button"
-                    onClick={() => { if (finalAmount >= 1) setStep(2); else toast.error('Minimum donation is $1'); }}
+                    onClick={() => {
+                      if (finalAmount >= 1) {
+                        prefetchPaymentIntent(finalAmount, currency, donorData);
+                        setStep(2);
+                      } else {
+                        toast.error('Minimum donation is $1');
+                      }
+                    }}
                     className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold rounded-xl text-base flex items-center justify-center gap-2 shadow-lg shadow-emerald-200/50 hover:from-emerald-700 hover:to-teal-700 hover:shadow-xl hover:scale-[1.01] active:scale-[0.99] transition-all duration-200"
                     style={btnStyle}>
                     <Heart size={18} fill="currentColor" />
@@ -379,23 +497,59 @@ export function Donation() {
                         <form onSubmit={handleMobileMoneySubmit} className="space-y-4">
                           <div className="grid grid-cols-2 gap-3">
                             <div>
-                              <label className={lbl}>First Name</label>
-                              <input required className={inp} style={inpStyle} value={donorData.firstName} onChange={e => setDonorData(p => ({ ...p, firstName: e.target.value }))} />
+                              <label className={lbl}>First Name *</label>
+                              <input required className={inp} style={inpStyle} placeholder="First name" value={donorData.firstName} onChange={e => setDonorData(p => ({ ...p, firstName: e.target.value }))} />
                             </div>
                             <div>
-                              <label className={lbl}>Last Name</label>
-                              <input required className={inp} style={inpStyle} value={donorData.lastName} onChange={e => setDonorData(p => ({ ...p, lastName: e.target.value }))} />
+                              <label className={lbl}>Last Name *</label>
+                              <input required className={inp} style={inpStyle} placeholder="Last name" value={donorData.lastName} onChange={e => setDonorData(p => ({ ...p, lastName: e.target.value }))} />
                             </div>
                           </div>
-                          <div>
-                            <label className={lbl}>Email</label>
-                            <input required type="email" className={inp} style={inpStyle} value={donorData.email} onChange={e => setDonorData(p => ({ ...p, email: e.target.value }))} />
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                              <label className={lbl}>Email Address *</label>
+                              <input required type="email" className={inp} style={inpStyle} placeholder="you@example.com" value={donorData.email} onChange={e => setDonorData(p => ({ ...p, email: e.target.value }))} />
+                            </div>
+                            <div>
+                              <label className={lbl}>Phone Number *</label>
+                              <input required type="tel" className={inp} style={inpStyle} placeholder="256 700 000 000" value={donorData.phone} onChange={e => setDonorData(p => ({ ...p, phone: e.target.value }))} />
+                            </div>
                           </div>
+
                           <div>
-                            <label className={lbl}>Phone Number</label>
-                            <input required className={inp} style={inpStyle} placeholder="256 700 000 000" value={donorData.phone} onChange={e => setDonorData(p => ({ ...p, phone: e.target.value }))} />
+                            <label className={lbl}>Street Address *</label>
+                            <input required className={inp} style={inpStyle} placeholder="Street address or P.O. Box" value={donorData.address} onChange={e => setDonorData(p => ({ ...p, address: e.target.value }))} />
                           </div>
-                          <button type="submit" disabled={submitting} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-emerald-200/50 hover:shadow-xl hover:scale-[1.01] active:scale-[0.99] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed" style={btnStyle}>
+
+                          <div className="grid grid-cols-3 gap-2.5">
+                            <div>
+                              <label className={lbl}>City / Town *</label>
+                              <input required className={inp} style={inpStyle} placeholder="City" value={donorData.city} onChange={e => setDonorData(p => ({ ...p, city: e.target.value }))} />
+                            </div>
+                            <div>
+                              <label className={lbl}>Postal / ZIP *</label>
+                              <input required className={inp} style={inpStyle} placeholder="Postal code" value={donorData.postalCode} onChange={e => setDonorData(p => ({ ...p, postalCode: e.target.value }))} />
+                            </div>
+                            <div>
+                              <label className={lbl}>Country *</label>
+                              <select required className={inp} style={inpStyle} value={donorData.country} onChange={e => setDonorData(p => ({ ...p, country: e.target.value }))}>
+                                {COMMON_COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
+                              </select>
+                            </div>
+                          </div>
+
+                          {/* Security & Privacy Notice */}
+                          <div className="pt-2 border-t border-gray-100 text-left space-y-1">
+                            <div className="flex items-center gap-1.5 text-xs font-bold text-gray-800">
+                              <ShieldCheck size={14} className="text-emerald-600 shrink-0" />
+                              <span>Security & Privacy is Important to Us</span>
+                            </div>
+                            <p className="text-[11px] text-gray-500 leading-relaxed">
+                              Your details will be kept securely and will not be shared with third parties. Please see our <Link to="/privacy" className="text-emerald-700 underline font-semibold hover:text-emerald-800">Privacy Notice</Link> and <Link to="/privacy" className="text-emerald-700 underline font-semibold hover:text-emerald-800">Cookies Policy</Link> for more information.
+                            </p>
+                          </div>
+
+                          <button type="submit" disabled={submitting} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-emerald-200/50 hover:shadow-xl hover:scale-[1.01] active:scale-[0.99] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer" style={btnStyle}>
                             {submitting ? <span className="animate-spin w-5 h-5 border-2 border-white border-t-transparent rounded-full" /> : <><Phone size={18} /> Pay {formatAmt(finalAmount)}</>}
                           </button>
                         </form>
@@ -405,17 +559,45 @@ export function Donation() {
                         <form onSubmit={handleBankSubmit} className="space-y-4">
                           <div className="grid grid-cols-2 gap-3">
                             <div>
-                              <label className={lbl}>First Name</label>
-                              <input required className={inp} style={inpStyle} value={donorData.firstName} onChange={e => setDonorData(p => ({ ...p, firstName: e.target.value }))} />
+                              <label className={lbl}>First Name *</label>
+                              <input required className={inp} style={inpStyle} placeholder="First name" value={donorData.firstName} onChange={e => setDonorData(p => ({ ...p, firstName: e.target.value }))} />
                             </div>
                             <div>
-                              <label className={lbl}>Last Name</label>
-                              <input required className={inp} style={inpStyle} value={donorData.lastName} onChange={e => setDonorData(p => ({ ...p, lastName: e.target.value }))} />
+                              <label className={lbl}>Last Name *</label>
+                              <input required className={inp} style={inpStyle} placeholder="Last name" value={donorData.lastName} onChange={e => setDonorData(p => ({ ...p, lastName: e.target.value }))} />
                             </div>
                           </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                              <label className={lbl}>Email Address *</label>
+                              <input required type="email" className={inp} style={inpStyle} placeholder="you@example.com" value={donorData.email} onChange={e => setDonorData(p => ({ ...p, email: e.target.value }))} />
+                            </div>
+                            <div>
+                              <label className={lbl}>Phone Number *</label>
+                              <input required type="tel" className={inp} style={inpStyle} placeholder="+256 700 000 000" value={donorData.phone} onChange={e => setDonorData(p => ({ ...p, phone: e.target.value }))} />
+                            </div>
+                          </div>
+
                           <div>
-                            <label className={lbl}>Email</label>
-                            <input required type="email" className={inp} style={inpStyle} value={donorData.email} onChange={e => setDonorData(p => ({ ...p, email: e.target.value }))} />
+                            <label className={lbl}>Street Address *</label>
+                            <input required className={inp} style={inpStyle} placeholder="Street address or P.O. Box" value={donorData.address} onChange={e => setDonorData(p => ({ ...p, address: e.target.value }))} />
+                          </div>
+
+                          <div className="grid grid-cols-3 gap-2.5">
+                            <div>
+                              <label className={lbl}>City / Town *</label>
+                              <input required className={inp} style={inpStyle} placeholder="City" value={donorData.city} onChange={e => setDonorData(p => ({ ...p, city: e.target.value }))} />
+                            </div>
+                            <div>
+                              <label className={lbl}>Postal / ZIP *</label>
+                              <input required className={inp} style={inpStyle} placeholder="Postal code" value={donorData.postalCode} onChange={e => setDonorData(p => ({ ...p, postalCode: e.target.value }))} />
+                            </div>
+                            <div>
+                              <label className={lbl}>Country *</label>
+                              <select required className={inp} style={inpStyle} value={donorData.country} onChange={e => setDonorData(p => ({ ...p, country: e.target.value }))}>
+                                {COMMON_COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
+                              </select>
+                            </div>
                           </div>
                           
                           <div className="bg-gray-50 border border-gray-100 rounded-2xl p-5 space-y-3.5 text-xs text-gray-700">
@@ -429,8 +611,19 @@ export function Donation() {
                             <div className="flex justify-between"><span className="text-gray-500">Branch:</span> <strong>{donationConfig.branch}</strong></div>
                             <div className="flex justify-between"><span className="text-gray-500">SWIFT Code:</span> <strong>{donationConfig.swiftCode}</strong></div>
                           </div>
+
+                          {/* Security & Privacy Notice */}
+                          <div className="pt-2 border-t border-gray-100 text-left space-y-1">
+                            <div className="flex items-center gap-1.5 text-xs font-bold text-gray-800">
+                              <ShieldCheck size={14} className="text-emerald-600 shrink-0" />
+                              <span>Security & Privacy is Important to Us</span>
+                            </div>
+                            <p className="text-[11px] text-gray-500 leading-relaxed">
+                              Your details will be kept securely and will not be shared with third parties. Please see our <Link to="/privacy" className="text-emerald-700 underline font-semibold hover:text-emerald-800">Privacy Notice</Link> and <Link to="/privacy" className="text-emerald-700 underline font-semibold hover:text-emerald-800">Cookies Policy</Link> for more information.
+                            </p>
+                          </div>
                           
-                          <button type="submit" disabled={submitting} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-lg shadow-emerald-200/50 hover:shadow-xl hover:scale-[1.01] active:scale-[0.99] transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed" style={btnStyle}>
+                          <button type="submit" disabled={submitting} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-lg shadow-emerald-200/50 hover:shadow-xl hover:scale-[1.01] active:scale-[0.99] transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer" style={btnStyle}>
                             {submitting ? <span className="animate-spin w-5 h-5 border-2 border-white border-t-transparent rounded-full" /> : <><Heart size={18} fill="currentColor" /> Register Transfer</>}
                           </button>
                         </form>
@@ -439,6 +632,16 @@ export function Donation() {
                   )}
                 </div>
               )}
+              {/* Helper link to Donor Portal */}
+              <div className="mt-4 text-center">
+                <Link 
+                  to="/donor/dashboard" 
+                  className="inline-flex items-center gap-2 text-xs sm:text-sm text-slate-600 hover:text-emerald-700 bg-white/90 hover:bg-white border border-slate-200/80 px-4 py-2 rounded-xl transition-all shadow-2xs font-semibold"
+                >
+                  <Heart size={14} className="text-emerald-600" fill="currentColor" />
+                  <span>Already a supporter? <strong className="text-emerald-700">Access your Donor Portal & Receipts →</strong></span>
+                </Link>
+              </div>
             </div>
           </div>
         </div>

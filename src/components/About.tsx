@@ -1,5 +1,6 @@
 import { Heart, Users, Target, Award } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { motion } from 'framer-motion';
 
@@ -96,18 +97,23 @@ export function About() {
         >
           <div className="absolute top-0 left-0 w-1.5 h-full bg-emerald-600"></div>
           <div className="max-w-3xl mx-auto">
-            <div className="inline-flex items-center gap-2 bg-emerald-100 text-emerald-700 text-sm font-semibold px-4 py-2 rounded-full mb-6">
+            <div className="inline-flex items-center gap-2 bg-emerald-100 text-emerald-700 text-xs sm:text-sm font-semibold px-4 py-1.5 rounded-full mb-4">
               <Heart size={14} className="fill-emerald-600 text-emerald-600" />
               Community Based Organization
             </div>
-            <h2 className="text-3xl lg:text-5xl font-bold font-heading tracking-tight text-gray-900 mb-6 flex items-center gap-2">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 hidden md:block"></span>
-              {displaySettings.title}
+            <h2 className="text-3xl lg:text-4xl font-bold font-heading tracking-tight text-gray-900 mb-5 flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-600 hidden md:block"></span>
+              About RESTI
             </h2>
-            <div className="space-y-6">
-              <p className="text-xl text-gray-600 leading-relaxed font-normal">
+            <div className="space-y-4">
+              <p className="text-lg sm:text-xl text-gray-600 leading-relaxed font-normal">
                 {displaySettings.intro}
               </p>
+              <div className="pt-2">
+                <Link to="/about" className="inline-flex items-center gap-2 text-emerald-600 font-semibold hover:text-emerald-700 transition-colors group text-base">
+                  Read our full story, mission & timeline <span className="group-hover:translate-x-1 transition-transform">→</span>
+                </Link>
+              </div>
             </div>
           </div>
         </motion.div>
@@ -217,7 +223,7 @@ export function About() {
         >
           {[
             { icon: '🏛️', label: 'Registered CBO', sub: 'Uganda NGO Bureau' },
-            { icon: '🌍', label: '2,500+ Lives', sub: 'Changed & Counting' },
+            { icon: '🌍', label: 'Community Focus', sub: 'Refugees & Host Communities' },
             { icon: '💯', label: '100% Transparent', sub: 'Annual Reports Published' },
             { icon: '🤝', label: 'Community-Led', sub: 'Locally Driven Solutions' },
           ].map((item, index) => (

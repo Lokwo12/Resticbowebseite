@@ -1,10 +1,114 @@
 import React, { useState, useEffect } from 'react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { toast } from 'sonner';
-import { Save, RefreshCw, Plus, Trash2, Upload, BarChart, Code } from 'lucide-react';
+import { Save, RefreshCw, Plus, Trash2, Upload, BarChart, Code, PieChart, TrendingUp, DollarSign, FileText, Heart, ShieldCheck, Sparkles, Globe, Eye, HelpCircle, Users, LayoutDashboard, HandHeart, Settings, Search, ExternalLink } from 'lucide-react';
 import { Card } from './ui/card';
 import { Button } from './ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
+
+export const SETTING_CATEGORIES = [
+  { id: 'all', label: 'All Modules' },
+  { id: 'branding', label: 'Branding & Layout' },
+  { id: 'content', label: 'Core Content' },
+  { id: 'impact', label: 'Impact & Financials' },
+  { id: 'engagement', label: 'Forms & Engagement' },
+  { id: 'developer', label: 'Code & Analytics' },
+];
+
+export const SETTING_SECTIONS = [
+  { id: 'general', label: 'General & SEO', category: 'branding', icon: Globe, desc: 'Site name, logo, metadata & favicon' },
+  { id: 'header', label: 'Header & Banner', category: 'branding', icon: LayoutDashboard, desc: 'Top alert bar and main navigation' },
+  { id: 'footer', label: 'Footer Links', category: 'branding', icon: Globe, desc: 'Footer columns, copyright & socials' },
+  { id: 'legal', label: 'Legal Pages', category: 'branding', icon: ShieldCheck, desc: 'Privacy Notice & Terms of Service' },
+  
+  { id: 'hero', label: 'Hero Showcase', category: 'content', icon: Sparkles, desc: 'Homepage banner, sliders & primary CTA' },
+  { id: 'about', label: 'About & Mission', category: 'content', icon: FileText, desc: 'Mission, vision, core values & story' },
+  { id: 'sections', label: 'Section Headers', category: 'content', icon: FileText, desc: 'Subheadings and introductory blurbs' },
+
+  { id: 'impactDashboard', label: 'Impact Dashboard', category: 'impact', icon: TrendingUp, desc: 'Live stats, KPI badges & methodology' },
+  { id: 'financials', label: 'Financials & Audits', category: 'impact', icon: PieChart, desc: 'Expenses chart, revenue & PDF audits' },
+
+  { id: 'donation', label: 'Donation & Gateways', category: 'engagement', icon: DollarSign, desc: 'Presets, MTN/Airtel/Bank & allocation' },
+  { id: 'volunteer', label: 'Volunteer Portal', category: 'engagement', icon: Heart, desc: 'Hero banner, open roles & requirements' },
+  { id: 'quiz', label: 'Volunteer Quiz', category: 'engagement', icon: HelpCircle, desc: 'Interactive volunteer match questions' },
+  { id: 'contact', label: 'Contact Info', category: 'engagement', icon: Users, desc: 'Headquarters, phone, email & field map' },
+
+  { id: 'analytics', label: 'Analytics & Code', category: 'developer', icon: Code, desc: 'Google Tag, tracking & custom headers' },
+];
+
+export const DEFAULT_FINANCIALS = {
+  badge: 'Transparency',
+  title: 'Financial Transparency',
+  description: 'We believe in complete transparency. See exactly how your contributions are making a difference in the Kiryandongo District.',
+  expenses: [
+    { name: 'Program Services', value: 75, color: '#10b981' },
+    { name: 'Community Grants', value: 15, color: '#3b82f6' },
+    { name: 'Management & General', value: 7, color: '#f59e0b' },
+    { name: 'Fundraising', value: 3, color: '#8b5cf6' },
+  ],
+  revenue: [
+    { year: '2022', revenue: 120000 },
+    { year: '2023', revenue: 180000 },
+    { year: '2024', revenue: 250000 },
+    { year: '2025', revenue: 310000 },
+  ],
+  revenueNote: 'Consistent growth in support allows us to expand our sustainable programs every year.',
+  reportsTitle: 'Annual Reports & Audits',
+  reportsDescription: 'Download our comprehensive annual reports and audited financial statements to see detailed breakdowns of our impact and operations.',
+  reports: [
+    { year: '2025', title: 'Q1 Impact & Financial Summary', size: '2.4 MB', fileUrl: '#' },
+    { year: '2024', title: 'Annual Report & Audited Financials', size: '5.1 MB', fileUrl: '#' },
+    { year: '2023', title: 'Annual Report & Audited Financials', size: '4.8 MB', fileUrl: '#' },
+    { year: '2022', title: 'Annual Report & Audited Financials', size: '3.9 MB', fileUrl: '#' },
+  ],
+  commitmentTitle: 'Committed to Transparency',
+  commitmentDescription: 'We believe in complete transparency about how donations are used and the impact we create. Our annual reports provide detailed breakdowns of our programs, finances, and outcomes.',
+  commitmentButtonText: 'Request More Information',
+  commitmentButtonLink: '#contact'
+};
+
+export const DEFAULT_VOLUNTEER_SETTINGS = {
+  heroTitle: 'Join Our Mission',
+  heroSubtitle: 'Share your skills, make new friends, and be a part of positive change in Kiryandongo.',
+  heroImage: 'https://images.unsplash.com/photo-1641569707854-c80945fb4719?w=1600&q=80',
+  successTitle: 'Application Received!',
+  successMessage: 'Thank you for your interest in volunteering with us. We have received your application and will get back to you shortly.'
+};
+
+export const DEFAULT_DONATION_PAGE_SETTINGS = {
+  badge: 'DONATE NOW',
+  title: 'Support the Community Foundation',
+  subtitle: 'Your donation helps refugees and host communities access skills, strengthen livelihoods, and build a more resilient future.',
+  secondarySubtitle: 'Every contribution makes a difference.',
+  orgName: 'Refugee Empowerment For Sustainable Transformation Initiative CBO (RESTI)',
+  orgSub: 'Registered CBO - Uganda NGO Bureau',
+  leftQuote1: 'Your donation helps refugees and host communities access skills, strengthen livelihoods, and build a more resilient future. Every contribution makes a difference.',
+  leftQuote2: 'When you donate to RESTI, you help refugees and host communities build sustainable livelihoods, access new opportunities, and create a better future. We can’t do this without your support. Please support RESTI today.',
+  whySupportTitle: 'Why Your Support Matters',
+  whySupportText: 'Every contribution helps us provide essential services to vulnerable families. Based on our latest financial disclosures, 90% of all public donations go directly to community programs, with only 10% used for essential administrative overhead.',
+  programPercentage: '90%',
+  programLabel: 'Goes to Programs',
+  overheadPercentage: '10%',
+  familiesSupported: '0',
+  familiesLabel: 'Families Supported',
+  privacyTitle: 'Security & Privacy is Important to Us',
+  privacyText: 'Your details will be kept securely and will not be shared with third parties. Please see our Privacy Notice and Cookies Policy for more information.',
+};
+
+export const DEFAULT_IMPACT_DASHBOARD_SETTINGS = {
+  badge: 'Live Impact',
+  title: 'Impact Dashboard',
+  description: 'See the measurable impact of our work through data, statistics, and comprehensive reports.',
+  peopleServedBadge: '+12% YoY',
+  programsActiveBadge: 'Active',
+  volunteersActiveBadge: 'Growing',
+  fundsRaisedBadge: '2025',
+  communitiesReachedBadge: 'Expanding',
+  successRateBadge: 'Excellence',
+  commitmentTitle: 'Committed to Transparency',
+  commitmentDescription: 'We believe in complete transparency about how donations are used and the impact we create. Our annual reports provide detailed breakdowns of our programs, finances, and outcomes.',
+  commitmentButtonText: 'Request More Information',
+};
 
 interface SiteSettingsTabProps {
   settings: any;
@@ -16,6 +120,8 @@ export function SiteSettingsTab({ settings: initialSettings, onUpdate, accessTok
   const [settings, setSettings] = useState(initialSettings || {});
   const [saving, setSaving] = useState(false);
   const [activeSection, setActiveSection] = useState('general');
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [searchFilter, setSearchFilter] = useState('');
   const [logoUploading, setLogoUploading] = useState(false);
 
   useEffect(() => {
@@ -66,6 +172,64 @@ export function SiteSettingsTab({ settings: initialSettings, onUpdate, accessTok
       setSettings((prev: any) => ({ ...prev, hero: { ...prev.hero, backgroundImages: newImages } }));
       
       toast.success('Slide photo uploaded successfully', { id: toastId });
+    } catch (err: any) {
+      toast.error(err.message || 'Upload failed', { id: toastId });
+    } finally {
+      e.target.value = '';
+    }
+  };
+
+  const handleReportUpload = async (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const toastId = toast.loading('Uploading document...');
+    try {
+      const formDataObj = new FormData();
+      formDataObj.append('file', file);
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/upload-image`,
+        { method: 'POST', headers: { Authorization: `Bearer ${accessToken || publicAnonKey}` }, body: formDataObj }
+      );
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Upload failed');
+      
+      const currentReports = [...(settings.financials?.reports || DEFAULT_FINANCIALS.reports)];
+      currentReports[index] = {
+        ...currentReports[index],
+        fileUrl: data.url,
+        size: `${(file.size / (1024 * 1024)).toFixed(1)} MB`
+      };
+      setSettings((prev: any) => ({
+        ...prev,
+        financials: { ...(prev.financials || DEFAULT_FINANCIALS), reports: currentReports }
+      }));
+      toast.success('Document uploaded successfully', { id: toastId });
+    } catch (err: any) {
+      toast.error(err.message || 'Upload failed', { id: toastId });
+    } finally {
+      e.target.value = '';
+    }
+  };
+
+  const handleVolunteerBannerUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const toastId = toast.loading('Uploading banner image...');
+    try {
+      const formDataObj = new FormData();
+      formDataObj.append('file', file);
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/upload-image`,
+        { method: 'POST', headers: { Authorization: `Bearer ${accessToken || publicAnonKey}` }, body: formDataObj }
+      );
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Upload failed');
+      
+      setSettings((prev: any) => ({
+        ...prev,
+        volunteer: { ...(prev.volunteer || DEFAULT_VOLUNTEER_SETTINGS), heroImage: data.url }
+      }));
+      toast.success('Banner uploaded successfully', { id: toastId });
     } catch (err: any) {
       toast.error(err.message || 'Upload failed', { id: toastId });
     } finally {
@@ -147,32 +311,150 @@ export function SiteSettingsTab({ settings: initialSettings, onUpdate, accessTok
     );
   }
 
+  const visibleSections = SETTING_SECTIONS.filter((section) => {
+    const matchesCategory = selectedCategory === 'all' || section.category === selectedCategory;
+    const matchesSearch =
+      !searchFilter.trim() ||
+      section.label.toLowerCase().includes(searchFilter.toLowerCase()) ||
+      section.desc.toLowerCase().includes(searchFilter.toLowerCase());
+    return matchesCategory && matchesSearch;
+  });
+
+  const activeSectionInfo = SETTING_SECTIONS.find((s) => s.id === activeSection);
+  const ActiveIcon = activeSectionInfo?.icon || Settings;
+
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-2xl text-gray-900">Site Settings</h2>
-          <p className="text-gray-600">Customize every aspect of your website</p>
+      {/* Sticky Header Control Bar */}
+      <div className="sticky top-16 z-30 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm transition-all">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shrink-0">
+              <Settings size={22} />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h2 className="text-xl font-bold text-slate-900 dark:text-white">Site Customizer</h2>
+                <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  Live Sync Active
+                </span>
+                {activeSectionInfo && (
+                  <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 flex items-center gap-1">
+                    <ActiveIcon size={12} className="text-emerald-500" />
+                    Editing: {activeSectionInfo.label}
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                Full visual and content control over homepage, donation portal, financial audits, and interactive forms.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2.5 shrink-0 self-end sm:self-center">
+            <a
+              href="/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 transition"
+              title="Preview site changes in a new tab"
+            >
+              <ExternalLink size={13} className="text-emerald-500" />
+              <span>Preview Site</span>
+            </a>
+
+            <Button
+              onClick={handleSave}
+              disabled={saving}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-4 py-2 rounded-xl shadow-md hover:shadow-lg active:scale-95 transition flex items-center gap-2"
+            >
+              {saving ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  <span>Saving...</span>
+                </>
+              ) : (
+                <>
+                  <Save size={16} />
+                  <span>Save All Changes</span>
+                </>
+              )}
+            </Button>
+          </div>
         </div>
-        <Button onClick={handleSave} disabled={saving}>
-          <Save size={18} className="mr-2" />
-          {saving ? 'Saving...' : 'Save Changes'}
-        </Button>
       </div>
 
       <Tabs value={activeSection} onValueChange={setActiveSection}>
-        <TabsList className="flex-wrap">
-          <TabsTrigger value="general">General</TabsTrigger>
-          <TabsTrigger value="header">Header & Banner</TabsTrigger>
-          <TabsTrigger value="hero">Hero Section</TabsTrigger>
-          <TabsTrigger value="about">About Section</TabsTrigger>
-          <TabsTrigger value="contact">Contact Info</TabsTrigger>
-          <TabsTrigger value="donation">Donation & Payments</TabsTrigger>
-          <TabsTrigger value="footer">Footer</TabsTrigger>
-          <TabsTrigger value="legal">Legal Pages</TabsTrigger>
-          <TabsTrigger value="sections">Section Headers</TabsTrigger>
-          <TabsTrigger value="analytics" className="flex items-center gap-2"><Code size={16}/> Analytics</TabsTrigger>
-        </TabsList>
+        {/* Categorized Sub-tab Selector */}
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm space-y-3">
+          {/* Category Filter Pills & Search */}
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-slate-800">
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 scrollbar-none">
+              {SETTING_CATEGORIES.map((cat) => (
+                <button
+                  key={cat.id}
+                  onClick={() => setSelectedCategory(cat.id)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition ${
+                    selectedCategory === cat.id
+                      ? 'bg-slate-900 text-white dark:bg-emerald-600 dark:text-white shadow-sm'
+                      : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  {cat.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="relative flex items-center shrink-0 w-full md:w-56">
+              <Search size={13} className="absolute left-2.5 text-slate-400 pointer-events-none" />
+              <input
+                type="text"
+                value={searchFilter}
+                onChange={(e) => setSearchFilter(e.target.value)}
+                placeholder="Filter setting sections..."
+                className="w-full pl-8 pr-7 py-1.5 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-200 placeholder-slate-400 text-xs rounded-xl border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-1 focus:ring-emerald-500 transition"
+              />
+              {searchFilter && (
+                <button
+                  onClick={() => setSearchFilter('')}
+                  className="absolute right-2 text-slate-400 hover:text-slate-600 dark:hover:text-white"
+                  title="Clear filter"
+                >
+                  <Trash2 size={12} />
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Tab Triggers Grid */}
+          <TabsList className="bg-transparent p-0 h-auto grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-2 w-full">
+            {visibleSections.map((sec) => {
+              const Icon = sec.icon;
+              const isSelected = activeSection === sec.id;
+              return (
+                <TabsTrigger
+                  key={sec.id}
+                  value={sec.id}
+                  className={`h-auto flex flex-col items-center justify-center p-2.5 rounded-xl border text-center transition-all ${
+                    isSelected
+                      ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700 shadow-sm font-semibold'
+                      : 'bg-slate-50/70 dark:bg-slate-800/50 text-slate-600 dark:text-slate-400 border-slate-200/80 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-200'
+                  }`}
+                  title={sec.desc}
+                >
+                  <Icon
+                    size={18}
+                    className={`mb-1.5 shrink-0 ${
+                      isSelected ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400'
+                    }`}
+                  />
+                  <span className="text-xs leading-tight line-clamp-1">{sec.label}</span>
+                </TabsTrigger>
+              );
+            })}
+          </TabsList>
+        </div>
 
         {/* ===== HEADER & ANNOUNCEMENT BAR ===== */}
         <TabsContent value="header">
@@ -519,40 +801,138 @@ export function SiteSettingsTab({ settings: initialSettings, onUpdate, accessTok
                 </p>
               </div>
 
-              <div>
-                <label className="block text-sm text-gray-700 mb-2">Statistics</label>
-                {settings.hero?.stats?.map((stat: any, index: number) => (
-                  <div key={index} className="grid grid-cols-2 gap-4 mb-2">
-                    <input
-                      type="text"
-                      value={stat.value || ''}
-                      onChange={(e) => {
-                        const newStats = [...(settings.hero?.stats || [])];
-                        newStats[index] = { ...newStats[index], value: e.target.value };
-                        setSettings({
-                          ...settings,
-                          hero: { ...settings.hero, stats: newStats },
-                        });
-                      }}
-                      placeholder="Value (e.g., 500+)"
-                      className="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
-                    />
-                    <input
-                      type="text"
-                      value={stat.label || ''}
-                      onChange={(e) => {
-                        const newStats = [...(settings.hero?.stats || [])];
-                        newStats[index] = { ...newStats[index], label: e.target.value };
-                        setSettings({
-                          ...settings,
-                          hero: { ...settings.hero, stats: newStats },
-                        });
-                      }}
-                      placeholder="Label"
-                      className="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
-                    />
+              <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-5 space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <h4 className="text-sm font-semibold text-gray-900">Hero Section Statistics (Impact Numbers)</h4>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      These numbers appear directly across the homepage Hero section. Set them to 0 or any custom count.
+                    </p>
                   </div>
-                ))}
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSettings({
+                          ...settings,
+                          hero: {
+                            ...settings.hero,
+                            stats: [
+                              { value: '0', label: 'Families Supported' },
+                              { value: '0', label: 'Active Programs' },
+                              { value: '0', label: 'Volunteers' }
+                            ],
+                          },
+                        });
+                        toast.success('Stats reset to 0 defaults. Click Save Changes to apply.');
+                      }}
+                      className="text-xs font-medium text-slate-600 hover:text-slate-800 bg-white hover:bg-slate-100 border border-slate-200 px-3 py-1.5 rounded-lg transition-colors"
+                    >
+                      Reset to 0
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const currentStats = settings.hero?.stats || [
+                          { value: '0', label: 'Families Supported' },
+                          { value: '0', label: 'Active Programs' },
+                          { value: '0', label: 'Volunteers' }
+                        ];
+                        setSettings({
+                          ...settings,
+                          hero: {
+                            ...settings.hero,
+                            stats: [...currentStats, { value: '0', label: 'New Metric' }],
+                          },
+                        });
+                      }}
+                      className="flex items-center gap-1 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg transition-colors shadow-sm"
+                    >
+                      <Plus size={14} /> Add Statistic
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  {(settings.hero?.stats && settings.hero.stats.length > 0
+                    ? settings.hero.stats
+                    : [
+                        { value: '0', label: 'Families Supported' },
+                        { value: '0', label: 'Active Programs' },
+                        { value: '0', label: 'Volunteers' }
+                      ]
+                  ).map((stat: any, index: number) => (
+                    <div key={index} className="flex gap-3 items-center bg-white p-3 rounded-xl border border-gray-200 shadow-sm">
+                      <div className="w-1/3">
+                        <label className="block text-[11px] font-medium text-gray-500 mb-1">Value / Count</label>
+                        <input
+                          type="text"
+                          value={stat.value ?? '0'}
+                          onChange={(e) => {
+                            const statsList = settings.hero?.stats && settings.hero.stats.length > 0
+                              ? [...settings.hero.stats]
+                              : [
+                                  { value: '0', label: 'Families Supported' },
+                                  { value: '0', label: 'Active Programs' },
+                                  { value: '0', label: 'Volunteers' }
+                                ];
+                            statsList[index] = { ...statsList[index], value: e.target.value };
+                            setSettings({
+                              ...settings,
+                              hero: { ...settings.hero, stats: statsList },
+                            });
+                          }}
+                          placeholder="0 or 100+"
+                          className="w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-emerald-500 font-semibold text-emerald-700"
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <label className="block text-[11px] font-medium text-gray-500 mb-1">Label / Description</label>
+                        <input
+                          type="text"
+                          value={stat.label || ''}
+                          onChange={(e) => {
+                            const statsList = settings.hero?.stats && settings.hero.stats.length > 0
+                              ? [...settings.hero.stats]
+                              : [
+                                  { value: '0', label: 'Families Supported' },
+                                  { value: '0', label: 'Active Programs' },
+                                  { value: '0', label: 'Volunteers' }
+                                ];
+                            statsList[index] = { ...statsList[index], label: e.target.value };
+                            setSettings({
+                              ...settings,
+                              hero: { ...settings.hero, stats: statsList },
+                            });
+                          }}
+                          placeholder="e.g., Families Supported"
+                          className="w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-emerald-500 font-medium"
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const statsList = settings.hero?.stats && settings.hero.stats.length > 0
+                            ? [...settings.hero.stats]
+                            : [
+                                { value: '0', label: 'Families Supported' },
+                                { value: '0', label: 'Active Programs' },
+                                { value: '0', label: 'Volunteers' }
+                              ];
+                          statsList.splice(index, 1);
+                          setSettings({
+                            ...settings,
+                            hero: { ...settings.hero, stats: statsList },
+                          });
+                        }}
+                        className="p-2 text-red-500 hover:bg-red-50 hover:text-red-700 rounded-lg transition-colors mt-5"
+                        title="Remove Statistic"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </Card>
@@ -818,6 +1198,649 @@ export function SiteSettingsTab({ settings: initialSettings, onUpdate, accessTok
                   {(!settings.about?.timeline || settings.about.timeline.length === 0) && (
                     <p className="text-sm text-gray-500 text-center py-4">No timeline events added yet.</p>
                   )}
+                </div>
+              </div>
+            </div>
+          </Card>
+        </TabsContent>
+
+        {/* ===== FINANCIAL TRANSPARENCY & AUDITS ===== */}
+        <TabsContent value="financials">
+          <Card className="p-6 space-y-6">
+            <div className="flex items-center gap-3 border-b pb-4">
+              <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl">
+                <PieChart size={24} />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-gray-900">Financial Transparency & Audits</h3>
+                <p className="text-sm text-gray-500">Manage all texts, expense breakdowns, revenue charts, and downloadable audited reports on the Financials page (/financials).</p>
+              </div>
+            </div>
+
+            {/* Page Header Settings */}
+            <div className="p-4 bg-gray-50 rounded-xl border border-gray-200/70 space-y-4">
+              <h4 className="text-sm font-bold text-gray-800">Page Header</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Badge Text</label>
+                  <input
+                    type="text"
+                    value={settings.financials?.badge ?? DEFAULT_FINANCIALS.badge}
+                    onChange={(e) => setSettings({
+                      ...settings,
+                      financials: { ...(settings.financials || DEFAULT_FINANCIALS), badge: e.target.value }
+                    })}
+                    className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-emerald-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Page Title</label>
+                  <input
+                    type="text"
+                    value={settings.financials?.title ?? DEFAULT_FINANCIALS.title}
+                    onChange={(e) => setSettings({
+                      ...settings,
+                      financials: { ...(settings.financials || DEFAULT_FINANCIALS), title: e.target.value }
+                    })}
+                    className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-emerald-500"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">Subtitle / Mission Statement</label>
+                <textarea
+                  value={settings.financials?.description ?? DEFAULT_FINANCIALS.description}
+                  onChange={(e) => setSettings({
+                    ...settings,
+                    financials: { ...(settings.financials || DEFAULT_FINANCIALS), description: e.target.value }
+                  })}
+                  rows={2}
+                  className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+            </div>
+
+            {/* Where The Money Goes (Expense Allocation) */}
+            <div className="p-4 bg-emerald-50/50 rounded-xl border border-emerald-100 space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="text-sm font-bold text-gray-900">Expense Allocation (Where The Money Goes)</h4>
+                  <p className="text-xs text-gray-500">Percentages shown on the interactive allocation pie chart.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const currentExpenses = settings.financials?.expenses || DEFAULT_FINANCIALS.expenses;
+                    setSettings({
+                      ...settings,
+                      financials: {
+                        ...(settings.financials || DEFAULT_FINANCIALS),
+                        expenses: [...currentExpenses, { name: 'New Category', value: 10, color: '#06b6d4' }]
+                      }
+                    });
+                  }}
+                  className="inline-flex items-center gap-1 text-xs font-semibold bg-emerald-600 text-white px-3 py-1.5 rounded-lg hover:bg-emerald-700 shadow-sm"
+                >
+                  <Plus size={14} /> Add Category
+                </button>
+              </div>
+
+              <div className="space-y-3">
+                {(settings.financials?.expenses || DEFAULT_FINANCIALS.expenses).map((item: any, idx: number) => (
+                  <div key={idx} className="flex flex-wrap items-center gap-3 bg-white p-3 rounded-lg border border-gray-200">
+                    <div className="flex-1 min-w-[140px]">
+                      <label className="block text-[11px] text-gray-500 mb-1">Category Name</label>
+                      <input
+                        type="text"
+                        value={item.name}
+                        onChange={(e) => {
+                          const exp = [...(settings.financials?.expenses || DEFAULT_FINANCIALS.expenses)];
+                          exp[idx] = { ...exp[idx], name: e.target.value };
+                          setSettings({ ...settings, financials: { ...(settings.financials || DEFAULT_FINANCIALS), expenses: exp } });
+                        }}
+                        className="w-full px-2.5 py-1.5 border rounded-md text-sm"
+                      />
+                    </div>
+                    <div className="w-24">
+                      <label className="block text-[11px] text-gray-500 mb-1">Percent (%)</label>
+                      <input
+                        type="number"
+                        value={item.value}
+                        onChange={(e) => {
+                          const exp = [...(settings.financials?.expenses || DEFAULT_FINANCIALS.expenses)];
+                          exp[idx] = { ...exp[idx], value: Number(e.target.value) };
+                          setSettings({ ...settings, financials: { ...(settings.financials || DEFAULT_FINANCIALS), expenses: exp } });
+                        }}
+                        className="w-full px-2.5 py-1.5 border rounded-md text-sm"
+                      />
+                    </div>
+                    <div className="w-20">
+                      <label className="block text-[11px] text-gray-500 mb-1">Color</label>
+                      <input
+                        type="color"
+                        value={item.color || '#10b981'}
+                        onChange={(e) => {
+                          const exp = [...(settings.financials?.expenses || DEFAULT_FINANCIALS.expenses)];
+                          exp[idx] = { ...exp[idx], color: e.target.value };
+                          setSettings({ ...settings, financials: { ...(settings.financials || DEFAULT_FINANCIALS), expenses: exp } });
+                        }}
+                        className="w-full h-8 p-0.5 border rounded-md cursor-pointer"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const exp = [...(settings.financials?.expenses || DEFAULT_FINANCIALS.expenses)];
+                        exp.splice(idx, 1);
+                        setSettings({ ...settings, financials: { ...(settings.financials || DEFAULT_FINANCIALS), expenses: exp } });
+                      }}
+                      className="p-1.5 text-red-500 hover:bg-red-50 rounded-md mt-4"
+                      title="Remove Category"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Funding Growth (Revenue Bar Chart) */}
+            <div className="p-4 bg-blue-50/50 rounded-xl border border-blue-100 space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="text-sm font-bold text-gray-900">Funding Growth (Annual Revenue)</h4>
+                  <p className="text-xs text-gray-500">Amounts displayed in the Funding Growth bar chart.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const currentRev = settings.financials?.revenue || DEFAULT_FINANCIALS.revenue;
+                    setSettings({
+                      ...settings,
+                      financials: {
+                        ...(settings.financials || DEFAULT_FINANCIALS),
+                        revenue: [...currentRev, { year: '2026', revenue: 350000 }]
+                      }
+                    });
+                  }}
+                  className="inline-flex items-center gap-1 text-xs font-semibold bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-700 shadow-sm"
+                >
+                  <Plus size={14} /> Add Year
+                </button>
+              </div>
+
+              <div className="space-y-3">
+                {(settings.financials?.revenue || DEFAULT_FINANCIALS.revenue).map((item: any, idx: number) => (
+                  <div key={idx} className="flex flex-wrap items-center gap-3 bg-white p-3 rounded-lg border border-gray-200">
+                    <div className="w-28">
+                      <label className="block text-[11px] text-gray-500 mb-1">Year</label>
+                      <input
+                        type="text"
+                        value={item.year}
+                        onChange={(e) => {
+                          const rev = [...(settings.financials?.revenue || DEFAULT_FINANCIALS.revenue)];
+                          rev[idx] = { ...rev[idx], year: e.target.value };
+                          setSettings({ ...settings, financials: { ...(settings.financials || DEFAULT_FINANCIALS), revenue: rev } });
+                        }}
+                        className="w-full px-2.5 py-1.5 border rounded-md text-sm"
+                      />
+                    </div>
+                    <div className="flex-1 min-w-[140px]">
+                      <label className="block text-[11px] text-gray-500 mb-1">Total Revenue ($ USD)</label>
+                      <input
+                        type="number"
+                        value={item.revenue}
+                        onChange={(e) => {
+                          const rev = [...(settings.financials?.revenue || DEFAULT_FINANCIALS.revenue)];
+                          rev[idx] = { ...rev[idx], revenue: Number(e.target.value) };
+                          setSettings({ ...settings, financials: { ...(settings.financials || DEFAULT_FINANCIALS), revenue: rev } });
+                        }}
+                        className="w-full px-2.5 py-1.5 border rounded-md text-sm"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const rev = [...(settings.financials?.revenue || DEFAULT_FINANCIALS.revenue)];
+                        rev.splice(idx, 1);
+                        setSettings({ ...settings, financials: { ...(settings.financials || DEFAULT_FINANCIALS), revenue: rev } });
+                      }}
+                      className="p-1.5 text-red-500 hover:bg-red-50 rounded-md mt-4"
+                      title="Remove Year"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">Chart Footnote Text</label>
+                <input
+                  type="text"
+                  value={settings.financials?.revenueNote ?? DEFAULT_FINANCIALS.revenueNote}
+                  onChange={(e) => setSettings({
+                    ...settings,
+                    financials: { ...(settings.financials || DEFAULT_FINANCIALS), revenueNote: e.target.value }
+                  })}
+                  className="w-full px-3 py-2 border rounded-lg text-sm"
+                />
+              </div>
+            </div>
+
+            {/* Annual Reports & Audited Statements Downloads */}
+            <div className="p-4 bg-amber-50/50 rounded-xl border border-amber-100 space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="text-sm font-bold text-gray-900">Audited Financial Statements & Annual Reports</h4>
+                  <p className="text-xs text-gray-500">Downloadable PDF reports displayed in the grid.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const currentReps = settings.financials?.reports || DEFAULT_FINANCIALS.reports;
+                    setSettings({
+                      ...settings,
+                      financials: {
+                        ...(settings.financials || DEFAULT_FINANCIALS),
+                        reports: [...currentReps, { year: '2025', title: 'Annual Financial Audit Statement', size: '3.2 MB', fileUrl: '#' }]
+                      }
+                    });
+                  }}
+                  className="inline-flex items-center gap-1 text-xs font-semibold bg-amber-600 text-white px-3 py-1.5 rounded-lg hover:bg-amber-700 shadow-sm"
+                >
+                  <Plus size={14} /> Add Report
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                {(settings.financials?.reports || DEFAULT_FINANCIALS.reports).map((rep: any, idx: number) => (
+                  <div key={idx} className="bg-white p-4 rounded-xl border border-gray-200 space-y-3">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      <div className="md:col-span-2">
+                        <label className="block text-[11px] font-medium text-gray-500 mb-1">Report Title</label>
+                        <input
+                          type="text"
+                          value={rep.title}
+                          onChange={(e) => {
+                            const reps = [...(settings.financials?.reports || DEFAULT_FINANCIALS.reports)];
+                            reps[idx] = { ...reps[idx], title: e.target.value };
+                            setSettings({ ...settings, financials: { ...(settings.financials || DEFAULT_FINANCIALS), reports: reps } });
+                          }}
+                          className="w-full px-3 py-1.5 border rounded-lg text-sm"
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="block text-[11px] font-medium text-gray-500 mb-1">Year</label>
+                          <input
+                            type="text"
+                            value={rep.year}
+                            onChange={(e) => {
+                              const reps = [...(settings.financials?.reports || DEFAULT_FINANCIALS.reports)];
+                              reps[idx] = { ...reps[idx], year: e.target.value };
+                              setSettings({ ...settings, financials: { ...(settings.financials || DEFAULT_FINANCIALS), reports: reps } });
+                            }}
+                            className="w-full px-2.5 py-1.5 border rounded-lg text-sm"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-medium text-gray-500 mb-1">File Size</label>
+                          <input
+                            type="text"
+                            value={rep.size}
+                            onChange={(e) => {
+                              const reps = [...(settings.financials?.reports || DEFAULT_FINANCIALS.reports)];
+                              reps[idx] = { ...reps[idx], size: e.target.value };
+                              setSettings({ ...settings, financials: { ...(settings.financials || DEFAULT_FINANCIALS), reports: reps } });
+                            }}
+                            className="w-full px-2.5 py-1.5 border rounded-lg text-sm"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1">
+                        <input
+                          type="text"
+                          value={rep.fileUrl}
+                          onChange={(e) => {
+                            const reps = [...(settings.financials?.reports || DEFAULT_FINANCIALS.reports)];
+                            reps[idx] = { ...reps[idx], fileUrl: e.target.value };
+                            setSettings({ ...settings, financials: { ...(settings.financials || DEFAULT_FINANCIALS), reports: reps } });
+                          }}
+                          placeholder="PDF URL (e.g. https://...)"
+                          className="w-full px-3 py-1.5 border rounded-lg text-sm"
+                        />
+                      </div>
+                      <label className="cursor-pointer bg-emerald-50 hover:bg-emerald-100 text-emerald-700 px-3 py-1.5 rounded-lg border border-emerald-200 text-xs font-medium flex items-center gap-1.5 transition-colors">
+                        <Upload size={14} /> Upload PDF
+                        <input
+                          type="file"
+                          accept=".pdf,.doc,.docx"
+                          className="hidden"
+                          onChange={(e) => handleReportUpload(e, idx)}
+                        />
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const reps = [...(settings.financials?.reports || DEFAULT_FINANCIALS.reports)];
+                          reps.splice(idx, 1);
+                          setSettings({ ...settings, financials: { ...(settings.financials || DEFAULT_FINANCIALS), reports: reps } });
+                        }}
+                        className="p-2 text-red-500 hover:bg-red-50 rounded-lg"
+                        title="Delete Report"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Bottom Commitment to Transparency Callout */}
+            <div className="p-4 bg-gray-50 rounded-xl border border-gray-200/70 space-y-4">
+              <h4 className="text-sm font-bold text-gray-800">Transparency Commitment Callout Banner</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Banner Headline</label>
+                  <input
+                    type="text"
+                    value={settings.financials?.commitmentTitle ?? DEFAULT_FINANCIALS.commitmentTitle}
+                    onChange={(e) => setSettings({
+                      ...settings,
+                      financials: { ...(settings.financials || DEFAULT_FINANCIALS), commitmentTitle: e.target.value }
+                    })}
+                    className="w-full px-3 py-2 border rounded-lg text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Button Text</label>
+                  <input
+                    type="text"
+                    value={settings.financials?.commitmentButtonText ?? DEFAULT_FINANCIALS.commitmentButtonText}
+                    onChange={(e) => setSettings({
+                      ...settings,
+                      financials: { ...(settings.financials || DEFAULT_FINANCIALS), commitmentButtonText: e.target.value }
+                    })}
+                    className="w-full px-3 py-2 border rounded-lg text-sm"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">Commitment Paragraph</label>
+                <textarea
+                  value={settings.financials?.commitmentDescription ?? DEFAULT_FINANCIALS.commitmentDescription}
+                  onChange={(e) => setSettings({
+                    ...settings,
+                    financials: { ...(settings.financials || DEFAULT_FINANCIALS), commitmentDescription: e.target.value }
+                  })}
+                  rows={2}
+                  className="w-full px-3 py-2 border rounded-lg text-sm"
+                />
+              </div>
+            </div>
+          </Card>
+        </TabsContent>
+
+        {/* ===== IMPACT DASHBOARD SETTINGS ===== */}
+        <TabsContent value="impactDashboard">
+          <Card className="p-6 space-y-6">
+            <div className="flex items-center gap-3 border-b pb-4">
+              <div className="p-3 bg-blue-50 text-blue-600 rounded-xl">
+                <TrendingUp size={24} />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-gray-900">Impact Dashboard Page (/impact-dashboard)</h3>
+                <p className="text-sm text-gray-500">Edit page titles, badge texts, live metric card overrides, and transparency statements.</p>
+              </div>
+            </div>
+
+            <div className="p-4 bg-gray-50 rounded-xl border border-gray-200/70 space-y-4">
+              <h4 className="text-sm font-bold text-gray-800">Page Header</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Page Title</label>
+                  <input
+                    type="text"
+                    value={settings.impactDashboard?.title ?? DEFAULT_IMPACT_DASHBOARD_SETTINGS.title}
+                    onChange={(e) => setSettings({
+                      ...settings,
+                      impactDashboard: { ...(settings.impactDashboard || DEFAULT_IMPACT_DASHBOARD_SETTINGS), title: e.target.value }
+                    })}
+                    className="w-full px-3 py-2 border rounded-lg text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Header Description</label>
+                  <textarea
+                    value={settings.impactDashboard?.description ?? DEFAULT_IMPACT_DASHBOARD_SETTINGS.description}
+                    onChange={(e) => setSettings({
+                      ...settings,
+                      impactDashboard: { ...(settings.impactDashboard || DEFAULT_IMPACT_DASHBOARD_SETTINGS), description: e.target.value }
+                    })}
+                    rows={2}
+                    className="w-full px-3 py-2 border rounded-lg text-sm"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="p-4 bg-emerald-50/50 rounded-xl border border-emerald-100 space-y-4">
+              <h4 className="text-sm font-bold text-gray-800">KPI Card Badges & Customization</h4>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">People Served Badge</label>
+                  <input
+                    type="text"
+                    value={settings.impactDashboard?.peopleServedBadge ?? DEFAULT_IMPACT_DASHBOARD_SETTINGS.peopleServedBadge}
+                    onChange={(e) => setSettings({
+                      ...settings,
+                      impactDashboard: { ...(settings.impactDashboard || DEFAULT_IMPACT_DASHBOARD_SETTINGS), peopleServedBadge: e.target.value }
+                    })}
+                    className="w-full px-2.5 py-1.5 border rounded-md text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Active Programs Badge</label>
+                  <input
+                    type="text"
+                    value={settings.impactDashboard?.programsActiveBadge ?? DEFAULT_IMPACT_DASHBOARD_SETTINGS.programsActiveBadge}
+                    onChange={(e) => setSettings({
+                      ...settings,
+                      impactDashboard: { ...(settings.impactDashboard || DEFAULT_IMPACT_DASHBOARD_SETTINGS), programsActiveBadge: e.target.value }
+                    })}
+                    className="w-full px-2.5 py-1.5 border rounded-md text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Volunteers Badge</label>
+                  <input
+                    type="text"
+                    value={settings.impactDashboard?.volunteersActiveBadge ?? DEFAULT_IMPACT_DASHBOARD_SETTINGS.volunteersActiveBadge}
+                    onChange={(e) => setSettings({
+                      ...settings,
+                      impactDashboard: { ...(settings.impactDashboard || DEFAULT_IMPACT_DASHBOARD_SETTINGS), volunteersActiveBadge: e.target.value }
+                    })}
+                    className="w-full px-2.5 py-1.5 border rounded-md text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Funds Raised Badge</label>
+                  <input
+                    type="text"
+                    value={settings.impactDashboard?.fundsRaisedBadge ?? DEFAULT_IMPACT_DASHBOARD_SETTINGS.fundsRaisedBadge}
+                    onChange={(e) => setSettings({
+                      ...settings,
+                      impactDashboard: { ...(settings.impactDashboard || DEFAULT_IMPACT_DASHBOARD_SETTINGS), fundsRaisedBadge: e.target.value }
+                    })}
+                    className="w-full px-2.5 py-1.5 border rounded-md text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Communities Badge</label>
+                  <input
+                    type="text"
+                    value={settings.impactDashboard?.communitiesReachedBadge ?? DEFAULT_IMPACT_DASHBOARD_SETTINGS.communitiesReachedBadge}
+                    onChange={(e) => setSettings({
+                      ...settings,
+                      impactDashboard: { ...(settings.impactDashboard || DEFAULT_IMPACT_DASHBOARD_SETTINGS), communitiesReachedBadge: e.target.value }
+                    })}
+                    className="w-full px-2.5 py-1.5 border rounded-md text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Success Rate Badge</label>
+                  <input
+                    type="text"
+                    value={settings.impactDashboard?.successRateBadge ?? DEFAULT_IMPACT_DASHBOARD_SETTINGS.successRateBadge}
+                    onChange={(e) => setSettings({
+                      ...settings,
+                      impactDashboard: { ...(settings.impactDashboard || DEFAULT_IMPACT_DASHBOARD_SETTINGS), successRateBadge: e.target.value }
+                    })}
+                    className="w-full px-2.5 py-1.5 border rounded-md text-sm"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="p-4 bg-gray-50 rounded-xl border border-gray-200/70 space-y-4">
+              <h4 className="text-sm font-bold text-gray-800">Transparency Banner</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Headline</label>
+                  <input
+                    type="text"
+                    value={settings.impactDashboard?.commitmentTitle ?? DEFAULT_IMPACT_DASHBOARD_SETTINGS.commitmentTitle}
+                    onChange={(e) => setSettings({
+                      ...settings,
+                      impactDashboard: { ...(settings.impactDashboard || DEFAULT_IMPACT_DASHBOARD_SETTINGS), commitmentTitle: e.target.value }
+                    })}
+                    className="w-full px-3 py-2 border rounded-lg text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Button Text</label>
+                  <input
+                    type="text"
+                    value={settings.impactDashboard?.commitmentButtonText ?? DEFAULT_IMPACT_DASHBOARD_SETTINGS.commitmentButtonText}
+                    onChange={(e) => setSettings({
+                      ...settings,
+                      impactDashboard: { ...(settings.impactDashboard || DEFAULT_IMPACT_DASHBOARD_SETTINGS), commitmentButtonText: e.target.value }
+                    })}
+                    className="w-full px-3 py-2 border rounded-lg text-sm"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">Description</label>
+                <textarea
+                  value={settings.impactDashboard?.commitmentDescription ?? DEFAULT_IMPACT_DASHBOARD_SETTINGS.commitmentDescription}
+                  onChange={(e) => setSettings({
+                    ...settings,
+                    impactDashboard: { ...(settings.impactDashboard || DEFAULT_IMPACT_DASHBOARD_SETTINGS), commitmentDescription: e.target.value }
+                  })}
+                  rows={2}
+                  className="w-full px-3 py-2 border rounded-lg text-sm"
+                />
+              </div>
+            </div>
+          </Card>
+        </TabsContent>
+
+        {/* ===== VOLUNTEER PAGE SETTINGS ===== */}
+        <TabsContent value="volunteer">
+          <Card className="p-6 space-y-6">
+            <div className="flex items-center gap-3 border-b pb-4">
+              <div className="p-3 bg-purple-50 text-purple-600 rounded-xl">
+                <Heart size={24} />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-gray-900">Volunteer Page (/volunteer)</h3>
+                <p className="text-sm text-gray-500">Customize the volunteer hero banner, background image, and application confirmation messages.</p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Hero Title</label>
+                <input
+                  type="text"
+                  value={settings.volunteer?.heroTitle ?? DEFAULT_VOLUNTEER_SETTINGS.heroTitle}
+                  onChange={(e) => setSettings({
+                    ...settings,
+                    volunteer: { ...(settings.volunteer || DEFAULT_VOLUNTEER_SETTINGS), heroTitle: e.target.value }
+                  })}
+                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Hero Subtitle</label>
+                <textarea
+                  value={settings.volunteer?.heroSubtitle ?? DEFAULT_VOLUNTEER_SETTINGS.heroSubtitle}
+                  onChange={(e) => setSettings({
+                    ...settings,
+                    volunteer: { ...(settings.volunteer || DEFAULT_VOLUNTEER_SETTINGS), heroSubtitle: e.target.value }
+                  })}
+                  rows={2}
+                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Hero Background Image</label>
+                <div className="flex gap-3 items-center">
+                  <input
+                    type="text"
+                    value={settings.volunteer?.heroImage ?? DEFAULT_VOLUNTEER_SETTINGS.heroImage}
+                    onChange={(e) => setSettings({
+                      ...settings,
+                      volunteer: { ...(settings.volunteer || DEFAULT_VOLUNTEER_SETTINGS), heroImage: e.target.value }
+                    })}
+                    className="flex-1 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 text-sm"
+                  />
+                  <label className="cursor-pointer bg-emerald-50 hover:bg-emerald-100 text-emerald-700 px-4 py-2 rounded-lg border border-emerald-200 text-sm font-medium flex items-center gap-2 transition-colors">
+                    <Upload size={16} /> Upload Photo
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleVolunteerBannerUpload}
+                    />
+                  </label>
+                </div>
+              </div>
+
+              <div className="pt-4 border-t border-gray-200">
+                <h4 className="text-sm font-bold text-gray-800 mb-3">Application Submission Feedback</h4>
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">Success Headline</label>
+                    <input
+                      type="text"
+                      value={settings.volunteer?.successTitle ?? DEFAULT_VOLUNTEER_SETTINGS.successTitle}
+                      onChange={(e) => setSettings({
+                        ...settings,
+                        volunteer: { ...(settings.volunteer || DEFAULT_VOLUNTEER_SETTINGS), successTitle: e.target.value }
+                      })}
+                      className="w-full px-3 py-2 border rounded-lg text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">Success Message</label>
+                    <textarea
+                      value={settings.volunteer?.successMessage ?? DEFAULT_VOLUNTEER_SETTINGS.successMessage}
+                      onChange={(e) => setSettings({
+                        ...settings,
+                        volunteer: { ...(settings.volunteer || DEFAULT_VOLUNTEER_SETTINGS), successMessage: e.target.value }
+                      })}
+                      rows={2}
+                      className="w-full px-3 py-2 border rounded-lg text-sm"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
@@ -1258,6 +2281,22 @@ export function SiteSettingsTab({ settings: initialSettings, onUpdate, accessTok
                   rows={6}
                   className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
                   placeholder="Enter your Refund Policy here..."
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm text-gray-700 mb-2 font-medium">Cookies Policy</label>
+                <textarea
+                  value={settings.legal?.cookiesPolicy || ''}
+                  onChange={(e) =>
+                    setSettings({
+                      ...settings,
+                      legal: { ...settings.legal, cookiesPolicy: e.target.value },
+                    })
+                  }
+                  rows={6}
+                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
+                  placeholder="Enter your Cookies Policy here..."
                 />
               </div>
             </div>
@@ -1891,6 +2930,199 @@ export function SiteSettingsTab({ settings: initialSettings, onUpdate, accessTok
             <h3 className="text-lg text-gray-900 mb-4">Donation & Payment Details</h3>
             <p className="text-sm text-gray-500 mb-6">These values appear on the Donation page and are fully editable here.</p>
             <div className="space-y-6">
+              {/* Donation Page Headlines & Messages */}
+              <div className="p-4 bg-gray-50 rounded-xl border border-gray-200/70 space-y-4">
+                <h4 className="text-sm font-bold text-gray-800">Donation Page Banner & Headlines</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">Badge Text</label>
+                    <input
+                      type="text"
+                      value={settings.donation?.badge ?? DEFAULT_DONATION_PAGE_SETTINGS.badge}
+                      onChange={(e) => setSettings({
+                        ...settings,
+                        donation: { ...(settings.donation || DEFAULT_DONATION_PAGE_SETTINGS), badge: e.target.value }
+                      })}
+                      className="w-full px-3 py-2 border rounded-lg text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">Main Heading</label>
+                    <input
+                      type="text"
+                      value={settings.donation?.title ?? DEFAULT_DONATION_PAGE_SETTINGS.title}
+                      onChange={(e) => setSettings({
+                        ...settings,
+                        donation: { ...(settings.donation || DEFAULT_DONATION_PAGE_SETTINGS), title: e.target.value }
+                      })}
+                      className="w-full px-3 py-2 border rounded-lg text-sm"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">Primary Subtitle</label>
+                    <textarea
+                      value={settings.donation?.subtitle ?? DEFAULT_DONATION_PAGE_SETTINGS.subtitle}
+                      onChange={(e) => setSettings({
+                        ...settings,
+                        donation: { ...(settings.donation || DEFAULT_DONATION_PAGE_SETTINGS), subtitle: e.target.value }
+                      })}
+                      rows={2}
+                      className="w-full px-3 py-2 border rounded-lg text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">Secondary Subtitle / Accent</label>
+                    <textarea
+                      value={settings.donation?.secondarySubtitle ?? DEFAULT_DONATION_PAGE_SETTINGS.secondarySubtitle}
+                      onChange={(e) => setSettings({
+                        ...settings,
+                        donation: { ...(settings.donation || DEFAULT_DONATION_PAGE_SETTINGS), secondarySubtitle: e.target.value }
+                      })}
+                      rows={2}
+                      className="w-full px-3 py-2 border rounded-lg text-sm"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Left Card Mission Statements & Impact */}
+              <div className="p-4 bg-emerald-50/60 rounded-xl border border-emerald-200/80 space-y-4">
+                <h4 className="text-sm font-bold text-gray-800">Mission Box & Impact Allocation</h4>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Organization Title</label>
+                  <input
+                    type="text"
+                    value={settings.donation?.orgName ?? DEFAULT_DONATION_PAGE_SETTINGS.orgName}
+                    onChange={(e) => setSettings({
+                      ...settings,
+                      donation: { ...(settings.donation || DEFAULT_DONATION_PAGE_SETTINGS), orgName: e.target.value }
+                    })}
+                    className="w-full px-3 py-2 border rounded-lg text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Registration Subtitle</label>
+                  <input
+                    type="text"
+                    value={settings.donation?.orgSub ?? DEFAULT_DONATION_PAGE_SETTINGS.orgSub}
+                    onChange={(e) => setSettings({
+                      ...settings,
+                      donation: { ...(settings.donation || DEFAULT_DONATION_PAGE_SETTINGS), orgSub: e.target.value }
+                    })}
+                    className="w-full px-3 py-2 border rounded-lg text-sm"
+                  />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">Mission Quote 1 (Bold)</label>
+                    <textarea
+                      value={settings.donation?.leftQuote1 ?? DEFAULT_DONATION_PAGE_SETTINGS.leftQuote1}
+                      onChange={(e) => setSettings({
+                        ...settings,
+                        donation: { ...(settings.donation || DEFAULT_DONATION_PAGE_SETTINGS), leftQuote1: e.target.value }
+                      })}
+                      rows={3}
+                      className="w-full px-3 py-2 border rounded-lg text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">Mission Quote 2 (Callout)</label>
+                    <textarea
+                      value={settings.donation?.leftQuote2 ?? DEFAULT_DONATION_PAGE_SETTINGS.leftQuote2}
+                      onChange={(e) => setSettings({
+                        ...settings,
+                        donation: { ...(settings.donation || DEFAULT_DONATION_PAGE_SETTINGS), leftQuote2: e.target.value }
+                      })}
+                      rows={3}
+                      className="w-full px-3 py-2 border rounded-lg text-sm"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">Why Your Support Matters (Title)</label>
+                    <input
+                      type="text"
+                      value={settings.donation?.whySupportTitle ?? DEFAULT_DONATION_PAGE_SETTINGS.whySupportTitle}
+                      onChange={(e) => setSettings({
+                        ...settings,
+                        donation: { ...(settings.donation || DEFAULT_DONATION_PAGE_SETTINGS), whySupportTitle: e.target.value }
+                      })}
+                      className="w-full px-3 py-2 border rounded-lg text-sm"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-700 mb-1">Program % (e.g. 90%)</label>
+                      <input
+                        type="text"
+                        value={settings.donation?.programPercentage ?? DEFAULT_DONATION_PAGE_SETTINGS.programPercentage}
+                        onChange={(e) => setSettings({
+                          ...settings,
+                          donation: { ...(settings.donation || DEFAULT_DONATION_PAGE_SETTINGS), programPercentage: e.target.value }
+                        })}
+                        className="w-full px-3 py-2 border rounded-lg text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-700 mb-1">Program Label</label>
+                      <input
+                        type="text"
+                        value={settings.donation?.programLabel ?? DEFAULT_DONATION_PAGE_SETTINGS.programLabel}
+                        onChange={(e) => setSettings({
+                          ...settings,
+                          donation: { ...(settings.donation || DEFAULT_DONATION_PAGE_SETTINGS), programLabel: e.target.value }
+                        })}
+                        className="w-full px-3 py-2 border rounded-lg text-sm"
+                      />
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Why Your Support Matters (Text)</label>
+                  <textarea
+                    value={settings.donation?.whySupportText ?? DEFAULT_DONATION_PAGE_SETTINGS.whySupportText}
+                    onChange={(e) => setSettings({
+                      ...settings,
+                      donation: { ...(settings.donation || DEFAULT_DONATION_PAGE_SETTINGS), whySupportText: e.target.value }
+                    })}
+                    rows={2}
+                    className="w-full px-3 py-2 border rounded-lg text-sm"
+                  />
+                </div>
+              </div>
+
+              {/* Security & Privacy Notice */}
+              <div className="p-4 bg-gray-50 rounded-xl border border-gray-200/70 space-y-3">
+                <h4 className="text-sm font-bold text-gray-800">Security & Privacy Guarantee</h4>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Privacy Guarantee Title</label>
+                  <input
+                    type="text"
+                    value={settings.donation?.privacyTitle ?? DEFAULT_DONATION_PAGE_SETTINGS.privacyTitle}
+                    onChange={(e) => setSettings({
+                      ...settings,
+                      donation: { ...(settings.donation || DEFAULT_DONATION_PAGE_SETTINGS), privacyTitle: e.target.value }
+                    })}
+                    className="w-full px-3 py-2 border rounded-lg text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Privacy Guarantee Text</label>
+                  <textarea
+                    value={settings.donation?.privacyText ?? DEFAULT_DONATION_PAGE_SETTINGS.privacyText}
+                    onChange={(e) => setSettings({
+                      ...settings,
+                      donation: { ...(settings.donation || DEFAULT_DONATION_PAGE_SETTINGS), privacyText: e.target.value }
+                    })}
+                    rows={2}
+                    className="w-full px-3 py-2 border rounded-lg text-sm"
+                  />
+                </div>
+              </div>
+
               <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
                 <h4 className="text-sm font-semibold text-gray-800 mb-3">MTN Mobile Money</h4>
                 <div>
@@ -1928,7 +3160,7 @@ export function SiteSettingsTab({ settings: initialSettings, onUpdate, accessTok
                 <div className="space-y-3">
                   {[
                     { key: 'bankName', label: 'Bank Name', placeholder: 'Stanbic Bank Uganda' },
-                    { key: 'accountName', label: 'Account Name', placeholder: 'Resti Kiryandongo CBO' },
+                    { key: 'accountName', label: 'Account Name', placeholder: 'RESTI' },
                     { key: 'accountNumber', label: 'Account Number', placeholder: '9030012345678' },
                     { key: 'branch', label: 'Branch', placeholder: 'Kiryandongo Branch' },
                     { key: 'swiftCode', label: 'SWIFT / BIC Code', placeholder: 'SBICUGKX' },

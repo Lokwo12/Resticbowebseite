@@ -27,14 +27,18 @@ import { FloatingContact } from './components/FloatingContact';
 import { LiveChat } from './components/LiveChat';
 import { ScrollToTop } from './components/ScrollToTop';
 import { PrivacyBanner } from './components/PrivacyBanner';
-import { EnhancedAdminDashboard } from './components/EnhancedAdminDashboard';
+const EnhancedAdminDashboard = React.lazy(() => 
+  import('./components/EnhancedAdminDashboard').then(m => ({ default: m.EnhancedAdminDashboard }))
+);
 import { LegalPage } from './components/LegalPage';
 import { NewsArchive } from './components/NewsArchive';
 import { StoriesArchive } from './components/StoriesArchive';
 import { StoryDetail } from './components/StoryDetail';
 import { ProgramDetail } from './components/ProgramDetail';
+import { ProgramsPage } from './components/ProgramsPage';
 import { NewsDetail } from './components/NewsDetail';
 import { TeamPage } from './components/TeamPage';
+import { TeamMemberDetail } from './components/TeamMemberDetail';
 import { ImpactReports } from './components/ImpactReports';
 import { VolunteerPage } from './components/VolunteerPage';
 import { FAQPage } from './components/FAQPage';
@@ -61,7 +65,9 @@ function PageTitleManager() {
   const titleMap: Record<string, string> = {
       '/': 'Home | RESTI CBO',
       '/admin': 'Admin Dashboard | RESTI CBO',
+      '/super-secret-admin-route': 'Admin Dashboard | RESTI CBO',
       '/privacy': 'Privacy Policy | RESTI CBO',
+      '/cookies': 'Cookies Policy | RESTI CBO',
       '/terms': 'Terms of Service | RESTI CBO',
       '/refund': 'Refund Policy | RESTI CBO',
       '/news': 'Latest News | RESTI CBO',
@@ -74,16 +80,23 @@ function PageTitleManager() {
       '/partners': 'Our Partners | RESTI CBO',
       '/opportunities': 'Opportunities | RESTI CBO',
       '/donate': 'Donate | Support Our Mission',
-      '/contact': 'Contact Us | RESTI CBO',
-      '/financials': 'Financial Transparency | RESTI CBO',
-      '/about': 'About Us | RESTI CBO',
-      '/events': 'Events Calendar | RESTI CBO',
-      '/resources': 'Resources & Downloads | RESTI CBO',
+      '/donor': 'Donor Portal | RESTI',
+      '/donor/dashboard': 'Donor Portal | RESTI',
+      '/donor/portal': 'Donor Portal | RESTI',
+      '/login': 'Donor Sign In | RESTI',
+      '/register': 'Create Donor Account | RESTI',
+      '/contact': 'Contact Us | RESTI',
+      '/financials': 'Financial Transparency | RESTI',
+      '/about': 'About Us | RESTI',
+      '/events': 'Events Calendar | RESTI',
+      '/resources': 'Resources & Downloads | RESTI',
+      '/programs': 'Our Programs | RESTI',
     };
 
-    let title = titleMap[pathname] || 'RESTI CBO';
+    let title = titleMap[pathname] || 'RESTI';
     if (pathname.startsWith('/news/')) title = 'News Article | RESTI CBO';
     else if (pathname.startsWith('/programs/')) title = 'Program Details | RESTI CBO';
+    else if (pathname.startsWith('/team/')) title = 'Team Member | RESTI CBO';
     else if (pathname.startsWith('/pages/')) title = 'Page | RESTI CBO';
 
   return <SEO title={title} />;
@@ -166,7 +179,14 @@ class AdminErrorBoundary extends React.Component<
 function AdminPage() {
   return (
     <AdminErrorBoundary>
-      <EnhancedAdminDashboard />
+      <React.Suspense fallback={
+        <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center text-white">
+          <div className="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mb-4" />
+          <p className="text-sm font-semibold tracking-wider uppercase text-slate-300">Loading Secure Admin Dashboard...</p>
+        </div>
+      }>
+        <EnhancedAdminDashboard />
+      </React.Suspense>
     </AdminErrorBoundary>
   );
 }
@@ -205,15 +225,19 @@ export default function App() {
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/admin" element={<AdminPage />} />
+        <Route path="/super-secret-admin-route" element={<AdminPage />} />
         <Route path="/privacy" element={<MainLayout><LegalPage type="privacy" /></MainLayout>} />
+        <Route path="/cookies" element={<MainLayout><LegalPage type="cookies" /></MainLayout>} />
         <Route path="/terms" element={<MainLayout><LegalPage type="terms" /></MainLayout>} />
         <Route path="/refund" element={<MainLayout><LegalPage type="refund" /></MainLayout>} />
         <Route path="/news" element={<MainLayout><NewsArchive /></MainLayout>} />
         <Route path="/news/:id" element={<MainLayout><NewsDetail /></MainLayout>} />
         <Route path="/stories" element={<MainLayout><StoriesArchive /></MainLayout>} />
         <Route path="/stories/:id" element={<MainLayout><StoryDetail /></MainLayout>} />
+        <Route path="/programs" element={<MainLayout><ProgramsPage /></MainLayout>} />
         <Route path="/programs/:id" element={<MainLayout><ProgramDetail /></MainLayout>} />
         <Route path="/team" element={<MainLayout><TeamPage /></MainLayout>} />
+        <Route path="/team/:id" element={<MainLayout><TeamMemberDetail /></MainLayout>} />
         <Route path="/about" element={<MainLayout><AdminErrorBoundary><AboutPage /></AdminErrorBoundary></MainLayout>} />
         <Route path="/reports" element={<MainLayout><ImpactReports /></MainLayout>} />
         <Route path="/impact-dashboard" element={<MainLayout><ImpactDashboard /></MainLayout>} />
@@ -224,10 +248,12 @@ export default function App() {
         <Route path="/partners" element={<MainLayout><PartnersPage /></MainLayout>} />
         <Route path="/opportunities" element={<MainLayout><OpportunitiesPage /></MainLayout>} />
         <Route path="/donate" element={<MainLayout><CardPaymentPage /></MainLayout>} />
+        <Route path="/donor" element={<Navigate to="/donor/dashboard" replace />} />
+        <Route path="/donor/portal" element={<Navigate to="/donor/dashboard" replace />} />
+        <Route path="/donor/dashboard" element={<MainLayout><DonorDashboard /></MainLayout>} />
         <Route path="/login" element={<MainLayout><Login /></MainLayout>} />
         <Route path="/register" element={<MainLayout><Register /></MainLayout>} />
         <Route path="/reset-password" element={<MainLayout><ResetPassword /></MainLayout>} />
-        <Route path="/donor/dashboard" element={<MainLayout><DonorDashboard /></MainLayout>} />
         <Route path="/contact" element={<ContactPage />} />
         <Route path="/financials" element={<MainLayout><FinancialReports /></MainLayout>} />
         <Route path="/pages/:slug" element={<MainLayout><CustomPage /></MainLayout>} />

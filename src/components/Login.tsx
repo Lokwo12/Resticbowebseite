@@ -66,7 +66,9 @@ export function Login() {
       }
 
       toast.success('Successfully logged in!');
-      navigate('/donor/dashboard');
+      const urlParams = new URLSearchParams(window.location.search);
+      const target = urlParams.get('redirect') || '/donor/dashboard';
+      navigate(target);
     } catch (err: any) {
       if (err.message === 'Invalid login credentials') {
         toast.error('Invalid email or password. If you recently created an account, please confirm your email address first.', {
@@ -88,17 +90,20 @@ export function Login() {
     <div className="min-h-screen bg-slate-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="flex justify-center">
-          <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center">
-            <Heart className="w-6 h-6 text-emerald-600" fill="currentColor" />
+          <div className="w-14 h-14 bg-emerald-100 rounded-2xl flex items-center justify-center shadow-xs">
+            <Heart className="w-7 h-7 text-emerald-600" fill="currentColor" />
           </div>
         </div>
-        <h2 className="mt-6 text-center text-3xl font-bold font-heading tracking-tight text-gray-900">
-          Sign in to your account
+        <h2 className="mt-5 text-center text-3xl font-extrabold font-heading tracking-tight text-gray-900">
+          RESTI Donor Portal
         </h2>
-        <p className="mt-2 text-center text-sm text-gray-600">
-          Or{' '}
-          <Link to="/register" className="font-medium text-emerald-600 hover:text-emerald-500">
-            create a new donor account
+        <p className="mt-2 text-center text-sm text-gray-600 max-w-sm mx-auto">
+          Sign in to view your verified giving history, download tax receipts, and track ongoing community impact.
+        </p>
+        <p className="mt-2 text-center text-sm text-gray-500">
+          New supporter?{' '}
+          <Link to="/register" className="font-bold text-emerald-600 hover:text-emerald-500 underline">
+            Create a donor account
           </Link>
         </p>
       </div>

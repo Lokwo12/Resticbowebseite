@@ -101,12 +101,12 @@ export function Contact() {
         title: 'Get Involved',
         subtitle: 'Join us in making a difference! Whether you want to volunteer, donate, or simply learn more about our work, we\'d love to hear from you.',
         address: 'Kiryandongo District, Uganda',
-        email: 'info@restikirya.org',
-        phone: '+256 XXX XXX XXX',
+        email: 'info@resticbo.org',
+        phone: '+256 700 000 000',
         socialLinks: {
-          facebook: 'https://www.facebook.com/restikiryandongo',
-          twitter: 'https://x.com/restikirya',
-          instagram: 'https://www.instagram.com/restikiryandongo'
+          facebook: 'https://www.facebook.com/resticbo',
+          twitter: 'https://x.com/resticbo',
+          instagram: 'https://www.instagram.com/resticbo'
         },
         supportItems: [
           'Volunteer your time and skills',
@@ -123,9 +123,9 @@ export function Contact() {
         ],
         workingHours: 'Monday - Friday: 8:00 AM - 5:00 PM',
         departments: [
-          { name: 'General Inquiries', email: 'info@restikirya.org' },
-          { name: 'Partnerships', email: 'partners@restikirya.org' },
-          { name: 'Volunteering', email: 'volunteer@restikirya.org' }
+          { name: 'General Inquiries', email: 'info@resticbo.org' },
+          { name: 'Partnerships', email: 'partners@resticbo.org' },
+          { name: 'Volunteering', email: 'volunteer@resticbo.org' }
         ]
       });
     } finally {

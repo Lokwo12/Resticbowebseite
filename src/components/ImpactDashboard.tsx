@@ -24,19 +24,31 @@ interface Report {
 }
 
 const FALLBACK_STATS: ImpactStats = {
-  peopleServed: 2500,
-  programsActive: 10,
-  volunteersActive: 50,
-  fundsRaised: 125000000,
-  communitiesReached: 6,
-  successRate: 90,
+  peopleServed: 0,
+  programsActive: 0,
+  volunteersActive: 0,
+  fundsRaised: 0,
+  communitiesReached: 0,
+  successRate: 0,
 };
 
 export function ImpactDashboard() {
   const [stats, setStats] = useState<ImpactStats>(FALLBACK_STATS);
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(false);
-  const [sectionSettings, setSectionSettings] = useState({ title: 'Impact Dashboard', description: 'See the measurable impact of our work through data, statistics, and comprehensive reports.' });
+  const [impactConfig, setImpactConfig] = useState({
+    title: 'Impact Dashboard',
+    description: 'See the measurable impact of our work through data, statistics, and comprehensive reports.',
+    peopleServedBadge: '+12% YoY',
+    programsActiveBadge: 'Active',
+    volunteersActiveBadge: 'Growing',
+    fundsRaisedBadge: '2024',
+    communitiesReachedBadge: 'Expanding',
+    successRateBadge: 'Excellence',
+    commitmentTitle: 'Committed to Transparency',
+    commitmentDescription: 'We believe in complete transparency about how donations are used and the impact we create. Our annual reports provide detailed breakdowns of our programs, finances, and outcomes.',
+    commitmentButtonText: 'Request More Information'
+  });
 
   useEffect(() => {
     fetchData();
@@ -56,8 +68,10 @@ export function ImpactDashboard() {
 
       if (response.ok) {
         const data = await response.json();
-        if (data.settings?.sections?.impact) {
-          setSectionSettings(data.settings.sections.impact);
+        if (data.settings?.impactDashboard) {
+          setImpactConfig((prev) => ({ ...prev, ...data.settings.impactDashboard }));
+        } else if (data.settings?.sections?.impact) {
+          setImpactConfig((prev) => ({ ...prev, ...data.settings.sections.impact }));
         }
       }
     } catch (err) {
@@ -103,10 +117,10 @@ export function ImpactDashboard() {
         <div className="text-center mb-12">
           <div className="flex items-center justify-center gap-2 mb-4">
             <TrendingUp className="text-emerald-600" size={32} />
-            <h2 className="text-emerald-600">{sectionSettings.title}</h2>
+            <h2 className="text-emerald-600">{impactConfig.title}</h2>
           </div>
           <p className="text-gray-600 max-w-3xl mx-auto">
-            {sectionSettings.description}
+            {impactConfig.description}
           </p>
         </div>
 
@@ -119,7 +133,7 @@ export function ImpactDashboard() {
                 <div className="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center shadow-inner">
                   <Users className="text-emerald-600" size={24} />
                 </div>
-                <Badge variant="secondary">+12% YoY</Badge>
+                <Badge variant="secondary">{impactConfig.peopleServedBadge || '+12% YoY'}</Badge>
               </div>
               <h3 className="text-gray-600 text-sm mb-1 font-medium">People Served</h3>
               <p className="text-3xl font-bold text-gray-900 mb-3">{stats.peopleServed.toLocaleString()}</p>
@@ -132,7 +146,7 @@ export function ImpactDashboard() {
                 <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center shadow-inner">
                   <BookOpen className="text-blue-600" size={24} />
                 </div>
-                <Badge variant="secondary">Active</Badge>
+                <Badge variant="secondary">{impactConfig.programsActiveBadge || 'Active'}</Badge>
               </div>
               <h3 className="text-gray-600 text-sm mb-1 font-medium">Active Programs</h3>
               <p className="text-3xl font-bold text-gray-900 mb-3">{stats.programsActive}</p>
@@ -145,7 +159,7 @@ export function ImpactDashboard() {
                 <div className="w-12 h-12 bg-purple-50 rounded-xl flex items-center justify-center shadow-inner">
                   <Users className="text-purple-600" size={24} />
                 </div>
-                <Badge variant="secondary">Growing</Badge>
+                <Badge variant="secondary">{impactConfig.volunteersActiveBadge || 'Growing'}</Badge>
               </div>
               <h3 className="text-gray-600 text-sm mb-1 font-medium">Active Volunteers</h3>
               <p className="text-3xl font-bold text-gray-900 mb-3">{stats.volunteersActive}</p>
@@ -158,7 +172,7 @@ export function ImpactDashboard() {
                 <div className="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center shadow-inner">
                   <Heart className="text-emerald-600" size={24} />
                 </div>
-                <Badge variant="secondary">2024</Badge>
+                <Badge variant="secondary">{impactConfig.fundsRaisedBadge || '2025'}</Badge>
               </div>
               <h3 className="text-gray-600 text-sm mb-1 font-medium">Funds Raised</h3>
               <p className="text-2xl font-bold text-gray-900 mb-1">UGX {stats.fundsRaised.toLocaleString()}</p>
@@ -172,7 +186,7 @@ export function ImpactDashboard() {
                 <div className="w-12 h-12 bg-orange-50 rounded-xl flex items-center justify-center shadow-inner">
                   <Users className="text-orange-600" size={24} />
                 </div>
-                <Badge variant="secondary">Expanding</Badge>
+                <Badge variant="secondary">{impactConfig.communitiesReachedBadge || 'Expanding'}</Badge>
               </div>
               <h3 className="text-gray-600 text-sm mb-1 font-medium">Communities Reached</h3>
               <p className="text-3xl font-bold text-gray-900 mb-3">{stats.communitiesReached}</p>
@@ -185,7 +199,7 @@ export function ImpactDashboard() {
                 <div className="w-12 h-12 bg-green-50 rounded-xl flex items-center justify-center shadow-inner">
                   <TrendingUp className="text-green-600" size={24} />
                 </div>
-                <Badge variant="secondary">Excellence</Badge>
+                <Badge variant="secondary">{impactConfig.successRateBadge || 'Excellence'}</Badge>
               </div>
               <h3 className="text-gray-600 text-sm mb-1 font-medium">Program Success Rate</h3>
               <p className="text-3xl font-bold text-gray-900 mb-3">{stats.successRate}%</p>
@@ -246,16 +260,15 @@ export function ImpactDashboard() {
 
         {/* Transparency Message */}
         <div className="bg-gradient-to-r from-emerald-600 to-emerald-700 rounded-2xl p-8 md:p-12 text-center text-white">
-          <h3 className="mb-4">Committed to Transparency</h3>
+          <h3 className="mb-4">{impactConfig.commitmentTitle || 'Committed to Transparency'}</h3>
           <p className="mb-6 text-emerald-50 max-w-2xl mx-auto">
-            We believe in complete transparency about how donations are used and the impact we create. 
-            Our annual reports provide detailed breakdowns of our programs, finances, and outcomes.
+            {impactConfig.commitmentDescription || 'We believe in complete transparency about how donations are used and the impact we create. Our annual reports provide detailed breakdowns of our programs, finances, and outcomes.'}
           </p>
           <button
             onClick={() => document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' })}
-            className="bg-white text-emerald-600 px-8 py-3 rounded-lg hover:bg-emerald-50 transition-colors"
+            className="bg-white text-emerald-600 px-8 py-3 rounded-lg hover:bg-emerald-50 transition-colors font-medium"
           >
-            Request More Information
+            {impactConfig.commitmentButtonText || 'Request More Information'}
           </button>
         </div>
       </div>

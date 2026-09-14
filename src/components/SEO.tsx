@@ -9,13 +9,13 @@ interface SEOProps {
 }
 
 export function SEO({
-  title = 'Resti Kiryandongo CBO',
+  title = 'RESTI — Refugee Empowerment For Sustainable Transformation Initiative',
   description = 'Empowering communities through education, healthcare, and sustainable development.',
   image = '/logo.png',
   type = 'website',
 }: SEOProps) {
   const { pathname } = useLocation();
-  const canonicalUrl = `https://restikirya.org${pathname}`;
+  const canonicalUrl = `https://resticbo.org${pathname}`;
 
   return (
     <Helmet>
@@ -43,9 +43,9 @@ export function SEO({
         {JSON.stringify({
           "@context": "https://schema.org",
           "@type": "NGO",
-          "name": "Resti Kiryandongo CBO",
-          "url": "https://restikirya.org",
-          "logo": "https://restikirya.org/logo.png",
+          "name": "RESTI — Refugee Empowerment For Sustainable Transformation Initiative",
+          "url": "https://resticbo.org",
+          "logo": "https://resticbo.org/logo.png",
           "description": description,
           "image": image,
           "address": {

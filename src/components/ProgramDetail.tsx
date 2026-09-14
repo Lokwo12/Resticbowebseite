@@ -17,6 +17,57 @@ interface Program {
   createdAt: string;
 }
 
+const FALLBACK_PROGRAMS: Record<string, Program> = {
+  education: {
+    id: 'education',
+    title: 'Education & Literacy',
+    description: 'Providing quality education support, school supplies, and tutoring to children and young adults in Kiryandongo District to unlock their potential.',
+    image: 'https://images.unsplash.com/photo-1666281269793-da06484657e8?w=600&q=80',
+    category: 'Education',
+    createdAt: '2026-01-01T00:00:00.000Z',
+  },
+  healthcare: {
+    id: 'healthcare',
+    title: 'Community Health & Nutrition',
+    description: 'Running mobile health clinics, maternal care programmes, and nutrition campaigns to improve health outcomes for vulnerable families.',
+    image: 'https://images.unsplash.com/photo-1706806595136-5afefb45da1a?w=600&q=80',
+    category: 'Healthcare',
+    createdAt: '2026-01-01T00:00:00.000Z',
+  },
+  livelihoods: {
+    id: 'livelihoods',
+    title: 'Sustainable Livelihoods',
+    description: 'Equipping households with vocational skills, microfinance access, and agricultural training to achieve economic independence.',
+    image: 'https://images.unsplash.com/photo-1761466977752-de51b3ecce84?w=600&q=80',
+    category: 'Livelihoods',
+    createdAt: '2026-01-01T00:00:00.000Z',
+  },
+  wash: {
+    id: 'wash',
+    title: 'Clean Water & Sanitation (WASH)',
+    description: 'Building boreholes, latrines, and hygiene education hubs to ensure safe water and dignified sanitation for every household.',
+    image: 'https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=600&q=80',
+    category: 'Community',
+    createdAt: '2026-01-01T00:00:00.000Z',
+  },
+  women: {
+    id: 'women',
+    title: 'Women Empowerment',
+    description: 'Supporting women through savings groups, legal aid, gender-based violence prevention, and leadership training programmes.',
+    image: 'https://images.unsplash.com/photo-1573497620053-ea5300f94f21?w=600&q=80',
+    category: 'Community',
+    createdAt: '2026-01-01T00:00:00.000Z',
+  },
+  youth: {
+    id: 'youth',
+    title: 'Youth Development',
+    description: 'Mentorship, sports, arts, and civic engagement programmes that build confidence and purpose in the next generation.',
+    image: 'https://images.unsplash.com/photo-1641569707854-c80945fb4719?w=600&q=80',
+    category: 'Education',
+    createdAt: '2026-01-01T00:00:00.000Z',
+  },
+};
+
 export function ProgramDetail() {
   const { open: openDonationModal } = useDonationModal();
   const { id } = useParams<{ id: string }>();
@@ -27,33 +78,78 @@ export function ProgramDetail() {
     const fetchProgram = async () => {
       try {
         setLoading(true);
-        const response = await fetch(
-          `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/programs`,
-          {
-            headers: {
-              Authorization: `Bearer ${publicAnonKey}`,
-            },
-          }
-        );
+        const cleanId = (id || '').replace(/^program:/, '').trim().toLowerCase();
+        let matchedProgram: Program | null = FALLBACK_PROGRAMS[cleanId] || null;
 
-        if (response.ok) {
-          const data = await response.json();
-          const programs = data.programs || [];
-          
-          // Find the program with the matching ID
-          const found = programs.find((p: any) => p.id === id || p.key === id);
-          
-          if (found) {
-            setProgram({
-              id: found.key || found.id,
-              title: found.value?.title || found.title || '',
-              description: found.value?.description || found.description || '',
-              image: found.value?.image || found.image || '',
-              category: found.value?.category || found.category || 'general',
-              createdAt: found.value?.createdAt || found.createdAt || new Date().toISOString(),
+        // Try single program API route
+        try {
+          const singleRes = await fetch(
+            `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/programs/${encodeURIComponent(cleanId)}`,
+            {
+              headers: { Authorization: `Bearer ${publicAnonKey}` },
+              signal: AbortSignal.timeout(6000),
+            }
+          );
+          if (singleRes.ok) {
+            const singleData = await singleRes.json();
+            if (singleData.program) {
+              const p = singleData.program;
+              matchedProgram = {
+                id: (p.value?.id || p.key || cleanId).replace(/^program:/, ''),
+                title: p.value?.title || p.title || '',
+                description: p.value?.description || p.description || '',
+                image: p.value?.image || p.image || '',
+                category: p.value?.category || p.category || 'general',
+                createdAt: p.value?.createdAt || p.createdAt || new Date().toISOString(),
+              };
+            }
+          }
+        } catch {
+          // Fall through to full list search
+        }
+
+        // If not found yet, fetch full list from API
+        if (!matchedProgram) {
+          const response = await fetch(
+            `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/programs`,
+            {
+              headers: { Authorization: `Bearer ${publicAnonKey}` },
+              signal: AbortSignal.timeout(6000),
+            }
+          );
+
+          if (response.ok) {
+            const data = await response.json();
+            const programs = data.programs || [];
+            
+            const found = programs.find((p: any) => {
+              const pKey = (p.key || '').replace(/^program:/, '').trim().toLowerCase();
+              const pId = (p.value?.id || p.id || '').replace(/^program:/, '').trim().toLowerCase();
+              const pTitle = (p.value?.title || p.title || '').trim().toLowerCase().replace(/\s+/g, '-');
+              return (
+                pKey === cleanId ||
+                pId === cleanId ||
+                pTitle === cleanId ||
+                p.key === id ||
+                p.id === id ||
+                p.value?.id === id
+              );
             });
+            
+            if (found) {
+              matchedProgram = {
+                id: (found.value?.id || found.key || cleanId).replace(/^program:/, ''),
+                title: found.value?.title || found.title || '',
+                description: found.value?.description || found.description || '',
+                image: found.value?.image || found.image || '',
+                category: found.value?.category || found.category || 'general',
+                createdAt: found.value?.createdAt || found.createdAt || new Date().toISOString(),
+              };
+            }
           }
         }
+
+        setProgram(matchedProgram);
       } catch (err) {
         console.error('Error fetching program detail:', err);
       } finally {
@@ -129,7 +225,11 @@ export function ProgramDetail() {
             <div className="flex flex-wrap items-center gap-6 text-sm text-gray-500 mb-8 pb-6 border-b border-gray-100">
               <div className="flex items-center gap-2">
                 <Calendar size={16} />
-                <span>Added on {new Date(program.createdAt).toLocaleDateString()}</span>
+                <span>
+                  {program.createdAt && !isNaN(new Date(program.createdAt).getTime())
+                    ? `Added on ${new Date(program.createdAt).toLocaleDateString()}`
+                    : 'Ongoing Program'}
+                </span>
               </div>
               <div className="flex items-center gap-2">
                 <Share2 size={16} className="cursor-pointer hover:text-emerald-600" />
