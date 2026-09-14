@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Heart, Lock, Phone, CreditCard, ChevronRight, Building2, Shield, Star, ExternalLink, ArrowLeft, ShieldCheck } from 'lucide-react';
+import { Heart, Lock, Phone, CreditCard, ChevronRight, Building2, Shield, Star, ExternalLink, ArrowLeft, ShieldCheck, User, ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
 import { StripePaymentProvider, StripeCardForm, stripePromise, FreqOption, prefetchPaymentIntent } from './StripeShared';
 import { formatCurrency } from '../utils/formatCurrency';
@@ -255,6 +255,17 @@ export function Donation() {
               {donationConfig.secondarySubtitle}
             </p>
           )}
+
+          <div className="mt-6 flex justify-center">
+            <Link
+              to="/donor-portal"
+              className="inline-flex items-center gap-2.5 px-5 py-2.5 rounded-full text-xs sm:text-sm font-semibold text-emerald-800 bg-emerald-100/80 hover:bg-emerald-200 transition-all border border-emerald-300/60 shadow-xs hover:shadow group"
+            >
+              <User size={15} className="text-emerald-700" />
+              <span>Already a donor? Access Donor Portal & Tax Receipts</span>
+              <ArrowRight size={14} className="text-emerald-600 transition-transform group-hover:translate-x-0.5" />
+            </Link>
+          </div>
         </div>
 
         <div className="flex flex-col lg:flex-row gap-8 items-start">
@@ -320,6 +331,31 @@ export function Donation() {
               <div>
                 <div className="font-bold text-gray-900 text-sm">Highly Rated Charity</div>
                 <div className="text-gray-500 text-xs mt-0.5">Transparent and accountable use of funds.</div>
+              </div>
+            </div>
+
+            {/* Donor Portal Callout */}
+            <div className="bg-gradient-to-br from-emerald-900 to-teal-950 text-white rounded-3xl p-6 shadow-md border border-emerald-800/60 flex items-start gap-4">
+              <div className="w-12 h-12 bg-emerald-500/20 border border-emerald-400/30 rounded-xl flex items-center justify-center text-emerald-300 shrink-0 mt-0.5">
+                <User size={22} />
+              </div>
+              <div className="space-y-1.5 flex-1">
+                <div className="flex items-center justify-between">
+                  <div className="font-bold text-white text-sm">Donor's Portal & Giving History</div>
+                  <span className="text-[10px] bg-emerald-500/30 border border-emerald-400/30 text-emerald-200 font-semibold px-2 py-0.5 rounded-full uppercase tracking-wider">Self-Service</span>
+                </div>
+                <p className="text-emerald-100/80 text-xs leading-relaxed">
+                  Log in to download your tax receipts, review your lifetime donations, and manage recurring giving easily.
+                </p>
+                <div className="pt-2">
+                  <Link
+                    to="/donor-portal"
+                    className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold transition-all shadow-sm group"
+                  >
+                    <span>Open Donor's Portal</span>
+                    <ArrowRight size={13} className="transition-transform group-hover:translate-x-0.5" />
+                  </Link>
+                </div>
               </div>
             </div>
           </div>

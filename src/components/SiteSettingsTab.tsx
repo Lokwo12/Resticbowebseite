@@ -29,6 +29,7 @@ export const SETTING_SECTIONS = [
   { id: 'financials', label: 'Financials & Audits', category: 'impact', icon: PieChart, desc: 'Expenses chart, revenue & PDF audits' },
 
   { id: 'donation', label: 'Donation & Gateways', category: 'engagement', icon: DollarSign, desc: 'Presets, MTN/Airtel/Bank & allocation' },
+  { id: 'donorPortal', label: "Donor's Portal", category: 'engagement', icon: HandHeart, desc: 'Manage your donation, tabs, field stories & FAQs' },
   { id: 'volunteer', label: 'Volunteer Portal', category: 'engagement', icon: Heart, desc: 'Hero banner, open roles & requirements' },
   { id: 'quiz', label: 'Volunteer Quiz', category: 'engagement', icon: HelpCircle, desc: 'Interactive volunteer match questions' },
   { id: 'contact', label: 'Contact Info', category: 'engagement', icon: Users, desc: 'Headquarters, phone, email & field map' },
@@ -110,13 +111,82 @@ export const DEFAULT_IMPACT_DASHBOARD_SETTINGS = {
   commitmentButtonText: 'Request More Information',
 };
 
+export const DEFAULT_DONOR_PORTAL_SETTINGS = {
+  badge: 'RESTI Donor Portal',
+  welcomePrefix: 'Welcome,',
+  defaultName: 'Valued Supporter',
+  makeGiftBtnText: 'Make a Gift',
+  signOutBtnText: 'Sign Out',
+  
+  metric1Label: 'Total Contributed',
+  metric2Label: 'Gifts Recorded',
+  metric3Label: 'Official Receipts',
+  metric4Label: 'Field Focus',
+  metric4Value: 'Kiryandongo Settlements',
+
+  tabHistoryLabel: 'Giving History & Receipts',
+  tabManageLabel: 'Manage Your Donation',
+  tabImpactLabel: 'Field Impact Bulletins',
+  tabProfileLabel: 'Profile & Tax Preferences',
+
+  securityNote: 'Every contribution is strictly deployed to on-the-ground programs in Kiryandongo District, Uganda. We never sell or exchange donor details with outside third parties. For institutional auditing or grant matching letters, contact info@resticbo.org.',
+  auditEmail: 'info@resticbo.org',
+
+  manageTitle: 'Manage Your Donation',
+  manageSubtitle: 'Manage payment cards, pause, or adjust your monthly gifts securely',
+  manageDescription: 'Recurring donors are the backbone of RESTI\'s sustainability in fragile settlement environments. They ensure vulnerable children have tuition for the full academic year and allow vocational workshops to stock ongoing training tools.',
+  billingProviderLabel: 'Billing Provider:',
+  billingProviderValue: 'Secure PCI-DSS Level 1 Encrypted',
+  buttonText: 'Manage Your Donation',
+  buttonLoadingText: 'Connecting to Donation Portal...',
+  sidebarPledgeTitle: 'Pledge $25 / Month',
+  sidebarPledgeText: 'A monthly pledge of $25 provides 2 refugee women with vocational tailoring materials and Village Savings (VSLA) seed capital every single month.',
+  sidebarPledgeButtonText: 'Set Up Monthly Gift',
+  faqs: [
+    {
+      question: 'How do I change my monthly donation amount?',
+      answer: 'Click the "Manage Your Donation" button above. You can update your pledge amount, change billing frequency, or switch cards directly.',
+    },
+    {
+      question: 'Can I set up recurring gifts via Mobile Money?',
+      answer: 'MTN MoMo and Airtel Money in Uganda require donor PIN authorization per transaction. For recurring automated support, card payments are recommended.',
+    },
+  ],
+
+  impactBadge: 'Kiryandongo Field Dispatch',
+  impactTitle: 'How Your Contributions Are Changing Lives',
+  impactSubtitle: 'Because of dedicated supporters like you, RESTI continues to bridge emergency survival and sustainable dignity across settlements in Kiryandongo District, Uganda.',
+  impactStories: [
+    {
+      title: 'Vocational Tailoring Cohort',
+      description: '18 single refugee mothers completed their hands-on certification and received startup sewing machines to establish self-reliant village micro-enterprises.',
+      image: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=800&auto=format&fit=crop&q=80',
+    },
+    {
+      title: 'Youth Digital Inclusion Center',
+      description: 'Expanded workstation hours so 45+ adolescent youths can study computer literacy, CV building, and distance education curriculum weekly.',
+      image: 'https://images.unsplash.com/photo-1531545514256-b1400bc00f31?w=800&auto=format&fit=crop&q=80',
+    },
+    {
+      title: 'VSLA Climate-Smart Farming',
+      description: 'Disbursed drought-resilient maize and vegetable seeds to women-led agricultural clusters, securing nutritional resilience for 120+ children.',
+      image: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800&auto=format&fit=crop&q=80',
+    },
+  ],
+  leadershipHeading: 'A Message From RESTI Leadership',
+  leadershipQuote: '"On behalf of the refugee families and local host communities in Kiryandongo, thank you for walking this transformative journey with us."',
+  leadershipAuthor: 'Mr. Kwaya Daniel Loborach',
+  leadershipRole: 'Co-Founder, RESTI Uganda',
+};
+
 interface SiteSettingsTabProps {
   settings: any;
   onUpdate: () => void;
   accessToken: string;
+  userRole?: string;
 }
 
-export function SiteSettingsTab({ settings: initialSettings, onUpdate, accessToken }: SiteSettingsTabProps) {
+export function SiteSettingsTab({ settings: initialSettings, onUpdate, accessToken, userRole }: SiteSettingsTabProps) {
   const [settings, setSettings] = useState(initialSettings || {});
   const [saving, setSaving] = useState(false);
   const [activeSection, setActiveSection] = useState('general');
@@ -231,6 +301,37 @@ export function SiteSettingsTab({ settings: initialSettings, onUpdate, accessTok
         volunteer: { ...(prev.volunteer || DEFAULT_VOLUNTEER_SETTINGS), heroImage: data.url }
       }));
       toast.success('Banner uploaded successfully', { id: toastId });
+    } catch (err: any) {
+      toast.error(err.message || 'Upload failed', { id: toastId });
+    } finally {
+      e.target.value = '';
+    }
+  };
+
+  const handleDonorImpactImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const toastId = toast.loading('Uploading story image...');
+    try {
+      const formDataObj = new FormData();
+      formDataObj.append('file', file);
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/upload-image`,
+        { method: 'POST', headers: { Authorization: `Bearer ${accessToken || publicAnonKey}` }, body: formDataObj }
+      );
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Upload failed');
+      
+      const currentStories = [...(settings.donorPortal?.impactStories || DEFAULT_DONOR_PORTAL_SETTINGS.impactStories)];
+      currentStories[index] = { ...currentStories[index], image: data.url };
+      setSettings((prev: any) => ({
+        ...prev,
+        donorPortal: {
+          ...(prev.donorPortal || DEFAULT_DONOR_PORTAL_SETTINGS),
+          impactStories: currentStories,
+        }
+      }));
+      toast.success('Story image uploaded successfully', { id: toastId });
     } catch (err: any) {
       toast.error(err.message || 'Upload failed', { id: toastId });
     } finally {
@@ -3288,6 +3389,696 @@ export function SiteSettingsTab({ settings: initialSettings, onUpdate, accessTok
                     );
                   })}
                 </div>
+              </div>
+            </div>
+          </Card>
+        </TabsContent>
+
+        {/* Donor Portal Settings */}
+        <TabsContent value="donorPortal">
+          <Card className="p-6 sm:p-8 space-y-8 border-slate-200 dark:border-slate-800">
+            {/* Super Admin Notice Header */}
+            <div className="bg-gradient-to-r from-emerald-900 via-teal-900 to-slate-900 text-white rounded-2xl p-6 shadow-md border border-emerald-700/40 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold uppercase tracking-wider bg-emerald-500/30 text-emerald-300 border border-emerald-400/30 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                    <span>👑</span> Super-Admin Managed Module
+                  </span>
+                  <span className="text-xs bg-white/10 text-slate-200 px-2.5 py-0.5 rounded-full font-mono">
+                    /donor-portal
+                  </span>
+                </div>
+                <h3 className="text-xl font-bold text-white tracking-tight">Donor's Portal & Giving Management</h3>
+                <p className="text-emerald-100/80 text-xs sm:text-sm max-w-2xl leading-relaxed">
+                  Full control over the donor self-service portal. Configure header greetings, metric labels, "Manage Your Donation" recurring billing options, FAQs, and field impact bulletins.
+                </p>
+              </div>
+              <a
+                href="/donor-portal"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="shrink-0 inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold shadow transition"
+              >
+                <span>Preview Donor Portal</span>
+                <ExternalLink size={14} />
+              </a>
+            </div>
+
+            {/* SECTION 1: HEADER & GREETINGS */}
+            <div className="space-y-4 pt-2 border-b border-slate-100 dark:border-slate-800 pb-8">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                    <Heart size={18} className="text-emerald-600" />
+                    Portal Header & Greet Banner
+                  </h4>
+                  <p className="text-xs text-slate-500">Configure the top hero banner displayed to authenticated donors.</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Top Badge Label</label>
+                  <input
+                    type="text"
+                    value={settings.donorPortal?.badge ?? DEFAULT_DONOR_PORTAL_SETTINGS.badge}
+                    onChange={(e) => setSettings({
+                      ...settings,
+                      donorPortal: { ...(settings.donorPortal || DEFAULT_DONOR_PORTAL_SETTINGS), badge: e.target.value }
+                    })}
+                    className="w-full px-3.5 py-2 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
+                    placeholder="RESTI Donor Portal"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Welcome Greeting Prefix</label>
+                  <input
+                    type="text"
+                    value={settings.donorPortal?.welcomePrefix ?? DEFAULT_DONOR_PORTAL_SETTINGS.welcomePrefix}
+                    onChange={(e) => setSettings({
+                      ...settings,
+                      donorPortal: { ...(settings.donorPortal || DEFAULT_DONOR_PORTAL_SETTINGS), welcomePrefix: e.target.value }
+                    })}
+                    className="w-full px-3.5 py-2 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
+                    placeholder="Welcome,"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Fallback Donor Name</label>
+                  <input
+                    type="text"
+                    value={settings.donorPortal?.defaultName ?? DEFAULT_DONOR_PORTAL_SETTINGS.defaultName}
+                    onChange={(e) => setSettings({
+                      ...settings,
+                      donorPortal: { ...(settings.donorPortal || DEFAULT_DONOR_PORTAL_SETTINGS), defaultName: e.target.value }
+                    })}
+                    className="w-full px-3.5 py-2 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
+                    placeholder="Valued Supporter"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">"Make a Gift" Button Text</label>
+                  <input
+                    type="text"
+                    value={settings.donorPortal?.makeGiftBtnText ?? DEFAULT_DONOR_PORTAL_SETTINGS.makeGiftBtnText}
+                    onChange={(e) => setSettings({
+                      ...settings,
+                      donorPortal: { ...(settings.donorPortal || DEFAULT_DONOR_PORTAL_SETTINGS), makeGiftBtnText: e.target.value }
+                    })}
+                    className="w-full px-3.5 py-2 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
+                    placeholder="Make a Gift"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* SECTION 2: LIVE METRICS CARDS */}
+            <div className="space-y-4 border-b border-slate-100 dark:border-slate-800 pb-8">
+              <div>
+                <h4 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                  <BarChart size={18} className="text-emerald-600" />
+                  Live KPI Metric Grid Labels
+                </h4>
+                <p className="text-xs text-slate-500">Configure titles for the 4 metric cards on the donor overview.</p>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Metric 1 Label</label>
+                  <input
+                    type="text"
+                    value={settings.donorPortal?.metric1Label ?? DEFAULT_DONOR_PORTAL_SETTINGS.metric1Label}
+                    onChange={(e) => setSettings({
+                      ...settings,
+                      donorPortal: { ...(settings.donorPortal || DEFAULT_DONOR_PORTAL_SETTINGS), metric1Label: e.target.value }
+                    })}
+                    className="w-full px-3.5 py-2 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
+                    placeholder="Total Contributed"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Metric 2 Label</label>
+                  <input
+                    type="text"
+                    value={settings.donorPortal?.metric2Label ?? DEFAULT_DONOR_PORTAL_SETTINGS.metric2Label}
+                    onChange={(e) => setSettings({
+                      ...settings,
+                      donorPortal: { ...(settings.donorPortal || DEFAULT_DONOR_PORTAL_SETTINGS), metric2Label: e.target.value }
+                    })}
+                    className="w-full px-3.5 py-2 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
+                    placeholder="Gifts Recorded"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Metric 3 Label</label>
+                  <input
+                    type="text"
+                    value={settings.donorPortal?.metric3Label ?? DEFAULT_DONOR_PORTAL_SETTINGS.metric3Label}
+                    onChange={(e) => setSettings({
+                      ...settings,
+                      donorPortal: { ...(settings.donorPortal || DEFAULT_DONOR_PORTAL_SETTINGS), metric3Label: e.target.value }
+                    })}
+                    className="w-full px-3.5 py-2 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
+                    placeholder="Official Receipts"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Metric 4 (Field Focus)</label>
+                  <input
+                    type="text"
+                    value={settings.donorPortal?.metric4Value ?? DEFAULT_DONOR_PORTAL_SETTINGS.metric4Value}
+                    onChange={(e) => setSettings({
+                      ...settings,
+                      donorPortal: { ...(settings.donorPortal || DEFAULT_DONOR_PORTAL_SETTINGS), metric4Value: e.target.value }
+                    })}
+                    className="w-full px-3.5 py-2 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
+                    placeholder="Kiryandongo Settlements"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* SECTION 3: TAB LABELS */}
+            <div className="space-y-4 border-b border-slate-100 dark:border-slate-800 pb-8">
+              <div>
+                <h4 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                  <LayoutDashboard size={18} className="text-emerald-600" />
+                  Portal Navigation Tab Names
+                </h4>
+                <p className="text-xs text-slate-500">Customize the labels for the 4 navigation tabs inside the portal.</p>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Tab 1 (History)</label>
+                  <input
+                    type="text"
+                    value={settings.donorPortal?.tabHistoryLabel ?? DEFAULT_DONOR_PORTAL_SETTINGS.tabHistoryLabel}
+                    onChange={(e) => setSettings({
+                      ...settings,
+                      donorPortal: { ...(settings.donorPortal || DEFAULT_DONOR_PORTAL_SETTINGS), tabHistoryLabel: e.target.value }
+                    })}
+                    className="w-full px-3.5 py-2 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Tab 2 (Manage Donation)</label>
+                  <input
+                    type="text"
+                    value={settings.donorPortal?.tabManageLabel ?? DEFAULT_DONOR_PORTAL_SETTINGS.tabManageLabel}
+                    onChange={(e) => setSettings({
+                      ...settings,
+                      donorPortal: { ...(settings.donorPortal || DEFAULT_DONOR_PORTAL_SETTINGS), tabManageLabel: e.target.value }
+                    })}
+                    className="w-full px-3.5 py-2 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-sm focus:ring-2 focus:ring-emerald-500 outline-none font-bold text-emerald-700"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Tab 3 (Impact)</label>
+                  <input
+                    type="text"
+                    value={settings.donorPortal?.tabImpactLabel ?? DEFAULT_DONOR_PORTAL_SETTINGS.tabImpactLabel}
+                    onChange={(e) => setSettings({
+                      ...settings,
+                      donorPortal: { ...(settings.donorPortal || DEFAULT_DONOR_PORTAL_SETTINGS), tabImpactLabel: e.target.value }
+                    })}
+                    className="w-full px-3.5 py-2 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Tab 4 (Profile)</label>
+                  <input
+                    type="text"
+                    value={settings.donorPortal?.tabProfileLabel ?? DEFAULT_DONOR_PORTAL_SETTINGS.tabProfileLabel}
+                    onChange={(e) => setSettings({
+                      ...settings,
+                      donorPortal: { ...(settings.donorPortal || DEFAULT_DONOR_PORTAL_SETTINGS), tabProfileLabel: e.target.value }
+                    })}
+                    className="w-full px-3.5 py-2 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* SECTION 4: MANAGE YOUR DONATION (SUPER ADMIN HIGHLIGHT) */}
+            <div className="space-y-5 border-b border-slate-100 dark:border-slate-800 pb-8 bg-emerald-50/40 dark:bg-emerald-950/20 p-5 rounded-2xl border border-emerald-100 dark:border-emerald-900/40">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="inline-flex items-center gap-1.5 text-[11px] font-bold text-emerald-800 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-900/60 px-2.5 py-0.5 rounded-full uppercase tracking-wider mb-1">
+                    <span>👑</span> Super-Admin Management: "Manage Your Donation"
+                  </div>
+                  <h4 className="text-base font-bold text-slate-900 dark:text-white">
+                    Subscription & Self-Service Portal Section
+                  </h4>
+                  <p className="text-xs text-slate-500">
+                    Replace all Stripe-branded phrasing with clean, institutional "Manage Your Donation" controls.
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Section Title</label>
+                  <input
+                    type="text"
+                    value={settings.donorPortal?.manageTitle ?? DEFAULT_DONOR_PORTAL_SETTINGS.manageTitle}
+                    onChange={(e) => setSettings({
+                      ...settings,
+                      donorPortal: { ...(settings.donorPortal || DEFAULT_DONOR_PORTAL_SETTINGS), manageTitle: e.target.value }
+                    })}
+                    className="w-full px-3.5 py-2 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-sm focus:ring-2 focus:ring-emerald-500 outline-none font-bold"
+                    placeholder="Manage Your Donation"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Action Button Text</label>
+                  <input
+                    type="text"
+                    value={settings.donorPortal?.buttonText ?? DEFAULT_DONOR_PORTAL_SETTINGS.buttonText}
+                    onChange={(e) => setSettings({
+                      ...settings,
+                      donorPortal: { ...(settings.donorPortal || DEFAULT_DONOR_PORTAL_SETTINGS), buttonText: e.target.value }
+                    })}
+                    className="w-full px-3.5 py-2 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-sm focus:ring-2 focus:ring-emerald-500 outline-none font-bold text-emerald-700"
+                    placeholder="Manage Your Donation"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Section Subtitle</label>
+                  <input
+                    type="text"
+                    value={settings.donorPortal?.manageSubtitle ?? DEFAULT_DONOR_PORTAL_SETTINGS.manageSubtitle}
+                    onChange={(e) => setSettings({
+                      ...settings,
+                      donorPortal: { ...(settings.donorPortal || DEFAULT_DONOR_PORTAL_SETTINGS), manageSubtitle: e.target.value }
+                    })}
+                    className="w-full px-3.5 py-2 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
+                    placeholder="Manage payment cards, pause, or adjust your monthly gifts securely"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Button Connecting / Loading Text</label>
+                  <input
+                    type="text"
+                    value={settings.donorPortal?.buttonLoadingText ?? DEFAULT_DONOR_PORTAL_SETTINGS.buttonLoadingText}
+                    onChange={(e) => setSettings({
+                      ...settings,
+                      donorPortal: { ...(settings.donorPortal || DEFAULT_DONOR_PORTAL_SETTINGS), buttonLoadingText: e.target.value }
+                    })}
+                    className="w-full px-3.5 py-2 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
+                    placeholder="Connecting to Donation Portal..."
+                  />
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Section Description / Impact Note</label>
+                  <textarea
+                    rows={2}
+                    value={settings.donorPortal?.manageDescription ?? DEFAULT_DONOR_PORTAL_SETTINGS.manageDescription}
+                    onChange={(e) => setSettings({
+                      ...settings,
+                      donorPortal: { ...(settings.donorPortal || DEFAULT_DONOR_PORTAL_SETTINGS), manageDescription: e.target.value }
+                    })}
+                    className="w-full px-3.5 py-2 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Billing Provider Label</label>
+                  <input
+                    type="text"
+                    value={settings.donorPortal?.billingProviderLabel ?? DEFAULT_DONOR_PORTAL_SETTINGS.billingProviderLabel}
+                    onChange={(e) => setSettings({
+                      ...settings,
+                      donorPortal: { ...(settings.donorPortal || DEFAULT_DONOR_PORTAL_SETTINGS), billingProviderLabel: e.target.value }
+                    })}
+                    className="w-full px-3.5 py-2 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Billing Provider Display Value</label>
+                  <input
+                    type="text"
+                    value={settings.donorPortal?.billingProviderValue ?? DEFAULT_DONOR_PORTAL_SETTINGS.billingProviderValue}
+                    onChange={(e) => setSettings({
+                      ...settings,
+                      donorPortal: { ...(settings.donorPortal || DEFAULT_DONOR_PORTAL_SETTINGS), billingProviderValue: e.target.value }
+                    })}
+                    className="w-full px-3.5 py-2 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
+                    placeholder="Secure PCI-DSS Level 1 Encrypted"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Sidebar Pledge Card Title</label>
+                  <input
+                    type="text"
+                    value={settings.donorPortal?.sidebarPledgeTitle ?? DEFAULT_DONOR_PORTAL_SETTINGS.sidebarPledgeTitle}
+                    onChange={(e) => setSettings({
+                      ...settings,
+                      donorPortal: { ...(settings.donorPortal || DEFAULT_DONOR_PORTAL_SETTINGS), sidebarPledgeTitle: e.target.value }
+                    })}
+                    className="w-full px-3.5 py-2 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Sidebar Pledge Button Text</label>
+                  <input
+                    type="text"
+                    value={settings.donorPortal?.sidebarPledgeButtonText ?? DEFAULT_DONOR_PORTAL_SETTINGS.sidebarPledgeButtonText}
+                    onChange={(e) => setSettings({
+                      ...settings,
+                      donorPortal: { ...(settings.donorPortal || DEFAULT_DONOR_PORTAL_SETTINGS), sidebarPledgeButtonText: e.target.value }
+                    })}
+                    className="w-full px-3.5 py-2 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
+                  />
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Sidebar Pledge Description</label>
+                  <textarea
+                    rows={2}
+                    value={settings.donorPortal?.sidebarPledgeText ?? DEFAULT_DONOR_PORTAL_SETTINGS.sidebarPledgeText}
+                    onChange={(e) => setSettings({
+                      ...settings,
+                      donorPortal: { ...(settings.donorPortal || DEFAULT_DONOR_PORTAL_SETTINGS), sidebarPledgeText: e.target.value }
+                    })}
+                    className="w-full px-3.5 py-2 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* SECTION 5: FREQUENTLY ASKED QUESTIONS */}
+            <div className="space-y-4 border-b border-slate-100 dark:border-slate-800 pb-8">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                    <HelpCircle size={18} className="text-emerald-600" />
+                    Manage Donation Tab FAQs
+                  </h4>
+                  <p className="text-xs text-slate-500">Edit or add frequently asked questions displayed to recurring donors.</p>
+                </div>
+                <Button
+                  type="button"
+                  onClick={() => {
+                    const currentFaqs = settings.donorPortal?.faqs || DEFAULT_DONOR_PORTAL_SETTINGS.faqs;
+                    setSettings({
+                      ...settings,
+                      donorPortal: {
+                        ...(settings.donorPortal || DEFAULT_DONOR_PORTAL_SETTINGS),
+                        faqs: [...currentFaqs, { question: 'New Question', answer: 'Answer goes here.' }]
+                      }
+                    });
+                  }}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-3 py-1.5 rounded-lg flex items-center gap-1.5"
+                >
+                  <Plus size={14} /> Add FAQ
+                </Button>
+              </div>
+
+              <div className="space-y-3">
+                {(settings.donorPortal?.faqs || DEFAULT_DONOR_PORTAL_SETTINGS.faqs).map((faq: any, idx: number) => (
+                  <div key={idx} className="p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50 space-y-2 relative">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs font-bold text-slate-500">FAQ #{idx + 1}</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const currentFaqs = [...(settings.donorPortal?.faqs || DEFAULT_DONOR_PORTAL_SETTINGS.faqs)];
+                          currentFaqs.splice(idx, 1);
+                          setSettings({
+                            ...settings,
+                            donorPortal: {
+                              ...(settings.donorPortal || DEFAULT_DONOR_PORTAL_SETTINGS),
+                              faqs: currentFaqs
+                            }
+                          });
+                        }}
+                        className="text-rose-500 hover:text-rose-700 p-1 text-xs flex items-center gap-1"
+                        title="Delete FAQ"
+                      >
+                        <Trash2 size={13} /> Remove
+                      </button>
+                    </div>
+                    <div>
+                      <input
+                        type="text"
+                        value={faq.question}
+                        onChange={(e) => {
+                          const currentFaqs = [...(settings.donorPortal?.faqs || DEFAULT_DONOR_PORTAL_SETTINGS.faqs)];
+                          currentFaqs[idx] = { ...currentFaqs[idx], question: e.target.value };
+                          setSettings({
+                            ...settings,
+                            donorPortal: {
+                              ...(settings.donorPortal || DEFAULT_DONOR_PORTAL_SETTINGS),
+                              faqs: currentFaqs
+                            }
+                          });
+                        }}
+                        placeholder="Question..."
+                        className="w-full px-3 py-1.5 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-semibold bg-white dark:bg-slate-800 outline-none focus:ring-2 focus:ring-emerald-500"
+                      />
+                    </div>
+                    <div>
+                      <textarea
+                        rows={2}
+                        value={faq.answer}
+                        onChange={(e) => {
+                          const currentFaqs = [...(settings.donorPortal?.faqs || DEFAULT_DONOR_PORTAL_SETTINGS.faqs)];
+                          currentFaqs[idx] = { ...currentFaqs[idx], answer: e.target.value };
+                          setSettings({
+                            ...settings,
+                            donorPortal: {
+                              ...(settings.donorPortal || DEFAULT_DONOR_PORTAL_SETTINGS),
+                              faqs: currentFaqs
+                            }
+                          });
+                        }}
+                        placeholder="Answer..."
+                        className="w-full px-3 py-1.5 border border-slate-200 dark:border-slate-700 rounded-lg text-xs bg-white dark:bg-slate-800 outline-none focus:ring-2 focus:ring-emerald-500"
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* SECTION 6: FIELD IMPACT BULLETINS */}
+            <div className="space-y-5 border-b border-slate-100 dark:border-slate-800 pb-8">
+              <div>
+                <h4 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                  <Sparkles size={18} className="text-emerald-600" />
+                  Field Impact Bulletins & Stories
+                </h4>
+                <p className="text-xs text-slate-500">Customize the 3 impact cards and leadership quote shown to donors in Tab 3.</p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Impact Badge</label>
+                  <input
+                    type="text"
+                    value={settings.donorPortal?.impactBadge ?? DEFAULT_DONOR_PORTAL_SETTINGS.impactBadge}
+                    onChange={(e) => setSettings({
+                      ...settings,
+                      donorPortal: { ...(settings.donorPortal || DEFAULT_DONOR_PORTAL_SETTINGS), impactBadge: e.target.value }
+                    })}
+                    className="w-full px-3.5 py-2 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
+                  />
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Impact Heading</label>
+                  <input
+                    type="text"
+                    value={settings.donorPortal?.impactTitle ?? DEFAULT_DONOR_PORTAL_SETTINGS.impactTitle}
+                    onChange={(e) => setSettings({
+                      ...settings,
+                      donorPortal: { ...(settings.donorPortal || DEFAULT_DONOR_PORTAL_SETTINGS), impactTitle: e.target.value }
+                    })}
+                    className="w-full px-3.5 py-2 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
+                  />
+                </div>
+
+                <div className="md:col-span-3">
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Impact Subtitle / Intro</label>
+                  <textarea
+                    rows={2}
+                    value={settings.donorPortal?.impactSubtitle ?? DEFAULT_DONOR_PORTAL_SETTINGS.impactSubtitle}
+                    onChange={(e) => setSettings({
+                      ...settings,
+                      donorPortal: { ...(settings.donorPortal || DEFAULT_DONOR_PORTAL_SETTINGS), impactSubtitle: e.target.value }
+                    })}
+                    className="w-full px-3.5 py-2 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
+                  />
+                </div>
+              </div>
+
+              {/* 3 Impact Story Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+                {(settings.donorPortal?.impactStories || DEFAULT_DONOR_PORTAL_SETTINGS.impactStories).map((story: any, sIdx: number) => (
+                  <div key={sIdx} className="border border-slate-200 dark:border-slate-700 rounded-2xl p-4 bg-slate-50/60 dark:bg-slate-800/40 space-y-3">
+                    <span className="text-xs font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
+                      Story #{sIdx + 1}
+                    </span>
+
+                    <div>
+                      <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">Story Title</label>
+                      <input
+                        type="text"
+                        value={story.title}
+                        onChange={(e) => {
+                          const stories = [...(settings.donorPortal?.impactStories || DEFAULT_DONOR_PORTAL_SETTINGS.impactStories)];
+                          stories[sIdx] = { ...stories[sIdx], title: e.target.value };
+                          setSettings({
+                            ...settings,
+                            donorPortal: { ...(settings.donorPortal || DEFAULT_DONOR_PORTAL_SETTINGS), impactStories: stories }
+                          });
+                        }}
+                        className="w-full px-3 py-1.5 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-xs font-bold outline-none focus:ring-2 focus:ring-emerald-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">Description</label>
+                      <textarea
+                        rows={3}
+                        value={story.description}
+                        onChange={(e) => {
+                          const stories = [...(settings.donorPortal?.impactStories || DEFAULT_DONOR_PORTAL_SETTINGS.impactStories)];
+                          stories[sIdx] = { ...stories[sIdx], description: e.target.value };
+                          setSettings({
+                            ...settings,
+                            donorPortal: { ...(settings.donorPortal || DEFAULT_DONOR_PORTAL_SETTINGS), impactStories: stories }
+                          });
+                        }}
+                        className="w-full px-3 py-1.5 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-xs outline-none focus:ring-2 focus:ring-emerald-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">Image URL</label>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={story.image}
+                          onChange={(e) => {
+                            const stories = [...(settings.donorPortal?.impactStories || DEFAULT_DONOR_PORTAL_SETTINGS.impactStories)];
+                            stories[sIdx] = { ...stories[sIdx], image: e.target.value };
+                            setSettings({
+                              ...settings,
+                              donorPortal: { ...(settings.donorPortal || DEFAULT_DONOR_PORTAL_SETTINGS), impactStories: stories }
+                            });
+                          }}
+                          className="flex-1 px-3 py-1.5 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-[11px] outline-none"
+                          placeholder="https://..."
+                        />
+                        <label className="cursor-pointer px-2.5 py-1.5 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 text-slate-700 dark:text-slate-200 rounded-xl text-xs flex items-center gap-1 shrink-0" title="Upload Image">
+                          <Upload size={13} />
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => handleDonorImpactImageUpload(e, sIdx)}
+                            className="hidden"
+                          />
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Leadership Box */}
+              <div className="p-4 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 space-y-3">
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Leadership Sign-Off Section</span>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">Heading</label>
+                    <input
+                      type="text"
+                      value={settings.donorPortal?.leadershipHeading ?? DEFAULT_DONOR_PORTAL_SETTINGS.leadershipHeading}
+                      onChange={(e) => setSettings({
+                        ...settings,
+                        donorPortal: { ...(settings.donorPortal || DEFAULT_DONOR_PORTAL_SETTINGS), leadershipHeading: e.target.value }
+                      })}
+                      className="w-full px-3 py-1.5 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-xs"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">Leader Full Name</label>
+                    <input
+                      type="text"
+                      value={settings.donorPortal?.leadershipAuthor ?? DEFAULT_DONOR_PORTAL_SETTINGS.leadershipAuthor}
+                      onChange={(e) => setSettings({
+                        ...settings,
+                        donorPortal: { ...(settings.donorPortal || DEFAULT_DONOR_PORTAL_SETTINGS), leadershipAuthor: e.target.value }
+                      })}
+                      className="w-full px-3 py-1.5 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-xs font-bold"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">Leader Title / Role</label>
+                    <input
+                      type="text"
+                      value={settings.donorPortal?.leadershipRole ?? DEFAULT_DONOR_PORTAL_SETTINGS.leadershipRole}
+                      onChange={(e) => setSettings({
+                        ...settings,
+                        donorPortal: { ...(settings.donorPortal || DEFAULT_DONOR_PORTAL_SETTINGS), leadershipRole: e.target.value }
+                      })}
+                      className="w-full px-3 py-1.5 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-xs"
+                    />
+                  </div>
+                  <div className="md:col-span-3">
+                    <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">Leadership Quote</label>
+                    <textarea
+                      rows={2}
+                      value={settings.donorPortal?.leadershipQuote ?? DEFAULT_DONOR_PORTAL_SETTINGS.leadershipQuote}
+                      onChange={(e) => setSettings({
+                        ...settings,
+                        donorPortal: { ...(settings.donorPortal || DEFAULT_DONOR_PORTAL_SETTINGS), leadershipQuote: e.target.value }
+                      })}
+                      className="w-full px-3 py-1.5 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-xs"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* SECTION 7: AUDIT & PRIVACY FOOTER NOTE */}
+            <div className="space-y-4">
+              <div>
+                <h4 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                  <ShieldCheck size={18} className="text-emerald-600" />
+                  Tax & Auditing Guarantee Note
+                </h4>
+                <p className="text-xs text-slate-500">Security note displayed at the bottom of the Giving History tab.</p>
+              </div>
+
+              <div>
+                <textarea
+                  rows={2}
+                  value={settings.donorPortal?.securityNote ?? DEFAULT_DONOR_PORTAL_SETTINGS.securityNote}
+                  onChange={(e) => setSettings({
+                    ...settings,
+                    donorPortal: { ...(settings.donorPortal || DEFAULT_DONOR_PORTAL_SETTINGS), securityNote: e.target.value }
+                  })}
+                  className="w-full px-3.5 py-2 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
+                />
               </div>
             </div>
           </Card>

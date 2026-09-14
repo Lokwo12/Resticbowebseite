@@ -507,21 +507,6 @@ export function Header() {
                         <div className="text-[11px] text-gray-500">Institutional collaborations</div>
                       </div>
                     </Link>
-
-                    {/* Featured Donor Portal in Dropdown */}
-                    <div className="border-t border-slate-100 mt-1 pt-1">
-                      <Link 
-                        to="/donor/dashboard" 
-                        onClick={() => setActiveDropdown(null)}
-                        className="flex items-center justify-between px-4 py-2.5 text-sm text-emerald-800 bg-emerald-50/70 hover:bg-emerald-100 transition-colors"
-                      >
-                        <div className="flex items-center gap-2">
-                          <User size={15} className="text-emerald-700 shrink-0" />
-                          <span className="font-bold">Donor Portal</span>
-                        </div>
-                        <span className="text-[10px] font-extrabold bg-emerald-200/90 text-emerald-900 px-1.5 py-0.5 rounded uppercase">Receipts</span>
-                      </Link>
-                    </div>
                   </div>
                 </div>
               </div>
@@ -558,23 +543,6 @@ export function Header() {
 
               {/* Language Switcher */}
               <LanguageSwitcher />
-
-              {/* Donor Portal Button */}
-              <Link
-                to="/donor/dashboard"
-                className={`flex items-center gap-1.5 px-3 py-1.5 xl:py-2 rounded-xl text-xs xl:text-sm font-semibold transition-all duration-200 border ${
-                  isSolid
-                    ? 'text-emerald-800 bg-emerald-50/90 hover:bg-emerald-100/90 border-emerald-200 shadow-xs'
-                    : 'text-white bg-white/15 hover:bg-white/25 border-white/20 backdrop-blur-xs'
-                }`}
-                title="View donation history & official receipts"
-              >
-                <User size={14} className="text-emerald-600 shrink-0" />
-                <span className="hidden xl:inline">
-                  {donorUser?.user_metadata?.name ? donorUser.user_metadata.name.split(' ')[0] : 'Donor Portal'}
-                </span>
-                <span className="xl:hidden">Portal</span>
-              </Link>
 
               {/* Donate Button */}
               <button
@@ -621,23 +589,14 @@ export function Header() {
           <div className="p-4 sm:p-5 flex flex-col gap-4">
             
             {/* Quick Mobile CTAs */}
-            <div className="grid grid-cols-2 gap-2">
+            <div>
               <button 
                 onClick={() => { setMobileMenuOpen(false); openDonationModal(); }} 
-                className="flex items-center justify-center gap-1.5 bg-emerald-600 text-white py-3 rounded-xl font-bold shadow-md hover:bg-emerald-700 transition-colors text-sm"
+                className="w-full flex items-center justify-center gap-1.5 bg-emerald-600 text-white py-3 rounded-xl font-bold shadow-md hover:bg-emerald-700 transition-colors text-sm"
               >
                 <Heart size={16} fill="currentColor" />
                 Donate Now
               </button>
-
-              <Link 
-                to="/donor/dashboard" 
-                onClick={() => setMobileMenuOpen(false)} 
-                className="flex items-center justify-center gap-1.5 bg-emerald-50 text-emerald-800 border border-emerald-200/80 py-3 rounded-xl font-bold hover:bg-emerald-100 transition-colors text-sm"
-              >
-                <User size={16} className="text-emerald-700" />
-                Donor Portal
-              </Link>
             </div>
 
             {/* Categorized Mobile Navigation */}
@@ -797,9 +756,6 @@ export function Header() {
                     </Link>
                     <Link to="/partners" onClick={() => setMobileMenuOpen(false)} className="py-1.5 text-sm text-gray-700 hover:text-emerald-600 flex items-center gap-2">
                       <span>Become a Partner</span>
-                    </Link>
-                    <Link to="/donor/dashboard" onClick={() => setMobileMenuOpen(false)} className="py-1.5 text-sm font-semibold text-emerald-700 hover:underline flex items-center gap-2">
-                      <span>Donor Portal & Tax Receipts</span>
                     </Link>
                   </div>
                 )}

@@ -11,6 +11,7 @@ import {
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { toast } from 'sonner';
+import { DEFAULT_DONOR_PORTAL_SETTINGS } from './SiteSettingsTab';
 
 interface Donation {
   id: string;
@@ -25,6 +26,7 @@ interface Donation {
 }
 
 export function DonorDashboard() {
+  const [portalConfig, setPortalConfig] = useState<any>(DEFAULT_DONOR_PORTAL_SETTINGS);
   const [donations, setDonations] = useState<Donation[]>([]);
   const [loading, setLoading] = useState(true);
   const [billingLoading, setBillingLoading] = useState(false);
@@ -101,6 +103,22 @@ export function DonorDashboard() {
           }, ...prev];
         });
       }
+
+      // Fetch dynamic donor portal settings from admin dashboard
+      try {
+        const setRes = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/site-settings`, {
+          headers: { Authorization: `Bearer ${publicAnonKey}` },
+          signal: AbortSignal.timeout(6000),
+        });
+        if (setRes.ok) {
+          const setData = await setRes.json();
+          if (setData?.settings?.donorPortal) {
+            setPortalConfig((prev: any) => ({ ...prev, ...setData.settings.donorPortal }));
+          }
+        }
+      } catch (err) {
+        console.warn('Could not load site-settings for donor portal, using defaults', err);
+      }
     };
     checkUser();
   }, [navigate]);
@@ -171,8 +189,8 @@ export function DonorDashboard() {
         window.location.href = data.url;
       }
     } catch (err: any) {
-      console.error('Billing portal error:', err);
-      toast.info(err.message || 'Unable to open billing portal. If you made a one-time gift, no recurring subscription is active.');
+      console.error('Donation portal error:', err);
+      toast.info(err.message || 'Unable to open donation portal. If you made a one-time gift, no recurring subscription is active.');
     } finally {
       setBillingLoading(false);
     }
@@ -273,14 +291,14 @@ export function DonorDashboard() {
               <div>
                 <div className="flex flex-wrap items-center gap-2 mb-1.5">
                   <span className="text-xs font-bold tracking-widest uppercase bg-emerald-500/30 border border-emerald-400/40 text-emerald-200 px-3 py-0.5 rounded-full">
-                    RESTI Donor Portal
+                    {portalConfig?.badge || 'RESTI Donor Portal'}
                   </span>
                   <span className={`text-xs font-semibold px-3 py-0.5 rounded-full border ${tier.badge}`}>
                     {tier.name}
                   </span>
                 </div>
                 <h1 className="text-2xl sm:text-4xl font-extrabold font-heading text-white tracking-tight">
-                  Welcome, {user?.user_metadata?.name || 'Valued Supporter'}!
+                  {portalConfig?.welcomePrefix || 'Welcome,'} {user?.user_metadata?.name || portalConfig?.defaultName || 'Valued Supporter'}!
                 </h1>
                 <p className="text-emerald-100 text-sm sm:text-base mt-1 flex items-center gap-2">
                   <span>{user?.email}</span>
@@ -294,7 +312,7 @@ export function DonorDashboard() {
               <Link to="/donate" className="flex-1 sm:flex-initial">
                 <Button className="w-full bg-white text-emerald-800 hover:bg-emerald-50 font-bold shadow-md hover:shadow-lg transition-all">
                   <Heart className="w-4 h-4 mr-2 text-rose-500" fill="currentColor" />
-                  Make a Gift
+                  {portalConfig?.makeGiftBtnText || 'Make a Gift'}
                 </Button>
               </Link>
               <Button 
@@ -302,7 +320,7 @@ export function DonorDashboard() {
                 onClick={handleLogout} 
                 className="bg-emerald-900/40 border-white/20 text-white hover:bg-white/10 hover:text-white"
               >
-                <LogOut className="w-4 h-4 mr-2" /> Sign Out
+                <LogOut className="w-4 h-4 mr-2" /> {portalConfig?.signOutBtnText || 'Sign Out'}
               </Button>
             </div>
           </div>
@@ -315,7 +333,9 @@ export function DonorDashboard() {
               <CreditCard className="w-6 h-6" />
             </div>
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Total Contributed</p>
+              <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+                {portalConfig?.metric1Label || 'Total Contributed'}
+              </p>
               <p className="text-2xl font-black text-slate-900 mt-0.5">
                 ${totalGivenUSD.toFixed(2)} <span className="text-xs font-normal text-slate-500">USD</span>
               </p>
@@ -327,7 +347,9 @@ export function DonorDashboard() {
               <CheckCircle2 className="w-6 h-6" />
             </div>
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Gifts Recorded</p>
+              <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+                {portalConfig?.metric2Label || 'Gifts Recorded'}
+              </p>
               <p className="text-2xl font-black text-slate-900 mt-0.5">
                 {donations.length} <span className="text-xs font-normal text-slate-500">{donations.length === 1 ? 'Gift' : 'Gifts'}</span>
               </p>
@@ -339,7 +361,9 @@ export function DonorDashboard() {
               <Sparkles className="w-6 h-6" />
             </div>
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Official Receipts</p>
+              <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+                {portalConfig?.metric3Label || 'Official Receipts'}
+              </p>
               <p className="text-2xl font-black text-slate-900 mt-0.5">
                 {completedCount} <span className="text-xs font-normal text-slate-500">Available</span>
               </p>
@@ -351,9 +375,11 @@ export function DonorDashboard() {
               <Building2 className="w-6 h-6" />
             </div>
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Field Focus</p>
+              <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+                {portalConfig?.metric4Label || 'Field Focus'}
+              </p>
               <p className="text-sm font-bold text-slate-900 mt-1 line-clamp-1">
-                Kiryandongo Settlements
+                {portalConfig?.metric4Value || 'Kiryandongo Settlements'}
               </p>
             </div>
           </div>
@@ -370,7 +396,7 @@ export function DonorDashboard() {
             }`}
           >
             <FileText size={18} />
-            Giving History & Receipts
+            {portalConfig?.tabHistoryLabel || 'Giving History & Receipts'}
           </button>
 
           <button
@@ -382,7 +408,7 @@ export function DonorDashboard() {
             }`}
           >
             <RefreshCw size={18} />
-            Recurring Subscriptions
+            {portalConfig?.tabManageLabel || 'Manage Your Donation'}
           </button>
 
           <button
@@ -394,7 +420,7 @@ export function DonorDashboard() {
             }`}
           >
             <Sparkles size={18} />
-            Field Impact Bulletins
+            {portalConfig?.tabImpactLabel || 'Field Impact Bulletins'}
           </button>
 
           <button
@@ -406,7 +432,7 @@ export function DonorDashboard() {
             }`}
           >
             <Settings size={18} />
-            Profile & Tax Preferences
+            {portalConfig?.tabProfileLabel || 'Profile & Tax Preferences'}
           </button>
         </div>
 
@@ -528,14 +554,14 @@ export function DonorDashboard() {
               <div className="text-xs sm:text-sm text-emerald-950 leading-relaxed">
                 <p className="font-bold mb-0.5">RESTI Financial Transparency & Donor Privacy Guarantee</p>
                 <p className="text-emerald-800">
-                  Every contribution is strictly deployed to on-the-ground programs in Kiryandongo District, Uganda. We never sell or exchange donor details with outside third parties. For institutional auditing or grant matching letters, contact <a href="mailto:info@resticbo.org" className="underline font-semibold text-emerald-900">info@resticbo.org</a>.
+                  {portalConfig?.securityNote || 'Every contribution is strictly deployed to on-the-ground programs in Kiryandongo District, Uganda. We never sell or exchange donor details with outside third parties. For institutional auditing or grant matching letters, contact info@resticbo.org.'}
                 </p>
               </div>
             </div>
           </div>
         )}
 
-        {/* TAB 2: RECURRING SUBSCRIPTIONS */}
+        {/* TAB 2: MANAGE YOUR DONATION */}
         {activeTab === 'recurring' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2 space-y-6">
@@ -545,19 +571,27 @@ export function DonorDashboard() {
                     <RefreshCw size={20} />
                   </div>
                   <div>
-                    <h2 className="text-xl font-bold font-heading text-slate-900">Self-Service Stripe Portal</h2>
-                    <p className="text-slate-500 text-sm">Manage payment cards, pause, or adjust your monthly gifts securely</p>
+                    <h2 className="text-xl font-bold font-heading text-slate-900">
+                      {portalConfig?.manageTitle || 'Manage Your Donation'}
+                    </h2>
+                    <p className="text-slate-500 text-sm">
+                      {portalConfig?.manageSubtitle || 'Manage payment cards, pause, or adjust your monthly gifts securely'}
+                    </p>
                   </div>
                 </div>
 
                 <p className="text-slate-600 text-sm sm:text-base leading-relaxed mb-6">
-                  Recurring donors are the backbone of RESTI's sustainability in fragile settlement environments. They ensure vulnerable children have tuition for the full academic year and allow vocational workshops to stock ongoing training tools.
+                  {portalConfig?.manageDescription || "Recurring donors are the backbone of RESTI's sustainability in fragile settlement environments. They ensure vulnerable children have tuition for the full academic year and allow vocational workshops to stock ongoing training tools."}
                 </p>
 
                 <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 mb-6 space-y-3">
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-slate-500 font-medium">Billing Provider:</span>
-                    <span className="font-bold text-slate-800">Stripe PCI-DSS Level 1 Encrypted</span>
+                    <span className="text-slate-500 font-medium">
+                      {portalConfig?.billingProviderLabel || 'Billing Provider:'}
+                    </span>
+                    <span className="font-bold text-slate-800">
+                      {portalConfig?.billingProviderValue || 'Secure PCI-DSS Level 1 Encrypted'}
+                    </span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-slate-500 font-medium">Linked Donor Email:</span>
@@ -573,11 +607,11 @@ export function DonorDashboard() {
                   {billingLoading ? (
                     <span className="flex items-center gap-2">
                       <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      Connecting to Stripe Portal...
+                      {portalConfig?.buttonLoadingText || 'Connecting to Donation Portal...'}
                     </span>
                   ) : (
                     <span className="flex items-center gap-2">
-                      Open Stripe Billing Portal <ExternalLink size={16} />
+                      {portalConfig?.buttonText || 'Manage Your Donation'} <ExternalLink size={16} />
                     </span>
                   )}
                 </Button>
@@ -586,14 +620,12 @@ export function DonorDashboard() {
               <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-100 shadow-xs">
                 <h3 className="text-lg font-bold font-heading text-slate-900 mb-3">Frequently Asked Questions</h3>
                 <div className="space-y-4 text-sm text-slate-600">
-                  <div>
-                    <h4 className="font-bold text-slate-800 mb-1">How do I change my monthly donation amount?</h4>
-                    <p>Click the "Open Stripe Billing Portal" button above. You can update your pledge amount, change billing frequency, or switch cards directly.</p>
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-slate-800 mb-1">Can I set up recurring gifts via Mobile Money?</h4>
-                    <p>MTN MoMo and Airtel Money in Uganda require donor PIN authorization per transaction. For recurring automated support, card payments via Stripe are recommended.</p>
-                  </div>
+                  {(portalConfig?.faqs || DEFAULT_DONOR_PORTAL_SETTINGS.faqs).map((faq: any, idx: number) => (
+                    <div key={idx}>
+                      <h4 className="font-bold text-slate-800 mb-1">{faq.question}</h4>
+                      <p>{faq.answer}</p>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
@@ -602,13 +634,15 @@ export function DonorDashboard() {
             <div className="space-y-6">
               <div className="bg-gradient-to-br from-emerald-600 to-teal-700 rounded-3xl p-6 sm:p-8 text-white shadow-lg">
                 <Sparkles className="w-8 h-8 text-emerald-200 mb-4" />
-                <h3 className="text-xl font-bold font-heading mb-2">Pledge $25 / Month</h3>
+                <h3 className="text-xl font-bold font-heading mb-2">
+                  {portalConfig?.sidebarPledgeTitle || 'Pledge $25 / Month'}
+                </h3>
                 <p className="text-emerald-100 text-sm leading-relaxed mb-6">
-                  A monthly pledge of $25 provides 2 refugee women with vocational tailoring materials and Village Savings (VSLA) seed capital every single month.
+                  {portalConfig?.sidebarPledgeText || 'A monthly pledge of $25 provides 2 refugee women with vocational tailoring materials and Village Savings (VSLA) seed capital every single month.'}
                 </p>
                 <Link to="/donate">
                   <Button className="w-full bg-white text-emerald-800 hover:bg-emerald-50 font-bold border-none shadow-md">
-                    Set Up Monthly Gift <ArrowRight size={16} className="ml-2" />
+                    {portalConfig?.sidebarPledgeButtonText || 'Set Up Monthly Gift'} <ArrowRight size={16} className="ml-2" />
                   </Button>
                 </Link>
               </div>
@@ -621,70 +655,53 @@ export function DonorDashboard() {
           <div className="space-y-8">
             <div className="bg-white rounded-3xl p-6 sm:p-10 border border-slate-100 shadow-xs">
               <span className="text-xs font-bold tracking-widest uppercase text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full">
-                Kiryandongo Field Dispatch
+                {portalConfig?.impactBadge || 'Kiryandongo Field Dispatch'}
               </span>
               <h2 className="text-2xl sm:text-3xl font-bold font-heading text-slate-900 mt-3 mb-4">
-                How Your Contributions Are Changing Lives
+                {portalConfig?.impactTitle || 'How Your Contributions Are Changing Lives'}
               </h2>
               <p className="text-slate-600 leading-relaxed text-base mb-8">
-                Because of dedicated supporters like you, RESTI continues to bridge emergency survival and sustainable dignity across settlements in Kiryandongo District, Uganda.
+                {portalConfig?.impactSubtitle || 'Because of dedicated supporters like you, RESTI continues to bridge emergency survival and sustainable dignity across settlements in Kiryandongo District, Uganda.'}
               </p>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-slate-50 rounded-2xl p-5 border border-slate-100">
-                  <div className="h-40 rounded-xl overflow-hidden mb-4 bg-slate-200">
-                    <img 
-                      src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=800&auto=format&fit=crop&q=80" 
-                      alt="Vocational Training" 
-                      className="w-full h-full object-cover"
-                    />
+                {(portalConfig?.impactStories || DEFAULT_DONOR_PORTAL_SETTINGS.impactStories).map((story: any, sIdx: number) => (
+                  <div key={sIdx} className="bg-slate-50 rounded-2xl p-5 border border-slate-100 flex flex-col">
+                    <div className="h-40 rounded-xl overflow-hidden mb-4 bg-slate-200 shrink-0">
+                      <img 
+                        src={story.image} 
+                        alt={story.title} 
+                        className="w-full h-full object-cover"
+                        onError={(e: any) => {
+                          e.currentTarget.src = 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=800&auto=format&fit=crop&q=80';
+                        }}
+                      />
+                    </div>
+                    <h3 className="font-bold text-slate-900 text-base mb-1">{story.title}</h3>
+                    <p className="text-slate-600 text-xs leading-relaxed mt-auto">
+                      {story.description}
+                    </p>
                   </div>
-                  <h3 className="font-bold text-slate-900 text-base mb-1">Vocational Tailoring Cohort</h3>
-                  <p className="text-slate-600 text-xs leading-relaxed">
-                    18 single refugee mothers completed their hands-on certification and received startup sewing machines to establish self-reliant village micro-enterprises.
-                  </p>
-                </div>
-
-                <div className="bg-slate-50 rounded-2xl p-5 border border-slate-100">
-                  <div className="h-40 rounded-xl overflow-hidden mb-4 bg-slate-200">
-                    <img 
-                      src="https://images.unsplash.com/photo-1531545514256-b1400bc00f31?w=800&auto=format&fit=crop&q=80" 
-                      alt="Digital Lab" 
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <h3 className="font-bold text-slate-900 text-base mb-1">Youth Digital Inclusion Center</h3>
-                  <p className="text-slate-600 text-xs leading-relaxed">
-                    Expanded workstation hours so 45+ adolescent youths can study computer literacy, CV building, and distance education curriculum weekly.
-                  </p>
-                </div>
-
-                <div className="bg-slate-50 rounded-2xl p-5 border border-slate-100">
-                  <div className="h-40 rounded-xl overflow-hidden mb-4 bg-slate-200">
-                    <img 
-                      src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800&auto=format&fit=crop&q=80" 
-                      alt="VSLA Agriculture" 
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <h3 className="font-bold text-slate-900 text-base mb-1">VSLA Climate-Smart Farming</h3>
-                  <p className="text-slate-600 text-xs leading-relaxed">
-                    Disbursed drought-resilient maize and vegetable seeds to women-led agricultural clusters, securing nutritional resilience for 120+ children.
-                  </p>
-                </div>
+                ))}
               </div>
 
               {/* Leadership Thank-You Box */}
               <div className="mt-8 pt-8 border-t border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
                 <div>
-                  <h4 className="font-bold text-slate-900">A Message From RESTI Leadership</h4>
-                  <p className="text-slate-500 text-xs sm:text-sm mt-0.5">
-                    "On behalf of the refugee families and local host communities in Kiryandongo, thank you for walking this transformative journey with us."
+                  <h4 className="font-bold text-slate-900">
+                    {portalConfig?.leadershipHeading || 'A Message From RESTI Leadership'}
+                  </h4>
+                  <p className="text-slate-500 text-xs sm:text-sm mt-0.5 italic">
+                    {portalConfig?.leadershipQuote || '"On behalf of the refugee families and local host communities in Kiryandongo, thank you for walking this transformative journey with us."'}
                   </p>
                 </div>
                 <div className="text-right shrink-0">
-                  <p className="font-bold text-sm text-slate-800">Mr. Kwaya Daniel Loborach</p>
-                  <p className="text-xs text-emerald-600 font-semibold">Co-Founder, RESTI Uganda</p>
+                  <p className="font-bold text-sm text-slate-800">
+                    {portalConfig?.leadershipAuthor || 'Mr. Kwaya Daniel Loborach'}
+                  </p>
+                  <p className="text-xs text-emerald-600 font-semibold">
+                    {portalConfig?.leadershipRole || 'Co-Founder, RESTI Uganda'}
+                  </p>
                 </div>
               </div>
             </div>

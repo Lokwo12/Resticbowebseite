@@ -92,21 +92,13 @@ function parseHeroTitle(rawTitle: string): { acronym: string; expandedTitle: str
   };
 }
 
-// Parse multi-paragraph or motto subtitle cleanly
+// Parse multi-paragraph subtitle cleanly
 function parseSubtitle(rawSubtitle: string): { paragraphs: string[]; motto: string | null } {
   if (!rawSubtitle) return { paragraphs: [], motto: null };
-  const lines = rawSubtitle.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+  // Filter out 'Driven by Us, Built for All' completely as requested
+  const cleaned = rawSubtitle.replace(/Driven by Us, Built for All/gi, '').trim();
+  const lines = cleaned.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
   if (lines.length === 0) return { paragraphs: [], motto: null };
-
-  const lastLine = lines[lines.length - 1];
-  const isTagline = lines.length > 1 && (lastLine.length <= 50 || /driven by us/i.test(lastLine));
-
-  if (isTagline) {
-    return {
-      paragraphs: lines.slice(0, lines.length - 1),
-      motto: lastLine
-    };
-  }
 
   return {
     paragraphs: lines,
@@ -137,7 +129,7 @@ const DEFAULT_HERO_STATS = [
 const DEFAULT_HERO_SETTINGS: HeroSettings = {
   badgeText: 'Turning potential into sustainable transformation',
   title: 'Refugee Empowerment For Sustainable Transformation Initiative',
-  subtitle: 'RESTI is a community-based organization working alongside refugees and host communities to turn local skills, ideas, and potential into sustainable livelihoods, resilience, and lasting community transformation.\nDriven by Us, Built for All',
+  subtitle: 'RESTI is a community-based organization working alongside refugees and host communities to turn local skills, ideas, and potential into sustainable livelihoods, resilience, and lasting community transformation.',
   primaryButtonText: 'Donate Now',
   secondaryButtonText: 'Learn More',
   imageUrl: 'https://images.unsplash.com/photo-1606471015285-85fa1288aa4e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxhZnJpY2FuJTIwY29tbXVuaXR5JTIwZW1wb3dlcm1lbnR8ZW58MXx8fHwxNzYyNDU3NTkyfDA&ixlib=rb-4.1.0&q=80&w=1080',

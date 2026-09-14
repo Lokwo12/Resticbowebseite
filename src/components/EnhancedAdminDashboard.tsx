@@ -4758,7 +4758,7 @@ export function EnhancedAdminDashboard() {
 
             {/* Settings Tab */}
             {activeTab === 'settings' && (
-              <SiteSettingsTab settings={siteSettings} onUpdate={loadData} accessToken={accessToken} />
+              <SiteSettingsTab settings={siteSettings} onUpdate={loadData} accessToken={accessToken} userRole={userRole} />
             )}
 
             {/* Stories Management */}
