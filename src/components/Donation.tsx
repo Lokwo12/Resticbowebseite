@@ -671,7 +671,7 @@ export function Donation() {
               {/* Helper link to Donor Portal */}
               <div className="mt-4 text-center">
                 <Link 
-                  to="/donor/dashboard" 
+                  to="/donor-portal" 
                   className="inline-flex items-center gap-2 text-xs sm:text-sm text-slate-600 hover:text-emerald-700 bg-white/90 hover:bg-white border border-slate-200/80 px-4 py-2 rounded-xl transition-all shadow-2xs font-semibold"
                 >
                   <Heart size={14} className="text-emerald-600" fill="currentColor" />

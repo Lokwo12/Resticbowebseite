@@ -80,9 +80,12 @@ function PageTitleManager() {
       '/partners': 'Our Partners | RESTI CBO',
       '/opportunities': 'Opportunities | RESTI CBO',
       '/donate': 'Donate | Support Our Mission',
+      '/donation': 'Donate | Support Our Mission',
       '/donor': 'Donor Portal | RESTI',
       '/donor/dashboard': 'Donor Portal | RESTI',
       '/donor/portal': 'Donor Portal | RESTI',
+      '/donor-portal': 'Donor Portal | RESTI',
+      '/donor-dashboard': 'Donor Portal | RESTI',
       '/login': 'Donor Sign In | RESTI',
       '/register': 'Create Donor Account | RESTI',
       '/contact': 'Contact Us | RESTI',
@@ -248,9 +251,12 @@ export default function App() {
         <Route path="/partners" element={<MainLayout><PartnersPage /></MainLayout>} />
         <Route path="/opportunities" element={<MainLayout><OpportunitiesPage /></MainLayout>} />
         <Route path="/donate" element={<MainLayout><CardPaymentPage /></MainLayout>} />
-        <Route path="/donor" element={<Navigate to="/donor/dashboard" replace />} />
-        <Route path="/donor/portal" element={<Navigate to="/donor/dashboard" replace />} />
-        <Route path="/donor/dashboard" element={<MainLayout><DonorDashboard /></MainLayout>} />
+        <Route path="/donation" element={<Navigate to="/donate" replace />} />
+        <Route path="/donor" element={<Navigate to="/donor-portal" replace />} />
+        <Route path="/donor/portal" element={<Navigate to="/donor-portal" replace />} />
+        <Route path="/donor/dashboard" element={<Navigate to="/donor-portal" replace />} />
+        <Route path="/donor-dashboard" element={<Navigate to="/donor-portal" replace />} />
+        <Route path="/donor-portal" element={<MainLayout><DonorDashboard /></MainLayout>} />
         <Route path="/login" element={<MainLayout><Login /></MainLayout>} />
         <Route path="/register" element={<MainLayout><Register /></MainLayout>} />
         <Route path="/reset-password" element={<MainLayout><ResetPassword /></MainLayout>} />

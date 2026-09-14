@@ -36,6 +36,15 @@ export function DonorDashboard() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'completed' | 'pending'>('all');
   
+  // Guest Lookup & Inline Login state
+  const [lookupQuery, setLookupQuery] = useState('');
+  const [lookupLoading, setLookupLoading] = useState(false);
+  const [lookupSubmitted, setLookupSubmitted] = useState(false);
+  const [guestBillingEmail, setGuestBillingEmail] = useState('');
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [loginLoading, setLoginLoading] = useState(false);
+
   // Profile edit state
   const [displayName, setDisplayName] = useState('');
   const [phone, setPhone] = useState('');
@@ -49,92 +58,110 @@ export function DonorDashboard() {
 
   useEffect(() => {
     const checkUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        navigate('/login?redirect=/donor/dashboard');
-        return;
-      }
-      setUser(session.user);
-      setDisplayName(session.user.user_metadata?.name || '');
-      setPhone(session.user.user_metadata?.phone || '');
-      setAddress(session.user.user_metadata?.address || '');
-      setCity(session.user.user_metadata?.city || '');
-      setCountry(session.user.user_metadata?.country || 'Uganda');
-      setPostalCode(session.user.user_metadata?.postal_code || session.user.user_metadata?.postalCode || '');
-
-      // Verify any Stripe checkout session returning from card payment
-      const urlParams = new URLSearchParams(window.location.search);
-      const sessionId = urlParams.get('session_id');
-      let verifiedDonation: any = null;
-      if (sessionId) {
-        try {
-          const vRes = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/verify-session`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${publicAnonKey}` },
-            body: JSON.stringify({ sessionId })
-          });
-          const vData = await vRes.json();
-          if (vData.status === 'success' && vData.donation) {
-            verifiedDonation = vData.donation;
-            toast.success('Thank you! Your donation was successfully confirmed and recorded.');
-          }
-          window.history.replaceState({}, document.title, window.location.pathname);
-        } catch (err) {
-          console.error('Failed to verify session', err);
-        }
-      }
-
-      await fetchDonations(session.user.email || '');
-
-      if (verifiedDonation) {
-        setDonations(prev => {
-          const exists = prev.find(d => d.date === verifiedDonation?.timestamp || d.id === verifiedDonation?.id);
-          if (exists) return prev;
-          return [{
-            id: verifiedDonation.id || `donation-${Date.now()}`,
-            amount: verifiedDonation.amount,
-            currency: verifiedDonation.currency || 'USD',
-            date: verifiedDonation.timestamp || new Date().toISOString(),
-            status: verifiedDonation.status || 'completed',
-            paymentMethod: verifiedDonation.paymentMethod || 'card',
-            donorName: verifiedDonation.donorName || session.user.user_metadata?.name,
-            donorEmail: verifiedDonation.donorEmail || session.user.email,
-            reference: verifiedDonation.reference || (sessionId ? sessionId.slice(-8).toUpperCase() : 'ONLINE')
-          }, ...prev];
-        });
-      }
-
-      // Fetch dynamic donor portal settings from admin dashboard
       try {
-        const setRes = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/site-settings`, {
-          headers: { Authorization: `Bearer ${publicAnonKey}` },
-          signal: AbortSignal.timeout(6000),
-        });
-        if (setRes.ok) {
-          const setData = await setRes.json();
-          if (setData?.settings?.donorPortal) {
-            setPortalConfig((prev: any) => ({ ...prev, ...setData.settings.donorPortal }));
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          setUser(session.user);
+          setDisplayName(session.user.user_metadata?.name || '');
+          setPhone(session.user.user_metadata?.phone || '');
+          setAddress(session.user.user_metadata?.address || '');
+          setCity(session.user.user_metadata?.city || '');
+          setCountry(session.user.user_metadata?.country || 'Uganda');
+          setPostalCode(session.user.user_metadata?.postal_code || session.user.user_metadata?.postalCode || '');
+        } else {
+          setUser(null);
+        }
+
+        // Verify any Stripe checkout session returning from card payment
+        const urlParams = new URLSearchParams(window.location.search);
+        const sessionId = urlParams.get('session_id');
+        const emailParam = urlParams.get('email');
+        const refParam = urlParams.get('ref');
+
+        let verifiedDonation: any = null;
+        if (sessionId) {
+          try {
+            const vRes = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/verify-session`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${publicAnonKey}` },
+              body: JSON.stringify({ sessionId })
+            });
+            const vData = await vRes.json();
+            if (vData.status === 'success' && vData.donation) {
+              verifiedDonation = vData.donation;
+              toast.success('Thank you! Your donation was successfully confirmed and recorded.');
+            }
+            window.history.replaceState({}, document.title, window.location.pathname);
+          } catch (err) {
+            console.error('Failed to verify session', err);
           }
+        }
+
+        const queryToFetch = session?.user?.email || emailParam || refParam || '';
+        if (queryToFetch) {
+          setLookupQuery(queryToFetch);
+          await fetchDonations(queryToFetch);
+        }
+
+        if (verifiedDonation) {
+          setDonations(prev => {
+            const exists = prev.find(d => d.date === verifiedDonation?.timestamp || d.id === verifiedDonation?.id);
+            if (exists) return prev;
+            return [{
+              id: verifiedDonation.id || `donation-${Date.now()}`,
+              amount: verifiedDonation.amount,
+              currency: verifiedDonation.currency || 'USD',
+              date: verifiedDonation.timestamp || new Date().toISOString(),
+              status: verifiedDonation.status || 'completed',
+              paymentMethod: verifiedDonation.paymentMethod || 'card',
+              donorName: verifiedDonation.donorName || session?.user?.user_metadata?.name || 'Supporter',
+              donorEmail: verifiedDonation.donorEmail || session?.user?.email || '',
+              reference: verifiedDonation.reference || (sessionId ? sessionId.slice(-8).toUpperCase() : 'ONLINE')
+            }, ...prev];
+          });
+        }
+
+        // Fetch dynamic donor portal settings from admin dashboard
+        try {
+          const setRes = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/site-settings`, {
+            headers: { Authorization: `Bearer ${publicAnonKey}` },
+            signal: AbortSignal.timeout(6000),
+          });
+          if (setRes.ok) {
+            const setData = await setRes.json();
+            if (setData?.settings?.donorPortal) {
+              setPortalConfig((prev: any) => ({ ...prev, ...setData.settings.donorPortal }));
+            }
+          }
+        } catch (err) {
+          console.warn('Could not load site-settings for donor portal, using defaults', err);
         }
       } catch (err) {
-        console.warn('Could not load site-settings for donor portal, using defaults', err);
+        console.error('Error in checkUser:', err);
+      } finally {
+        setLoading(false);
       }
     };
     checkUser();
   }, [navigate]);
 
-  const fetchDonations = async (email: string) => {
-    if (!email) return;
+  const fetchDonations = async (query: string): Promise<Donation[]> => {
+    if (!query) {
+      setLoading(false);
+      return [];
+    }
     try {
       const res = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/donations`, {
         headers: { Authorization: `Bearer ${publicAnonKey}` }
       });
       const data = await res.json();
       if (data.donations && Array.isArray(data.donations)) {
+        const q = query.toLowerCase().trim();
         const userDonations: Donation[] = data.donations
           .filter((d: any) => {
-            const dEmail = d.value?.donorEmail || d.value?.email || '';
-            return dEmail.toLowerCase().trim() === email.toLowerCase().trim();
+            const dEmail = (d.value?.donorEmail || d.value?.email || '').toLowerCase().trim();
+            const dRef = (d.value?.reference || d.key || '').toLowerCase().trim();
+            return dEmail === q || dRef.includes(q) || (q.length > 3 && dRef.endsWith(q));
           })
           .map((d: any) => ({
             id: d.key || d.id,
@@ -150,22 +177,87 @@ export function DonorDashboard() {
         
         userDonations.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
         setDonations(userDonations);
+        return userDonations;
       }
+      return [];
     } catch (err) {
       console.error('Error fetching donations', err);
+      return [];
     } finally {
       setLoading(false);
     }
   };
 
+  const handleLookupDonations = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!lookupQuery.trim()) {
+      toast.error('Please enter your donation email or receipt reference.');
+      return;
+    }
+    setLookupLoading(true);
+    try {
+      const results = await fetchDonations(lookupQuery.trim());
+      setLookupSubmitted(true);
+      if (results && results.length > 0) {
+        toast.success(`Found ${results.length} donation ${results.length === 1 ? 'record' : 'records'}!`);
+      } else {
+        toast.info('No donations found for this email or reference. If you recently donated, please allow a moment to sync.');
+      }
+    } catch (err) {
+      toast.error('Unable to search donations right now.');
+    } finally {
+      setLookupLoading(false);
+    }
+  };
+
+  const handleInlineLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!loginEmail || !loginPassword) {
+      toast.error('Please enter both email and password.');
+      return;
+    }
+    setLoginLoading(true);
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: loginEmail,
+        password: loginPassword,
+      });
+      if (error) throw error;
+      if (data.user) {
+        setUser(data.user);
+        setDisplayName(data.user.user_metadata?.name || '');
+        setPhone(data.user.user_metadata?.phone || '');
+        setAddress(data.user.user_metadata?.address || '');
+        setCity(data.user.user_metadata?.city || '');
+        setCountry(data.user.user_metadata?.country || 'Uganda');
+        setPostalCode(data.user.user_metadata?.postal_code || data.user.user_metadata?.postalCode || '');
+        toast.success('Signed in successfully!');
+        if (data.user.email) {
+          await fetchDonations(data.user.email);
+        }
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Login failed. Please check your credentials.');
+    } finally {
+      setLoginLoading(false);
+    }
+  };
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    navigate('/');
+    setUser(null);
+    setDonations([]);
+    setLookupQuery('');
+    setLookupSubmitted(false);
     toast.success('Logged out successfully');
   };
 
   const handleManageBilling = async () => {
-    if (!user?.email) return;
+    const targetEmail = user?.email || guestBillingEmail.trim();
+    if (!targetEmail) {
+      toast.error('Please enter the email address linked to your recurring donation.');
+      return;
+    }
     try {
       setBillingLoading(true);
       const response = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/create-portal-session`, {
@@ -175,7 +267,7 @@ export function DonorDashboard() {
           'Authorization': `Bearer ${publicAnonKey}`
         },
         body: JSON.stringify({
-          email: user.email,
+          email: targetEmail,
           returnUrl: window.location.href
         })
       });
@@ -293,17 +385,28 @@ export function DonorDashboard() {
                   <span className="text-xs font-bold tracking-widest uppercase bg-emerald-500/30 border border-emerald-400/40 text-emerald-200 px-3 py-0.5 rounded-full">
                     {portalConfig?.badge || 'RESTI Donor Portal'}
                   </span>
-                  <span className={`text-xs font-semibold px-3 py-0.5 rounded-full border ${tier.badge}`}>
-                    {tier.name}
-                  </span>
+                  {user && (
+                    <span className={`text-xs font-semibold px-3 py-0.5 rounded-full border ${tier.badge}`}>
+                      {tier.name}
+                    </span>
+                  )}
                 </div>
                 <h1 className="text-2xl sm:text-4xl font-extrabold font-heading text-white tracking-tight">
-                  {portalConfig?.welcomePrefix || 'Welcome,'} {user?.user_metadata?.name || portalConfig?.defaultName || 'Valued Supporter'}!
+                  {user 
+                    ? `${portalConfig?.welcomePrefix || 'Welcome,'} ${user?.user_metadata?.name || portalConfig?.defaultName || 'Valued Supporter'}!`
+                    : (portalConfig?.welcomePrefix ? `${portalConfig.welcomePrefix} ${portalConfig?.defaultName || 'Supporter'}!` : 'RESTI Donor Portal & Receipts')
+                  }
                 </h1>
                 <p className="text-emerald-100 text-sm sm:text-base mt-1 flex items-center gap-2">
-                  <span>{user?.email}</span>
-                  <span>•</span>
-                  <span>Supporter since {new Date(user?.created_at).getFullYear()}</span>
+                  {user ? (
+                    <>
+                      <span>{user?.email}</span>
+                      <span>•</span>
+                      <span>Supporter since {new Date(user?.created_at).getFullYear()}</span>
+                    </>
+                  ) : (
+                    <span>Instant access to verified giving history, downloadable tax receipts, and contribution settings.</span>
+                  )}
                 </p>
               </div>
             </div>
@@ -315,13 +418,24 @@ export function DonorDashboard() {
                   {portalConfig?.makeGiftBtnText || 'Make a Gift'}
                 </Button>
               </Link>
-              <Button 
-                variant="outline" 
-                onClick={handleLogout} 
-                className="bg-emerald-900/40 border-white/20 text-white hover:bg-white/10 hover:text-white"
-              >
-                <LogOut className="w-4 h-4 mr-2" /> {portalConfig?.signOutBtnText || 'Sign Out'}
-              </Button>
+              {user ? (
+                <Button 
+                  variant="outline" 
+                  onClick={handleLogout} 
+                  className="bg-emerald-900/40 border-white/20 text-white hover:bg-white/10 hover:text-white"
+                >
+                  <LogOut className="w-4 h-4 mr-2" /> {portalConfig?.signOutBtnText || 'Sign Out'}
+                </Button>
+              ) : (
+                <Link to="/login?redirect=/donor-portal" className="flex-1 sm:flex-initial">
+                  <Button 
+                    variant="outline" 
+                    className="w-full bg-emerald-900/40 border-white/20 text-white hover:bg-white/10 hover:text-white"
+                  >
+                    <User className="w-4 h-4 mr-2" /> Sign In
+                  </Button>
+                </Link>
+              )}
             </div>
           </div>
         </div>
@@ -439,53 +553,175 @@ export function DonorDashboard() {
         {/* TAB 1: GIVING HISTORY & RECEIPTS */}
         {activeTab === 'history' && (
           <div className="space-y-6">
-            <div className="bg-white rounded-3xl shadow-xs border border-slate-100 overflow-hidden">
-              <div className="p-5 sm:p-6 border-b border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <div>
-                  <h2 className="text-xl font-bold font-heading text-slate-900">Your Contributions</h2>
-                  <p className="text-slate-500 text-sm mt-0.5">Instant verifiable donation records and downloadable official receipts</p>
-                </div>
-
-                <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
-                  <div className="relative flex-1 sm:w-56">
-                    <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                    <input
-                      type="text"
-                      placeholder="Search ref or amount..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-1.5 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition-all"
-                    />
+            {!user && donations.length === 0 ? (
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Option A: Quick Lookup without password */}
+                  <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-xs flex flex-col justify-between">
+                    <div>
+                      <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mb-4">
+                        <Search className="w-6 h-6" />
+                      </div>
+                      <h3 className="text-xl font-bold font-heading text-slate-900 mb-2">
+                        Instant Receipt & Gift Lookup
+                      </h3>
+                      <p className="text-slate-600 text-sm mb-6 leading-relaxed">
+                        Contributed via Card, Bank, MTN MoMo, or Airtel Money? Enter your donation email or transaction reference to view records and download official PDF tax receipts immediately.
+                      </p>
+                      <form onSubmit={handleLookupDonations} className="space-y-4">
+                        <div>
+                          <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+                            Donor Email Address or Reference ID
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="e.g. supporter@example.com or REF-12345"
+                            value={lookupQuery}
+                            onChange={(e) => setLookupQuery(e.target.value)}
+                            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                          />
+                        </div>
+                        <Button
+                          type="submit"
+                          disabled={lookupLoading}
+                          className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl shadow-xs"
+                        >
+                          {lookupLoading ? 'Searching...' : 'Find My Receipts & History'}
+                        </Button>
+                      </form>
+                    </div>
+                    {lookupSubmitted && donations.length === 0 && (
+                      <p className="text-xs text-amber-600 mt-4 text-center">
+                        No records matched "{lookupQuery}". Check the email you used or make a gift to get started.
+                      </p>
+                    )}
                   </div>
 
-                  <select
-                    value={statusFilter}
-                    onChange={(e: any) => setStatusFilter(e.target.value)}
-                    className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs sm:text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  >
-                    <option value="all">All Statuses</option>
-                    <option value="completed">Completed</option>
-                    <option value="pending">Pending</option>
-                  </select>
+                  {/* Option B: Account Sign In */}
+                  <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-xs flex flex-col justify-between">
+                    <div>
+                      <div className="w-12 h-12 rounded-2xl bg-teal-50 text-teal-600 flex items-center justify-center mb-4">
+                        <User className="w-6 h-6" />
+                      </div>
+                      <h3 className="text-xl font-bold font-heading text-slate-900 mb-2">
+                        Donor Account Sign In
+                      </h3>
+                      <p className="text-slate-600 text-sm mb-6 leading-relaxed">
+                        Log in with your donor account to access recurring donation controls, save personal tax preferences, and manage your supporter profile.
+                      </p>
+                      <form onSubmit={handleInlineLogin} className="space-y-3">
+                        <div>
+                          <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
+                            Email Address
+                          </label>
+                          <input
+                            type="email"
+                            placeholder="you@example.com"
+                            value={loginEmail}
+                            onChange={(e) => setLoginEmail(e.target.value)}
+                            className="w-full px-4 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                          />
+                        </div>
+                        <div>
+                          <div className="flex justify-between items-center mb-1">
+                            <label className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                              Password
+                            </label>
+                            <Link to="/reset-password" className="text-xs text-emerald-600 hover:underline">
+                              Forgot?
+                            </Link>
+                          </div>
+                          <input
+                            type="password"
+                            placeholder="••••••••"
+                            value={loginPassword}
+                            onChange={(e) => setLoginPassword(e.target.value)}
+                            className="w-full px-4 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                          />
+                        </div>
+                        <Button
+                          type="submit"
+                          disabled={loginLoading}
+                          className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-2.5 rounded-xl shadow-xs"
+                        >
+                          {loginLoading ? 'Signing In...' : 'Sign In to Portal'}
+                        </Button>
+                      </form>
+                    </div>
+                    <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+                      <span>Don't have an account?</span>
+                      <Link to="/register" className="text-emerald-700 font-bold hover:underline">
+                        Create Free Account
+                      </Link>
+                    </div>
+                  </div>
                 </div>
               </div>
-
-              {filteredDonations.length === 0 ? (
-                <div className="p-12 text-center">
-                  <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-400">
-                    <Heart size={28} />
+            ) : (
+              <div className="bg-white rounded-3xl shadow-xs border border-slate-100 overflow-hidden">
+                {!user && (
+                  <div className="bg-emerald-50 px-6 py-3 border-b border-emerald-100 flex flex-wrap items-center justify-between gap-2 text-xs text-emerald-800">
+                    <span className="font-medium">
+                      Showing records found for: <strong className="font-bold">{lookupQuery || 'Searched Donor'}</strong>
+                    </span>
+                    <button
+                      onClick={() => {
+                        setDonations([]);
+                        setLookupQuery('');
+                        setLookupSubmitted(false);
+                      }}
+                      className="font-bold underline hover:text-emerald-950"
+                    >
+                      Look Up Another Donor / Reference
+                    </button>
                   </div>
-                  <h3 className="text-lg font-bold text-slate-800">No donations found</h3>
-                  <p className="text-slate-500 text-sm max-w-md mx-auto mt-1 mb-6">
-                    {searchQuery ? 'No gifts matched your search criteria.' : 'You have not recorded any donations with this account email yet.'}
-                  </p>
-                  <Link to="/donate">
-                    <Button className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold">
-                      Make Your First Gift
-                    </Button>
-                  </Link>
+                )}
+                <div className="p-5 sm:p-6 border-b border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                  <div>
+                    <h2 className="text-xl font-bold font-heading text-slate-900">Your Contributions</h2>
+                    <p className="text-slate-500 text-sm mt-0.5">Instant verifiable donation records and downloadable official receipts</p>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+                    <div className="relative flex-1 sm:w-56">
+                      <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                      <input
+                        type="text"
+                        placeholder="Search ref or amount..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-1.5 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition-all"
+                      />
+                    </div>
+
+                    <select
+                      value={statusFilter}
+                      onChange={(e: any) => setStatusFilter(e.target.value)}
+                      className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs sm:text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    >
+                      <option value="all">All Statuses</option>
+                      <option value="completed">Completed</option>
+                      <option value="pending">Pending</option>
+                    </select>
+                  </div>
                 </div>
-              ) : (
+
+                {filteredDonations.length === 0 ? (
+                  <div className="p-12 text-center">
+                    <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-400">
+                      <Heart size={28} />
+                    </div>
+                    <h3 className="text-lg font-bold text-slate-800">No donations found</h3>
+                    <p className="text-slate-500 text-sm max-w-md mx-auto mt-1 mb-6">
+                      {searchQuery ? 'No gifts matched your search criteria.' : 'You have not recorded any donations with this account email yet.'}
+                    </p>
+                    <Link to="/donate">
+                      <Button className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold">
+                        Make Your First Gift
+                      </Button>
+                    </Link>
+                  </div>
+                ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-left border-collapse">
                     <thead>
@@ -547,6 +783,7 @@ export function DonorDashboard() {
                 </div>
               )}
             </div>
+          )}
 
             {/* Donor Assurance Note */}
             <div className="bg-emerald-50/60 border border-emerald-100 rounded-2xl p-5 flex items-start gap-4">
@@ -593,10 +830,28 @@ export function DonorDashboard() {
                       {portalConfig?.billingProviderValue || 'Secure PCI-DSS Level 1 Encrypted'}
                     </span>
                   </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-slate-500 font-medium">Linked Donor Email:</span>
-                    <span className="font-mono text-xs font-semibold text-slate-700">{user?.email}</span>
-                  </div>
+                  {user?.email ? (
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-slate-500 font-medium">Linked Donor Email:</span>
+                      <span className="font-mono text-xs font-semibold text-slate-700">{user.email}</span>
+                    </div>
+                  ) : (
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+                        Linked Recurring Donor Email:
+                      </label>
+                      <input
+                        type="email"
+                        placeholder="e.g. supporter@example.com"
+                        value={guestBillingEmail}
+                        onChange={(e) => setGuestBillingEmail(e.target.value)}
+                        className="w-full px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono text-xs"
+                      />
+                      <p className="text-[11px] text-slate-400 mt-1">
+                        Enter the email address you used when setting up your recurring gift to launch the management portal.
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 <Button
@@ -716,119 +971,143 @@ export function DonorDashboard() {
               <p className="text-slate-500 text-sm mt-0.5">Ensure your donation receipts and impact communications are accurate</p>
             </div>
 
-            <form onSubmit={handleSaveProfile} className="space-y-5">
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
-                  Full Legal Name (For Official Tax Receipts)
-                </label>
-                <input
-                  type="text"
-                  value={displayName}
-                  onChange={(e) => setDisplayName(e.target.value)}
-                  placeholder="e.g. Dr. Jane Doe"
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                />
+            {!user ? (
+              <div className="bg-slate-50 rounded-2xl p-6 border border-slate-200/70 text-center space-y-4">
+                <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center mx-auto">
+                  <User size={24} />
+                </div>
+                <h3 className="text-lg font-bold text-slate-900">Sign In to Save Tax & Receipt Details</h3>
+                <p className="text-slate-600 text-sm max-w-md mx-auto leading-relaxed">
+                  Log in or create a donor account to configure your official legal name, contact phone number, and physical mailing address for year-end tax letters and official acknowledgments.
+                </p>
+                <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+                  <Link to="/login?redirect=/donor-portal">
+                    <Button className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold">
+                      Sign In to Account
+                    </Button>
+                  </Link>
+                  <Link to="/register">
+                    <Button variant="outline" className="border-slate-300 text-slate-700 font-semibold">
+                      Create Free Account
+                    </Button>
+                  </Link>
+                </div>
               </div>
-
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
-                  Account Email Address
-                </label>
-                <input
-                  type="email"
-                  disabled
-                  value={user?.email || ''}
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-500 text-sm cursor-not-allowed font-mono text-xs"
-                />
-                <p className="text-[11px] text-slate-400 mt-1">Contact support if you need to transfer your donation history to another email.</p>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
-                  Phone Number
-                </label>
-                <input
-                  type="tel"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="+256 700 000000"
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
-                  Street Address / P.O. Box
-                </label>
-                <input
-                  type="text"
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                  placeholder="Street or Plot address"
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            ) : (
+              <form onSubmit={handleSaveProfile} className="space-y-5">
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
-                    City / Town
+                    Full Legal Name (For Official Tax Receipts)
                   </label>
                   <input
                     type="text"
-                    value={city}
-                    onChange={(e) => setCity(e.target.value)}
-                    placeholder="City"
+                    value={displayName}
+                    onChange={(e) => setDisplayName(e.target.value)}
+                    placeholder="e.g. Dr. Jane Doe"
                     className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   />
                 </div>
 
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
-                    Postal / ZIP Code
+                    Account Email Address
                   </label>
                   <input
-                    type="text"
-                    value={postalCode}
-                    onChange={(e) => setPostalCode(e.target.value)}
-                    placeholder="Postal Code"
+                    type="email"
+                    disabled
+                    value={user?.email || ''}
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-500 text-sm cursor-not-allowed font-mono text-xs"
+                  />
+                  <p className="text-[11px] text-slate-400 mt-1">Contact support if you need to transfer your donation history to another email.</p>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+                    Phone Number
+                  </label>
+                  <input
+                    type="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="+256 700 000000"
                     className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   />
                 </div>
 
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
-                    Country
+                    Street Address / P.O. Box
                   </label>
                   <input
                     type="text"
-                    value={country}
-                    onChange={(e) => setCountry(e.target.value)}
-                    placeholder="Country"
+                    value={address}
+                    onChange={(e) => setAddress(e.target.value)}
+                    placeholder="Street or Plot address"
                     className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   />
                 </div>
-              </div>
 
-              <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
-                <Button
-                  type="submit"
-                  disabled={savingProfile}
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-6 py-2.5 rounded-xl shadow-xs"
-                >
-                  {savingProfile ? 'Saving...' : 'Save Profile Details'}
-                </Button>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+                      City / Town
+                    </label>
+                    <input
+                      type="text"
+                      value={city}
+                      onChange={(e) => setCity(e.target.value)}
+                      placeholder="City"
+                      className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    />
+                  </div>
 
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={handleLogout}
-                  className="text-rose-600 hover:bg-rose-50 border-rose-200"
-                >
-                  <LogOut size={14} className="mr-1.5" /> Sign Out
-                </Button>
-              </div>
-            </form>
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+                      Postal / ZIP Code
+                    </label>
+                    <input
+                      type="text"
+                      value={postalCode}
+                      onChange={(e) => setPostalCode(e.target.value)}
+                      placeholder="Postal Code"
+                      className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+                      Country
+                    </label>
+                    <input
+                      type="text"
+                      value={country}
+                      onChange={(e) => setCountry(e.target.value)}
+                      placeholder="Country"
+                      className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    />
+                  </div>
+                </div>
+
+                <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
+                  <Button
+                    type="submit"
+                    disabled={savingProfile}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-6 py-2.5 rounded-xl shadow-xs"
+                  >
+                    {savingProfile ? 'Saving...' : 'Save Profile Details'}
+                  </Button>
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleLogout}
+                    className="text-rose-600 hover:bg-rose-50 border-rose-200"
+                  >
+                    <LogOut size={14} className="mr-1.5" /> Sign Out
+                  </Button>
+                </div>
+              </form>
+            )}
           </div>
         )}
 
