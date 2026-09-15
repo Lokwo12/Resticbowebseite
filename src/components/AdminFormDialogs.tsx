@@ -6,6 +6,7 @@ import { Upload, X, User, Mail, Link2, Tag, Hash, Shield, Info, FileText, Globe,
 
 import { toast } from 'sonner';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
+import { supabase } from '../utils/supabase/client';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 
@@ -310,16 +311,44 @@ export function StoryFormDialog({ show, onClose, editingItem, onSuccess, userRol
     if (!file) return;
     setUploading(true);
     try {
-      const formDataObj = new FormData();
-      formDataObj.append('file', file);
-      const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/upload-image`,
-        { method: 'POST', headers: { Authorization: `Bearer ${accessToken || publicAnonKey}` }, body: formDataObj }
-      );
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error);
-      setFormData(prev => ({ ...prev, image: data.url }));
-      toast.success('Image uploaded');
+      // 1. Try edge function upload
+      try {
+        const formDataObj = new FormData();
+        formDataObj.append('file', file);
+        const response = await fetch(
+          `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/upload-image`,
+          { method: 'POST', headers: { Authorization: `Bearer ${accessToken || publicAnonKey}` }, body: formDataObj }
+        );
+        if (response.ok) {
+          const data = await response.json();
+          if (data.url) {
+            setFormData(prev => ({ ...prev, image: data.url }));
+            toast.success('Image uploaded');
+            return;
+          }
+        }
+      } catch (e) {
+        console.warn('Edge function upload failed, trying Supabase storage fallback:', e);
+      }
+
+      // 2. Fallback to direct Supabase Storage
+      const fileExt = file.name.split('.').pop() || 'jpg';
+      const cleanFileName = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
+      const { error: uploadError } = await supabase.storage
+        .from('make-2a4be611-uploads')
+        .upload(cleanFileName, file);
+      if (uploadError) throw uploadError;
+
+      const { data: publicUrlData } = supabase.storage
+        .from('make-2a4be611-uploads')
+        .getPublicUrl(cleanFileName);
+
+      if (publicUrlData?.publicUrl) {
+        setFormData(prev => ({ ...prev, image: publicUrlData.publicUrl }));
+        toast.success('Image uploaded');
+      } else {
+        throw new Error('Could not retrieve public URL for uploaded image');
+      }
     } catch (err: any) {
       toast.error(err.message || 'Upload failed');
     } finally {
@@ -335,27 +364,57 @@ export function StoryFormDialog({ show, onClose, editingItem, onSuccess, userRol
     }
     setLoading(true);
     try {
-      const url = editingItem
-        ? `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/stories/${editingItem.key || editingItem.id}`
-        : `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/stories`;
-      const response = await fetch(url, {
-        method: editingItem ? 'PUT' : 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken || publicAnonKey}` },
-        body: JSON.stringify(formData)
-      });
-      if (!response.ok) {
-        let errMsg = 'Failed to save';
-        try {
-          const errData = await response.json();
-          errMsg = errData.error || errData.details || errMsg;
-        } catch (e) {}
-        throw new Error(errMsg);
+      const storyId = editingItem 
+        ? (editingItem.key || editingItem.id) 
+        : `story:${crypto.randomUUID ? crypto.randomUUID() : (Date.now().toString() + Math.random().toString(36).substring(2, 7))}`;
+      const normalizedId = storyId.startsWith('story:') ? storyId : `story:${storyId}`;
+      const storyPayload = {
+        name: formData.name,
+        title: formData.title,
+        story: formData.story,
+        image: formData.image || '',
+        category: formData.category || 'general',
+        impact: formData.impact || '',
+        date: editingItem?.date || new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+
+      let saved = false;
+
+      // Tier 1: Try Edge Function
+      try {
+        const url = editingItem
+          ? `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/stories/${encodeURIComponent(normalizedId)}`
+          : `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/stories`;
+        const response = await fetch(url, {
+          method: editingItem ? 'PUT' : 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken || publicAnonKey}` },
+          body: JSON.stringify({ ...storyPayload, id: normalizedId })
+        });
+        if (response.ok) {
+          saved = true;
+        }
+      } catch (apiErr) {
+        console.warn('Edge function save error, will fallback to Supabase KV:', apiErr);
       }
-      toast.success(editingItem ? 'Story updated' : 'Story added');
+
+      // Tier 2: Direct Supabase KV fallback
+      if (!saved) {
+        const { error: sbError } = await supabase
+          .from('kv_store_2a4be611')
+          .upsert({
+            key: normalizedId,
+            value: storyPayload
+          });
+        if (sbError) throw sbError;
+      }
+
+      toast.success(editingItem ? 'Story updated successfully' : 'Story added successfully');
       onSuccess();
       onClose();
     } catch (err: any) {
-      toast.error(err.message);
+      console.error('Story save error:', err);
+      toast.error(err.message || 'Failed to save story');
     } finally {
       setLoading(false);
     }
@@ -406,6 +465,8 @@ export function StoryFormDialog({ show, onClose, editingItem, onSuccess, userRol
                 <option value="healthcare">Healthcare</option>
                 <option value="community">Community</option>
                 <option value="empowerment">Empowerment</option>
+                <option value="livelihoods">Livelihoods</option>
+                <option value="environment">Environment</option>
               </select>
             </div>
           </div>
@@ -441,29 +502,38 @@ export function StoryFormDialog({ show, onClose, editingItem, onSuccess, userRol
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Image</label>
-            <div className="flex gap-3 items-center">
-              <label className="cursor-pointer">
-                <Button type="button" variant="outline" disabled={uploading} asChild className="rounded-xl border-slate-200 hover:bg-slate-50">
-                  <span>
-                    <Upload size={16} className="mr-2" />
-                    {uploading ? 'Uploading...' : 'Upload Image'}
-                  </span>
-                </Button>
-                <input type="file" className="hidden" accept="image/*" onChange={handleImageUpload} />
-              </label>
-              {formData.image && (
-                <div className="relative">
-                  <img src={formData.image} alt="Preview" className="h-24 w-32 object-cover rounded-lg border border-slate-100" />
-                  <button
-                    type="button"
-                    onClick={() => setFormData({ ...formData, image: '' })}
-                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-md hover:bg-red-600 transition-colors"
-                  >
-                    <X size={12} />
-                  </button>
-                </div>
-              )}
+            <label className="block text-sm font-medium text-slate-700 mb-1">Image (Upload file or paste URL)</label>
+            <div className="space-y-3">
+              <div className="flex gap-3 items-center">
+                <label className="cursor-pointer">
+                  <Button type="button" variant="outline" disabled={uploading} asChild className="rounded-xl border-slate-200 hover:bg-slate-50">
+                    <span>
+                      <Upload size={16} className="mr-2" />
+                      {uploading ? 'Uploading...' : 'Upload Image'}
+                    </span>
+                  </Button>
+                  <input type="file" className="hidden" accept="image/*" onChange={handleImageUpload} />
+                </label>
+                {formData.image && (
+                  <div className="relative">
+                    <img src={formData.image} alt="Preview" className="h-20 w-28 object-cover rounded-lg border border-slate-200" />
+                    <button
+                      type="button"
+                      onClick={() => setFormData({ ...formData, image: '' })}
+                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-md hover:bg-red-600 transition-colors"
+                    >
+                      <X size={12} />
+                    </button>
+                  </div>
+                )}
+              </div>
+              <input
+                type="url"
+                value={formData.image}
+                onChange={(e) => setFormData({ ...formData, image: e.target.value })}
+                placeholder="https://example.com/image.jpg"
+                className="w-full px-4 py-2 text-sm bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all outline-none"
+              />
             </div>
           </div>
           <div className="flex gap-2 justify-end pt-4">

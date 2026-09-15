@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, Calendar, Tag, Heart, Quote } from 'lucide-react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
+import { supabase } from '../utils/supabase/client';
 import { SEO } from './SEO';
 import { LoadingScreen } from './LoadingScreen';
 import { Badge } from './ui/badge';
@@ -29,34 +30,66 @@ export function StoryDetail() {
     const fetchStory = async () => {
       try {
         setLoading(true);
-        const response = await fetch(
-          `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/stories`,
-          {
-            headers: {
-              Authorization: `Bearer ${publicAnonKey}`,
-            },
+        let stories: any[] = [];
+        try {
+          const response = await fetch(
+            `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/stories`,
+            {
+              headers: {
+                Authorization: `Bearer ${publicAnonKey}`,
+              },
+            }
+          );
+          if (response.ok) {
+            const data = await response.json();
+            stories = data.stories || [];
           }
-        );
+        } catch (e) {
+          console.warn('API fetch failed, trying Supabase:', e);
+        }
 
-        if (response.ok) {
-          const data = await response.json();
-          const stories = data.stories || [];
-          
-          // Find the story with the matching ID
-          const found = stories.find((item: any) => item.key === id || item.id === id);
-          
-          if (found) {
-            setStoryData({
-              id: found.key || found.id,
-              name: found.value?.name || found.name || '',
-              title: found.value?.title || found.title || '',
-              story: found.value?.story || found.story || '',
-              category: found.value?.category || found.category || 'general',
-              date: found.value?.timestamp || found.value?.date || found.date || new Date().toISOString(),
-              image: found.value?.image || found.image || '',
-              impact: found.value?.impact || found.impact || '',
-            });
+        if (!stories || stories.length === 0) {
+          try {
+            const { data: kvData } = await supabase
+              .from('kv_store_2a4be611')
+              .select('*')
+              .like('key', 'story%');
+            if (kvData) {
+              stories = kvData.map((s: any) => ({
+                ...(s.value || {}),
+                id: s.key,
+                key: s.key
+              }));
+            }
+          } catch (sbErr) {
+            console.error('Supabase KV stories fetch error:', sbErr);
           }
+        }
+
+        // Find the story with matching ID (supporting both with and without story: prefix)
+        const found = stories.find((item: any) => {
+          const itemKey = item.key || item.id || '';
+          return (
+            itemKey === id ||
+            itemKey === `story:${id}` ||
+            itemKey.replace('story:', '') === id?.replace('story:', '') ||
+            item.id === id ||
+            item.id === `story:${id}` ||
+            item.id?.replace('story:', '') === id?.replace('story:', '')
+          );
+        });
+        
+        if (found) {
+          setStoryData({
+            id: found.key || found.id,
+            name: found.value?.name || found.name || '',
+            title: found.value?.title || found.title || '',
+            story: found.value?.story || found.story || '',
+            category: found.value?.category || found.category || 'general',
+            date: found.value?.date || found.value?.timestamp || found.date || new Date().toISOString(),
+            image: found.value?.image || found.image || '',
+            impact: found.value?.impact || found.impact || '',
+          });
         }
       } catch (err) {
         console.error('Error fetching story detail:', err);

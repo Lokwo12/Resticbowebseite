@@ -957,16 +957,40 @@ export function EnhancedAdminDashboard() {
         const rawTeam = Array.isArray(data.team) ? data.team : [];
         setTeam(rawTeam.filter((t: any) => t.name));
       } else if (activeTab === 'stories') {
-        const response = await fetch(
-          `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/stories`,
-          { headers: { Authorization: `Bearer ${publicAnonKey}` } }
-        );
-        const data = await response.json();
-        const rawStories = data.stories || [];
-        setStories(rawStories.filter((s: any) => 
-          !['story:1', 'story:2', '1', '2'].includes(s.id) &&
-          (!s.name || !s.name.toLowerCase().includes('john'))
-        ));
+        let rawStories: any[] = [];
+        try {
+          const response = await fetch(
+            `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/stories`,
+            { headers: { Authorization: `Bearer ${publicAnonKey}` } }
+          );
+          if (response.ok) {
+            const data = await response.json();
+            rawStories = data.stories || [];
+          }
+        } catch (e) {
+          console.warn('API stories fetch error, falling back to Supabase:', e);
+        }
+
+        if (!rawStories || rawStories.length === 0) {
+          try {
+            const { data: kvData } = await supabase
+              .from('kv_store_2a4be611')
+              .select('*')
+              .like('key', 'story%');
+            if (kvData && kvData.length > 0) {
+              rawStories = kvData.map((s: any) => ({
+                ...(s.value || {}),
+                id: s.key,
+                key: s.key
+              }));
+            }
+          } catch (sbErr) {
+            console.error('Supabase KV stories fetch error:', sbErr);
+          }
+        }
+
+        rawStories.sort((a: any, b: any) => new Date(b.date || b.timestamp || b.created_at || 0).getTime() - new Date(a.date || a.timestamp || a.created_at || 0).getTime());
+        setStories(rawStories);
       } else if (activeTab === 'impact') {
         const response = await fetch(
           `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/impact-stats`,
@@ -1573,11 +1597,26 @@ export function EnhancedAdminDashboard() {
   const handleDeleteStory = async (id: string) => {
     if (!(await confirmDialog({ title: 'Confirm Action', message: 'Delete this story?' }))) return;
     try {
-      const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/stories/${id}`,
-        { method: 'DELETE', headers: { Authorization: `Bearer ${accessToken || publicAnonKey}` } }
-      );
-      if (!response.ok) throw new Error('Failed to delete story');
+      const normalizedId = id.startsWith('story:') ? id : `story:${id}`;
+      let deleted = false;
+      try {
+        const response = await fetch(
+          `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/stories/${encodeURIComponent(normalizedId)}`,
+          { method: 'DELETE', headers: { Authorization: `Bearer ${accessToken || publicAnonKey}` } }
+        );
+        if (response.ok) deleted = true;
+      } catch (apiErr) {
+        console.warn('API delete error, falling back to Supabase:', apiErr);
+      }
+
+      if (!deleted) {
+        const { error: sbError } = await supabase
+          .from('kv_store_2a4be611')
+          .delete()
+          .eq('key', normalizedId);
+        if (sbError) throw sbError;
+      }
+
       toast.success('Story deleted');
       logActivity('deleted', 'Stories', `Deleted story ID: ${id}`);
       loadData();

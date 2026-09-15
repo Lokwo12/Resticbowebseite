@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Quote, Heart } from 'lucide-react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
+import { supabase } from '../utils/supabase/client';
 import { Card } from './ui/card';
 import { Badge } from './ui/badge';
 import { useScrollAnimation, getStaggerDelay } from '../utils/animations';
@@ -86,26 +87,48 @@ export function ImpactStories() {
 
   const fetchStories = async () => {
     try {
-      const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/stories`,
-        {
-          headers: {
-            Authorization: `Bearer ${publicAnonKey}`,
-          },
-        }
-      );
-      
-      if (response.ok) {
-        const data = await response.json();
-        const rawStories = data.stories || [];
-        const validStories = rawStories.filter((s: Story) => 
-          !['story:1', 'story:2', '1', '2'].includes(s.id) &&
-          (!s.name || !s.name.toLowerCase().includes('john'))
+      let rawStories: Story[] = [];
+      try {
+        const response = await fetch(
+          `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/stories`,
+          {
+            headers: {
+              Authorization: `Bearer ${publicAnonKey}`,
+            },
+          }
         );
-        setStories(validStories.length > 0 ? validStories : FALLBACK_STORIES);
-      } else {
-        setStories(FALLBACK_STORIES);
+        if (response.ok) {
+          const data = await response.json();
+          rawStories = data.stories || [];
+        }
+      } catch (e) {
+        console.warn('API stories fetch error, falling back to Supabase:', e);
       }
+
+      if (!rawStories || rawStories.length === 0) {
+        try {
+          const { data: kvData } = await supabase
+            .from('kv_store_2a4be611')
+            .select('*')
+            .like('key', 'story%');
+          if (kvData && kvData.length > 0) {
+            rawStories = kvData.map((s: any) => ({
+              ...(s.value || {}),
+              id: s.key,
+              key: s.key
+            }));
+          }
+        } catch (sbErr) {
+          console.error('Supabase KV stories fetch error:', sbErr);
+        }
+      }
+
+      const validStories = (rawStories || []).filter((s: Story) => 
+        s && (s.name || s.title || s.story)
+      );
+      validStories.sort((a: any, b: any) => new Date(b.date || b.timestamp || b.created_at || 0).getTime() - new Date(a.date || a.timestamp || a.created_at || 0).getTime());
+
+      setStories(validStories.length > 0 ? validStories : FALLBACK_STORIES);
     } catch (error) {
       console.error('Error fetching stories:', error);
       setStories(FALLBACK_STORIES);

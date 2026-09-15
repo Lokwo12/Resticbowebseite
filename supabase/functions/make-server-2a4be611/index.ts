@@ -2317,13 +2317,13 @@ app.get('/make-server-2a4be611/stories', async (c) => {
     
     if (c.req.query('limit') !== undefined) {
       const { data, count } = await kv.getPaginatedByPrefix('story:', limit, offset);
-      data.sort((a, b) => new Date(b.value?.timestamp || b.value?.created_at || 0).getTime() - new Date(a.value?.timestamp || a.value?.created_at || 0).getTime());
-      return c.json({ stories: data, count, limit, offset });
+      data.sort((a, b) => new Date(b.value?.date || b.value?.timestamp || b.value?.created_at || 0).getTime() - new Date(a.value?.date || a.value?.timestamp || a.value?.created_at || 0).getTime());
+      return c.json({ stories: data.map(s => ({ ...(s.value || {}), id: s.key, key: s.key })), count, limit, offset });
     }
     
     const stories = await kv.getByPrefix('story:')
-    stories.sort((a, b) => new Date(b.value.date).getTime() - new Date(a.value.date).getTime())
-    return c.json({ stories: stories.map(s => ({ ...s.value, id: s.key, key: s.key })) })
+    stories.sort((a, b) => new Date(b.value?.date || b.value?.timestamp || b.value?.created_at || 0).getTime() - new Date(a.value?.date || a.value?.timestamp || a.value?.created_at || 0).getTime())
+    return c.json({ stories: stories.map(s => ({ ...(s.value || {}), id: s.key, key: s.key })) })
   } catch (error) {
     console.error('Error fetching stories:', error)
     return c.json({ error: 'Failed to fetch stories', details: String(error) }, 500)
@@ -2334,9 +2334,10 @@ app.post('/make-server-2a4be611/admin/stories', requireAdmin, async (c) => {
   try {
     const body = await c.req.json()
     const { name, title, story, image, category, impact } = body
-    const storyId = `story:${crypto.randomUUID()}`
-    await kv.set(storyId, { name, title, story, image: image || '', category: category || 'general', impact: impact || '', date: new Date().toISOString() })
-    return c.json({ success: true, message: 'Story added successfully', id: storyId })
+    const storyId = body.id || `story:${crypto.randomUUID()}`
+    const normalizedId = storyId.startsWith('story:') ? storyId : `story:${storyId}`
+    await kv.set(normalizedId, { name, title, story, image: image || '', category: category || 'general', impact: impact || '', date: body.date || new Date().toISOString() })
+    return c.json({ success: true, message: 'Story added successfully', id: normalizedId })
   } catch (error) {
     console.error('Error creating story:', error)
     return c.json({ error: 'Failed to create story', details: String(error) }, 500)
