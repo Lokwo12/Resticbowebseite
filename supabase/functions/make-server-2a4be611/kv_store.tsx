@@ -28,6 +28,15 @@ const getTableInfo = (key: string) => {
 const mapToSql = (table: string, id: string, val: any) => {
   if (table === 'kv_store_2a4be611') return { key: id, value: val };
   if (table === 'site_settings') return { id: 'global', settings: val };
+  if (table === 'newsletters') {
+    return {
+      id,
+      email: val.email,
+      status: val.status || 'active',
+      created_at: val.createdAt || val.timestamp || new Date().toISOString(),
+      updated_at: val.updatedAt || new Date().toISOString()
+    };
+  }
   
   const mapped: any = { id, ...val };
   // Handle specific snake_case conversions based on schema

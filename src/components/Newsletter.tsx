@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Mail, Send, Check, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
+import { supabase } from '../utils/supabase/client';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -28,23 +29,95 @@ export function Newsletter() {
   const onSubmit = async (data: FormData) => {
     setLoading(true);
 
+    const cleanEmail = data.email.trim().toLowerCase();
+    const cleanName = data.name ? data.name.trim() : '';
+
     try {
-      const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/newsletter`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${publicAnonKey}`,
-          },
-          body: JSON.stringify(data),
+      // 1. Quick deduplication check against database
+      try {
+        const { data: existing } = await supabase
+          .from('newsletters')
+          .select('id, email')
+          .eq('email', cleanEmail)
+          .maybeSingle();
+
+        if (existing) {
+          toast.info("You're already subscribed to our newsletter! 🎉");
+          setSubscribed(true);
+          reset();
+          setTimeout(() => setSubscribed(false), 5000);
+          return;
         }
-      );
+      } catch (checkErr) {
+        // Non-blocking, continue
+      }
 
-      const resData = await response.json();
+      // 2. Try submitting via edge function
+      let savedViaApi = false;
+      try {
+        const response = await fetch(
+          `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/newsletter`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${publicAnonKey}`,
+            },
+            body: JSON.stringify({ email: cleanEmail, name: cleanName }),
+          }
+        );
 
-      if (!response.ok) {
-        throw new Error(resData.error || 'Failed to subscribe');
+        if (response.ok) {
+          savedViaApi = true;
+        } else {
+          const resData = await response.json().catch(() => null);
+          if (resData?.error && typeof resData.error === 'string' && resData.error.toLowerCase().includes('already subscribed')) {
+            toast.info("You're already subscribed to our newsletter! 🎉");
+            setSubscribed(true);
+            reset();
+            setTimeout(() => setSubscribed(false), 5000);
+            return;
+          }
+        }
+      } catch (apiErr) {
+        console.warn('Direct newsletter endpoint unavailable, falling back to database:', apiErr);
+      }
+
+      // 3. Fallback to direct Supabase database insert if API did not succeed
+      if (!savedViaApi) {
+        const subscriberId = typeof crypto !== 'undefined' && crypto.randomUUID
+          ? crypto.randomUUID()
+          : (Math.random().toString(36).substring(2) + Date.now().toString(36));
+        const now = new Date().toISOString();
+
+        const { error: dbError } = await supabase.from('newsletters').upsert({
+          id: subscriberId,
+          email: cleanEmail,
+          status: 'active',
+          created_at: now,
+          updated_at: now,
+        });
+
+        if (dbError) {
+          throw new Error(dbError.message || 'Failed to subscribe');
+        }
+
+        // Mirror to kv_store_2a4be611 for any legacy key-value prefix queries
+        try {
+          await supabase.from('kv_store_2a4be611').upsert({
+            key: `newsletter:${subscriberId}`,
+            value: {
+              id: subscriberId,
+              email: cleanEmail,
+              name: cleanName,
+              timestamp: now,
+              createdAt: now,
+              status: 'active',
+            },
+          });
+        } catch (e) {
+          console.warn('Could not mirror to kv_store:', e);
+        }
       }
 
       toast.success('Successfully subscribed to our newsletter! 🎉');

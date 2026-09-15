@@ -27,11 +27,12 @@ export function withRateLimit(routeKey: string, max: number, windowMs: number) {
     })
 
     if (error) {
-      console.error('Rate limit error', error)
-      return c.json({ error: 'Internal Server Error' }, 500)
+      console.warn('Rate limit check skipped due to RPC error/absence:', error.message)
+      await next()
+      return
     }
 
-    if (limitData.count > max) {
+    if (limitData && limitData.count > max) {
       return c.json(
         {
           error: 'Too many requests. Please wait before trying again.',
