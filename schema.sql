@@ -44,6 +44,7 @@ CREATE TABLE IF NOT EXISTS public.contacts (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
   email TEXT NOT NULL,
+  phone TEXT,
   subject TEXT,
   message TEXT,
   status TEXT DEFAULT 'unread',

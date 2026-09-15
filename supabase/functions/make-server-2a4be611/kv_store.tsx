@@ -37,6 +37,19 @@ const mapToSql = (table: string, id: string, val: any) => {
       updated_at: val.updatedAt || new Date().toISOString()
     };
   }
+  if (table === 'contacts') {
+    return {
+      id,
+      name: val.name,
+      email: val.email,
+      phone: val.phone || null,
+      subject: val.subject || null,
+      message: val.message,
+      status: val.status || 'unread',
+      created_at: val.createdAt || val.timestamp || new Date().toISOString(),
+      updated_at: val.updatedAt || new Date().toISOString()
+    };
+  }
   
   const mapped: any = { id, ...val };
   // Handle specific snake_case conversions based on schema
