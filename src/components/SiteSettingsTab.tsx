@@ -179,6 +179,13 @@ export const DEFAULT_DONOR_PORTAL_SETTINGS = {
   leadershipRole: 'Co-Founder, RESTI Uganda',
 };
 
+export const DEFAULT_TRUST_BADGES = [
+  { icon: '🏛️', label: 'Registered CBO', sub: 'Uganda NGO Bureau' },
+  { icon: '🌍', label: 'Community Focus', sub: 'Refugees & Host Communities' },
+  { icon: '💯', label: '100% Transparent', sub: 'Annual Reports Published' },
+  { icon: '🤝', label: 'Community-Led', sub: 'Locally Driven Solutions' },
+];
+
 interface SiteSettingsTabProps {
   settings: any;
   onUpdate: () => void;
@@ -1365,6 +1372,107 @@ export function SiteSettingsTab({ settings: initialSettings, onUpdate, accessTok
                     <p className="text-sm text-gray-500 text-center py-4">No timeline events added yet.</p>
                   )}
                 </div>
+              </div>
+
+              {/* Trust & Accreditations Badges (Key Credibility Highlights) */}
+              <div className="pt-6 border-t border-slate-200">
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-4">
+                  <div>
+                    <label className="block text-base font-bold text-gray-900">
+                      Trust, Accreditations & Key Highlights
+                    </label>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      Prominent credibility badges displayed on the About section (e.g. Registered CBO, Uganda NGO Bureau, 100% Transparent).
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const currentBadges = settings.about?.trustBadges || DEFAULT_TRUST_BADGES;
+                      const newBadges = [...currentBadges, { icon: '✨', label: '', sub: '' }];
+                      setSettings({ ...settings, about: { ...settings.about, trustBadges: newBadges } });
+                    }}
+                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 bg-emerald-100/70 hover:bg-emerald-200/80 px-3.5 py-2 rounded-xl transition-all cursor-pointer w-fit"
+                  >
+                    <Plus size={15} /> Add Credibility Badge
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {(settings.about?.trustBadges || DEFAULT_TRUST_BADGES).map((badge: any, index: number) => (
+                    <div key={index} className="flex gap-3 items-start p-4 bg-emerald-50/50 rounded-2xl border border-emerald-100 shadow-sm hover:shadow-md transition-all">
+                      <div className="w-16 shrink-0">
+                        <label className="block text-[11px] font-bold uppercase text-emerald-800 tracking-wider mb-1 text-center">Emoji</label>
+                        <input
+                          type="text"
+                          value={badge.icon}
+                          onChange={(e) => {
+                            const newBadges = [...(settings.about?.trustBadges || DEFAULT_TRUST_BADGES)];
+                            newBadges[index] = { ...newBadges[index], icon: e.target.value };
+                            setSettings({ ...settings, about: { ...settings.about, trustBadges: newBadges } });
+                          }}
+                          placeholder="🏛️"
+                          className="w-full text-center text-2xl py-2 px-1 border border-emerald-200 rounded-xl bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none shadow-inner"
+                        />
+                      </div>
+                      <div className="flex-1 space-y-2">
+                        <div>
+                          <label className="block text-[11px] font-bold text-gray-700 mb-1">Badge Title / Label</label>
+                          <input
+                            type="text"
+                            value={badge.label}
+                            onChange={(e) => {
+                              const newBadges = [...(settings.about?.trustBadges || DEFAULT_TRUST_BADGES)];
+                              newBadges[index] = { ...newBadges[index], label: e.target.value };
+                              setSettings({ ...settings, about: { ...settings.about, trustBadges: newBadges } });
+                            }}
+                            placeholder="e.g. Registered CBO"
+                            className="w-full px-3 py-2 text-sm font-bold text-gray-900 border border-slate-200 rounded-xl bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-medium text-gray-600 mb-1">Subtitle / Details</label>
+                          <input
+                            type="text"
+                            value={badge.sub}
+                            onChange={(e) => {
+                              const newBadges = [...(settings.about?.trustBadges || DEFAULT_TRUST_BADGES)];
+                              newBadges[index] = { ...newBadges[index], sub: e.target.value };
+                              setSettings({ ...settings, about: { ...settings.about, trustBadges: newBadges } });
+                            }}
+                            placeholder="e.g. Uganda NGO Bureau"
+                            className="w-full px-3 py-1.5 text-xs text-gray-700 border border-slate-200 rounded-xl bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                          />
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const currentBadges = settings.about?.trustBadges || DEFAULT_TRUST_BADGES;
+                          const newBadges = currentBadges.filter((_: any, i: number) => i !== index);
+                          setSettings({ ...settings, about: { ...settings.about, trustBadges: newBadges } });
+                        }}
+                        className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors mt-6 shrink-0"
+                        title="Delete Badge"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+
+                {(!settings.about?.trustBadges || settings.about.trustBadges.length === 0) && (
+                  <div className="p-6 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                    <p className="text-sm text-gray-500 mb-2">No custom trust badges configured. Default badges are currently showing on the website.</p>
+                    <button
+                      type="button"
+                      onClick={() => setSettings({ ...settings, about: { ...settings.about, trustBadges: DEFAULT_TRUST_BADGES } })}
+                      className="text-xs font-semibold text-emerald-600 hover:underline"
+                    >
+                      Load Default Badges
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </Card>

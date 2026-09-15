@@ -10,6 +10,8 @@ interface AboutValue {
   description: string;
 }
 
+import { DEFAULT_TRUST_BADGES, TrustBadge } from './About';
+
 interface AboutSettings {
   title: string;
   intro: string;
@@ -20,6 +22,7 @@ interface AboutSettings {
   heroVideoUrl: string;
   missionVideoUrl: string;
   timeline: { year: string; title: string; desc: string }[];
+  trustBadges?: TrustBadge[];
 }
 
 const iconMap: Record<string, typeof Heart> = {
@@ -54,7 +57,8 @@ const DEFAULT_ABOUT_SETTINGS: AboutSettings = {
     { year: '2020', title: 'Healthcare Expansion', desc: 'Partnered with local clinics to provide free health screenings to over 5,000 residents.' },
     { year: '2023', title: 'Education Hub', desc: 'Opened a community learning center equipped with modern resources for youth.' },
     { year: 'Present', title: 'Sustainable Future', desc: 'Continuing to expand our reach, directly impacting over 20,000 lives annually.' }
-  ]
+  ],
+  trustBadges: DEFAULT_TRUST_BADGES
 };
 
 export function AboutPage() {
@@ -89,6 +93,7 @@ export function AboutPage() {
           merged.timeline = Array.isArray(fetchedAbout.timeline) && fetchedAbout.timeline.length > 0 ? fetchedAbout.timeline : DEFAULT_ABOUT_SETTINGS.timeline;
           merged.story = Array.isArray(fetchedAbout.story) && fetchedAbout.story.length > 0 ? fetchedAbout.story : DEFAULT_ABOUT_SETTINGS.story;
           merged.values = Array.isArray(fetchedAbout.values) && fetchedAbout.values.length > 0 ? fetchedAbout.values : DEFAULT_ABOUT_SETTINGS.values;
+          merged.trustBadges = Array.isArray(fetchedAbout.trustBadges) && fetchedAbout.trustBadges.length > 0 ? fetchedAbout.trustBadges : DEFAULT_TRUST_BADGES;
           setSettings(merged);
         }
       }
@@ -241,6 +246,38 @@ export function AboutPage() {
                 </p>
               </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── TRUST & ACCREDITATIONS STRIP ── */}
+      <section className="py-14 bg-white border-b border-gray-100">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-10">
+            <span className="text-emerald-700 font-bold uppercase tracking-wider text-xs bg-emerald-50 px-3.5 py-1.5 rounded-full border border-emerald-100">
+              Institutional Credibility
+            </span>
+            <h3 className="text-2xl sm:text-3xl font-bold font-heading text-gray-900 mt-2.5">
+              Recognized & Community-Driven
+            </h3>
+          </div>
+          <div className={`grid gap-4 sm:gap-6 ${
+            (settings.trustBadges || DEFAULT_TRUST_BADGES).length <= 2
+              ? 'grid-cols-1 sm:grid-cols-2 max-w-xl mx-auto'
+              : (settings.trustBadges || DEFAULT_TRUST_BADGES).length === 3
+                ? 'grid-cols-1 sm:grid-cols-3 max-w-4xl mx-auto'
+                : 'grid-cols-2 md:grid-cols-4'
+          }`}>
+            {(settings.trustBadges || DEFAULT_TRUST_BADGES).map((item, idx) => (
+              <div
+                key={`${item.label}-${idx}`}
+                className="flex flex-col items-center text-center bg-emerald-50/60 border border-emerald-100/90 rounded-2xl py-6 px-4 shadow-sm hover:shadow-md hover:border-emerald-200 transition-all duration-300"
+              >
+                <span className="text-3xl mb-2.5 select-none">{item.icon}</span>
+                <span className="text-base font-bold font-heading tracking-tight text-emerald-900 leading-snug">{item.label}</span>
+                <span className="text-sm text-emerald-700 mt-1 leading-snug font-medium">{item.sub}</span>
+              </div>
+            ))}
           </div>
         </div>
       </section>

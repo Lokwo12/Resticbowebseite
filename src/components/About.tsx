@@ -10,6 +10,12 @@ interface AboutValue {
   description: string;
 }
 
+export interface TrustBadge {
+  icon: string;
+  label: string;
+  sub: string;
+}
+
 interface AboutSettings {
   title: string;
   intro: string;
@@ -17,6 +23,7 @@ interface AboutSettings {
   vision: string;
   values: AboutValue[];
   story: string[];
+  trustBadges?: TrustBadge[];
 }
 
 const iconMap: Record<string, typeof Heart> = {
@@ -25,6 +32,13 @@ const iconMap: Record<string, typeof Heart> = {
   Target,
   Award
 };
+
+export const DEFAULT_TRUST_BADGES: TrustBadge[] = [
+  { icon: '🏛️', label: 'Registered CBO', sub: 'Uganda NGO Bureau' },
+  { icon: '🌍', label: 'Community Focus', sub: 'Refugees & Host Communities' },
+  { icon: '💯', label: '100% Transparent', sub: 'Annual Reports Published' },
+  { icon: '🤝', label: 'Community-Led', sub: 'Locally Driven Solutions' },
+];
 
 const DEFAULT_ABOUT_SETTINGS: AboutSettings = {
   title: 'About Refugee Empowerment For Sustainable Transformation Initiative CBO (RESTI)',
@@ -40,7 +54,8 @@ const DEFAULT_ABOUT_SETTINGS: AboutSettings = {
   story: [
     'Refugee Empowerment For Sustainable Transformation Initiative CBO (RESTI) was born from a shared vision among community members who recognized the need for organized, sustainable development initiatives in our district. What started as small-scale educational support has grown into a comprehensive community development organization.',
     'Today, we work closely with local government, international partners, and most importantly, the communities we serve, to identify needs, develop solutions, and implement programs that create lasting positive change. Our grassroots approach ensures that every initiative is community-driven and culturally appropriate.'
-  ]
+  ],
+  trustBadges: DEFAULT_TRUST_BADGES
 };
 
 export function About() {
@@ -74,7 +89,10 @@ export function About() {
           mission: aboutData.mission || DEFAULT_ABOUT_SETTINGS.mission,
           vision: aboutData.vision || DEFAULT_ABOUT_SETTINGS.vision,
           values: (aboutData.values && aboutData.values.length > 0) ? aboutData.values : DEFAULT_ABOUT_SETTINGS.values,
-          story: (aboutData.story && aboutData.story.length > 0) ? aboutData.story : DEFAULT_ABOUT_SETTINGS.story
+          story: (aboutData.story && aboutData.story.length > 0) ? aboutData.story : DEFAULT_ABOUT_SETTINGS.story,
+          trustBadges: (aboutData.trustBadges && Array.isArray(aboutData.trustBadges) && aboutData.trustBadges.length > 0) 
+            ? aboutData.trustBadges 
+            : DEFAULT_TRUST_BADGES
         });
       }
     } catch {
@@ -219,22 +237,23 @@ export function About() {
             hidden: {},
             visible: { transition: { staggerChildren: 0.1 } }
           }}
-          className="mt-8 md:mt-14 grid grid-cols-2 md:grid-cols-4 gap-4"
+          className={`mt-8 md:mt-14 grid gap-4 ${
+            (displaySettings.trustBadges || DEFAULT_TRUST_BADGES).length <= 2
+              ? 'grid-cols-1 sm:grid-cols-2 max-w-xl mx-auto'
+              : (displaySettings.trustBadges || DEFAULT_TRUST_BADGES).length === 3
+                ? 'grid-cols-1 sm:grid-cols-3 max-w-4xl mx-auto'
+                : 'grid-cols-2 md:grid-cols-4'
+          }`}
         >
-          {[
-            { icon: '🏛️', label: 'Registered CBO', sub: 'Uganda NGO Bureau' },
-            { icon: '🌍', label: 'Community Focus', sub: 'Refugees & Host Communities' },
-            { icon: '💯', label: '100% Transparent', sub: 'Annual Reports Published' },
-            { icon: '🤝', label: 'Community-Led', sub: 'Locally Driven Solutions' },
-          ].map((item, index) => (
+          {(displaySettings.trustBadges || DEFAULT_TRUST_BADGES).map((item, index) => (
             <motion.div 
-              key={item.label} 
+              key={`${item.label}-${index}`} 
               variants={{ hidden: { opacity: 0, scale: 0.9 }, visible: { opacity: 1, scale: 1, transition: { type: "spring", bounce: 0.4 } } }}
-              className="flex flex-col items-center text-center bg-emerald-50 border border-emerald-100 rounded-2xl py-5 px-4"
+              className="flex flex-col items-center text-center bg-emerald-50 border border-emerald-100 rounded-2xl py-5 px-4 shadow-sm hover:shadow-md hover:border-emerald-200 transition-all duration-300"
             >
-              <span className="text-3xl mb-2">{item.icon}</span>
-              <span className="text-base font-bold font-heading tracking-tight text-emerald-800">{item.label}</span>
-              <span className="text-sm text-emerald-600 mt-0.5">{item.sub}</span>
+              <span className="text-3xl mb-2 select-none">{item.icon}</span>
+              <span className="text-base font-bold font-heading tracking-tight text-emerald-800 leading-snug">{item.label}</span>
+              <span className="text-sm text-emerald-600 mt-1 leading-snug font-medium">{item.sub}</span>
             </motion.div>
           ))}
         </motion.div>
