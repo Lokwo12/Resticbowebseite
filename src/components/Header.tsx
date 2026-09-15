@@ -166,7 +166,7 @@ export function Header() {
           : 'bg-emerald-950/60 backdrop-blur-md border-b border-white/10'
       }`}>
         <nav className="max-w-7xl mx-auto px-3 sm:px-5 lg:px-6 xl:px-8">
-          <div className={`flex items-center justify-between transition-all duration-300 ${isSolid ? 'h-18 sm:h-20' : 'h-20 sm:h-24'}`}>
+          <div className={`flex items-center justify-between transition-all duration-300 ${isSolid ? 'h-20 sm:h-22 lg:h-24' : 'h-22 sm:h-24 lg:h-26'}`}>
             
             {/* Logo & Brand Identity */}
             <div className="flex items-center shrink-0 mr-2 xl:mr-4">
@@ -179,38 +179,38 @@ export function Header() {
                   }
                 }}
               >
-                <div className="relative">
+                <div className="relative shrink-0">
                   <img 
                     src={getLogoUrl()} 
                     alt={settings.general?.siteName || 'RESTI'} 
-                    className={`rounded-full object-cover shadow-sm transition-all duration-300 group-hover:scale-105 border ${
+                    className={`rounded-full object-contain bg-white shadow-md transition-all duration-300 group-hover:scale-105 p-1 ${
                       isSolid 
-                        ? 'h-12 w-12 sm:h-14 sm:w-14 border-emerald-500/25' 
-                        : 'h-14 w-14 sm:h-16 sm:w-16 border-white/30'
+                        ? 'h-14 w-14 sm:h-16 sm:w-16 md:h-18 md:w-18 lg:h-20 lg:w-20 xl:h-22 xl:w-22 border-2 border-emerald-500/30 ring-2 ring-emerald-50' 
+                        : 'h-15 w-15 sm:h-18 sm:w-18 md:h-20 md:w-20 lg:h-22 lg:w-22 xl:h-24 xl:w-24 border-2 border-white/80 shadow-lg shadow-black/20 ring-2 ring-white/25'
                     }`} 
                   />
-                  <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-emerald-500 border-2 border-white rounded-full"></span>
+                  <span className="absolute bottom-0 right-0 w-3.5 h-3.5 sm:w-4 sm:h-4 bg-emerald-500 border-2 border-white rounded-full shadow-sm"></span>
                 </div>
                 
                 <div className="flex flex-col text-left">
                   <div className="flex items-center gap-1.5">
-                    <span className={`text-xl sm:text-2xl font-black font-heading tracking-tight leading-none transition-colors ${
+                    <span className={`text-xl sm:text-2xl lg:text-2xl xl:text-3xl font-black font-heading tracking-tight leading-none transition-colors ${
                       isSolid ? 'text-gray-900' : 'text-white'
                     }`}>
                       {settings.general?.siteName || 'RESTI'}
                     </span>
-                    <span className="hidden sm:inline-block px-1.5 py-0.2 text-[10px] font-bold uppercase rounded bg-emerald-100 text-emerald-800 border border-emerald-200/60">
+                    <span className="hidden sm:inline-block px-1.5 py-0.5 text-[10px] font-bold uppercase rounded bg-emerald-100 text-emerald-800 border border-emerald-200/60">
                       CBO
                     </span>
                   </div>
                   
                   {/* Full subtitle on large screens, compact on laptops to prevent navbar wrapping */}
-                  <p className={`hidden 2xl:block text-[11px] leading-tight mt-0.5 transition-colors max-w-[280px] truncate ${
+                  <p className={`hidden 2xl:block text-[11px] leading-tight mt-1 transition-colors max-w-[280px] truncate ${
                     isSolid ? 'text-gray-600' : 'text-emerald-100/90'
                   }`}>
                     {settings.general?.tagline || 'Refugee Empowerment For Sustainable Transformation Initiative'}
                   </p>
-                  <p className={`hidden xl:block 2xl:hidden text-[11px] leading-tight mt-0.5 transition-colors max-w-[210px] truncate ${
+                  <p className={`hidden xl:block 2xl:hidden text-[11px] leading-tight mt-1 transition-colors max-w-[210px] truncate ${
                     isSolid ? 'text-gray-600' : 'text-emerald-100/90'
                   }`}>
                     Refugee Empowerment Initiative
@@ -225,7 +225,7 @@ export function Header() {
             </div>
 
             {/* Desktop Navigation Links */}
-            <div className="hidden lg:flex items-center gap-0.5 xl:gap-1.5 flex-nowrap">
+            <div className="hidden lg:flex items-center gap-0.5 xl:gap-1.5 flex-nowrap shrink-0">
               
               {/* Home */}
               <Link
