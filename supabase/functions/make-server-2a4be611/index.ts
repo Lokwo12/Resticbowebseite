@@ -1808,7 +1808,9 @@ app.delete('/make-server-2a4be611/admin/contacts/:id', requireAdmin, async (c) =
 // Reply to contact via email (admin)
 app.post('/make-server-2a4be611/admin/contacts/:id/reply', requireAdmin, async (c) => {
   try {
-    const id = c.req.param('id')
+    const rawId = c.req.param('id')
+    const id = normalizeContentKey('contact', rawId)
+    const cleanId = rawId.replace('contact:', '')
     const body = await c.req.json()
     const { message } = body
 
@@ -1816,7 +1818,21 @@ app.post('/make-server-2a4be611/admin/contacts/:id/reply', requireAdmin, async (
       return c.json({ error: 'Reply message is required' }, 400)
     }
 
-    const contact = await kv.get(id)
+    let contact = await kv.get(id)
+    if (!contact) {
+      contact = await kv.get(rawId)
+    }
+    if (!contact) {
+      const { data: dbContact } = await supabase
+        .from('contacts')
+        .select('*')
+        .or(`id.eq.${cleanId},id.eq.${rawId}`)
+        .maybeSingle()
+      if (dbContact) {
+        contact = dbContact
+      }
+    }
+
     if (!contact) {
       return c.json({ error: 'Contact not found' }, 404)
     }
@@ -1824,50 +1840,76 @@ app.post('/make-server-2a4be611/admin/contacts/:id/reply', requireAdmin, async (
     console.log(`Attempting to send reply to ${contact.email} for contact ${id}`)
 
     // Send email reply
-    const emailResult = await sendEmail(
-      contact.email,
-      `Re: Your message to Resti Kiryandongo CBO`,
-      `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #10b981;">Resti Kiryandongo CBO</h2>
-          <p>Dear ${contact.name},</p>
-          <p>Thank you for contacting us. Here's our response to your message:</p>
-          <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
-            <p><strong>Your original message:</strong></p>
-            <p style="color: #6b7280;">${contact.message}</p>
+    let emailSent = false
+    let emailWarning: any = null
+    try {
+      const emailResult = await sendEmail(
+        contact.email,
+        `Re: Your message to Resti Kiryandongo CBO`,
+        `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #1e293b;">
+            <div style="border-bottom: 2px solid #10b981; padding-bottom: 12px; margin-bottom: 20px;">
+              <h2 style="color: #10b981; margin: 0;">Resti Kiryandongo CBO</h2>
+              <p style="color: #64748b; font-size: 13px; margin: 4px 0 0 0;">Community Based Organization • Kiryandongo, Uganda</p>
+            </div>
+            <p>Dear ${contact.name || 'Friend'},</p>
+            <p>Thank you for contacting us. Here is our response to your inquiry:</p>
+            <div style="background-color: #f8fafc; border-left: 4px solid #cbd5e1; padding: 15px; border-radius: 4px; margin: 20px 0;">
+              <p style="margin: 0 0 6px 0; font-weight: bold; font-size: 13px; color: #475569;">Your original message:</p>
+              <p style="margin: 0; color: #64748b; font-style: italic;">${contact.message || '(No message content)'}</p>
+            </div>
+            <div style="background-color: #ecfdf5; border-left: 4px solid #10b981; padding: 15px; border-radius: 4px; margin: 20px 0;">
+              <p style="margin: 0 0 6px 0; font-weight: bold; font-size: 13px; color: #065f46;">Our response:</p>
+              <p style="margin: 0; color: #047857; white-space: pre-wrap;">${message.replace(/\n/g, '<br>')}</p>
+            </div>
+            <p style="margin-top: 24px;">Best regards,<br><strong>Resti Kiryandongo CBO Team</strong></p>
+            <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0 12px 0;">
+            <p style="font-size: 11px; color: #94a3b8; margin: 0;">You received this email because you submitted a contact inquiry on resticbo.org.</p>
           </div>
-          <div style="background-color: #ecfdf5; padding: 15px; border-radius: 8px; margin: 20px 0;">
-            <p><strong>Our response:</strong></p>
-            <p>${message.replace(/\n/g, '<br>')}</p>
-          </div>
-          <p>Best regards,<br>Resti Kiryandongo CBO Team</p>
-        </div>
-      `
-    )
-
-    if (!emailResult.success) {
-      console.error('Email send failed:', emailResult)
-      if (!resendApiKey) {
-        return c.json({ 
-          error: 'Email service not configured. Please add RESEND_API_KEY to environment variables.',
-          details: 'The Resend API key is missing. Contact the administrator to configure email functionality.'
-        }, 500)
+        `
+      )
+      if (emailResult && emailResult.success) {
+        emailSent = true
+      } else {
+        emailWarning = emailResult?.error?.message || emailResult?.error || emailResult?.message || 'Email delivery could not be completed via Resend'
+        console.warn('Email delivery notice:', emailResult)
       }
-      return c.json({ 
-        error: 'Failed to send email', 
-        details: emailResult.error || 'Unknown email error'
-      }, 500)
+    } catch (sendErr) {
+      console.error('Email send exception:', sendErr)
+      emailWarning = String(sendErr)
     }
 
-    // Update contact status to replied
-    await kv.set(id, {
-      ...contact,
-      status: 'resolved',
-      repliedAt: new Date().toISOString()
-    })
+    // Always update status to resolved in the contacts SQL table
+    await supabase
+      .from('contacts')
+      .update({
+        status: 'resolved',
+        updated_at: new Date().toISOString()
+      })
+      .or(`id.eq.${cleanId},id.eq.${rawId}`)
 
-    console.log(`Reply sent successfully to contact: ${id}`)
-    return c.json({ success: true, message: 'Reply sent successfully' })
+    // Store reply in kv_store for complete audit/history
+    try {
+      await kv.set(`contact_reply:${cleanId}`, {
+        contactId: id,
+        replyMessage: message.trim(),
+        repliedAt: new Date().toISOString(),
+        recipientEmail: contact.email,
+        recipientName: contact.name,
+        emailSent,
+        emailWarning
+      })
+    } catch (kvErr) {
+      console.warn('Could not save to kv_store:', kvErr)
+    }
+
+    console.log(`Reply handled successfully for contact: ${id}, emailSent: ${emailSent}`)
+    return c.json({
+      success: true,
+      emailSent,
+      message: emailSent ? 'Reply sent and email delivered successfully' : 'Reply recorded in dashboard and contact resolved',
+      warning: emailWarning
+    })
   } catch (error) {
     console.error('Error sending reply:', error)
     return c.json({ error: 'Failed to send reply', details: String(error) }, 500)
