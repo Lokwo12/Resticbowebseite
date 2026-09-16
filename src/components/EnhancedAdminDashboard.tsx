@@ -57,7 +57,8 @@ import {
   Lock,
   Globe,
   Copy,
-  MapPin
+  MapPin,
+  AlertCircle
 } from 'lucide-react';
 import { Card } from './ui/card';
 import { Badge } from './ui/badge';
@@ -1473,21 +1474,101 @@ export function EnhancedAdminDashboard() {
     }
   };
 
+  const buildContactMailContent = (replyText: string, item: any) => {
+    const name = item?.name || 'Friend';
+    const originalMsg = item?.message || '(No message content)';
+    const subject = `Re: Your message to RESTI CBO`;
+    const bodyText = `${replyText.trim()}\n\n---\nOriginal Message from ${name}:\n${originalMsg}\n\nBest regards,\nRESTI CBO Team\nRefugee Empowerment For Sustainable Transformation Initiative\nKiryandongo, Uganda\nWebsite: https://resticbo.org`;
+    return { subject, bodyText };
+  };
+
+  const handleSendViaClient = async (contactId: string, clientType: 'gmail' | 'mailto') => {
+    if (!replyMessage.trim()) {
+      toast.error('Please enter a reply message before sending');
+      return;
+    }
+
+    const item = viewingItem?.value || viewingItem || {};
+    const recipientEmail = (item.email || '').trim();
+    const recipientName = (item.name || 'Friend').trim();
+    const cleanId = contactId.replace('contact:', '');
+    const normalizedId = contactId.startsWith('contact:') ? contactId : `contact:${contactId}`;
+    const toastId = toast.loading(`Preparing ${clientType === 'gmail' ? 'Gmail' : 'Email app'}...`);
+
+    try {
+      // 1. Update contact status to resolved in Supabase
+      await supabase
+        .from('contacts')
+        .update({
+          status: 'resolved',
+          updated_at: new Date().toISOString()
+        })
+        .or(`id.eq.${cleanId},id.eq.${contactId}`);
+
+      // 2. Persist reply details in kv_store for complete audit trail
+      await supabase
+        .from('kv_store_2a4be611')
+        .upsert({
+          key: `contact_reply:${cleanId}`,
+          value: {
+            contactId: normalizedId,
+            replyMessage: replyMessage.trim(),
+            repliedAt: new Date().toISOString(),
+            recipientEmail,
+            recipientName,
+            emailSent: true,
+            method: clientType
+          }
+        });
+
+      // 3. Launch email composer with pre-filled content
+      const { subject, bodyText } = buildContactMailContent(replyMessage, item);
+      const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(recipientEmail)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(bodyText)}`;
+      const mailtoUrl = `mailto:${encodeURIComponent(recipientEmail)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(bodyText)}`;
+
+      if (clientType === 'gmail') {
+        const opened = window.open(gmailUrl, '_blank');
+        if (!opened) {
+          window.location.href = mailtoUrl;
+        }
+        toast.success(`Reply saved in dashboard and opened in Gmail! Please click Send in Gmail to finish.`, { id: toastId, duration: 7000 });
+      } else {
+        window.location.href = mailtoUrl;
+        toast.success(`Reply saved in dashboard and opened in Email App! Please click Send to finish.`, { id: toastId, duration: 7000 });
+      }
+
+      setReplyMessage('');
+      setViewingItem(null);
+      loadData();
+    } catch (err: any) {
+      console.error('Send via client error:', err);
+      toast.error(err.message || 'Failed to dispatch email', { id: toastId });
+    }
+  };
+
   const handleReplyContact = async (contactId: string) => {
     if (!replyMessage.trim()) {
       toast.error('Please enter a reply message');
       return;
     }
 
+    const item = viewingItem?.value || viewingItem || {};
+    const recipientEmail = (item.email || '').trim();
+    const recipientName = (item.name || 'Friend').trim();
     const cleanId = contactId.replace('contact:', '');
     const normalizedId = contactId.startsWith('contact:') ? contactId : `contact:${contactId}`;
-    const toastId = toast.loading('Submitting reply...');
+    const toastId = toast.loading('Sending reply...');
 
     try {
       let saved = false;
       let emailDelivered = false;
+      let deliveryWarning = '';
 
-      // Tier 1: Try Edge Function (handles email sending + updates DB)
+      // Get fresh session token to prevent token expiry issues
+      const { data: { session: activeSession } } = await supabase.auth.getSession();
+      const token = activeSession?.access_token || accessToken || publicAnonKey;
+
+      // Tier 1: Try Edge Function (handles Resend email sending + updates DB)
       try {
         const response = await fetch(
           `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/contacts/${encodeURIComponent(normalizedId)}/reply`,
@@ -1495,9 +1576,13 @@ export function EnhancedAdminDashboard() {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              Authorization: `Bearer ${accessToken || publicAnonKey}`,
+              Authorization: `Bearer ${token}`,
             },
-            body: JSON.stringify({ message: replyMessage.trim() }),
+            body: JSON.stringify({
+              message: replyMessage.trim(),
+              recipientEmail,
+              recipientName,
+            }),
           }
         );
 
@@ -1505,6 +1590,10 @@ export function EnhancedAdminDashboard() {
           const resData = await response.json();
           saved = true;
           emailDelivered = !!resData.emailSent;
+          deliveryWarning = resData.warning || '';
+        } else {
+          const errBody = await response.json().catch(() => ({}));
+          deliveryWarning = errBody.error || `Server returned status ${response.status}`;
         }
       } catch (apiErr) {
         console.warn('Edge function reply error, falling back to direct Supabase:', apiErr);
@@ -1512,7 +1601,6 @@ export function EnhancedAdminDashboard() {
 
       // Tier 2: Direct Supabase update fallback if Edge function was not reachable or failed
       if (!saved) {
-        // Update contact status to resolved
         await supabase
           .from('contacts')
           .update({
@@ -1521,8 +1609,6 @@ export function EnhancedAdminDashboard() {
           })
           .or(`id.eq.${cleanId},id.eq.${contactId}`);
 
-        // Persist reply details in kv_store
-        const item = viewingItem?.value || viewingItem;
         await supabase
           .from('kv_store_2a4be611')
           .upsert({
@@ -1531,22 +1617,43 @@ export function EnhancedAdminDashboard() {
               contactId: normalizedId,
               replyMessage: replyMessage.trim(),
               repliedAt: new Date().toISOString(),
-              recipientEmail: item?.email || '',
-              recipientName: item?.name || ''
+              recipientEmail,
+              recipientName,
+              emailSent: false,
+              emailWarning: deliveryWarning || 'Edge Function unreachable, saved locally'
             }
           });
         saved = true;
       }
 
+      // Handle delivery status transparently — NEVER remain silent!
       if (emailDelivered) {
-        toast.success('Reply submitted and email delivered successfully!', { id: toastId });
+        toast.success(`Reply delivered directly to ${recipientEmail || 'recipient'} via email!`, { id: toastId });
+        setReplyMessage('');
+        setViewingItem(null);
+        loadData();
       } else {
-        toast.success('Reply recorded and message marked as resolved!', { id: toastId });
-      }
+        // Resend sandbox restriction or email delivery block encountered
+        const reasonText = deliveryWarning ? ` (${deliveryWarning})` : '';
+        toast.error(
+          `Reply saved in database, but automated email could not be delivered${reasonText}. Opening Gmail composer now so you can send your reply directly!`,
+          { id: toastId, duration: 9000 }
+        );
 
-      setReplyMessage('');
-      setViewingItem(null);
-      loadData();
+        // Pre-fill and launch Gmail / mailto client so recipient receives the message!
+        const { subject, bodyText } = buildContactMailContent(replyMessage, item);
+        const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(recipientEmail)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(bodyText)}`;
+        const mailtoUrl = `mailto:${encodeURIComponent(recipientEmail)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(bodyText)}`;
+
+        const opened = window.open(gmailUrl, '_blank');
+        if (!opened) {
+          window.location.href = mailtoUrl;
+        }
+
+        setReplyMessage('');
+        setViewingItem(null);
+        loadData();
+      }
     } catch (err: any) {
       console.error('Reply error:', err);
       toast.error(err.message || 'Failed to submit reply', { id: toastId });
@@ -2117,6 +2224,9 @@ export function EnhancedAdminDashboard() {
   // Filter functions
   const getFilteredContacts = () => {
     if (contactFilter === 'all') return contacts || [];
+    if (contactFilter === 'resolved' || contactFilter === 'responded') {
+      return (contacts || []).filter(c => c.value?.status === 'resolved' || c.value?.status === 'responded');
+    }
     return (contacts || []).filter(c => c.value?.status === contactFilter);
   };
 
@@ -6216,16 +6326,18 @@ export function EnhancedAdminDashboard() {
       {viewingItem && activeTab === 'contacts' && (() => {
         const item = viewingItem.value || viewingItem;
         const contactKey = viewingItem.key || viewingItem.id || item.id;
-        const mailtoUrl = `mailto:${item.email || ''}?subject=${encodeURIComponent('Re: Your message to RESTI CBO')}&body=${encodeURIComponent(replyMessage || 'Dear ' + (item.name || 'Friend') + ',\n\nThank you for reaching out to RESTI CBO.\n\n')}`;
+        const isSandboxEmail = (item.email || '').toLowerCase() === 'lokwodenis0@gmail.com';
+
         return (
           <DraggableDialog open={!!viewingItem} onClose={() => { setViewingItem(null); setReplyMessage(''); }} title="Contact Message & Reply" headerColor="#2f5496">
-              <div className="space-y-6">
+              <div className="space-y-5">
+                {/* Contact Message Details */}
                 <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-3">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">From</p>
-                      <p className="text-base font-semibold text-slate-800">{item.name}</p>
-                      <p className="text-sm text-slate-600">{item.email} {item.phone ? `• ${item.phone}` : ''}</p>
+                      <p className="text-base font-semibold text-slate-800">{item.name || 'Anonymous'}</p>
+                      <p className="text-sm text-slate-600 font-mono">{item.email} {item.phone ? `• ${item.phone}` : ''}</p>
                     </div>
                     {item.status && (
                       <Badge className={
@@ -6239,7 +6351,7 @@ export function EnhancedAdminDashboard() {
                   </div>
                   <div>
                     <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Message</p>
-                    <div className="text-sm text-slate-700 bg-white p-3 rounded-lg border border-slate-200 leading-relaxed whitespace-pre-wrap">{item.message}</div>
+                    <div className="text-sm text-slate-700 bg-white p-3.5 rounded-lg border border-slate-200 leading-relaxed whitespace-pre-wrap select-text">{item.message || '(No message content)'}</div>
                   </div>
                   {item.created_at && (
                     <p className="text-xs text-slate-400">
@@ -6248,54 +6360,80 @@ export function EnhancedAdminDashboard() {
                   )}
                 </div>
 
+                {/* Sandbox / Delivery Advice Banner */}
+                {!isSandboxEmail && (
+                  <div className="p-3.5 bg-amber-50/90 border border-amber-200 rounded-xl text-xs text-amber-900 flex items-start gap-2.5">
+                    <AlertCircle className="w-4 h-4 text-amber-600 mt-0.5 shrink-0" />
+                    <div className="space-y-1">
+                      <p className="font-semibold text-amber-950">Email Delivery Notice</p>
+                      <p className="text-amber-800 leading-relaxed">
+                        Resend free tier only sends directly to the registered admin account (<code className="bg-amber-100/80 px-1 py-0.5 rounded font-mono">lokwodenis0@gmail.com</code>). For external recipients like <span className="font-semibold">{item.email}</span>, use <strong>"Send via Gmail (Web)"</strong> or <strong>"Send via Email App"</strong> below so your reply is dispatched immediately in 1 click!
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Reply Compose Area */}
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <label className="block text-sm font-semibold text-slate-700">Your Reply</label>
-                    <a
-                      href={mailtoUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-800 font-medium transition-colors"
-                    >
-                      <Mail size={13} />
-                      Open in Email App / Gmail
-                    </a>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setReplyMessage(`Dear ${item.name || 'Friend'},\n\nThank you for reaching out to RESTI CBO Kiryandongo. We have received your inquiry and are pleased to assist you.\n\n`)}
+                        className="text-xs text-emerald-700 hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100 px-2 py-0.5 rounded transition-colors"
+                      >
+                        + Standard Greeting
+                      </button>
+                    </div>
                   </div>
                   <textarea
                     value={replyMessage}
                     onChange={(e) => setReplyMessage(e.target.value)}
-                    className="w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none"
+                    className="w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none text-sm text-slate-800"
                     rows={4}
-                    placeholder="Type your reply to send..."
+                    placeholder={`Type your reply to ${item.name || 'this message'}...`}
                   />
-                  <p className="text-xs text-slate-400 mt-1.5">
-                    Clicking "Send Reply" will save this response, update the status to Resolved, and deliver the email.
-                  </p>
+                  <div className="flex items-center justify-between text-xs text-slate-400 mt-1.5">
+                    <span>{replyMessage.length} characters</span>
+                    <span>Status will be updated to Resolved upon sending</span>
+                  </div>
                 </div>
 
-                <div className="flex items-center justify-between pt-2">
-                  <Button variant="outline" onClick={() => {
+                {/* Action Buttons */}
+                <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-100">
+                  <Button variant="outline" size="sm" onClick={() => {
                     setViewingItem(null);
                     setReplyMessage('');
                   }}>
                     Close
                   </Button>
-                  <div className="flex gap-2">
-                    <a
-                      href={mailtoUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-300 rounded-xl transition-colors"
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleSendViaClient(contactKey, 'gmail')}
+                      className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-xl transition-colors shadow-xs"
+                      title="Saves response and opens Gmail Web composer with recipient & body pre-filled"
                     >
-                      <Mail size={14} />
+                      <ExternalLink size={13} />
+                      Send via Gmail (Web)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleSendViaClient(contactKey, 'mailto')}
+                      className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-300 rounded-xl transition-colors shadow-xs"
+                      title="Saves response and opens default email client (Outlook/Thunderbird/Mail)"
+                    >
+                      <Mail size={13} />
                       Send via Email App
-                    </a>
+                    </button>
                     <Button
+                      size="sm"
                       onClick={() => handleReplyContact(contactKey)}
-                      className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
+                      className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm inline-flex items-center gap-1.5"
                     >
-                      <Send size={16} className="mr-2" />
-                      Send Reply
+                      <Send size={14} />
+                      Send Automated Reply
                     </Button>
                   </div>
                 </div>
