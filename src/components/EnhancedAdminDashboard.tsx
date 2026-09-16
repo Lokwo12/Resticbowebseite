@@ -942,28 +942,7 @@ export function EnhancedAdminDashboard() {
         const data = await response.json();
         setVolunteers(data.volunteers || []);
       } else if (activeTab === 'donations') {
-        const response = await fetch(
-          `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/donations`,
-          { headers: { Authorization: `Bearer ${accessToken || publicAnonKey}` } }
-        );
-        const data = await response.json();
-        const normalizedDonations = (data.donations || []).map((donation: any) => {
-          if (donation.value) return donation;
-
-          const donorName = [donation.first_name, donation.last_name].filter(Boolean).join(' ');
-          return {
-            key: donation.id || donation.key,
-            value: {
-              ...donation,
-              donorName: donation.donorName || donorName || donation.name,
-              donorEmail: donation.donorEmail || donation.email,
-              paymentMethod: donation.paymentMethod || donation.method,
-              timestamp: donation.timestamp || donation.created_at,
-              transactionId: donation.transactionId || donation.transaction_id,
-            },
-          };
-        });
-        setDonations(normalizedDonations);
+        // Handled cleanly by DonationsManager component
       } else if (activeTab === 'subscribers') {
         const response = await fetch(
           `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/newsletter`,
@@ -4314,7 +4293,7 @@ export function EnhancedAdminDashboard() {
                 userRole={userRole}
                 logActivity={logActivity}
                 onDonationsCountChange={(count) => {
-                  setStats((prev: any) => ({ ...prev, totalDonations: count }));
+                  setStats((prev: any) => (prev?.totalDonations === count ? prev : { ...prev, totalDonations: count }));
                 }}
               />
             )}

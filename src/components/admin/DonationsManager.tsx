@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { 
   TrendingUp, Download, Trash2, Eye, Plus, Search, Filter, RefreshCw, 
   CheckCircle2, Clock, AlertCircle, XCircle, ChevronLeft, ChevronRight, 
@@ -84,6 +84,13 @@ export function DonationsManager({
   onDonationsCountChange,
 }: DonationsManagerProps) {
   const confirmDialog = useConfirm();
+
+  const onDonationsCountChangeRef = useRef(onDonationsCountChange);
+  useEffect(() => {
+    onDonationsCountChangeRef.current = onDonationsCountChange;
+  }, [onDonationsCountChange]);
+
+  const isFetchingRef = useRef(false);
 
   // Data state
   const [donations, setDonations] = useState<AdminDonationRecord[]>([]);
@@ -216,6 +223,8 @@ export function DonationsManager({
   // FETCH DONATIONS (Multi-Source Resilience)
   // =========================================================================
   const fetchDonations = useCallback(async (isSilent = false) => {
+    if (isFetchingRef.current) return;
+    isFetchingRef.current = true;
     if (!isSilent) setLoading(true);
     setRefreshing(true);
 
@@ -279,33 +288,39 @@ export function DonationsManager({
       unified.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
       setDonations(unified);
-      if (onDonationsCountChange) {
-        onDonationsCountChange(unified.length);
+      if (onDonationsCountChangeRef.current) {
+        onDonationsCountChangeRef.current(unified.length);
       }
     } catch (err: any) {
       console.error('Failed to load donations:', err);
-      toast.error('Failed to fetch donation records');
+      if (!isSilent) toast.error('Failed to fetch donation records');
     } finally {
+      isFetchingRef.current = false;
       setLoading(false);
       setRefreshing(false);
     }
-  }, [accessToken, projectId, publicAnonKey, normalizeDonation, onDonationsCountChange]);
+  }, [accessToken, projectId, publicAnonKey, normalizeDonation]);
 
   // Initial load
   useEffect(() => {
     fetchDonations();
   }, [fetchDonations]);
 
-  // Real-time updates subscription
+  // Real-time updates subscription with debounce
   useEffect(() => {
+    let debounceTimer: any = null;
     const channel = supabase
-      .channel('admin_donations_realtime')
+      .channel('admin_donations_realtime_stable')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'donations' }, () => {
-        fetchDonations(true);
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => {
+          fetchDonations(true);
+        }, 1200);
       })
       .subscribe();
 
     return () => {
+      clearTimeout(debounceTimer);
       supabase.removeChannel(channel);
     };
   }, [fetchDonations]);
@@ -830,7 +845,7 @@ export function DonationsManager({
   };
 
   return (
-    <div className="space-y-8 animate-fade-in">
+    <div className="space-y-8">
       
       {/* ===================================================================== */}
       {/* TOP HERO BANNER */}
