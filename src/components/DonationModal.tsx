@@ -108,9 +108,8 @@ function CopyBtn({ text, light = false }: { text: string; light?: boolean }) {
   );
 }
 
-// ─── Main Modal ────────────────────────────────────────────────────────────────
 export function DonationModal() {
-  const { isOpen, close } = useDonationModal();
+  const { isOpen, close, initialMethod, initialAmount } = useDonationModal();
   const navigate = useNavigate();
 
   const [step, setStep] = useState<ModalStep>(1);
@@ -152,7 +151,16 @@ export function DonationModal() {
 
   useEffect(() => {
     if (isOpen) {
-      prefetchPaymentIntent(amount || 50, currency || 'USD');
+      if (initialAmount && initialAmount > 0) {
+        setAmount(initialAmount);
+        setIsCustom(false);
+        setCustomAmount('');
+      }
+      if (initialMethod) {
+        setMethod(initialMethod);
+        setStep(2);
+      }
+      prefetchPaymentIntent(initialAmount || amount || 50, currency || 'USD');
       supabase.auth.getSession().then(({ data: { session } }) => {
         if (session?.user) {
           const fullName = session.user.user_metadata?.name || '';
@@ -161,14 +169,15 @@ export function DonationModal() {
           const lastName = parts.slice(1).join(' ') || '';
           setDonorData(prev => ({
             ...prev,
-            email: session.user.email || '',
+            email: session.user.email || prev.email || '',
             firstName: prev.firstName || firstName,
             lastName: prev.lastName || lastName
           }));
         }
       });
     }
-  }, [isOpen]);
+  }, [isOpen, initialMethod, initialAmount]);
+
 
   // Fetch dynamic config once when modal opens
   useEffect(() => {
@@ -230,11 +239,20 @@ export function DonationModal() {
     if (done && method !== 'bank') {
       const timer = setTimeout(() => {
         close();
-        navigate('/donor/dashboard');
+        const emailToPass = donorData.email || '';
+        const refToPass = mobileRef || bankRef || '';
+        if (emailToPass) {
+          try {
+            localStorage.setItem('lasti_donor_email', emailToPass);
+            if (refToPass) localStorage.setItem('lasti_donor_ref', refToPass);
+          } catch {}
+        }
+        navigate(`/donor-portal?email=${encodeURIComponent(emailToPass)}&ref=${encodeURIComponent(refToPass)}`);
       }, 4000);
       return () => clearTimeout(timer);
     }
-  }, [done, method, close, navigate]);
+  }, [done, method, close, navigate, donorData.email, mobileRef, bankRef]);
+
 
   // Handle outside click
   useEffect(() => {
@@ -296,6 +314,12 @@ export function DonationModal() {
       // Record failure is non-blocking — we still show the donor their reference
     }
     setBankRef(ref);
+    if (donorData.email) {
+      try {
+        localStorage.setItem('lasti_donor_email', donorData.email);
+        localStorage.setItem('lasti_donor_ref', ref);
+      } catch {}
+    }
     setSubmitting(false);
     setDone(true);
     toast.success(
@@ -341,6 +365,12 @@ export function DonationModal() {
         return;
       }
       setMobileRef(data.referenceId);
+      if (donorData.email) {
+        try {
+          localStorage.setItem('lasti_donor_email', donorData.email);
+          localStorage.setItem('lasti_donor_ref', data.referenceId);
+        } catch {}
+      }
       setSubmitting(false);
       setMobileWaiting(true);
       toast.success('PIN prompt sent to your phone! Enter your PIN to complete the payment.', { duration: 8000 });
@@ -365,6 +395,12 @@ export function DonationModal() {
           if (sd.status === 'SUCCESSFUL') {
             clearInterval(poll);
             setMobileWaiting(false);
+            if (donorData.email) {
+              try {
+                localStorage.setItem('lasti_donor_email', donorData.email);
+                localStorage.setItem('lasti_donor_ref', data.referenceId);
+              } catch {}
+            }
             setDone(true);
             toast.success('Payment confirmed! Thank you for your donation.', { duration: 7000 });
           } else if (sd.status === 'FAILED') {
@@ -385,6 +421,7 @@ export function DonationModal() {
       setSubmitting(false);
     }
   };
+
 
   const inp = 'w-full border border-gray-200 rounded-xl px-4 text-sm font-normal outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-50 transition-all placeholder:text-gray-400 bg-white text-gray-800';
   const inpStyle = { height: 44 };
@@ -540,11 +577,11 @@ export function DonationModal() {
               <button
                 onClick={() => {
                   handleClose();
-                  navigate('/donor/dashboard');
+                  navigate(`/donor-portal?email=${encodeURIComponent(donorData.email || '')}&ref=${encodeURIComponent(mobileRef || bankRef || '')}`);
                 }}
-                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 rounded-xl text-sm transition-all"
+                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 rounded-xl text-sm transition-all shadow-md cursor-pointer"
               >
-                Go to Donor Portal Now
+                Go to Donor Portal & View Official Receipt
               </button>
             </div>
           )}
@@ -614,12 +651,23 @@ export function DonationModal() {
                 </p>
               )}
 
-              <button
-                onClick={handleClose}
-                className="w-full bg-gray-900 hover:bg-black text-white font-semibold py-3 rounded-xl text-xs transition-all"
-              >
-                Close
-              </button>
+              <div className="flex gap-2 w-full">
+                <button
+                  onClick={() => {
+                    handleClose();
+                    navigate(`/donor-portal?email=${encodeURIComponent(donorData.email || '')}&ref=${encodeURIComponent(bankRef)}`);
+                  }}
+                  className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 rounded-xl text-xs transition-all shadow-md cursor-pointer"
+                >
+                  View in Donor Portal
+                </button>
+                <button
+                  onClick={handleClose}
+                  className="px-5 bg-gray-900 hover:bg-black text-white font-semibold py-3 rounded-xl text-xs transition-all cursor-pointer"
+                >
+                  Close
+                </button>
+              </div>
             </div>
           )}
 
@@ -698,15 +746,27 @@ export function DonationModal() {
                 </p>
               )}
 
-              <button
-                onClick={handleClose}
-                className="w-full text-white font-semibold py-3 rounded-xl text-xs transition-all shadow-md"
-                style={{ backgroundColor: method === 'mtn' ? '#FFCC00' : '#e40000', color: method === 'mtn' ? '#1a1a1a' : 'white' }}
-              >
-                Close
-              </button>
+              <div className="flex gap-2 w-full">
+                <button
+                  onClick={() => {
+                    handleClose();
+                    navigate(`/donor-portal?email=${encodeURIComponent(donorData.email || '')}&ref=${encodeURIComponent(mobileRef)}`);
+                  }}
+                  className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 rounded-xl text-xs transition-all shadow-md cursor-pointer"
+                >
+                  View in Donor Portal
+                </button>
+                <button
+                  onClick={handleClose}
+                  className="px-5 text-white font-semibold py-3 rounded-xl text-xs transition-all shadow-md cursor-pointer"
+                  style={{ backgroundColor: method === 'mtn' ? '#FFCC00' : '#e40000', color: method === 'mtn' ? '#1a1a1a' : 'white' }}
+                >
+                  Close
+                </button>
+              </div>
             </div>
           )}
+
 
           {/* ── STEP 1: Amount & Frequency ───────────────────────── */}
           {!done && step === 1 && (

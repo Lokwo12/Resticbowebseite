@@ -165,12 +165,17 @@ export function CardPaymentPage() {
 
   useEffect(() => {
     if (done) {
+      if (donorData.email) {
+        try {
+          localStorage.setItem('lasti_donor_email', donorData.email);
+        } catch {}
+      }
       const timer = setTimeout(() => {
-        navigate('/donor/dashboard');
+        navigate(`/donor-portal?email=${encodeURIComponent(donorData.email || '')}`);
       }, 3000);
       return () => clearTimeout(timer);
     }
-  }, [done, navigate]);
+  }, [done, navigate, donorData.email]);
 
   if (done) {
     return (
@@ -181,7 +186,12 @@ export function CardPaymentPage() {
           </div>
           <h2 className="text-2xl font-bold text-gray-900">Thank You for Supporting RESTI!</h2>
           <p className="text-gray-600">Your {formatUSD(finalAmount)} contribution has been registered. You are helping refugees and host communities build sustainable futures.</p>
-          <button onClick={() => navigate('/donor/dashboard')} className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl shadow-md transition-colors">Go to Donor Portal Now</button>
+          <button 
+            onClick={() => navigate(`/donor-portal?email=${encodeURIComponent(donorData.email || '')}`)} 
+            className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl shadow-md transition-colors cursor-pointer"
+          >
+            Go to Donor Portal & View Receipt
+          </button>
         </div>
       </div>
     );
@@ -197,12 +207,13 @@ export function CardPaymentPage() {
             <ArrowLeft size={15} /> Back
           </button>
           <button 
-            onClick={() => navigate('/donor/dashboard')}
-            className="text-xs font-semibold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/80 px-3.5 py-1.5 rounded-xl transition-colors flex items-center gap-1.5 shadow-2xs"
+            onClick={() => navigate('/donor-portal')}
+            className="text-xs font-semibold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/80 px-3.5 py-1.5 rounded-xl transition-colors flex items-center gap-1.5 shadow-2xs cursor-pointer"
           >
             <Heart size={13} fill="currentColor" className="text-emerald-600" /> Donor Portal & Receipts
           </button>
         </div>
+
 
         {/* Mission Statement Banner */}
         <div className="bg-gradient-to-br from-emerald-800 via-emerald-900 to-teal-950 text-white rounded-3xl p-6 sm:p-8 shadow-xl relative overflow-hidden">

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../utils/supabase/client';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
@@ -6,12 +6,13 @@ import {
   Heart, CreditCard, Calendar, ArrowRight, Settings, LogOut, 
   Download, Printer, Shield, CheckCircle2, Clock, User, 
   FileText, ChevronRight, Sparkles, Building2, Phone, Mail, 
-  ExternalLink, X, Search, Filter, RefreshCw
+  ExternalLink, X, Search, Filter, RefreshCw, Zap
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { toast } from 'sonner';
 import { DEFAULT_DONOR_PORTAL_SETTINGS } from './SiteSettingsTab';
+import { useDonationModal } from './DonationModalContext';
 
 interface Donation {
   id: string;
@@ -22,10 +23,12 @@ interface Donation {
   paymentMethod: string;
   donorName?: string;
   donorEmail?: string;
+  donorPhone?: string;
   reference?: string;
 }
 
 export function DonorDashboard() {
+  const { open: openDonationModal } = useDonationModal();
   const [portalConfig, setPortalConfig] = useState<any>(DEFAULT_DONOR_PORTAL_SETTINGS);
   const [donations, setDonations] = useState<Donation[]>([]);
   const [loading, setLoading] = useState(true);
@@ -36,6 +39,15 @@ export function DonorDashboard() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'completed' | 'pending'>('all');
   
+  // Quick Giving State for Direct Live Modal Access
+  const [selectedQuickAmount, setSelectedQuickAmount] = useState<number>(50);
+  const [customQuickAmount, setCustomQuickAmount] = useState<string>('');
+  const [isCustomQuick, setIsCustomQuick] = useState<boolean>(false);
+  const [realtimeConnected, setRealtimeConnected] = useState(false);
+
+  // Admin view toggle (if superadmin visits donor portal)
+  const [adminShowAll, setAdminShowAll] = useState(false);
+
   // Guest Lookup & Inline Login state
   const [lookupQuery, setLookupQuery] = useState('');
   const [lookupLoading, setLookupLoading] = useState(false);
@@ -55,6 +67,125 @@ export function DonorDashboard() {
   const [savingProfile, setSavingProfile] = useState(false);
 
   const navigate = useNavigate();
+
+  const isUserAdmin = user?.email === 'lokwodenis0@gmail.com' || user?.user_metadata?.role === 'admin';
+
+  const fetchDonations = useCallback(async (query?: string, showAllOverride?: boolean): Promise<Donation[]> => {
+    try {
+      setLoading(true);
+      const q = (query !== undefined ? query : (lookupQuery || user?.email || '')).toLowerCase().trim();
+
+      // 1. Fetch from canonical PostgreSQL donations table
+      const { data: pgData, error: pgErr } = await supabase
+        .from('donations')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (pgErr) console.warn('Postgres donations query notice:', pgErr.message);
+
+      // 2. Fetch from kv_store_2a4be611 for compatibility
+      const { data: kvData, error: kvErr } = await supabase
+        .from('kv_store_2a4be611')
+        .select('*')
+        .like('key', 'donation:%');
+
+      if (kvErr) console.warn('KV donations query notice:', kvErr.message);
+
+      const unifiedList: Donation[] = [];
+      const seenRefs = new Set<string>();
+
+      // Normalize Postgres rows
+      if (pgData && Array.isArray(pgData)) {
+        for (const r of pgData) {
+          const amt = Number(r.amount);
+          if (!amt || isNaN(amt) || amt <= 0) continue;
+
+          const rawRef = (r.transaction_id || r.id || '').replace(/^donation:/, '');
+          const dEmail = (r.email || '').trim();
+          const dName = `${r.first_name || ''} ${r.last_name || ''}`.trim();
+          const pMethod = (r.method || r.provider || 'card').toLowerCase();
+
+          const item: Donation = {
+            id: r.id || `pg-${rawRef}`,
+            amount: amt,
+            currency: r.currency || 'USD',
+            date: r.created_at || r.updated_at || new Date().toISOString(),
+            status: (r.status || 'completed').toLowerCase(),
+            paymentMethod: pMethod,
+            donorName: dName || undefined,
+            donorEmail: dEmail || undefined,
+            donorPhone: r.phone || undefined,
+            reference: rawRef
+          };
+
+          if (rawRef) seenRefs.add(rawRef.toLowerCase());
+          unifiedList.push(item);
+        }
+      }
+
+      // Normalize KV rows (skip duplicates)
+      if (kvData && Array.isArray(kvData)) {
+        for (const k of kvData) {
+          const v = k.value || {};
+          const amt = Number(v.amount);
+          if (!amt || isNaN(amt) || amt <= 0) continue;
+
+          const rawRef = (v.reference || v.transactionId || v.paymentIntentId || k.key?.replace(/^donation:/, '') || '').trim();
+          if (rawRef && seenRefs.has(rawRef.toLowerCase())) continue;
+
+          const pMethod = (v.paymentMethod || v.provider || 'card').toLowerCase();
+          const item: Donation = {
+            id: k.key || `kv-${rawRef}`,
+            amount: amt,
+            currency: v.currency || 'USD',
+            date: v.timestamp || v.date || new Date().toISOString(),
+            status: (v.status || 'completed').toLowerCase(),
+            paymentMethod: pMethod,
+            donorName: v.donorName || v.name || undefined,
+            donorEmail: v.donorEmail || v.email || undefined,
+            donorPhone: v.donorPhone || undefined,
+            reference: rawRef
+          };
+
+          if (rawRef) seenRefs.add(rawRef.toLowerCase());
+          unifiedList.push(item);
+        }
+      }
+
+      // Sort by date descending
+      unifiedList.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+      // Filter by query (if provided)
+      let filtered = unifiedList;
+      const shouldShowAll = showAllOverride !== undefined ? showAllOverride : adminShowAll;
+
+      if (!shouldShowAll && q) {
+        filtered = unifiedList.filter(d => {
+          const dEmail = (d.donorEmail || '').toLowerCase();
+          const dRef = (d.reference || d.id || '').toLowerCase();
+          const dName = (d.donorName || '').toLowerCase();
+          const dMethod = (d.paymentMethod || '').toLowerCase();
+          return dEmail === q ||
+                 dEmail.includes(q) ||
+                 dRef.includes(q) ||
+                 dName.includes(q) ||
+                 dMethod.includes(q) ||
+                 d.amount.toString() === q;
+        });
+      } else if (!shouldShowAll && !q) {
+        // Guest who hasn't submitted a query yet
+        filtered = [];
+      }
+
+      setDonations(filtered);
+      return filtered;
+    } catch (err) {
+      console.error('Error fetching donations', err);
+      return [];
+    } finally {
+      setLoading(false);
+    }
+  }, [lookupQuery, user?.email, adminShowAll]);
 
   useEffect(() => {
     const checkUser = async () => {
@@ -77,6 +208,8 @@ export function DonorDashboard() {
         const sessionId = urlParams.get('session_id');
         const emailParam = urlParams.get('email');
         const refParam = urlParams.get('ref');
+        const storedEmail = localStorage.getItem('lasti_donor_email') || '';
+        const storedRef = localStorage.getItem('lasti_donor_ref') || '';
 
         let verifiedDonation: any = null;
         if (sessionId) {
@@ -97,10 +230,13 @@ export function DonorDashboard() {
           }
         }
 
-        const queryToFetch = session?.user?.email || emailParam || refParam || '';
+        const queryToFetch = session?.user?.email || emailParam || refParam || storedEmail || storedRef || '';
         if (queryToFetch) {
           setLookupQuery(queryToFetch);
+          setLookupSubmitted(true);
           await fetchDonations(queryToFetch);
+        } else {
+          setLoading(false);
         }
 
         if (verifiedDonation) {
@@ -143,50 +279,29 @@ export function DonorDashboard() {
       }
     };
     checkUser();
-  }, [navigate]);
+  }, [fetchDonations]);
 
-  const fetchDonations = async (query: string): Promise<Donation[]> => {
-    if (!query) {
-      setLoading(false);
-      return [];
-    }
-    try {
-      const res = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/donations`, {
-        headers: { Authorization: `Bearer ${publicAnonKey}` }
+  // Real-time live synchronization
+  useEffect(() => {
+    const channel = supabase
+      .channel('donor_portal_live_realtime')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'donations' },
+        (payload) => {
+          console.log('Real-time donation update in DonorDashboard:', payload);
+          fetchDonations();
+        }
+      )
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') setRealtimeConnected(true);
       });
-      const data = await res.json();
-      if (data.donations && Array.isArray(data.donations)) {
-        const q = query.toLowerCase().trim();
-        const userDonations: Donation[] = data.donations
-          .filter((d: any) => {
-            const dEmail = (d.value?.donorEmail || d.value?.email || '').toLowerCase().trim();
-            const dRef = (d.value?.reference || d.key || '').toLowerCase().trim();
-            return dEmail === q || dRef.includes(q) || (q.length > 3 && dRef.endsWith(q));
-          })
-          .map((d: any) => ({
-            id: d.key || d.id,
-            amount: Number(d.value?.amount) || 0,
-            currency: d.value?.currency || 'USD',
-            date: d.value?.timestamp || d.value?.date || new Date().toISOString(),
-            status: d.value?.status || 'completed',
-            paymentMethod: d.value?.paymentMethod || 'card',
-            donorName: d.value?.donorName || d.value?.name,
-            donorEmail: d.value?.donorEmail || d.value?.email,
-            reference: d.value?.reference || d.key?.replace(/^donation:/, '')
-          }));
-        
-        userDonations.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-        setDonations(userDonations);
-        return userDonations;
-      }
-      return [];
-    } catch (err) {
-      console.error('Error fetching donations', err);
-      return [];
-    } finally {
-      setLoading(false);
-    }
-  };
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [fetchDonations]);
+
 
   const handleLookupDonations = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -412,17 +527,18 @@ export function DonorDashboard() {
             </div>
 
             <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
-              <Link to="/donate" className="flex-1 sm:flex-initial">
-                <Button className="w-full bg-white text-emerald-800 hover:bg-emerald-50 font-bold shadow-md hover:shadow-lg transition-all">
-                  <Heart className="w-4 h-4 mr-2 text-rose-500" fill="currentColor" />
-                  {portalConfig?.makeGiftBtnText || 'Make a Gift'}
-                </Button>
-              </Link>
+              <Button 
+                onClick={() => openDonationModal()}
+                className="flex-1 sm:flex-initial bg-white text-emerald-800 hover:bg-emerald-50 font-bold shadow-md hover:shadow-lg transition-all cursor-pointer"
+              >
+                <Heart className="w-4 h-4 mr-2 text-rose-500" fill="currentColor" />
+                {portalConfig?.makeGiftBtnText || 'Make a Gift'}
+              </Button>
               {user ? (
                 <Button 
                   variant="outline" 
                   onClick={handleLogout} 
-                  className="bg-emerald-900/40 border-white/20 text-white hover:bg-white/10 hover:text-white"
+                  className="bg-emerald-900/40 border-white/20 text-white hover:bg-white/10 hover:text-white cursor-pointer"
                 >
                   <LogOut className="w-4 h-4 mr-2" /> {portalConfig?.signOutBtnText || 'Sign Out'}
                 </Button>
@@ -430,13 +546,14 @@ export function DonorDashboard() {
                 <Link to="/login?redirect=/donor-portal" className="flex-1 sm:flex-initial">
                   <Button 
                     variant="outline" 
-                    className="w-full bg-emerald-900/40 border-white/20 text-white hover:bg-white/10 hover:text-white"
+                    className="w-full bg-emerald-900/40 border-white/20 text-white hover:bg-white/10 hover:text-white cursor-pointer"
                   >
                     <User className="w-4 h-4 mr-2" /> Sign In
                   </Button>
                 </Link>
               )}
             </div>
+
           </div>
         </div>
 
@@ -553,6 +670,169 @@ export function DonorDashboard() {
         {/* TAB 1: GIVING HISTORY & RECEIPTS */}
         {activeTab === 'history' && (
           <div className="space-y-6">
+
+            {/* Quick Live Giving Gateway Card connecting all payment modes */}
+            <div className="bg-gradient-to-r from-emerald-900 via-teal-900 to-slate-900 rounded-3xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden border border-emerald-500/20">
+              <div className="absolute right-0 top-0 translate-x-12 -translate-y-12 w-64 h-64 bg-emerald-400/10 rounded-full blur-3xl pointer-events-none" />
+              <div className="relative z-10 space-y-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex items-center gap-2">
+                    <span className="flex h-2.5 w-2.5 relative">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                    </span>
+                    <span className="text-xs font-bold uppercase tracking-widest text-emerald-300">
+                      Live Donation Gateway • All Payment Modes
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {realtimeConnected && (
+                      <span className="text-[10px] font-bold text-emerald-300 bg-emerald-950/60 px-2.5 py-0.5 rounded-full border border-emerald-500/30 flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Live Realtime Sync Active
+                      </span>
+                    )}
+                    <span className="text-[11px] text-slate-300 font-medium bg-white/10 px-3 py-1 rounded-full border border-white/10 hidden sm:inline-block">
+                      ⚡ Instant receipt generation & verification
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+                  <div>
+                    <h3 className="text-xl sm:text-2xl font-black font-heading text-white tracking-tight">
+                      Support RESTI Community Programs Directly
+                    </h3>
+                    <p className="text-emerald-100/80 text-xs sm:text-sm mt-1 max-w-xl leading-relaxed">
+                      Choose an amount and click your preferred payment channel below. Gifts are processed instantly, recorded in the database, and reflected immediately on this dashboard.
+                    </p>
+                  </div>
+
+                  {/* Quick Amount Selector */}
+                  <div className="flex flex-wrap items-center gap-2 shrink-0">
+                    {[10, 25, 50, 100, 250].map((amt) => (
+                      <button
+                        key={amt}
+                        type="button"
+                        onClick={() => {
+                          setSelectedQuickAmount(amt);
+                          setIsCustomQuick(false);
+                          setCustomQuickAmount('');
+                        }}
+                        className={`px-3.5 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                          !isCustomQuick && selectedQuickAmount === amt
+                            ? 'bg-emerald-500 text-white border-emerald-400 shadow-md scale-105'
+                            : 'bg-white/10 text-white hover:bg-white/20 border-white/15'
+                        }`}
+                      >
+                        ${amt}
+                      </button>
+                    ))}
+                    <div className="relative">
+                      <input
+                        type="number"
+                        placeholder="Custom $"
+                        value={customQuickAmount}
+                        onChange={(e) => {
+                          setCustomQuickAmount(e.target.value);
+                          setIsCustomQuick(true);
+                        }}
+                        className={`w-24 px-3 py-2 rounded-xl text-xs font-bold bg-white/10 border text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-emerald-400 transition-all ${
+                          isCustomQuick ? 'border-emerald-400 bg-white/20 ring-1 ring-emerald-400' : 'border-white/15'
+                        }`}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* 5 Payment Mode Trigger Buttons */}
+                <div className="pt-2 border-t border-white/10 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => openDonationModal({ method: 'card', amount: isCustomQuick ? Number(customQuickAmount) || 50 : selectedQuickAmount })}
+                    className="bg-blue-600 hover:bg-blue-500 text-white p-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-sm transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
+                  >
+                    <CreditCard size={15} />
+                    <span>Card (Stripe)</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => openDonationModal({ method: 'mtn', amount: isCustomQuick ? Number(customQuickAmount) || 50 : selectedQuickAmount })}
+                    className="bg-[#FFCC00] hover:bg-[#ffdb4d] text-slate-950 p-3 rounded-xl text-xs font-black flex items-center justify-center gap-2 shadow-sm transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
+                  >
+                    <Phone size={15} />
+                    <span>MTN MoMo</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => openDonationModal({ method: 'airtel', amount: isCustomQuick ? Number(customQuickAmount) || 50 : selectedQuickAmount })}
+                    className="bg-[#e40000] hover:bg-[#ff1a1a] text-white p-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-sm transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
+                  >
+                    <Phone size={15} />
+                    <span>Airtel Money</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => openDonationModal({ method: 'paypal', amount: isCustomQuick ? Number(customQuickAmount) || 50 : selectedQuickAmount })}
+                    className="bg-[#003087] hover:bg-[#0040b3] text-white p-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-sm transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
+                  >
+                    <ExternalLink size={15} />
+                    <span>PayPal</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => openDonationModal({ method: 'bank', amount: isCustomQuick ? Number(customQuickAmount) || 50 : selectedQuickAmount })}
+                    className="bg-slate-700 hover:bg-slate-600 text-white p-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-sm transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer col-span-2 sm:col-span-1"
+                  >
+                    <Building2 size={15} />
+                    <span>Bank Wire</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Admin Platform Overview Bar */}
+            {isUserAdmin && (
+              <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3 text-amber-900 text-xs">
+                <div className="flex items-center gap-2.5">
+                  <Shield className="w-5 h-5 text-amber-600 shrink-0" />
+                  <div>
+                    <span className="font-bold">Admin Platform Control:</span>{' '}
+                    <span>Logged in as administrator ({user?.email}). You can view your personal contributions or audit all live platform donations across all payment channels.</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAdminShowAll(false);
+                      fetchDonations(user?.email, false);
+                    }}
+                    className={`px-3 py-1.5 rounded-xl font-bold cursor-pointer transition-all ${
+                      !adminShowAll ? 'bg-amber-600 text-white shadow-xs' : 'bg-white border border-amber-300 text-amber-800 hover:bg-amber-100'
+                    }`}
+                  >
+                    My Personal Gifts
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAdminShowAll(true);
+                      fetchDonations('', true);
+                    }}
+                    className={`px-3 py-1.5 rounded-xl font-bold cursor-pointer transition-all ${
+                      adminShowAll ? 'bg-amber-600 text-white shadow-xs' : 'bg-white border border-amber-300 text-amber-800 hover:bg-amber-100'
+                    }`}
+                  >
+                    All Platform Donations (Live)
+                  </button>
+                </div>
+              </div>
+            )}
+
             {!user && donations.length === 0 ? (
               <div className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -703,6 +983,17 @@ export function DonorDashboard() {
                       <option value="completed">Completed</option>
                       <option value="pending">Pending</option>
                     </select>
+
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => fetchDonations()}
+                      className="bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-none h-auto"
+                      title="Refresh live donations"
+                    >
+                      <RefreshCw size={13} className={loading ? 'animate-spin text-emerald-600' : 'text-slate-500'} />
+                      <span className="hidden sm:inline">Sync Live</span>
+                    </Button>
                   </div>
                 </div>
 
@@ -715,13 +1006,16 @@ export function DonorDashboard() {
                     <p className="text-slate-500 text-sm max-w-md mx-auto mt-1 mb-6">
                       {searchQuery ? 'No gifts matched your search criteria.' : 'You have not recorded any donations with this account email yet.'}
                     </p>
-                    <Link to="/donate">
-                      <Button className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold">
-                        Make Your First Gift
-                      </Button>
-                    </Link>
+                    <Button 
+                      onClick={() => openDonationModal()}
+                      className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold cursor-pointer shadow-md"
+                    >
+                      <Heart size={15} className="mr-2 fill-current" />
+                      Make Your First Gift
+                    </Button>
                   </div>
                 ) : (
+
                 <div className="overflow-x-auto">
                   <table className="w-full text-left border-collapse">
                     <thead>
@@ -895,11 +1189,13 @@ export function DonorDashboard() {
                 <p className="text-emerald-100 text-sm leading-relaxed mb-6">
                   {portalConfig?.sidebarPledgeText || 'A monthly pledge of $25 provides 2 refugee women with vocational tailoring materials and Village Savings (VSLA) seed capital every single month.'}
                 </p>
-                <Link to="/donate">
-                  <Button className="w-full bg-white text-emerald-800 hover:bg-emerald-50 font-bold border-none shadow-md">
-                    {portalConfig?.sidebarPledgeButtonText || 'Set Up Monthly Gift'} <ArrowRight size={16} className="ml-2" />
-                  </Button>
-                </Link>
+                <Button 
+                  onClick={() => openDonationModal({ method: 'card', amount: 25 })}
+                  className="w-full bg-white text-emerald-800 hover:bg-emerald-50 font-bold border-none shadow-md cursor-pointer"
+                >
+                  {portalConfig?.sidebarPledgeButtonText || 'Set Up Monthly Gift'} <ArrowRight size={16} className="ml-2" />
+                </Button>
+
               </div>
             </div>
           </div>
