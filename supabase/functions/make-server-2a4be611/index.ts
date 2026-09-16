@@ -134,7 +134,7 @@ async function sendEmail(to: string, subject: string, html: string) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: Deno.env.get('ADMIN_EMAIL') || 'Resti Kiryandongo CBO <onboarding@resend.dev>',
+        from: Deno.env.get('ADMIN_EMAIL') || 'RESTI-CBO <onboarding@resend.dev>',
         to: [to],
         subject,
         html,
@@ -211,7 +211,7 @@ app.post('/make-server-2a4be611/contact', withRateLimit('contact', 5, 10 * 60_00
     // Send confirmation email to submitter
     await sendEmail(
       email.trim(),
-      'Thank you for contacting Resti Kiryandongo CBO',
+      'Thank you for contacting RESTI-CBO',
       `
         <h2>Thank You for Reaching Out!</h2>
         <p>Dear ${safeName},</p>
@@ -220,7 +220,7 @@ app.post('/make-server-2a4be611/contact', withRateLimit('contact', 5, 10 * 60_00
         <p>${safeMessage}</p>
         <br>
         <p>Best regards,</p>
-        <p>Resti Kiryandongo CBO Team</p>
+        <p>RESTI-CBO Team</p>
       `
     )
 
@@ -1870,11 +1870,11 @@ app.post('/make-server-2a4be611/admin/contacts/:id/reply', requireAdmin, async (
     try {
       const emailResult = await sendEmail(
         toEmail,
-        `Re: Your message to Resti Kiryandongo CBO`,
+        `Re: Your message to RESTI-CBO`,
         `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #1e293b;">
             <div style="border-bottom: 2px solid #10b981; padding-bottom: 12px; margin-bottom: 20px;">
-              <h2 style="color: #10b981; margin: 0;">Resti Kiryandongo CBO</h2>
+              <h2 style="color: #10b981; margin: 0;">RESTI-CBO</h2>
               <p style="color: #64748b; font-size: 13px; margin: 4px 0 0 0;">Community Based Organization • Kiryandongo, Uganda</p>
             </div>
             <p>Dear ${toName},</p>
@@ -1887,7 +1887,7 @@ app.post('/make-server-2a4be611/admin/contacts/:id/reply', requireAdmin, async (
               <p style="margin: 0 0 6px 0; font-weight: bold; font-size: 13px; color: #065f46;">Our response:</p>
               <p style="margin: 0; color: #047857; white-space: pre-wrap;">${message.replace(/\n/g, '<br>')}</p>
             </div>
-            <p style="margin-top: 24px;">Best regards,<br><strong>Resti Kiryandongo CBO Team</strong></p>
+            <p style="margin-top: 24px;">Best regards,<br><strong>RESTI-CBO Team</strong></p>
             <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0 12px 0;">
             <p style="font-size: 11px; color: #94a3b8; margin: 0;">You received this email because you submitted a contact inquiry on resticbo.org.</p>
           </div>
@@ -1993,16 +1993,16 @@ app.put('/make-server-2a4be611/admin/volunteers/:id/status', requireAdmin, async
             <p>We're excited to inform you that your volunteer application has been approved!</p>
             <p>We'll be in touch soon with more details about next steps and opportunities to get involved.</p>
             <p>Thank you for your interest in supporting our community!</p>
-            <p>Best regards,<br>Resti Kiryandongo CBO Team</p>
+            <p>Best regards,<br>RESTI-CBO Team</p>
           </div>
         `
         : `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
             <h2 style="color: #10b981;">Thank you for your interest</h2>
             <p>Dear ${existing.name},</p>
-            <p>Thank you for your interest in volunteering with Resti Kiryandongo CBO.</p>
+            <p>Thank you for your interest in volunteering with RESTI-CBO.</p>
             <p>While we aren't able to move forward with your application at this time, we encourage you to stay connected with our work and consider applying for future opportunities.</p>
-            <p>Best regards,<br>Resti Kiryandongo CBO Team</p>
+            <p>Best regards,<br>RESTI-CBO Team</p>
           </div>
         `
       
@@ -3543,7 +3543,7 @@ app.post('/make-server-2a4be611/admin/users', requireAdmin, async (c) => {
     // Send welcome email
     await sendEmail(
       email,
-      'Welcome to Resti Kiryandongo CBO Admin',
+      'Welcome to RESTI-CBO Admin',
       `
         <h2>Welcome ${name}!</h2>
         <p>Your admin account has been created with the role: <strong>${role || 'viewer'}</strong></p>
@@ -3751,7 +3751,7 @@ app.post('/make-server-2a4be611/admin/users/:id/reset-password', requireAdmin, a
     if (user && user.email) {
       await sendEmail(
         user.email,
-        'Password Reset - Resti Kiryandongo CBO',
+        'Password Reset - RESTI-CBO',
         `
           <h2>Password Reset</h2>
           <p>Your password has been reset by an administrator.</p>

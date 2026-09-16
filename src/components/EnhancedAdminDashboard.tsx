@@ -1477,8 +1477,8 @@ export function EnhancedAdminDashboard() {
   const buildContactMailContent = (replyText: string, item: any) => {
     const name = item?.name || 'Friend';
     const originalMsg = item?.message || '(No message content)';
-    const subject = `Re: Your message to RESTI CBO`;
-    const bodyText = `${replyText.trim()}\n\n---\nOriginal Message from ${name}:\n${originalMsg}\n\nBest regards,\nRESTI CBO Team\nRefugee Empowerment For Sustainable Transformation Initiative\nKiryandongo, Uganda\nWebsite: https://resticbo.org`;
+    const subject = `Re: Your message to RESTI-CBO`;
+    const bodyText = `${replyText.trim()}\n\n---\nOriginal Message from ${name}:\n${originalMsg}\n\nBest regards,\nRESTI-CBO Team\nRefugee Empowerment For Sustainable Transformation Initiative\nKiryandongo, Uganda\nWebsite: https://resticbo.org`;
     return { subject, bodyText };
   };
 
@@ -6380,7 +6380,7 @@ export function EnhancedAdminDashboard() {
                     <div className="flex items-center gap-2">
                       <button
                         type="button"
-                        onClick={() => setReplyMessage(`Dear ${item.name || 'Friend'},\n\nThank you for reaching out to RESTI CBO Kiryandongo. We have received your inquiry and are pleased to assist you.\n\n`)}
+                        onClick={() => setReplyMessage(`Dear ${item.name || 'Friend'},\n\nThank you for reaching out to RESTI-CBO. We have received your inquiry and are pleased to assist you.\n\n`)}
                         className="text-xs text-emerald-700 hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100 px-2 py-0.5 rounded transition-colors"
                       >
                         + Standard Greeting

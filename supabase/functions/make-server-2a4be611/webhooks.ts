@@ -84,7 +84,7 @@ export async function deliverDonationReceipt(donation: any, sendEmail: (to: stri
   try {
     const emailRes: any = await sendEmail(
       email,
-      'Thank You for Your Donation – Resti Kiryandongo CBO',
+      'Thank You for Your Donation – RESTI-CBO',
       buildReceiptEmail(`${donation.first_name || donation.donorName || ''} ${donation.last_name || ''}`.trim() || 'Donor', donation.currency, donation.amount, donation.transaction_id || donation.id),
     )
 
@@ -482,7 +482,7 @@ function buildReceiptEmail(donorName: string, currency: string, amount: number, 
       <h2 style="color: #10b981;">Thank You for Your Generous Donation! 🙏</h2>
       <p>Dear ${donorName},</p>
       <p>Your donation of <strong>${currency} ${Number(amount).toLocaleString()}</strong> to
-         Resti Kiryandongo CBO has been confirmed.</p>
+         RESTI-CBO has been confirmed.</p>
       <p>Your support makes a real difference in our community.</p>
       <h3>Donation Details:</h3>
       <ul>
@@ -490,7 +490,7 @@ function buildReceiptEmail(donorName: string, currency: string, amount: number, 
         <li>Reference: ${reference}</li>
         <li>Date: ${new Date().toLocaleDateString()}</li>
       </ul>
-      <p>With gratitude,<br>The Resti Kiryandongo CBO Team</p>
+      <p>With gratitude,<br>The RESTI-CBO Team</p>
       <hr>
       <p style="font-size: 12px; color: #666;">
         This email serves as your donation receipt. Please keep it for your records.
