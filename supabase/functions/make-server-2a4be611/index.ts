@@ -7,7 +7,7 @@ import Stripe from 'npm:stripe@17.5.0'
 import * as kv from './kv_store.tsx'
 import { escapeHtml, escapeMessage, validateName, validateEmail, validatePhone, validateMessage, validateAmount, validateMobileMoneyPhone, normaliseUgandanPhone } from './validation.ts'
 import { withRateLimit } from './rateLimit.ts'
-import { handleStripeWebhook, handleMtnWebhook, handleAirtelWebhook, completeDonationFromWebhook, deliverDonationReceipt } from './webhooks.ts'
+import { handleStripeWebhook, handleMtnWebhook, handleAirtelWebhook, completeDonationFromWebhook, deliverDonationReceipt, notifyAdminFailedDonation, getAdminNotifyEmails } from './webhooks.ts'
 import { getMtnAccessToken, getAirtelAccessToken } from './tokens.ts'
 
 const app = new Hono()
@@ -165,42 +165,6 @@ async function sendEmail(to: string, subject: string, html: string, replyTo?: st
   }
 }
 
-// Fetch list of admin emails to notify
-async function getAdminNotifyEmails(): Promise<string[]> {
-  const recipients = new Set<string>()
-
-  // 1. Guaranteed deliverable Resend account owner
-  recipients.add('lokwodenis0@gmail.com')
-
-  // 2. Configured ADMIN_NOTIFY_EMAIL env variable if set
-  const envNotify = Deno.env.get('ADMIN_NOTIFY_EMAIL')
-  if (envNotify) {
-    envNotify
-      .split(',')
-      .map((e) => e.trim().toLowerCase())
-      .filter((e) => e.includes('@'))
-      .forEach((e) => recipients.add(e))
-  }
-
-  // 3. Active admin emails from database
-  try {
-    const { data: admins } = await supabase
-      .from('admin_users')
-      .select('email')
-      .eq('status', 'active')
-    if (admins && admins.length > 0) {
-      for (const a of admins) {
-        if (a?.email && typeof a.email === 'string' && a.email.includes('@')) {
-          recipients.add(a.email.trim().toLowerCase())
-        }
-      }
-    }
-  } catch (err) {
-    console.warn('Error reading admin_users table for notification emails:', err)
-  }
-
-  return Array.from(recipients)
-}
 
 // Contact form submission with email notification
 app.post('/make-server-2a4be611/contact', withRateLimit('contact', 10, 10 * 60_000), async (c) => {
@@ -996,29 +960,201 @@ app.post('/make-server-2a4be611/donations', withRateLimit('donation', 5, 5 * 60_
     const firstName = parts[0]
     const lastName = parts.slice(1).join(' ') || ''
     
-    const { error: insertErr } = await supabase.from('donations').insert({
+    const finalTransactionId = transactionId || crypto.randomUUID()
+    const nowIso = new Date().toISOString()
+    const upperCurrency = (currency || 'USD').toUpperCase()
+
+    const donationRecord = {
       id: donationId,
       amount: Number(amount),
-      currency: (currency || 'USD').toUpperCase(),
+      currency: upperCurrency,
       method: paymentMethod,
-      provider: paymentMethod === 'mtn' || paymentMethod === 'airtel' ? paymentMethod : 'other',
+      provider: paymentMethod === 'mtn' || paymentMethod === 'airtel' ? paymentMethod : (paymentMethod === 'bank_transfer' ? 'bank' : 'other'),
       first_name: firstName,
       last_name: lastName,
       email: donorEmail || '',
       status: 'pending',
-      transaction_id: transactionId || crypto.randomUUID()
-    })
+      transaction_id: finalTransactionId,
+      provider_response: { message: message || 'Pledged / pending donation' },
+      created_at: nowIso,
+      updated_at: nowIso
+    }
+
+    const { error: insertErr } = await supabase.from('donations').insert(donationRecord)
     
     if (insertErr) {
-      console.error('Failed to record pending donation:', insertErr)
+      console.error('Failed to record pending donation in Postgres:', insertErr)
       return c.json({ error: 'Database error' }, 500)
     }
 
+    // Also sync to KV store for admin dashboard
+    try {
+      await kv.set(donationId, donationRecord)
+    } catch (kvErr) {
+      console.warn('Could not sync pending donation to kv:', kvErr)
+    }
+
+    // 1. Send instruction / acknowledgment email to donor if email provided
+    if (donorEmail && donorEmail.trim()) {
+      try {
+        const isBank = paymentMethod === 'bank_transfer'
+        const donorSubject = isBank 
+          ? `Bank Transfer Donation Instructions – RESTI-CBO (Ref: ${finalTransactionId})`
+          : `Donation Pledge Received – RESTI-CBO (Ref: ${finalTransactionId})`
+
+        const donorHtml = `
+          <!DOCTYPE html>
+          <html>
+          <head><meta charset="utf-8"></head>
+          <body style="font-family: sans-serif; line-height: 1.6; color: #1e293b; max-width: 600px; margin: 0 auto; padding: 24px;">
+            <div style="background: linear-gradient(135deg, #065f46 0%, #047857 100%); color: white; padding: 24px; border-radius: 8px; text-align: center;">
+              <h2 style="margin: 0;">RESTI-CBO</h2>
+              <p style="margin: 4px 0 0 0; opacity: 0.9; font-size: 13px;">Donation Pledge Acknowledgment</p>
+            </div>
+            <div style="padding: 24px 0;">
+              <p>Dear <strong>${firstName} ${lastName}</strong>,</p>
+              <p>Thank you for pledging to support <strong>RESTI-CBO</strong>. Your donation pledge of <strong>${upperCurrency} ${Number(amount).toLocaleString()}</strong> has been recorded.</p>
+              
+              <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin: 20px 0;">
+                <div style="font-size: 12px; color: #64748b; font-weight: 600; text-transform: uppercase;">Your Transfer Reference Code:</div>
+                <div style="font-size: 20px; font-weight: 800; color: #047857; margin: 6px 0; font-family: monospace;">${finalTransactionId}</div>
+                <p style="margin: 6px 0 0 0; font-size: 12px; color: #64748b;">Please include this reference code in your transfer description or deposit note so our finance team can verify and issue your official receipt immediately upon receipt.</p>
+              </div>
+
+              <p style="font-size: 13px; color: #475569;">If you have already initiated the transfer, please allow 1–3 business days for bank processing. If you have questions, reply directly to this email.</p>
+              <p style="margin-top: 24px;">With gratitude,<br><strong>RESTI-CBO Finance & Donor Care Team</strong><br>Kiryandongo District, Uganda</p>
+            </div>
+          </body>
+          </html>
+        `
+        await sendEmail(donorEmail.trim(), donorSubject, donorHtml, 'info@resticbo.org')
+      } catch (dErr) {
+        console.warn('Could not send donor pledge confirmation email:', dErr)
+      }
+    }
+
+    // 2. Send real-time alert to admin inboxes
+    try {
+      const adminRecipients = await getAdminNotifyEmails()
+      const adminSubject = `📋 New Donation Pledge (${paymentMethod}): ${upperCurrency} ${Number(amount).toLocaleString()} from ${firstName} ${lastName}`
+      const adminHtml = `
+        <!DOCTYPE html>
+        <html>
+        <head><meta charset="utf-8"></head>
+        <body style="font-family: sans-serif; line-height: 1.6; color: #1e293b; max-width: 600px; margin: 0 auto; padding: 24px;">
+          <div style="background: #1e293b; color: white; padding: 20px; border-radius: 8px; text-align: center;">
+            <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #94a3b8;">Pending Donation Alert</div>
+            <h2 style="margin: 4px 0 0 0;">New Donation Pledge Recorded</h2>
+          </div>
+          <div style="padding: 20px 0;">
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+              <tr><td style="padding: 8px; color: #64748b; font-weight: 600;">Amount:</td><td style="padding: 8px; font-weight: 700; color: #0f172a;">${upperCurrency} ${Number(amount).toLocaleString()}</td></tr>
+              <tr><td style="padding: 8px; color: #64748b; font-weight: 600;">Payment Method:</td><td style="padding: 8px;">${paymentMethod}</td></tr>
+              <tr><td style="padding: 8px; color: #64748b; font-weight: 600;">Donor:</td><td style="padding: 8px; font-weight: 600;">${firstName} ${lastName}</td></tr>
+              <tr><td style="padding: 8px; color: #64748b; font-weight: 600;">Email:</td><td style="padding: 8px;">${donorEmail ? `<a href="mailto:${donorEmail}">${donorEmail}</a>` : 'Not provided'}</td></tr>
+              <tr><td style="padding: 8px; color: #64748b; font-weight: 600;">Phone:</td><td style="padding: 8px;">${donorPhone || 'Not provided'}</td></tr>
+              <tr><td style="padding: 8px; color: #64748b; font-weight: 600;">Reference ID:</td><td style="padding: 8px; font-family: monospace;">${finalTransactionId}</td></tr>
+              <tr><td style="padding: 8px; color: #64748b; font-weight: 600;">Status:</td><td style="padding: 8px; color: #d97706; font-weight: 700;">PENDING (Awaiting Transfer)</td></tr>
+            </table>
+            <p style="font-size: 12px; color: #64748b;">When the bank transfer is confirmed by your bank, you can mark this donation as verified in the Admin Dashboard.</p>
+          </div>
+        </body>
+        </html>
+      `
+      for (const adminTo of adminRecipients) {
+        await sendEmail(adminTo, adminSubject, adminHtml, donorEmail || 'info@resticbo.org')
+      }
+    } catch (aErr) {
+      console.warn('Could not send admin pledge alert:', aErr)
+    }
+
     console.log(`Pending donation recorded: ${donationId}`)
-    return c.json({ success: true, message: 'Donation pending — awaiting payment confirmation', id: donationId })
+    return c.json({ success: true, message: 'Donation pending — awaiting payment confirmation', id: donationId, referenceId: finalTransactionId })
   } catch (error) {
     console.error('Error recording donation:', error)
     return c.json({ error: 'Failed to record donation', details: String(error) }, 500)
+  }
+})
+
+// Complete a PayPal donation, issue official receipt to donor, and alert admin
+app.post('/make-server-2a4be611/donations/paypal-complete', async (c) => {
+  try {
+    const body = await c.req.json()
+    const { orderId, amount, currency, donorName, donorEmail, donorPhone, message } = body
+
+    if (!orderId || !amount) {
+      return c.json({ error: 'orderId and amount are required' }, 400)
+    }
+
+    const donationId = `donation:${orderId}`
+    const parts = (donorName || 'Anonymous Donor').split(' ')
+    const firstName = parts[0]
+    const lastName = parts.slice(1).join(' ') || ''
+    const nowIso = new Date().toISOString()
+    const cur = (currency || 'USD').toUpperCase()
+
+    const donationRecord = {
+      id: donationId,
+      amount: Number(amount),
+      currency: cur,
+      method: 'paypal',
+      provider: 'paypal',
+      first_name: firstName,
+      last_name: lastName,
+      email: donorEmail || '',
+      phone: donorPhone || '',
+      status: 'completed',
+      transaction_id: orderId,
+      provider_transaction_id: orderId,
+      provider_response: { orderId, message, completedAt: nowIso },
+      created_at: nowIso,
+      updated_at: nowIso
+    }
+
+    // Insert or update in Postgres
+    await supabase.from('donations').upsert(donationRecord, { onConflict: 'id' })
+
+    // Sync to KV for admin dashboard
+    try {
+      await kv.set(donationId, donationRecord)
+    } catch (kvErr) {
+      console.warn('Could not sync paypal donation to kv:', kvErr)
+    }
+
+    // Deliver official donor receipt and alert admin
+    await deliverDonationReceipt(donationRecord, sendEmail)
+
+    return c.json({ success: true, message: 'PayPal donation recorded and receipts dispatched', id: donationId })
+  } catch (err) {
+    console.error('Error completing PayPal donation:', err)
+    return c.json({ error: 'Failed to record PayPal donation', details: String(err) }, 500)
+  }
+})
+
+// Report failed donation from frontend and alert admin
+app.post('/make-server-2a4be611/donations/failed', async (c) => {
+  try {
+    const body = await c.req.json()
+    const { provider, referenceId, amount, currency, donorName, donorEmail, donorPhone, errorReason } = body
+
+    const failedDetails = {
+      id: referenceId ? `donation:${referenceId}` : `donation:${crypto.randomUUID()}`,
+      transaction_id: referenceId || 'N/A',
+      amount: Number(amount || 0),
+      currency: (currency || 'USD').toUpperCase(),
+      method: provider === 'paypal' ? 'PayPal' : provider || 'Online Payment',
+      provider: provider || 'unknown',
+      donorName: donorName || 'Donor',
+      email: donorEmail || '',
+      phone: donorPhone || '',
+      status: 'failed',
+    }
+
+    await notifyAdminFailedDonation(failedDetails, sendEmail, errorReason || 'Payment declined or cancelled on client')
+    return c.json({ success: true, message: 'Failure recorded and admin alerted' })
+  } catch (err) {
+    console.error('Error reporting failed donation:', err)
+    return c.json({ error: 'Failed to report failure', details: String(err) }, 500)
   }
 })
 
@@ -1349,14 +1485,29 @@ app.get('/make-server-2a4be611/mobile-payment/status/:referenceId', async (c) =>
       })
       if (result.success && result.donation) {
         const d = result.donation as any
-        // Use centralized delivery helper from webhooks
-        // import would be circular here; call via dynamic import to avoid cycle
         try {
-          const web = await import('./webhooks.ts')
-          await web.deliverDonationReceipt(d, sendEmail)
+          await deliverDonationReceipt(d, sendEmail)
         } catch (e) {
           console.error('Failed to deliver receipt from polling:', e)
         }
+      }
+    }
+
+    if (paymentStatus === 'FAILED') {
+      try {
+        await notifyAdminFailedDonation({
+          id: pendingDonation.id,
+          transaction_id: referenceId,
+          amount: pendingDonation.amount,
+          currency: pendingDonation.currency,
+          donorName: `${pendingDonation.first_name || ''} ${pendingDonation.last_name || ''}`.trim() || 'Donor',
+          email: pendingDonation.email,
+          phone: pendingDonation.provider_response?.donorPhone || '',
+          method: provider === 'mtn' ? 'MTN Mobile Money' : 'Airtel Money',
+          provider
+        }, sendEmail, `${provider.toUpperCase()} Mobile Money payment was declined, timed out, or cancelled by subscriber`)
+      } catch (fErr) {
+        console.warn('Failed to dispatch mobile payment failure alert:', fErr)
       }
     }
 

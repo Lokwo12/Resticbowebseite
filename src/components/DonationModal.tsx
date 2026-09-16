@@ -1058,12 +1058,53 @@ export function DonationModal() {
                             }}
                             onApprove={async (_data, actions) => {
                               if (actions.order) {
-                                await actions.order.capture();
+                                const captureResult = await actions.order.capture();
+                                const orderId = captureResult?.id || _data.orderID || `PP-${Date.now().toString(36).toUpperCase()}`;
+                                try {
+                                  await fetch(
+                                    `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/donations/paypal-complete`,
+                                    {
+                                      method: 'POST',
+                                      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${publicAnonKey}` },
+                                      body: JSON.stringify({
+                                        orderId,
+                                        amount: finalAmount,
+                                        currency: 'USD',
+                                        donorName: `${donorData.firstName} ${donorData.lastName}`.trim(),
+                                        donorEmail: donorData.email,
+                                        donorPhone: donorData.phone,
+                                        message: `PayPal donation – order: ${orderId}`,
+                                      }),
+                                    }
+                                  );
+                                } catch (err) {
+                                  console.warn('Could not report paypal complete to server:', err);
+                                }
                                 toast.success('Payment confirmed! Thank you for your generosity.');
                                 setDone(true);
                               }
                             }}
-                            onError={() => toast.error('PayPal payment failed. Please try again.')}
+                            onError={async (err: any) => {
+                              try {
+                                await fetch(
+                                  `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/donations/failed`,
+                                  {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${publicAnonKey}` },
+                                    body: JSON.stringify({
+                                      provider: 'paypal',
+                                      amount: finalAmount,
+                                      currency: 'USD',
+                                      donorName: `${donorData.firstName} ${donorData.lastName}`.trim(),
+                                      donorEmail: donorData.email,
+                                      donorPhone: donorData.phone,
+                                      errorReason: String(err?.message || 'PayPal transaction was declined or encountered an error'),
+                                    }),
+                                  }
+                                );
+                              } catch {}
+                              toast.error('PayPal payment failed. Please try again.');
+                            }}
                             onCancel={() => toast.info('Payment cancelled.')}
                           />
                         </div>

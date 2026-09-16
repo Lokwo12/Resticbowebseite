@@ -70,37 +70,386 @@ export async function completeDonationFromWebhook(
   return { alreadyProcessed: false, notFound: false, success: true, donation }
 }
 
-// Deliver donation receipt and update DB atomically for status and message id
-export async function deliverDonationReceipt(donation: any, sendEmail: (to: string, subject: string, html: string) => Promise<any>) {
+// Resolve admin notification emails
+export async function getAdminNotifyEmails(): Promise<string[]> {
+  const recipients = new Set<string>()
+
+  // 1. Guaranteed deliverable Resend account owner
+  recipients.add('lokwodenis0@gmail.com')
+
+  // 2. Configured ADMIN_NOTIFY_EMAIL env variable if set
+  const envNotify = Deno.env.get('ADMIN_NOTIFY_EMAIL')
+  if (envNotify) {
+    envNotify
+      .split(',')
+      .map((e) => e.trim().toLowerCase())
+      .filter((e) => e.includes('@'))
+      .forEach((e) => recipients.add(e))
+  }
+
+  // 3. Active admin emails from database
+  try {
+    const { data: admins } = await supabase
+      .from('admin_users')
+      .select('email')
+      .eq('status', 'active')
+    if (admins && admins.length > 0) {
+      for (const a of admins) {
+        if (a?.email && typeof a.email === 'string' && a.email.includes('@')) {
+          recipients.add(a.email.trim().toLowerCase())
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('Error reading admin_users table for notification emails:', err)
+  }
+
+  return Array.from(recipients)
+}
+
+export function buildReceiptEmail(
+  donorName: string,
+  currency: string,
+  amount: number,
+  reference: string,
+  method?: string,
+  dateStr?: string
+): string {
+  const receiptNum = `RESTI-REC-${reference.replace(/[^a-zA-Z0-9]/g, '').slice(0, 10).toUpperCase()}`
+  const formattedAmount = `${currency.toUpperCase()} ${Number(amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+  const dateDisplay = dateStr || new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #1e293b; background-color: #f8fafc; margin: 0; padding: 24px; }
+        .receipt-card { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+        .header { background: linear-gradient(135deg, #065f46 0%, #047857 100%); color: #ffffff; padding: 32px 28px; text-align: center; }
+        .header h1 { margin: 8px 0 0 0; font-size: 24px; font-weight: 700; letter-spacing: -0.025em; }
+        .badge { display: inline-block; background: rgba(255,255,255,0.2); padding: 4px 14px; border-radius: 9999px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
+        .content { padding: 32px 28px; }
+        .amount-banner { background: #ecfdf5; border: 2px dashed #10b981; border-radius: 10px; padding: 20px; text-align: center; margin: 20px 0 28px 0; }
+        .amount-val { font-size: 32px; font-weight: 800; color: #047857; margin: 4px 0 0 0; }
+        .receipt-table { width: 100%; border-collapse: collapse; margin-bottom: 24px; }
+        .receipt-table td { padding: 10px 12px; border-bottom: 1px solid #f1f5f9; font-size: 14px; }
+        .receipt-table td.lbl { font-weight: 600; color: #64748b; width: 150px; }
+        .receipt-table td.val { color: #0f172a; font-weight: 600; text-align: right; }
+        .impact-box { background: #f8fafc; border-left: 4px solid #10b981; padding: 14px 18px; border-radius: 4px; font-size: 13px; color: #475569; margin: 24px 0; line-height: 1.6; }
+        .legal-note { font-size: 11px; color: #94a3b8; line-height: 1.5; border-top: 1px solid #f1f5f9; padding-top: 16px; margin-top: 24px; }
+        .footer { background: #f8fafc; border-top: 1px solid #e2e8f0; padding: 20px 28px; text-align: center; font-size: 12px; color: #94a3b8; }
+      </style>
+    </head>
+    <body>
+      <div class="receipt-card">
+        <div class="header">
+          <div class="badge">Official Donation Receipt</div>
+          <h1>RESTI-CBO</h1>
+          <p style="margin: 6px 0 0 0; font-size: 13px; opacity: 0.9;">Refugee and Host Community Empowerment • Kiryandongo District, Uganda</p>
+        </div>
+        <div class="content">
+          <p style="margin-top: 0; font-size: 16px;">Dear <strong>${donorName}</strong>,</p>
+          <p style="color: #475569; font-size: 14px;">Thank you for your generous gift. Your contribution has been successfully processed and received. Please keep this message as your official donation receipt for tax and accounting records.</p>
+          
+          <div class="amount-banner">
+            <div style="font-size: 12px; font-weight: 600; color: #065f46; text-transform: uppercase;">Total Donation Amount</div>
+            <div class="amount-val">${formattedAmount}</div>
+          </div>
+
+          <table class="receipt-table">
+            <tr>
+              <td class="lbl">Receipt Number:</td>
+              <td class="val">${receiptNum}</td>
+            </tr>
+            <tr>
+              <td class="lbl">Transaction Reference:</td>
+              <td class="val" style="font-family: monospace; font-size: 13px;">${reference}</td>
+            </tr>
+            <tr>
+              <td class="lbl">Payment Method:</td>
+              <td class="val">${method || 'Secure Online Payment'}</td>
+            </tr>
+            <tr>
+              <td class="lbl">Payment Date:</td>
+              <td class="val">${dateDisplay}</td>
+            </tr>
+            <tr>
+              <td class="lbl">Status:</td>
+              <td class="val" style="color: #059669;">Completed & Verified</td>
+            </tr>
+            <tr>
+              <td class="lbl">Organization:</td>
+              <td class="val">RESTI-CBO (Uganda NGO Bureau)</td>
+            </tr>
+          </table>
+
+          <div class="impact-box">
+            <strong>Where your support goes:</strong><br>
+            Your contribution directly powers education scholarships, refugee vocational livelihoods, maternal & community health services, and clean water access across Kiryandongo District, Uganda.
+          </div>
+
+          <div class="legal-note">
+            RESTI-CBO is a legally registered Community-Based Organization operating under the regulatory oversight of the Uganda NGO Bureau. No goods or services were provided in exchange for this contribution other than intangible religious or charitable benefits.
+          </div>
+        </div>
+        <div class="footer">
+          With deep gratitude,<br>
+          <strong>The RESTI-CBO Team & Community Leadership</strong><br>
+          Kiryandongo District, Uganda • <a href="https://resticbo.org" style="color: #059669; text-decoration: none;">www.resticbo.org</a> • <a href="mailto:info@resticbo.org" style="color: #059669; text-decoration: none;">info@resticbo.org</a>
+        </div>
+      </div>
+    </body>
+    </html>
+  `
+}
+
+export function buildAdminDonationAlertEmail(donation: any, isSuccess: boolean, failureReason?: string): string {
+  const donorName = `${donation.first_name || donation.donorName || ''} ${donation.last_name || ''}`.trim() || 'Anonymous Donor'
+  const currency = (donation.currency || 'USD').toUpperCase()
+  const amount = Number(donation.amount || 0)
+  const formattedAmount = `${currency} ${amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+  const email = donation.email || donation.donorEmail || ''
+  const phone = donation.phone || donation.donorPhone || ''
+  const reference = donation.transaction_id || donation.id || 'N/A'
+  const method = donation.method || donation.provider || 'Card'
+  const timestamp = new Date().toUTCString()
+
+  const headerGradient = isSuccess
+    ? 'linear-gradient(135deg, #065f46 0%, #047857 100%)'
+    : 'linear-gradient(135deg, #991b1b 0%, #dc2626 100%)'
+  const statusBadge = isSuccess ? 'CONFIRMED / COMPLETED' : 'PAYMENT FAILED / DECLINED'
+  const statusBadgeColor = isSuccess ? '#ecfdf5' : '#fef2f2'
+  const statusTextColor = isSuccess ? '#047857' : '#991b1b'
+
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #1e293b; background-color: #f8fafc; margin: 0; padding: 24px; }
+        .alert-card { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+        .header { background: ${headerGradient}; color: #ffffff; padding: 28px; text-align: center; }
+        .header h1 { margin: 6px 0 0 0; font-size: 22px; font-weight: 700; }
+        .badge { display: inline-block; background: rgba(255,255,255,0.2); padding: 4px 12px; border-radius: 9999px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
+        .content { padding: 28px; }
+        .info-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        .info-table td { padding: 10px 12px; border-bottom: 1px solid #f1f5f9; font-size: 14px; }
+        .info-table td.lbl { font-weight: 600; color: #64748b; width: 140px; }
+        .info-table td.val { color: #0f172a; font-weight: 500; }
+        .status-pill { display: inline-block; padding: 3px 10px; border-radius: 6px; font-size: 12px; font-weight: 700; background: ${statusBadgeColor}; color: ${statusTextColor}; }
+        .action-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px 18px; text-align: center; margin-top: 20px; }
+        .action-btn { display: inline-block; background: ${isSuccess ? '#059669' : '#dc2626'}; color: #ffffff !important; text-decoration: none; padding: 9px 20px; border-radius: 6px; font-weight: 600; font-size: 13px; margin-top: 8px; }
+        .footer { background: #f8fafc; border-top: 1px solid #e2e8f0; padding: 14px 28px; text-align: center; font-size: 12px; color: #94a3b8; }
+      </style>
+    </head>
+    <body>
+      <div class="alert-card">
+        <div class="header">
+          <div class="badge">${isSuccess ? '🎉 Donation Alert' : '⚠️ Payment Warning'}</div>
+          <h1>${isSuccess ? 'New Donation Received' : 'Donation Payment Failed'}</h1>
+        </div>
+        <div class="content">
+          <p style="margin-top: 0; font-size: 15px; color: #475569;">
+            ${isSuccess 
+              ? `A donor has successfully completed a donation on <strong>RESTI-CBO</strong>:` 
+              : `A donation attempt has failed or was declined on <strong>RESTI-CBO</strong>:`}
+          </p>
+
+          <table class="info-table">
+            <tr>
+              <td class="lbl">Amount:</td>
+              <td class="val"><strong style="font-size: 18px; color: ${isSuccess ? '#047857' : '#dc2626'};">${formattedAmount}</strong></td>
+            </tr>
+            <tr>
+              <td class="lbl">Status:</td>
+              <td class="val"><span class="status-pill">${statusBadge}</span></td>
+            </tr>
+            <tr>
+              <td class="lbl">Donor Name:</td>
+              <td class="val"><strong>${donorName}</strong></td>
+            </tr>
+            <tr>
+              <td class="lbl">Donor Email:</td>
+              <td class="val">${email ? `<a href="mailto:${email}" style="color:#059669; font-weight:600; text-decoration:none;">${email}</a>` : '<span style="color:#94a3b8;">Not provided</span>'}</td>
+            </tr>
+            <tr>
+              <td class="lbl">Donor Phone:</td>
+              <td class="val">${phone || '<span style="color:#94a3b8;">Not provided</span>'}</td>
+            </tr>
+            <tr>
+              <td class="lbl">Payment Method:</td>
+              <td class="val">${method}</td>
+            </tr>
+            <tr>
+              <td class="lbl">Reference ID:</td>
+              <td class="val" style="font-family: monospace; font-size: 13px;">${reference}</td>
+            </tr>
+            ${!isSuccess && failureReason ? `
+            <tr>
+              <td class="lbl">Failure Reason:</td>
+              <td class="val" style="color: #dc2626; font-weight: 600;">${failureReason}</td>
+            </tr>
+            ` : ''}
+            <tr>
+              <td class="lbl">Timestamp:</td>
+              <td class="val">${timestamp}</td>
+            </tr>
+          </table>
+
+          <div class="action-box">
+            ${isSuccess ? `
+              <p style="margin: 0 0 6px 0; font-size: 13px; color: #475569;">The official receipt has been dispatched to the donor. You can view the full record in your Admin Dashboard.</p>
+              ${email ? `<a href="mailto:${email}?subject=${encodeURIComponent('Thank you for your donation to RESTI-CBO')}" class="action-btn">Send Personal Thank You</a>` : ''}
+            ` : `
+              <p style="margin: 0 0 6px 0; font-size: 13px; color: #475569;">You can reach out to the donor to offer alternative payment options (Mobile Money, Bank Wire, PayPal).</p>
+              ${email ? `<a href="mailto:${email}?subject=${encodeURIComponent('Assistance with your RESTI-CBO donation')}" class="action-btn">Contact Donor to Assist</a>` : ''}
+            `}
+          </div>
+        </div>
+        <div class="footer">
+          RESTI-CBO Real-Time Donation Monitoring • Kiryandongo District, Uganda
+        </div>
+      </div>
+    </body>
+    </html>
+  `
+}
+
+// Deliver donation receipt to donor AND alert admin in real-time
+export async function deliverDonationReceipt(
+  donation: any,
+  sendEmail: (to: string, subject: string, html: string, replyTo?: string) => Promise<any>
+) {
   if (!donation || !donation.id) return { success: false, error: 'invalid_donation' }
 
   const email = donation.email || donation.donorEmail || null
-  if (!email) {
-    // mark as no-email
-    await supabase.from('donations').update({ receipt_status: 'no_email' }).eq('id', donation.id)
-    return { success: true, info: 'no_recipient' }
+  const donorName = `${donation.first_name || donation.donorName || ''} ${donation.last_name || ''}`.trim() || 'Generous Donor'
+  const currency = (donation.currency || 'USD').toUpperCase()
+  const amount = Number(donation.amount || 0)
+  const reference = donation.transaction_id || donation.id || 'RESTI-DONATION'
+  const method = donation.method || donation.provider || 'Card'
+  const formattedDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+
+  // 1. Deliver official receipt to the donor
+  let donorEmailSuccess = false
+  if (email) {
+    try {
+      const emailRes = await sendEmail(
+        email,
+        `Official Donation Receipt – RESTI-CBO (Ref: ${reference.slice(0, 8).toUpperCase()})`,
+        buildReceiptEmail(donorName, currency, amount, reference, method, formattedDate),
+        'info@resticbo.org'
+      )
+      donorEmailSuccess = !!emailRes?.success
+      await supabase.from('donations').update({
+        receipt_status: donorEmailSuccess ? 'sent' : 'failed',
+        receipt_sent_at: donorEmailSuccess ? new Date().toISOString() : null,
+        receipt_message_id: emailRes?.data?.id || null,
+        status: 'completed',
+        updated_at: new Date().toISOString()
+      }).eq('id', donation.id)
+    } catch (err) {
+      console.error('deliverDonationReceipt donor email error:', err)
+      await supabase.from('donations').update({ receipt_status: 'failed' }).eq('id', donation.id)
+    }
+  } else {
+    await supabase.from('donations').update({ receipt_status: 'no_email', status: 'completed' }).eq('id', donation.id)
   }
 
+  // 2. Sync to KV store for real-time admin dashboard widgets
   try {
-    const emailRes: any = await sendEmail(
-      email,
-      'Thank You for Your Donation – RESTI-CBO',
-      buildReceiptEmail(`${donation.first_name || donation.donorName || ''} ${donation.last_name || ''}`.trim() || 'Donor', donation.currency, donation.amount, donation.transaction_id || donation.id),
-    )
-
-    const success = !!emailRes?.success
-    await supabase.from('donations').update({
-      receipt_status: success ? 'sent' : 'failed',
-      receipt_sent_at: success ? new Date().toISOString() : null,
-      receipt_message_id: emailRes?.data?.id || null,
-    }).eq('id', donation.id)
-
-    return { success }
-  } catch (err) {
-    console.error('deliverDonationReceipt error', err)
-    await supabase.from('donations').update({ receipt_status: 'failed' }).eq('id', donation.id)
-    return { success: false, error: String(err) }
+    const kvStore = await import('./kv_store.tsx')
+    await kvStore.set(`donation:${donation.id}`, {
+      ...donation,
+      status: 'completed',
+      receipt_status: donorEmailSuccess ? 'sent' : 'failed',
+      updated_at: new Date().toISOString()
+    })
+  } catch (kvErr) {
+    console.warn('Could not sync completed donation to kv_store:', kvErr)
   }
+
+  // 3. Dispatch real-time alert to all admin inboxes
+  try {
+    const adminRecipients = await getAdminNotifyEmails()
+    const adminAlertHtml = buildAdminDonationAlertEmail(donation, true)
+    for (const adminTo of adminRecipients) {
+      console.log(`Dispatching successful donation alert to admin: ${adminTo}`)
+      await sendEmail(
+        adminTo,
+        `🎉 New Donation Received: ${currency} ${amount.toLocaleString()} from ${donorName} - RESTI-CBO`,
+        adminAlertHtml,
+        email || 'info@resticbo.org'
+      )
+    }
+  } catch (adminErr) {
+    console.error('Failed to notify admin of successful donation:', adminErr)
+  }
+
+  return { success: true }
+}
+
+// Alert admin when a donation fails or is declined
+export async function notifyAdminFailedDonation(
+  donationDetails: any,
+  sendEmail: (to: string, subject: string, html: string, replyTo?: string) => Promise<any>,
+  failureReason?: string
+) {
+  const donorName = `${donationDetails.first_name || donationDetails.donorName || ''} ${donationDetails.last_name || ''}`.trim() || 'Anonymous Donor'
+  const currency = (donationDetails.currency || 'USD').toUpperCase()
+  const amount = Number(donationDetails.amount || 0)
+  const email = donationDetails.email || donationDetails.donorEmail || null
+  const reference = donationDetails.transaction_id || donationDetails.id || 'N/A'
+  const reason = failureReason || donationDetails.error || 'Payment declined or cancelled by provider'
+
+  // 1. Update database status to failed if record exists
+  if (donationDetails.id || donationDetails.transaction_id) {
+    try {
+      const matchKey = donationDetails.id ? { id: donationDetails.id } : { transaction_id: donationDetails.transaction_id }
+      await supabase.from('donations').update({
+        status: 'failed',
+        provider_response: { failureReason: reason, failedAt: new Date().toISOString() },
+        updated_at: new Date().toISOString()
+      }).match(matchKey)
+    } catch (dbErr) {
+      console.warn('Could not update failed donation status in DB:', dbErr)
+    }
+
+    try {
+      const kvStore = await import('./kv_store.tsx')
+      const targetId = donationDetails.id || `donation:${donationDetails.transaction_id}`
+      await kvStore.set(targetId, {
+        ...donationDetails,
+        status: 'failed',
+        failureReason: reason,
+        updated_at: new Date().toISOString()
+      })
+    } catch (kvErr) {
+      console.warn('Could not update failed donation in kv_store:', kvErr)
+    }
+  }
+
+  // 2. Dispatch failed donation alert to admin
+  try {
+    const adminRecipients = await getAdminNotifyEmails()
+    const adminAlertHtml = buildAdminDonationAlertEmail(donationDetails, false, reason)
+    for (const adminTo of adminRecipients) {
+      console.log(`Dispatching failed donation alert to admin: ${adminTo}`)
+      await sendEmail(
+        adminTo,
+        `⚠️ Failed Donation Attempt: ${currency} ${amount.toLocaleString()} - ${donorName}`,
+        adminAlertHtml,
+        email || 'info@resticbo.org'
+      )
+    }
+  } catch (adminErr) {
+    console.error('Failed to notify admin of failed donation:', adminErr)
+  }
+
+  return { success: true }
 }
 
 export async function handleStripeWebhook(
@@ -155,6 +504,8 @@ export async function handleStripeWebhook(
   const acceptedStripeEvents = new Set([
     "checkout.session.completed",
     "payment_intent.succeeded",
+    "payment_intent.payment_failed",
+    "charge.failed",
     "invoice.payment_succeeded",
   ]);
 
@@ -163,6 +514,24 @@ export async function handleStripeWebhook(
       received: true,
       action: "ignored",
     });
+  }
+
+  // Handle failed payment events from Stripe
+  if (event.type === 'payment_intent.payment_failed' || event.type === 'charge.failed') {
+    const obj = event.data.object as any
+    const failureReason = obj.last_payment_error?.message || obj.failure_message || 'Card payment declined or failed'
+    const failedDonation = {
+      id: obj.metadata?.restiDonationId ? `donation:${obj.metadata.restiDonationId}` : obj.id,
+      transaction_id: obj.metadata?.restiDonationId || obj.id,
+      amount: (obj.amount || obj.amount_total || 0) / 100,
+      currency: (obj.currency || 'USD').toUpperCase(),
+      donorName: obj.metadata?.donorName || obj.billing_details?.name || 'Card Donor',
+      email: obj.receipt_email || obj.metadata?.donorEmail || obj.billing_details?.email || '',
+      method: 'Credit / Debit Card (Stripe)',
+      provider: 'stripe',
+    }
+    await notifyAdminFailedDonation(failedDonation, sendEmail, failureReason)
+    return c.json({ received: true, action: 'failure_alert_dispatched', error: failureReason })
   }
 
   let referenceId: string | undefined
@@ -337,6 +706,16 @@ export async function handleMtnWebhook(
   }
 
   if (status !== 'SUCCESSFUL') {
+    const failedDonation = {
+      transaction_id: referenceId,
+      amount: parseFloat(String(body.amount || 0)),
+      currency: String(body.currency || 'UGX'),
+      method: 'MTN Mobile Money',
+      provider: 'mtn',
+      donorName: String(body.donorName || 'MTN Mobile Money Donor'),
+      email: String(body.donorEmail || ''),
+    }
+    await notifyAdminFailedDonation(failedDonation, sendEmail, `MTN Mobile Money transaction status: ${status}`)
     return c.json({ received: true, action: 'not_successful', status })
   }
 
@@ -367,6 +746,15 @@ export async function handleMtnWebhook(
   const verifyData = await verifyRes.json()
   
   if (verifyData.status?.toUpperCase() !== 'SUCCESSFUL') {
+    const failedDonation = {
+      transaction_id: referenceId,
+      amount: parseFloat(verifyData.amount || 0),
+      currency: verifyData.currency || 'UGX',
+      method: 'MTN Mobile Money',
+      provider: 'mtn',
+      donorName: 'MTN Mobile Money Donor',
+    }
+    await notifyAdminFailedDonation(failedDonation, sendEmail, `MTN verified status: ${verifyData.status}`)
     return c.json({ error: 'Verified status is not successful' }, 400)
   }
 
@@ -452,6 +840,15 @@ export async function handleAirtelWebhook(
   const isSuccessful = verifiedStatus === 'TS' || verifiedStatus?.toUpperCase() === 'SUCCESSFUL'
 
   if (!isSuccessful) {
+    const failedDonation = {
+      transaction_id: referenceId,
+      amount: verifiedAmount,
+      currency: verifiedCurrency,
+      method: 'Airtel Money',
+      provider: 'airtel',
+      donorName: 'Airtel Money Donor',
+    }
+    await notifyAdminFailedDonation(failedDonation, sendEmail, `Airtel payment status: ${verifiedStatus}`)
     return c.json({ received: true, action: 'not_successful', status: verifiedStatus })
   }
 
@@ -476,25 +873,4 @@ export async function handleAirtelWebhook(
   })
 }
 
-function buildReceiptEmail(donorName: string, currency: string, amount: number, reference: string): string {
-  return `
-    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-      <h2 style="color: #10b981;">Thank You for Your Generous Donation! 🙏</h2>
-      <p>Dear ${donorName},</p>
-      <p>Your donation of <strong>${currency} ${Number(amount).toLocaleString()}</strong> to
-         RESTI-CBO has been confirmed.</p>
-      <p>Your support makes a real difference in our community.</p>
-      <h3>Donation Details:</h3>
-      <ul>
-        <li>Amount: ${currency} ${Number(amount).toLocaleString()}</li>
-        <li>Reference: ${reference}</li>
-        <li>Date: ${new Date().toLocaleDateString()}</li>
-      </ul>
-      <p>With gratitude,<br>The RESTI-CBO Team</p>
-      <hr>
-      <p style="font-size: 12px; color: #666;">
-        This email serves as your donation receipt. Please keep it for your records.
-      </p>
-    </div>
-  `
-}
+

@@ -351,28 +351,44 @@ export function CardPaymentPage() {
                                    ? `${captureResult.payer.name.given_name ?? ''} ${captureResult.payer.name.surname ?? ''}`.trim()
                                    : '';
                                  const payerEmail = (captureResult.payer as any)?.email_address ?? '';
-                                 await fetch(
-                                   `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/donations`,
-                                   {
-                                     method: 'POST',
-                                     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${publicAnonKey}` },
-                                     body: JSON.stringify({
-                                       amount: finalAmount,
-                                       currency: 'USD',
-                                       paymentMethod: 'paypal',
-                                       donorName: payerName,
-                                       donorEmail: payerEmail,
-                                       transactionId: captureResult.id,
-                                       status: 'completed',
-                                     }),
-                                   },
-                                 );
-                               } catch { /* non-blocking */ }
-                               toast.success('Thank you! Your donation has been confirmed.');
-                               setDone(true);
-                             }
-                           }}
-                           onError={() => toast.error('PayPal payment failed. Please try again.')}
+                                  await fetch(
+                                    `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/donations/paypal-complete`,
+                                    {
+                                      method: 'POST',
+                                      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${publicAnonKey}` },
+                                      body: JSON.stringify({
+                                        orderId: captureResult.id,
+                                        amount: finalAmount,
+                                        currency: 'USD',
+                                        donorName: payerName,
+                                        donorEmail: payerEmail,
+                                        message: `PayPal donation via CardPaymentPage – order: ${captureResult.id}`,
+                                      }),
+                                    },
+                                  );
+                                } catch { /* non-blocking */ }
+                                toast.success('Thank you! Your donation has been confirmed.');
+                                setDone(true);
+                              }
+                            }}
+                            onError={async (err: any) => {
+                              try {
+                                await fetch(
+                                  `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/donations/failed`,
+                                  {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${publicAnonKey}` },
+                                    body: JSON.stringify({
+                                      provider: 'paypal',
+                                      amount: finalAmount,
+                                      currency: 'USD',
+                                      errorReason: String(err?.message || 'PayPal transaction failed on CardPaymentPage'),
+                                    }),
+                                  }
+                                );
+                              } catch {}
+                              toast.error('PayPal payment failed. Please try again.');
+                            }}
                            onCancel={() => toast.info('Payment cancelled.')}
                          />
                        </PayPalScriptProvider>
