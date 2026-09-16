@@ -2,6 +2,18 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <!-- Canonical Domain Enforcement: Immediately redirect www to apex domain https://resticbo.org/ -->
+    <script>
+      (function () {
+        var h = window.location.hostname;
+        if (h === 'www.resticbo.org' || (h.indexOf('www.') === 0 && h !== 'localhost' && h !== '127.0.0.1')) {
+          var targetHost = h.replace(/^www\./i, '');
+          var targetUrl = 'https://' + targetHost + window.location.pathname + window.location.search + window.location.hash;
+          window.location.replace(targetUrl);
+        }
+      })();
+    </script>
+    <link rel="canonical" href="https://resticbo.org/" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="icon" type="image/png" href="/logo.png" />
     <link rel="apple-touch-icon" href="/logo.png" />

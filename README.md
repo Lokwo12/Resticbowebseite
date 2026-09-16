@@ -527,14 +527,33 @@ This generates a `build/` folder.
 3. Delete any default placeholder files (e.g. `index.php`, `default.php`)
 4. Upload the **contents** of `build/` directly into `public_html/` — not the folder itself
 5. Make sure `.htaccess` is present inside `public_html/` (it is a hidden file, starts with a dot)
+   - `.htaccess` automatically redirects `https://www.resticbo.org/` to `https://resticbo.org/` (301 Permanent Redirect)
+   - `.htaccess` forces HTTPS and enforces clean cache control so outdated versions are never served
 
 > **Tip:** ZIP the contents of `build/`, upload the ZIP to `public_html/`, use File Manager's **Extract** option, then delete the ZIP.
 
+### Redirecting www.resticbo.org to resticbo.org in Hostinger hPanel
+
+If Hostinger CDN or DNS has `www.resticbo.org` mapped separately:
+1. In hPanel → go to **Websites** → select `resticbo.org` → **Redirects** (under Domains / Advanced)
+2. Or go to **Domains** → `resticbo.org` → **Redirects**
+3. Create a redirect:
+   - **Redirect:** `https://www.resticbo.org`
+   - **Redirects to:** `https://resticbo.org`
+   - **Type:** `301 (Permanent)`
+4. Click **Create**
+
+### Clear Hostinger Cache (Required after uploading new build)
+Because Hostinger CDN (`hcdn`) caches pages:
+1. In hPanel → **Performance** or **Advanced** → **Cache Manager**
+2. Enable **Automatic Cache** or click **Purge All**
+3. Clear your browser cache or open an Incognito window to view the latest site immediately.
+
 ### Enable SSL
-In hPanel → **Security** → **SSL** → enable the free certificate for your domain.
+In hPanel → **Security** → **SSL** → enable the free certificate for your domain (covers both `resticbo.org` and `www.resticbo.org`).
 
 ### After code changes
-Rebuild and re-upload. If you don't see changes:  
+Rebuild (`npm run build`) and re-upload. If you don't see changes:  
 hPanel → **Advanced** → **Cache Manager** → **Purge All**
 
 ---

@@ -1,8 +1,39 @@
 <IfModule mod_rewrite.c>
   RewriteEngine On
   RewriteBase /
+
+  # 1. Force HTTPS
+  RewriteCond %{HTTPS} off
+  RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+  # 2. Redirect www.resticbo.org (or any www domain) to https://resticbo.org
+  RewriteCond %{HTTP_HOST} ^www\.resticbo\.org$ [NC]
+  RewriteRule ^(.*)$ https://resticbo.org/$1 [R=301,L]
+
+  RewriteCond %{HTTP_HOST} ^www\.(.+)$ [NC]
+  RewriteRule ^(.*)$ https://%1/$1 [R=301,L]
+
+  # 3. Prevent directory browsing
+  Options -Indexes
+
+  # 4. SPA Fallback routing (send all virtual routes to index.html)
   RewriteRule ^index\.html$ - [L]
   RewriteCond %{REQUEST_FILENAME} !-f
   RewriteCond %{REQUEST_FILENAME} !-d
   RewriteRule . /index.html [L]
+</IfModule>
+
+# Cache-Control headers to prevent serving outdated cached HTML
+<IfModule mod_headers.c>
+  # Never cache HTML so users and CDN always fetch latest release
+  <FilesMatch "\.(html|htm)$">
+    Header set Cache-Control "no-cache, no-store, must-revalidate, max-age=0"
+    Header set Pragma "no-cache"
+    Header set Expires "0"
+  </FilesMatch>
+
+  # Cache static assets with unique build hashes for 1 year
+  <FilesMatch "\.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|webp)$">
+    Header set Cache-Control "max-age=31536000, public, immutable"
+  </FilesMatch>
 </IfModule>
