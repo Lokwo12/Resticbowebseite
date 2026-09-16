@@ -19,8 +19,12 @@ const configuredOrigins = (Deno.env.get('ALLOWED_ORIGINS') || '')
   .filter(Boolean)
 const ALLOWED_ORIGINS = Array.from(new Set([
   ...configuredOrigins,
+  'https://resticbo.org',
+  'https://www.resticbo.org',
   'https://restikirya.org',
   'https://www.restikirya.org',
+  'http://localhost:5173',
+  'http://localhost:3000',
 ]))
 
 if (ALLOWED_ORIGINS.length === 0) {
@@ -119,45 +123,87 @@ if (!resendApiKey) console.error('CRITICAL WARNING: RESEND_API_KEY is not set. E
 if (!adminEmail) console.error('CRITICAL WARNING: ADMIN_EMAIL is not set. Defaulting sender to Resend sandbox.')
 if (!adminNotifyEmail) console.error('CRITICAL WARNING: ADMIN_NOTIFY_EMAIL is not set. Admin notifications will fail.')
 
-// Email notification helper
-async function sendEmail(to: string, subject: string, html: string) {
+// Email notification helper with reply_to support
+async function sendEmail(to: string, subject: string, html: string, replyTo?: string) {
   if (!resendApiKey) {
     console.log('Resend API key not configured, skipping email')
     return { success: false, message: 'Email service not configured' }
   }
 
   try {
+    const payload: Record<string, any> = {
+      from: Deno.env.get('ADMIN_EMAIL') || 'RESTI-CBO <onboarding@resend.dev>',
+      to: [to],
+      subject,
+      html,
+    }
+    if (replyTo) {
+      payload.reply_to = replyTo
+    }
+
     const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${resendApiKey}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        from: Deno.env.get('ADMIN_EMAIL') || 'RESTI-CBO <onboarding@resend.dev>',
-        to: [to],
-        subject,
-        html,
-      }),
+      body: JSON.stringify(payload),
     })
 
     const data = await response.json()
     
     if (!response.ok) {
-      console.error('Email send error:', data)
+      console.error(`Email send error to ${to}:`, data)
       return { success: false, error: data }
     }
 
-    console.log('Email sent successfully:', data)
+    console.log(`Email sent successfully to ${to}:`, data)
     return { success: true, data }
   } catch (error) {
-    console.error('Email send exception:', error)
+    console.error(`Email send exception to ${to}:`, error)
     return { success: false, error: String(error) }
   }
 }
 
+// Fetch list of admin emails to notify
+async function getAdminNotifyEmails(): Promise<string[]> {
+  const recipients = new Set<string>()
+
+  // 1. Guaranteed deliverable Resend account owner
+  recipients.add('lokwodenis0@gmail.com')
+
+  // 2. Configured ADMIN_NOTIFY_EMAIL env variable if set
+  const envNotify = Deno.env.get('ADMIN_NOTIFY_EMAIL')
+  if (envNotify) {
+    envNotify
+      .split(',')
+      .map((e) => e.trim().toLowerCase())
+      .filter((e) => e.includes('@'))
+      .forEach((e) => recipients.add(e))
+  }
+
+  // 3. Active admin emails from database
+  try {
+    const { data: admins } = await supabase
+      .from('admin_users')
+      .select('email')
+      .eq('status', 'active')
+    if (admins && admins.length > 0) {
+      for (const a of admins) {
+        if (a?.email && typeof a.email === 'string' && a.email.includes('@')) {
+          recipients.add(a.email.trim().toLowerCase())
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('Error reading admin_users table for notification emails:', err)
+  }
+
+  return Array.from(recipients)
+}
+
 // Contact form submission with email notification
-app.post('/make-server-2a4be611/contact', withRateLimit('contact', 5, 10 * 60_000), async (c) => {
+app.post('/make-server-2a4be611/contact', withRateLimit('contact', 10, 10 * 60_000), async (c) => {
   try {
     const body = await c.req.json()
     const { name, email, phone, message } = body
@@ -172,57 +218,142 @@ app.post('/make-server-2a4be611/contact', withRateLimit('contact', 5, 10 * 60_00
     if (!phoneV.ok) return c.json({ error: phoneV.error }, 400)
     if (!msgV.ok) return c.json({ error: msgV.error }, 400)
 
+    const rawId = crypto.randomUUID()
+    const contactId = `contact:${rawId}`
+    const nowIso = new Date().toISOString()
     const safeName = escapeHtml(name.trim())
     const safeEmail = escapeHtml(email.trim())
-    const safePhone = escapeHtml(phone || '')
+    const safePhone = escapeHtml(phone ? phone.trim() : '')
     const safeMessage = escapeMessage(message)
 
-    const contactId = `contact:${crypto.randomUUID()}`
+    // 1. Store in KV store for Admin Dashboard
     await kv.set(contactId, {
       name: name.trim(),
       email: email.trim(),
-      phone: phone || '',
+      phone: phone ? phone.trim() : '',
       message,
-      timestamp: new Date().toISOString(),
+      timestamp: nowIso,
       status: 'new'
     })
 
-    const adminNotify = Deno.env.get('ADMIN_NOTIFY_EMAIL')
-    if (!adminNotify) {
-      console.error('Cannot send admin notification: ADMIN_NOTIFY_EMAIL not configured')
-    } else {
-      // Send notification email to admin
+    // 2. Store in PostgreSQL contacts table for redundancy & SQL dashboard access
+    try {
+      await supabase.from('contacts').insert({
+        id: rawId,
+        name: name.trim(),
+        email: email.trim(),
+        phone: phone ? phone.trim() : null,
+        message,
+        status: 'new',
+        created_at: nowIso,
+        updated_at: nowIso
+      })
+    } catch (dbErr) {
+      console.warn('Warning: Could not insert contact into SQL table:', dbErr)
+    }
+
+    // 3. Dispatch real notification email to Admin inbox(es) with visitor details & reply_to
+    const adminRecipients = await getAdminNotifyEmails()
+    const formattedDate = new Date().toUTCString()
+    const adminEmailHtml = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #1e293b; background-color: #f8fafc; margin: 0; padding: 24px; }
+          .container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+          .header { background: linear-gradient(135deg, #065f46 0%, #047857 100%); color: #ffffff; padding: 28px; text-align: center; }
+          .header h1 { margin: 0; font-size: 22px; font-weight: 700; letter-spacing: -0.025em; }
+          .badge { display: inline-block; background: rgba(255,255,255,0.2); padding: 4px 12px; border-radius: 9999px; font-size: 12px; font-weight: 600; margin-bottom: 8px; text-transform: uppercase; }
+          .content { padding: 28px; }
+          .info-table { width: 100%; border-collapse: collapse; margin-bottom: 24px; }
+          .info-table td { padding: 10px 12px; border-bottom: 1px solid #f1f5f9; font-size: 14px; }
+          .info-table td.label { font-weight: 600; color: #64748b; width: 120px; }
+          .info-table td.value { color: #0f172a; font-weight: 500; }
+          .message-card { background: #f8fafc; border-left: 4px solid #10b981; border-radius: 4px; padding: 16px 20px; margin: 20px 0; font-size: 15px; color: #334155; line-height: 1.7; white-space: pre-wrap; }
+          .reply-banner { background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 8px; padding: 14px 16px; margin: 24px 0 12px 0; text-align: center; }
+          .reply-banner p { margin: 0; font-size: 13px; color: #065f46; font-weight: 500; }
+          .reply-btn { display: inline-block; background: #059669; color: #ffffff !important; text-decoration: none; padding: 10px 24px; border-radius: 6px; font-weight: 600; font-size: 14px; margin-top: 10px; }
+          .footer { background: #f8fafc; border-top: 1px solid #e2e8f0; padding: 16px 28px; text-align: center; font-size: 12px; color: #94a3b8; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <div class="badge">🔔 Real-Time Website Alert</div>
+            <h1>New Contact Message</h1>
+          </div>
+          <div class="content">
+            <p style="margin-top: 0; font-size: 15px; color: #475569;">A visitor has submitted a new inquiry through the <strong>RESTI-CBO</strong> website contact form:</p>
+            
+            <table class="info-table">
+              <tr>
+                <td class="label">Sender Name:</td>
+                <td class="value"><strong>${safeName}</strong></td>
+              </tr>
+              <tr>
+                <td class="label">Email Address:</td>
+                <td class="value"><a href="mailto:${safeEmail}" style="color: #059669; text-decoration: none; font-weight: 600;">${safeEmail}</a></td>
+              </tr>
+              <tr>
+                <td class="label">Phone Number:</td>
+                <td class="value">${safePhone || '<span style="color:#94a3b8;">Not provided</span>'}</td>
+              </tr>
+              <tr>
+                <td class="label">Submitted At:</td>
+                <td class="value">${formattedDate}</td>
+              </tr>
+            </table>
+
+            <div style="font-weight: 600; font-size: 14px; color: #334155; margin-bottom: 6px;">Message Content:</div>
+            <div class="message-card">${safeMessage}</div>
+
+            <div class="reply-banner">
+              <p>💡 You can reply directly to this email in your inbox to respond to <strong>${safeName}</strong>.</p>
+              <a href="mailto:${safeEmail}?subject=${encodeURIComponent(`Re: Your inquiry to RESTI-CBO`)}" class="reply-btn">Reply to ${safeName}</a>
+            </div>
+          </div>
+          <div class="footer">
+            RESTI-CBO • Refugee and Host Community Empowerment • Kiryandongo District, Uganda<br>
+            Notification automatically generated by resticbo.org
+          </div>
+        </div>
+      </body>
+      </html>
+    `
+
+    for (const recipient of adminRecipients) {
+      console.log(`Dispatching visitor contact alert to admin: ${recipient}`)
       await sendEmail(
-        adminNotify,
-        'New Contact Form Submission',
-        `
-          <h2>New Contact Message</h2>
-        <p><strong>From:</strong> ${safeName}</p>
-        <p><strong>Email:</strong> ${safeEmail}</p>
-        <p><strong>Phone:</strong> ${safePhone || 'Not provided'}</p>
-        <p><strong>Message:</strong></p>
-        <p>${safeMessage}</p>
-        <hr>
-        <p><em>Submitted at ${new Date().toLocaleString()}</em></p>
-      `
+        recipient,
+        `🔔 New Website Message from ${safeName} - RESTI-CBO`,
+        adminEmailHtml,
+        email.trim()
       )
     }
 
-    // Send confirmation email to submitter
-    await sendEmail(
-      email.trim(),
-      'Thank you for contacting RESTI-CBO',
-      `
-        <h2>Thank You for Reaching Out!</h2>
-        <p>Dear ${safeName},</p>
-        <p>We have received your message and will get back to you as soon as possible.</p>
-        <p><strong>Your message:</strong></p>
-        <p>${safeMessage}</p>
-        <br>
-        <p>Best regards,</p>
-        <p>RESTI-CBO Team</p>
-      `
-    )
+    // 4. Send confirmation email to submitter (safely wrapped so sandbox mode won't block)
+    try {
+      await sendEmail(
+        email.trim(),
+        'Thank you for contacting RESTI-CBO',
+        `
+          <div style="font-family: sans-serif; line-height: 1.6; color: #1e293b; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 8px;">
+            <h2 style="color: #047857; margin-top: 0;">Thank You for Reaching Out!</h2>
+            <p>Dear ${safeName},</p>
+            <p>We have received your message and a member of the RESTI-CBO team will get back to you shortly.</p>
+            <div style="background: #f8fafc; border-left: 3px solid #10b981; padding: 12px 16px; margin: 16px 0;">
+              <strong>Your Message:</strong><br>
+              ${safeMessage}
+            </div>
+            <p>Warm regards,<br><strong>RESTI-CBO Team</strong><br>Kiryandongo District, Uganda<br><a href="https://resticbo.org" style="color: #047857;">www.resticbo.org</a></p>
+          </div>
+        `
+      )
+    } catch (confErr) {
+      console.warn('Confirmation email to submitter skipped or failed:', confErr)
+    }
 
     console.log(`Contact form submitted: ${contactId}`)
     return c.json({ success: true, message: 'Contact form submitted successfully' })
@@ -349,7 +480,7 @@ app.post('/make-server-2a4be611/news', requireAdmin, async (c) => {
 })
 
 // Volunteer application submission
-app.post('/make-server-2a4be611/volunteer', withRateLimit('volunteer', 3, 10 * 60_000), async (c) => {
+app.post('/make-server-2a4be611/volunteer', withRateLimit('volunteer', 5, 10 * 60_000), async (c) => {
   try {
     const body = await c.req.json()
     const { name, email, phone, skills, message } = body
@@ -362,16 +493,147 @@ app.post('/make-server-2a4be611/volunteer', withRateLimit('volunteer', 3, 10 * 6
     if (!emailV.ok) return c.json({ error: emailV.error }, 400)
     if (phone && !phoneV.ok) return c.json({ error: phoneV.error }, 400)
 
-    const volunteerId = `volunteer:${crypto.randomUUID()}`
+    const rawId = crypto.randomUUID()
+    const volunteerId = `volunteer:${rawId}`
+    const nowIso = new Date().toISOString()
+    const safeName = escapeHtml(name.trim())
+    const safeEmail = escapeHtml(email.trim())
+    const safePhone = escapeHtml(phone ? phone.trim() : '')
+    const safeSkills = escapeHtml(skills ? skills.trim() : '')
+    const safeMessage = escapeMessage(message || '')
+
+    // 1. Store in KV store for Admin Dashboard
     await kv.set(volunteerId, {
       name: name.trim(),
       email: email.trim(),
-      phone,
-      skills: skills || '',
+      phone: phone ? phone.trim() : '',
+      skills: skills ? skills.trim() : '',
       message: message || '',
-      timestamp: new Date().toISOString(),
+      timestamp: nowIso,
       status: 'pending'
     })
+
+    // 2. Try inserting into SQL volunteers table if present
+    try {
+      await supabase.from('volunteers').insert({
+        id: rawId,
+        name: name.trim(),
+        email: email.trim(),
+        phone: phone ? phone.trim() : null,
+        skills: skills ? skills.trim() : null,
+        message: message || null,
+        status: 'pending',
+        created_at: nowIso,
+        updated_at: nowIso
+      })
+    } catch (dbErr) {
+      console.warn('Warning: Could not insert volunteer into SQL table:', dbErr)
+    }
+
+    // 3. Dispatch real notification email to Admin inbox(es) with applicant details & reply_to
+    const adminRecipients = await getAdminNotifyEmails()
+    const formattedDate = new Date().toUTCString()
+    const adminEmailHtml = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #1e293b; background-color: #f8fafc; margin: 0; padding: 24px; }
+          .container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+          .header { background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color: #ffffff; padding: 28px; text-align: center; }
+          .header h1 { margin: 0; font-size: 22px; font-weight: 700; letter-spacing: -0.025em; }
+          .badge { display: inline-block; background: rgba(255,255,255,0.2); padding: 4px 12px; border-radius: 9999px; font-size: 12px; font-weight: 600; margin-bottom: 8px; text-transform: uppercase; }
+          .content { padding: 28px; }
+          .info-table { width: 100%; border-collapse: collapse; margin-bottom: 24px; }
+          .info-table td { padding: 10px 12px; border-bottom: 1px solid #f1f5f9; font-size: 14px; }
+          .info-table td.label { font-weight: 600; color: #64748b; width: 120px; }
+          .info-table td.value { color: #0f172a; font-weight: 500; }
+          .message-card { background: #f8fafc; border-left: 4px solid #0284c7; border-radius: 4px; padding: 16px 20px; margin: 20px 0; font-size: 15px; color: #334155; line-height: 1.7; white-space: pre-wrap; }
+          .reply-banner { background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; padding: 14px 16px; margin: 24px 0 12px 0; text-align: center; }
+          .reply-banner p { margin: 0; font-size: 13px; color: #0369a1; font-weight: 500; }
+          .reply-btn { display: inline-block; background: #0284c7; color: #ffffff !important; text-decoration: none; padding: 10px 24px; border-radius: 6px; font-weight: 600; font-size: 14px; margin-top: 10px; }
+          .footer { background: #f8fafc; border-top: 1px solid #e2e8f0; padding: 16px 28px; text-align: center; font-size: 12px; color: #94a3b8; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <div class="badge">🤝 Real-Time Website Alert</div>
+            <h1>New Volunteer Application</h1>
+          </div>
+          <div class="content">
+            <p style="margin-top: 0; font-size: 15px; color: #475569;">A new volunteer application has been submitted on the <strong>RESTI-CBO</strong> website:</p>
+            
+            <table class="info-table">
+              <tr>
+                <td class="label">Applicant Name:</td>
+                <td class="value"><strong>${safeName}</strong></td>
+              </tr>
+              <tr>
+                <td class="label">Email Address:</td>
+                <td class="value"><a href="mailto:${safeEmail}" style="color: #0284c7; text-decoration: none; font-weight: 600;">${safeEmail}</a></td>
+              </tr>
+              <tr>
+                <td class="label">Phone Number:</td>
+                <td class="value">${safePhone || '<span style="color:#94a3b8;">Not provided</span>'}</td>
+              </tr>
+              <tr>
+                <td class="label">Skills / Interests:</td>
+                <td class="value">${safeSkills || '<span style="color:#94a3b8;">General Volunteering</span>'}</td>
+              </tr>
+              <tr>
+                <td class="label">Applied At:</td>
+                <td class="value">${formattedDate}</td>
+              </tr>
+            </table>
+
+            ${safeMessage ? `
+            <div style="font-weight: 600; font-size: 14px; color: #334155; margin-bottom: 6px;">Motivation / Message:</div>
+            <div class="message-card">${safeMessage}</div>
+            ` : ''}
+
+            <div class="reply-banner">
+              <p>💡 You can reply directly to this email to get in touch with <strong>${safeName}</strong>.</p>
+              <a href="mailto:${safeEmail}?subject=${encodeURIComponent(`Volunteer Application with RESTI-CBO`)}" class="reply-btn">Reply to ${safeName}</a>
+            </div>
+          </div>
+          <div class="footer">
+            RESTI-CBO • Refugee and Host Community Empowerment • Kiryandongo District, Uganda<br>
+            Notification automatically generated by resticbo.org
+          </div>
+        </div>
+      </body>
+      </html>
+    `
+
+    for (const recipient of adminRecipients) {
+      console.log(`Dispatching volunteer alert to admin: ${recipient}`)
+      await sendEmail(
+        recipient,
+        `🤝 New Volunteer Application: ${safeName} - RESTI-CBO`,
+        adminEmailHtml,
+        email.trim()
+      )
+    }
+
+    // 4. Send confirmation email to applicant (safely wrapped)
+    try {
+      await sendEmail(
+        email.trim(),
+        'Thank You for Applying to Volunteer with RESTI-CBO',
+        `
+          <div style="font-family: sans-serif; line-height: 1.6; color: #1e293b; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 8px;">
+            <h2 style="color: #0369a1; margin-top: 0;">Welcome to the RESTI-CBO Volunteer Community!</h2>
+            <p>Dear ${safeName},</p>
+            <p>Thank you for offering your time and skills to support our programs in Kiryandongo District. We have received your application and our volunteer coordinator will review your profile and reach out shortly.</p>
+            <p>Warm regards,<br><strong>RESTI-CBO Team</strong><br>Kiryandongo District, Uganda<br><a href="https://resticbo.org" style="color: #0369a1;">www.resticbo.org</a></p>
+          </div>
+        `
+      )
+    } catch (confErr) {
+      console.warn('Confirmation email to volunteer applicant skipped or failed:', confErr)
+    }
 
     console.log(`Volunteer application submitted: ${volunteerId}`)
     return c.json({ success: true, message: 'Volunteer application submitted successfully' })
@@ -1891,7 +2153,8 @@ app.post('/make-server-2a4be611/admin/contacts/:id/reply', requireAdmin, async (
             <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0 12px 0;">
             <p style="font-size: 11px; color: #94a3b8; margin: 0;">You received this email because you submitted a contact inquiry on resticbo.org.</p>
           </div>
-        `
+        `,
+        'info@resticbo.org'
       )
       if (emailResult && emailResult.success) {
         emailSent = true
