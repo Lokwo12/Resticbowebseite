@@ -280,19 +280,22 @@ export function StoryFormDialog({ show, onClose, editingItem, onSuccess, userRol
     story: '',
     image: '',
     category: 'general',
-    impact: ''
+    impact: '',
+    date: new Date().toISOString().split('T')[0]
   });
 
   // Update form data when editingItem changes
   useEffect(() => {
     if (editingItem) {
+      const val = editingItem.value || editingItem;
       setFormData({
-        name: editingItem.name || '',
-        title: editingItem.title || '',
-        story: editingItem.story || '',
-        image: editingItem.image || '',
-        category: editingItem.category || 'general',
-        impact: editingItem.impact || ''
+        name: val.name || '',
+        title: val.title || '',
+        story: val.story || '',
+        image: val.image || '',
+        category: val.category || 'general',
+        impact: val.impact || '',
+        date: val.date ? val.date.split('T')[0] : new Date().toISOString().split('T')[0]
       });
     } else {
       setFormData({
@@ -301,7 +304,8 @@ export function StoryFormDialog({ show, onClose, editingItem, onSuccess, userRol
         story: '',
         image: '',
         category: 'general',
-        impact: ''
+        impact: '',
+        date: new Date().toISOString().split('T')[0]
       });
     }
   }, [editingItem, show]);
@@ -375,7 +379,7 @@ export function StoryFormDialog({ show, onClose, editingItem, onSuccess, userRol
         image: formData.image || '',
         category: formData.category || 'general',
         impact: formData.impact || '',
-        date: editingItem?.date || new Date().toISOString(),
+        date: formData.date ? new Date(formData.date).toISOString() : new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
 
@@ -451,23 +455,34 @@ export function StoryFormDialog({ show, onClose, editingItem, onSuccess, userRol
               />
             </div>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Category</label>
-            <div className="relative">
-              <Tag size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
-              <select
-                value={formData.category}
-                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                className="w-full pl-10 pr-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all outline-none appearance-none"
-              >
-                <option value="general">General</option>
-                <option value="education">Education</option>
-                <option value="healthcare">Healthcare</option>
-                <option value="community">Community</option>
-                <option value="empowerment">Empowerment</option>
-                <option value="livelihoods">Livelihoods</option>
-                <option value="environment">Environment</option>
-              </select>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Category</label>
+              <div className="relative">
+                <Tag size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
+                <select
+                  value={formData.category}
+                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                  className="w-full pl-10 pr-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all outline-none appearance-none"
+                >
+                  <option value="general">General</option>
+                  <option value="education">Education</option>
+                  <option value="healthcare">Healthcare</option>
+                  <option value="community">Community</option>
+                  <option value="empowerment">Empowerment</option>
+                  <option value="livelihoods">Livelihoods</option>
+                  <option value="environment">Environment</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Story Date</label>
+              <input
+                type="date"
+                value={formData.date}
+                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                className="w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all outline-none"
+              />
             </div>
           </div>
           <div>

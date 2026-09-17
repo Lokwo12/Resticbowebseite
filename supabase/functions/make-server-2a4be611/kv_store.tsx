@@ -50,6 +50,19 @@ const mapToSql = (table: string, id: string, val: any) => {
       updated_at: val.updatedAt || new Date().toISOString()
     };
   }
+  if (table === 'programs') {
+    return {
+      id,
+      title: val.title || '',
+      description: val.description || '',
+      content: val.content || null,
+      image: val.image || null,
+      category: val.category || 'general',
+      active: val.active !== false,
+      created_at: val.createdAt || val.created_at || new Date().toISOString(),
+      updated_at: val.updatedAt || val.updated_at || new Date().toISOString()
+    };
+  }
   
   const mapped: any = { id, ...val };
   // Handle specific snake_case conversions based on schema
@@ -59,16 +72,16 @@ const mapToSql = (table: string, id: string, val: any) => {
   if (val.lastName !== undefined) { mapped.last_name = val.lastName; delete mapped.lastName; }
   if (val.publishDate !== undefined) { mapped.publish_date = val.publishDate; delete mapped.publishDate; }
   if (val.timeCommitment !== undefined) { mapped.time_commitment = val.timeCommitment; delete val.timeCommitment; }
-  if (val.openPositions !== undefined) { mapped.open_positions = val.openPositions; delete mapped.openPositions; }
-  if (val.fileUrl !== undefined) { mapped.file_url = val.fileUrl; delete mapped.fileUrl; }
-  if (val.fileType !== undefined) { mapped.file_type = val.fileType; delete mapped.fileType; }
-  if (val.fileSize !== undefined) { mapped.file_size = val.fileSize; delete mapped.fileSize; }
-  if (val.transactionId !== undefined) { mapped.transaction_id = val.transactionId; delete mapped.transactionId; }
-  if (val.donorName !== undefined) { mapped.donor_name = val.donorName; delete mapped.donorName; }
-  if (val.donorEmail !== undefined) { mapped.donor_email = val.donorEmail; delete mapped.donorEmail; }
-  if (val.donorPhone !== undefined) { mapped.donor_phone = val.donorPhone; delete mapped.donorPhone; }
-  if (val.paymentMethod !== undefined) { mapped.payment_method = val.paymentMethod; delete mapped.paymentMethod; }
-  if (val.paymentIntentId !== undefined) { mapped.payment_intent_id = val.paymentIntentId; delete mapped.paymentIntentId; }
+  if (val.openPositions !== undefined) { mapped.open_positions = val.openPositions; delete val.openPositions; }
+  if (val.fileUrl !== undefined) { mapped.file_url = val.fileUrl; delete val.fileUrl; }
+  if (val.fileType !== undefined) { mapped.file_type = val.fileType; delete val.fileType; }
+  if (val.fileSize !== undefined) { mapped.file_size = val.fileSize; delete val.fileSize; }
+  if (val.transactionId !== undefined) { mapped.transaction_id = val.transactionId; delete val.transactionId; }
+  if (val.donorName !== undefined) { mapped.donor_name = val.donorName; delete val.donorName; }
+  if (val.donorEmail !== undefined) { mapped.donor_email = val.donorEmail; delete val.donorEmail; }
+  if (val.donorPhone !== undefined) { mapped.donor_phone = val.donorPhone; delete val.donorPhone; }
+  if (val.paymentMethod !== undefined) { mapped.payment_method = val.paymentMethod; delete val.paymentMethod; }
+  if (val.paymentIntentId !== undefined) { mapped.payment_intent_id = val.paymentIntentId; delete val.paymentIntentId; }
   
   return mapped;
 };
@@ -113,6 +126,14 @@ export const set = async (key: string, value: any): Promise<void> => {
   const sqlData = mapToSql(info.table, info.id, value);
   const { error } = await supabase.from(info.table).upsert(sqlData);
   if (error) throw new Error(error.message);
+
+  if (info.table === 'programs') {
+    const fullKey = key.startsWith('program:') ? key : `program:${info.id}`;
+    await supabase.from('kv_store_2a4be611').upsert({
+      key: fullKey,
+      value: { id: info.id, ...value }
+    });
+  }
 };
 
 export const get = async (key: string): Promise<any> => {
@@ -123,6 +144,12 @@ export const get = async (key: string): Promise<any> => {
     const { data, error } = await supabase.from(info.table).select("value").eq("key", key).maybeSingle();
     if (error) throw new Error(error.message);
     return data?.value;
+  }
+
+  if (info.table === 'programs') {
+    const fullKey = key.startsWith('program:') ? key : `program:${info.id}`;
+    const { data: kvData } = await supabase.from('kv_store_2a4be611').select("value").eq("key", fullKey).maybeSingle();
+    if (kvData?.value) return kvData.value;
   }
   
   const { data, error } = await supabase.from(info.table).select("*").eq("id", info.id).maybeSingle();
@@ -145,6 +172,11 @@ export const del = async (key: string): Promise<void> => {
   
   const { error } = await supabase.from(info.table).delete().eq("id", info.id);
   if (error) throw new Error(error.message);
+
+  if (info.table === 'programs') {
+    const fullKey = key.startsWith('program:') ? key : `program:${info.id}`;
+    await supabase.from('kv_store_2a4be611').delete().eq("key", fullKey);
+  }
 };
 
 export const getByPrefix = async (prefix: string): Promise<any[]> => {

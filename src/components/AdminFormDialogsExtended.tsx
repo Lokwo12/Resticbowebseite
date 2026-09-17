@@ -155,22 +155,25 @@ export function EventFormDialog({ show, onClose, editingItem, onSuccess, userRol
     image: '',
     category: 'general',
     capacity: 50,
+    registered: 0,
     status: 'upcoming'
   });
 
   // Update form data when editingItem changes
   useEffect(() => {
     if (editingItem) {
+      const val = editingItem.value || editingItem;
       setFormData({
-        title: editingItem.title || '',
-        description: editingItem.description || '',
-        date: editingItem.date || '',
-        time: editingItem.time || '',
-        location: editingItem.location || '',
-        image: editingItem.image || '',
-        category: editingItem.category || 'general',
-        capacity: editingItem.capacity || 50,
-        status: editingItem.status || 'upcoming'
+        title: val.title || '',
+        description: val.description || '',
+        date: val.date || '',
+        time: val.time || '',
+        location: val.location || '',
+        image: val.image || '',
+        category: val.category || 'general',
+        capacity: val.capacity || 50,
+        registered: val.registered || 0,
+        status: val.status || 'upcoming'
       });
     } else {
       setFormData({
@@ -182,6 +185,7 @@ export function EventFormDialog({ show, onClose, editingItem, onSuccess, userRol
         image: '',
         category: 'general',
         capacity: 50,
+        registered: 0,
         status: 'upcoming'
       });
     }
@@ -311,23 +315,35 @@ export function EventFormDialog({ show, onClose, editingItem, onSuccess, userRol
               <input
                 type="number"
                 value={formData.capacity}
-                onChange={(e) => setFormData({ ...formData, capacity: parseInt(e.target.value) })}
+                onChange={(e) => setFormData({ ...formData, capacity: parseInt(e.target.value) || 0 })}
                 className="w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none"
               />
             </div>
           </div>
-          <div>
-            <label className="block text-sm mb-2">Status</label>
-            <select
-              value={formData.status}
-              onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-              className="w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none"
-            >
-              <option value="upcoming">Upcoming</option>
-              <option value="ongoing">Ongoing</option>
-              <option value="completed">Completed</option>
-              <option value="cancelled">Cancelled</option>
-            </select>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm mb-2">Registered Attendees</label>
+              <input
+                type="number"
+                value={formData.registered}
+                onChange={(e) => setFormData({ ...formData, registered: parseInt(e.target.value) || 0 })}
+                min={0}
+                className="w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-sm mb-2">Status</label>
+              <select
+                value={formData.status}
+                onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                className="w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none"
+              >
+                <option value="upcoming">Upcoming</option>
+                <option value="ongoing">Ongoing</option>
+                <option value="completed">Completed</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
+            </div>
           </div>
           <div>
             <label className="block text-sm mb-2">Event Image</label>

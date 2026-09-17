@@ -378,6 +378,7 @@ app.post('/make-server-2a4be611/programs', requireAdmin, async (c) => {
 
     const programId = `program:${crypto.randomUUID()}`
     await kv.set(programId, {
+      ...body,
       title,
       description,
       image: image || '',
@@ -428,11 +429,16 @@ app.post('/make-server-2a4be611/news', requireAdmin, async (c) => {
     }
 
     const newsId = `news:${crypto.randomUUID()}`
+    const nowIso = new Date().toISOString()
     await kv.set(newsId, {
+      ...body,
       title,
       content,
       image: image || '',
-      timestamp: new Date().toISOString()
+      author: body.author || 'RESTI Team',
+      publishDate: body.publishDate || body.timestamp || nowIso,
+      timestamp: body.publishDate || body.timestamp || nowIso,
+      createdAt: nowIso
     })
 
     console.log(`News created: ${newsId}`)
@@ -2068,13 +2074,11 @@ app.put('/make-server-2a4be611/programs/:id', requireAdmin, async (c) => {
       return c.json({ error: 'Title and description are required' }, 400)
     }
 
-    const existing = await kv.get(id)
-    if (!existing) {
-      return c.json({ error: 'Program not found' }, 404)
-    }
+    const existing = await kv.get(id) || {}
 
     await kv.set(id, {
       ...existing,
+      ...body,
       title,
       description,
       image: image || '',
@@ -2474,16 +2478,16 @@ app.put('/make-server-2a4be611/news/:id', requireAdmin, async (c) => {
       return c.json({ error: 'Title and content are required' }, 400)
     }
 
-    const existing = await kv.get(id)
-    if (!existing) {
-      return c.json({ error: 'News not found' }, 404)
-    }
+    const existing = await kv.get(id) || {}
 
     await kv.set(id, {
       ...existing,
+      ...body,
       title,
       content,
       image: image || '',
+      author: body.author || existing.author || 'RESTI Team',
+      publishDate: body.publishDate || existing.publishDate || existing.timestamp || new Date().toISOString(),
       updatedAt: new Date().toISOString()
     })
 

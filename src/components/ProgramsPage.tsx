@@ -5,12 +5,18 @@ import {
   MapPin, Users, Sparkles, ExternalLink, Calendar
 } from 'lucide-react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
+import { createClient } from '@supabase/supabase-js';
 import { SEO } from './SEO';
 import { LoadingScreen } from './LoadingScreen';
 import { useDonationModal } from './DonationModalContext';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { DETAILED_FALLBACK_PROGRAMS } from './ProgramDetail';
+
+const supabase = createClient(
+  `https://${projectId}.supabase.co`,
+  publicAnonKey
+);
 
 interface Program {
   key: string;
@@ -66,41 +72,82 @@ export function ProgramsPage() {
   const fetchPrograms = async () => {
     try {
       setLoading(true);
-      const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/programs`,
-        {
-          headers: { Authorization: `Bearer ${publicAnonKey}` },
-          signal: AbortSignal.timeout(6000),
-        }
-      );
+      let fetched: Program[] = [];
+      try {
+        const response = await fetch(
+          `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/programs`,
+          {
+            headers: { Authorization: `Bearer ${publicAnonKey}` },
+            signal: AbortSignal.timeout(6000),
+          }
+        );
 
-      if (response.ok) {
-        const data = await response.json();
-        const fetched: Program[] = data.programs || [];
-        if (fetched.length > 0) {
-          // Merge API programs with fallback enrichments if needed
-          const merged = fetched.map(f => {
-            const rawKey = (f.value?.id || f.key || '').replace(/^program:/, '').toLowerCase();
-            const fallback = DETAILED_FALLBACK_PROGRAMS[rawKey];
-            if (fallback) {
-              return {
-                ...f,
+        if (response.ok) {
+          const data = await response.json();
+          fetched = data.programs || [];
+        }
+      } catch (err) {
+        console.warn('API programs fetch notice, checking direct Supabase:', err);
+      }
+
+      // Check kv_store_2a4be611 for any direct rich program records
+      try {
+        const { data: kvPrograms } = await supabase
+          .from('kv_store_2a4be611')
+          .select('*')
+          .like('key', 'program:%');
+        
+        if (kvPrograms && kvPrograms.length > 0) {
+          for (const kv of kvPrograms) {
+            const cleanK = kv.key.replace(/^program:/, '').toLowerCase();
+            const foundIdx = fetched.findIndex(f => (f.value?.id || f.key || '').replace(/^program:/, '').toLowerCase() === cleanK);
+            if (foundIdx > -1) {
+              fetched[foundIdx] = {
+                ...fetched[foundIdx],
                 value: {
-                  ...fallback,
-                  ...f.value,
-                  content: f.value?.content || fallback.content,
-                  objectives: f.value?.objectives || fallback.objectives,
-                  keyActivities: f.value?.keyActivities || fallback.keyActivities,
-                  impactMetrics: f.value?.impactMetrics || fallback.impactMetrics,
-                  beneficiaries: f.value?.beneficiaries || fallback.beneficiaries,
-                  location: f.value?.location || fallback.location,
+                  ...fetched[foundIdx].value,
+                  ...kv.value
                 }
               };
+            } else {
+              fetched.push({
+                key: kv.key,
+                value: kv.value
+              });
             }
-            return f;
-          });
-          setPrograms(merged);
+          }
         }
+      } catch (sbErr) {
+        console.warn('Direct kv store read notice:', sbErr);
+      }
+
+      if (fetched.length > 0) {
+        // Merge API/KV programs with fallback enrichments if needed
+        const merged = fetched.map(f => {
+          const rawKey = (f.value?.id || f.key || '').replace(/^program:/, '').toLowerCase();
+          const fallback = DETAILED_FALLBACK_PROGRAMS[rawKey];
+          if (fallback) {
+            return {
+              ...f,
+              value: {
+                ...fallback,
+                ...f.value,
+                content: f.value?.content || fallback.content,
+                objectives: f.value?.objectives || fallback.objectives,
+                keyActivities: f.value?.keyActivities || fallback.keyActivities,
+                impactMetrics: f.value?.impactMetrics || fallback.impactMetrics,
+                beneficiaries: f.value?.beneficiaries || fallback.beneficiaries,
+                location: f.value?.location || fallback.location,
+              }
+            };
+          }
+          return f;
+        });
+
+        // Ensure all flagship programs are present
+        const fetchedIds = new Set(fetched.map(f => (f.value?.id || f.key || '').replace(/^program:/, '').toLowerCase()));
+        const missingFallbacks = FALLBACK_PROGRAMS.filter(fp => !fetchedIds.has((fp.value?.id || fp.key || '').replace(/^program:/, '').toLowerCase()));
+        setPrograms([...merged, ...missingFallbacks]);
       }
     } catch (err) {
       console.warn('Could not fetch live programs, displaying default programs.', err);

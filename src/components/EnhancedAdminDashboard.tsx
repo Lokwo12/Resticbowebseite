@@ -89,6 +89,8 @@ import {
 import { PageFormDialog } from './AdminFormDialogsPages';
 import { MapLocationFormDialog } from './AdminMapLocationDialog';
 import { ImpactMap } from './ImpactMap';
+import { ProgramFormDialog } from './admin/ProgramFormDialog';
+import { DETAILED_FALLBACK_PROGRAMS } from './ProgramDetail';
 
 const supabase = createClient(
   `https://${projectId}.supabase.co`,
@@ -316,12 +318,14 @@ export function EnhancedAdminDashboard() {
   });
   const [newPassword, setNewPassword] = useState('');
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<any>({
     title: '',
     description: '',
     content: '',
     image: '',
-    category: 'general'
+    category: 'general',
+    author: 'RESTI Team',
+    publishDate: ''
   });
 
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -872,12 +876,87 @@ export function EnhancedAdminDashboard() {
         }
         if (analyticsData) setAnalytics(analyticsData);
       } else if (activeTab === 'programs') {
-        const response = await fetch(
-          `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/programs`,
-          { headers: { Authorization: `Bearer ${publicAnonKey}` } }
-        );
-        const data = await response.json();
-        setPrograms(data.programs || []);
+        let fetched: any[] = [];
+        try {
+          const response = await fetch(
+            `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/programs`,
+            { headers: { Authorization: `Bearer ${publicAnonKey}` } }
+          );
+          if (response.ok) {
+            const data = await response.json();
+            fetched = data.programs || [];
+          }
+        } catch (apiErr) {
+          console.warn('API programs fetch error:', apiErr);
+        }
+
+        // Direct query to kv_store_2a4be611 for all rich fields
+        try {
+          const { data: kvData } = await supabase
+            .from('kv_store_2a4be611')
+            .select('*')
+            .like('key', 'program:%');
+          
+          if (kvData && kvData.length > 0) {
+            for (const kv of kvData) {
+              const cleanK = kv.key.replace(/^program:/, '').toLowerCase();
+              const foundIdx = fetched.findIndex((f: any) => (f.value?.id || f.key || f.id || '').replace(/^program:/, '').toLowerCase() === cleanK);
+              if (foundIdx > -1) {
+                fetched[foundIdx] = {
+                  ...fetched[foundIdx],
+                  value: {
+                    ...fetched[foundIdx].value,
+                    ...kv.value
+                  }
+                };
+              } else {
+                fetched.push({
+                  key: kv.key,
+                  value: kv.value
+                });
+              }
+            }
+          }
+        } catch (sbErr) {
+          console.warn('KV store programs query error:', sbErr);
+        }
+
+        // Ensure all flagship programs from DETAILED_FALLBACK_PROGRAMS are editable in the dashboard
+        const flagshipKeys = Object.keys(DETAILED_FALLBACK_PROGRAMS);
+        const currentKeys = new Set(fetched.map((p: any) => (p.value?.id || p.key || p.id || '').replace(/^program:/, '').toLowerCase()));
+
+        for (const fKey of flagshipKeys) {
+          const fb = DETAILED_FALLBACK_PROGRAMS[fKey];
+          if (!currentKeys.has(fKey.toLowerCase())) {
+            fetched.push({
+              key: `program:${fb.id}`,
+              value: {
+                ...fb,
+                active: true
+              }
+            });
+          } else {
+            const idx = fetched.findIndex((p: any) => (p.value?.id || p.key || p.id || '').replace(/^program:/, '').toLowerCase() === fKey.toLowerCase());
+            if (idx > -1) {
+              const existingVal = fetched[idx].value || fetched[idx];
+              fetched[idx] = {
+                ...fetched[idx],
+                value: {
+                  ...fb,
+                  ...existingVal,
+                  objectives: existingVal.objectives && existingVal.objectives.length > 0 ? existingVal.objectives : fb.objectives,
+                  keyActivities: existingVal.keyActivities && existingVal.keyActivities.length > 0 ? existingVal.keyActivities : fb.keyActivities,
+                  impactMetrics: existingVal.impactMetrics && existingVal.impactMetrics.length > 0 ? existingVal.impactMetrics : fb.impactMetrics,
+                  location: existingVal.location || fb.location,
+                  timeline: existingVal.timeline || fb.timeline,
+                  beneficiaries: existingVal.beneficiaries || fb.beneficiaries,
+                }
+              };
+            }
+          }
+        }
+
+        setPrograms(fetched);
       } else if (activeTab === 'news') {
         const response = await fetch(
           `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/news`,
@@ -1209,15 +1288,23 @@ export function EnhancedAdminDashboard() {
     if (!(await confirmDialog({ title: 'Confirm Action', message: 'Delete this program?' }))) return;
 
     try {
-      const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/programs/${id}`,
-        {
-          method: 'DELETE',
-          headers: { Authorization: `Bearer ${accessToken || publicAnonKey}` },
-        }
-      );
+      const cleanId = id.replace(/^program:/, '');
+      const fullKey = `program:${cleanId}`;
 
-      if (!response.ok) throw new Error('Failed to delete program');
+      try {
+        await fetch(
+          `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/programs/${encodeURIComponent(fullKey)}`,
+          {
+            method: 'DELETE',
+            headers: { Authorization: `Bearer ${accessToken || publicAnonKey}` },
+          }
+        );
+      } catch (e) {
+        console.warn('Edge function delete program notice:', e);
+      }
+
+      await supabase.from('kv_store_2a4be611').delete().eq('key', fullKey);
+      await supabase.from('programs').delete().eq('id', cleanId);
 
       toast.success('Program deleted');
       logActivity('deleted', 'Programs', `Deleted program ID: ${id}`);
@@ -1233,15 +1320,21 @@ export function EnhancedAdminDashboard() {
 
     try {
       await Promise.all(
-        ids.map(id =>
-          fetch(
-            `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/programs/${id}`,
-            {
-              method: 'DELETE',
-              headers: { Authorization: `Bearer ${accessToken || publicAnonKey}` },
-            }
-          )
-        )
+        ids.map(async (id) => {
+          const cleanId = id.replace(/^program:/, '');
+          const fullKey = `program:${cleanId}`;
+          try {
+            await fetch(
+              `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/programs/${encodeURIComponent(fullKey)}`,
+              {
+                method: 'DELETE',
+                headers: { Authorization: `Bearer ${accessToken || publicAnonKey}` },
+              }
+            );
+          } catch {}
+          await supabase.from('kv_store_2a4be611').delete().eq('key', fullKey);
+          await supabase.from('programs').delete().eq('id', cleanId);
+        })
       );
 
       toast.success(`${ids.length} programs deleted`);
@@ -1261,22 +1354,51 @@ export function EnhancedAdminDashboard() {
         ? `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/news/${editingItem.key || editingItem.id}`
         : `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/news`;
 
-      const response = await fetch(url, {
-        method: editingItem ? 'PUT' : 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${accessToken || publicAnonKey}`,
-        },
-        body: JSON.stringify(formData),
-      });
+      const nowIso = new Date().toISOString();
+      const newsPayload = {
+        ...formData,
+        author: formData.author || 'RESTI Team',
+        publishDate: formData.publishDate || formData.date || formData.timestamp || nowIso,
+        timestamp: formData.publishDate || formData.date || formData.timestamp || nowIso,
+      };
 
-      if (!response.ok) throw new Error('Failed to save news');
+      let apiSaved = false;
+      try {
+        const response = await fetch(url, {
+          method: editingItem ? 'PUT' : 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${accessToken || publicAnonKey}`,
+          },
+          body: JSON.stringify(newsPayload),
+        });
 
-      toast.success(editingItem ? 'News updated' : 'News created');
+        if (response.ok) apiSaved = true;
+      } catch (apiErr) {
+        console.warn('API news save notice, falling back to direct Supabase:', apiErr);
+      }
+
+      // Direct Supabase kv_store write for instant synchronization
+      const rawId = editingItem ? (editingItem.key || editingItem.id || editingItem.value?.id || '') : '';
+      const cleanId = rawId ? rawId.replace(/^news:/, '') : crypto.randomUUID();
+      try {
+        await supabase.from('kv_store_2a4be611').upsert({
+          key: `news:${cleanId}`,
+          value: {
+            id: cleanId,
+            ...newsPayload,
+            updatedAt: nowIso
+          }
+        });
+      } catch (kvErr) {
+        console.warn('Direct kv news fallback notice:', kvErr);
+      }
+
+      toast.success(editingItem ? 'News article updated' : 'News article published');
       logActivity(editingItem ? 'updated' : 'created', 'News', `${editingItem ? 'Updated' : 'Created'} news: ${formData.title}`);
       setShowNewsForm(false);
       setEditingItem(null);
-      setFormData({ title: '', description: '', content: '', image: '', category: 'general' });
+      setFormData({ title: '', description: '', content: '', image: '', category: 'general', author: 'RESTI Team', publishDate: new Date().toISOString().split('T')[0] });
       loadData();
     } catch (err: any) {
       console.error('Save error:', err);
@@ -3671,7 +3793,15 @@ export function EnhancedAdminDashboard() {
                   <Button
                     onClick={() => {
                       setEditingItem(null);
-                      setFormData({ title: '', description: '', content: '', image: '', category: 'general' });
+                      setFormData({ 
+                        title: '', 
+                        description: '', 
+                        content: '', 
+                        image: '', 
+                        category: 'general',
+                        author: userName || 'RESTI Communications Team',
+                        publishDate: new Date().toISOString().split('T')[0]
+                      });
                       setShowNewsForm(true);
                     }}
                     className="bg-white text-violet-700 hover:bg-violet-50 shadow-md font-semibold px-4 py-2 md:px-5 md:py-2.5 rounded-xl transition-all whitespace-nowrap flex-shrink-0"
@@ -3703,7 +3833,12 @@ export function EnhancedAdminDashboard() {
                   {(news || []).map((item) => (
                     <div key={item.key} className="bg-white border border-gray-200 border-l-4 border-l-violet-500 relative rounded-2xl p-6 md:p-7 hover:shadow-xl hover:-translate-y-1 hover:border-violet-300 transition-all duration-300 shadow-sm cursor-pointer group flex flex-col" onClick={() => {
                               setEditingItem(item);
-                              setFormData(item.value);
+                              const v = item.value || item;
+                              setFormData({
+                                ...v,
+                                author: v.author || 'RESTI Team',
+                                publishDate: v.publishDate || v.date || (v.timestamp ? new Date(v.timestamp).toISOString().split('T')[0] : new Date().toISOString().split('T')[0])
+                              });
                               setShowNewsForm(true);
                             }}>
                       <input
@@ -3739,7 +3874,12 @@ export function EnhancedAdminDashboard() {
                         <button
                           onClick={() => {
                             setEditingItem(item);
-                            setFormData(item.value);
+                            const v = item.value || item;
+                            setFormData({
+                              ...v,
+                              author: v.author || 'RESTI Team',
+                              publishDate: v.publishDate || v.date || (v.timestamp ? new Date(v.timestamp).toISOString().split('T')[0] : new Date().toISOString().split('T')[0])
+                            });
                             setShowNewsForm(true);
                           }}
                           className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors"
@@ -5838,125 +5978,91 @@ export function EnhancedAdminDashboard() {
         />
       )}
 
-      {/* Program Form Dialog */}
-      <DraggableDialog open={showProgramForm} onClose={() => setShowProgramForm(false)} title={editingItem ? 'Edit Program' : 'Add Program'} headerColor="#2f5496">
-          <form onSubmit={handleSubmitProgram} className="space-y-6">
-            <div>
-              <label className="block text-sm mb-2">Title</label>
-              <input
-                type="text"
-                value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                className="w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm mb-2">Description</label>
-              <textarea
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                className="w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none"
-                rows={3}
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm mb-2">Content</label>
-              <ReactQuill
-                value={formData.content}
-                onChange={(value) => setFormData({ ...formData, content: value })}
-                className="bg-white"
-              />
-            </div>
-            <div>
-              <label className="block text-sm mb-2">Category</label>
-              <select
-                value={formData.category}
-                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                className="w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none"
-              >
-                <option value="general">General</option>
-                <option value="education">Education</option>
-                <option value="health">Health</option>
-                <option value="environment">Environment</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm mb-2">Image</label>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={async (e) => {
-                  if (e.target.files?.[0]) {
-                    const url = await handleImageUpload(e.target.files[0]);
-                    if (url) setFormData({ ...formData, image: url });
-                  }
-                }}
-                className="w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none"
-              />
-              {uploadingImage && <p className="text-sm text-gray-500 mt-1">Uploading...</p>}
-              {formData.image && (
-                <img src={formData.image} alt="Preview" className="mt-2 w-32 h-32 object-cover rounded-lg" />
-              )}
-            </div>
-            <div className="flex gap-2 justify-end">
-              <Button type="button" variant="outline" onClick={() => setShowProgramForm(false)}>
-                Cancel
-              </Button>
-              <Button type="submit" className="rounded-xl px-6 bg-emerald-600 hover:bg-emerald-700 shadow-sm hover:shadow transition-all">
-                {editingItem ? 'Update' : 'Create'}
-              </Button>
-            </div>
-          </form>
-      </DraggableDialog>
+      {/* Full-Detail Program Form Dialog */}
+      <ProgramFormDialog
+        show={showProgramForm}
+        onClose={() => {
+          setShowProgramForm(false);
+          setEditingItem(null);
+        }}
+        editingItem={editingItem}
+        onSuccess={loadData}
+        userRole={userRole}
+        accessToken={accessToken || publicAnonKey}
+      />
 
       {/* News Form Dialog */}
-      <DraggableDialog open={showNewsForm} onClose={() => setShowNewsForm(false)} title={editingItem ? 'Edit News' : 'Add News'} headerColor="#2f5496">
+      <DraggableDialog open={showNewsForm} onClose={() => setShowNewsForm(false)} title={editingItem ? 'Edit News Article' : 'Add News Article'} headerColor="#2f5496">
           <form onSubmit={handleSubmitNews} className="space-y-6">
             <div>
-              <label className="block text-sm mb-2">Title</label>
+              <label className="block text-sm mb-2 font-medium text-slate-700">Article Title</label>
               <input
                 type="text"
-                value={formData.title}
+                value={formData.title || ''}
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                placeholder="e.g., Community Health Outreach Milestone Reached"
                 className="w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none"
                 required
               />
             </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm mb-2 font-medium text-slate-700">Author / Byline</label>
+                <input
+                  type="text"
+                  value={formData.author || ''}
+                  onChange={(e) => setFormData({ ...formData, author: e.target.value })}
+                  placeholder="e.g., RESTI Communications Team"
+                  className="w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-sm mb-2 font-medium text-slate-700">Publication Date</label>
+                <input
+                  type="date"
+                  value={formData.publishDate ? (formData.publishDate.includes('T') ? formData.publishDate.split('T')[0] : formData.publishDate) : ''}
+                  onChange={(e) => setFormData({ ...formData, publishDate: e.target.value })}
+                  className="w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none"
+                />
+              </div>
+            </div>
+
             <div>
-              <label className="block text-sm mb-2">Description</label>
+              <label className="block text-sm mb-2 font-medium text-slate-700">Short Summary / Excerpt</label>
               <textarea
-                value={formData.description}
+                value={formData.description || ''}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                placeholder="A concise overview of the article for cards and feeds..."
                 className="w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none"
                 rows={3}
                 required
               />
             </div>
             <div>
-              <label className="block text-sm mb-2">Content</label>
+              <label className="block text-sm mb-2 font-medium text-slate-700">Full Article Content</label>
               <ReactQuill
-                value={formData.content}
+                value={formData.content || ''}
                 onChange={(value) => setFormData({ ...formData, content: value })}
-                className="bg-white"
+                className="bg-white rounded-xl"
               />
             </div>
             <div>
-              <label className="block text-sm mb-2">Category</label>
+              <label className="block text-sm mb-2 font-medium text-slate-700">Category</label>
               <select
-                value={formData.category}
+                value={formData.category || 'general'}
                 onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                 className="w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none"
               >
-                <option value="general">General</option>
-                <option value="events">Events</option>
-                <option value="announcements">Announcements</option>
-                <option value="success-stories">Success Stories</option>
+                <option value="general">General News</option>
+                <option value="events">Events & Field Visits</option>
+                <option value="announcements">Official Announcements</option>
+                <option value="success-stories">Success Stories & Voices</option>
+                <option value="press">Press Releases</option>
               </select>
             </div>
             <div>
-              <label className="block text-sm mb-2">Image</label>
+              <label className="block text-sm mb-2 font-medium text-slate-700">Cover Image</label>
               <input
                 type="file"
                 accept="image/*"
@@ -5973,12 +6079,12 @@ export function EnhancedAdminDashboard() {
                 <img src={formData.image} alt="Preview" className="mt-2 w-32 h-32 object-cover rounded-lg" />
               )}
             </div>
-            <div className="flex gap-2 justify-end">
+            <div className="flex gap-2 justify-end pt-2">
               <Button type="button" variant="outline" onClick={() => setShowNewsForm(false)}>
                 Cancel
               </Button>
               <Button type="submit" className="rounded-xl px-6 bg-emerald-600 hover:bg-emerald-700 shadow-sm hover:shadow transition-all">
-                {editingItem ? 'Update' : 'Create'}
+                {editingItem ? 'Update Article' : 'Publish Article'}
               </Button>
             </div>
           </form>

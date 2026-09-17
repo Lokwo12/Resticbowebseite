@@ -441,6 +441,7 @@ export function ProgramDetail() {
       keyActivities: val.keyActivities && Array.isArray(val.keyActivities) && val.keyActivities.length > 0 
         ? val.keyActivities 
         : archetype.keyActivities,
+      leadCoordinator: val.leadCoordinator || archetype.leadCoordinator || '',
     };
   };
 
@@ -783,12 +784,18 @@ export function ProgramDetail() {
                 </div>
                 <div className="py-3 flex justify-between items-center">
                   <span className="text-slate-400">Operating Cycle:</span>
-                  <span className="font-medium text-slate-800">Multi-Year Active</span>
+                  <span className="font-medium text-slate-800">{program.timeline || 'Active Multi-Year'}</span>
                 </div>
                 <div className="py-3 flex justify-between items-center">
-                  <span className="text-slate-400">Focus District:</span>
-                  <span className="font-bold text-slate-800">Kiryandongo, Uganda</span>
+                  <span className="text-slate-400">Coverage Location:</span>
+                  <span className="font-bold text-slate-800 truncate max-w-[160px] text-right" title={program.location}>{program.location || 'Kiryandongo, Uganda'}</span>
                 </div>
+                {program.leadCoordinator && (
+                  <div className="py-3 flex justify-between items-center">
+                    <span className="text-slate-400">Lead Coordinator:</span>
+                    <span className="font-semibold text-slate-800 truncate max-w-[160px] text-right" title={program.leadCoordinator}>{program.leadCoordinator}</span>
+                  </div>
+                )}
                 <div className="py-3 flex justify-between items-center">
                   <span className="text-slate-400">Transparency:</span>
                   <span className="font-bold text-emerald-700">Audited Annually</span>

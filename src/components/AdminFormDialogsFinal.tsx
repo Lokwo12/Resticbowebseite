@@ -24,6 +24,9 @@ interface OpportunityFormData {
   category: string;
   openPositions: number;
   benefits: string[];
+  type: string;
+  deadline: string;
+  link: string;
 }
 
 // Volunteer Opportunity Form Dialog
@@ -37,7 +40,10 @@ export function OpportunityFormDialog({ show, onClose, editingItem, onSuccess, u
     location: '',
     category: 'general',
     openPositions: 1,
-    benefits: []
+    benefits: [],
+    type: 'Full-Time',
+    deadline: '',
+    link: ''
   });
   const [requirementInput, setRequirementInput] = useState('');
   const [benefitInput, setBenefitInput] = useState('');
@@ -45,15 +51,19 @@ export function OpportunityFormDialog({ show, onClose, editingItem, onSuccess, u
   // Update form data when editingItem changes
   useEffect(() => {
     if (editingItem) {
+      const val = editingItem.value || editingItem;
       setFormData({
-        title: editingItem.title || '',
-        description: editingItem.description || '',
-        requirements: editingItem.requirements || [],
-        timeCommitment: editingItem.timeCommitment || '',
-        location: editingItem.location || '',
-        category: editingItem.category || 'general',
-        openPositions: editingItem.openPositions || 1,
-        benefits: editingItem.benefits || []
+        title: val.title || '',
+        description: val.description || '',
+        requirements: val.requirements || [],
+        timeCommitment: val.timeCommitment || '',
+        location: val.location || '',
+        category: val.category || 'general',
+        openPositions: val.openPositions || 1,
+        benefits: val.benefits || [],
+        type: val.type || 'Full-Time',
+        deadline: val.deadline || '',
+        link: val.link || ''
       });
     } else {
       setFormData({
@@ -64,7 +74,10 @@ export function OpportunityFormDialog({ show, onClose, editingItem, onSuccess, u
         location: '',
         category: 'general',
         openPositions: 1,
-        benefits: []
+        benefits: [],
+        type: 'Full-Time',
+        deadline: '',
+        link: ''
       });
     }
   }, [editingItem, show]);
@@ -209,6 +222,42 @@ export function OpportunityFormDialog({ show, onClose, editingItem, onSuccess, u
                 onChange={(e) => setFormData({ ...formData, openPositions: parseInt(e.target.value) })}
                 min={1}
                 className="w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none"
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-sm mb-2">Engagement Type</label>
+              <select
+                value={formData.type}
+                onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+                className="w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none text-sm"
+              >
+                <option value="Full-Time">Full-Time Job</option>
+                <option value="Part-Time">Part-Time Job</option>
+                <option value="Volunteer">Volunteer Role</option>
+                <option value="Internship">Internship</option>
+                <option value="Contract / Tender">Contract / Tender</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm mb-2">Application Deadline</label>
+              <input
+                type="text"
+                value={formData.deadline}
+                onChange={(e) => setFormData({ ...formData, deadline: e.target.value })}
+                placeholder="e.g., Nov 30, 2026 or Rolling"
+                className="w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-sm mb-2">Application Link / URL</label>
+              <input
+                type="text"
+                value={formData.link}
+                onChange={(e) => setFormData({ ...formData, link: e.target.value })}
+                placeholder="https://... or mailto:info@..."
+                className="w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none text-sm"
               />
             </div>
           </div>
