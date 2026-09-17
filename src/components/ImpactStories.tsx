@@ -6,6 +6,7 @@ import { supabase } from '../utils/supabase/client';
 import { Card } from './ui/card';
 import { Badge } from './ui/badge';
 import { useScrollAnimation, getStaggerDelay } from '../utils/animations';
+import { stripHtml } from '../utils/textUtils';
 
 interface Story {
   id: string;
@@ -231,7 +232,7 @@ export function ImpactStories() {
                   </div>
 
                   <p className="text-gray-600 mb-4 leading-relaxed text-base line-clamp-4 flex-grow">
-                    {story.story}
+                    {stripHtml(story.story)}
                   </p>
 
                   {story.impact && (

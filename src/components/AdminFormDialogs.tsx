@@ -9,6 +9,7 @@ import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { supabase } from '../utils/supabase/client';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
+import { stripHtml } from '../utils/textUtils';
 
 interface FormDialogProps {
   show: boolean;
@@ -291,7 +292,7 @@ export function StoryFormDialog({ show, onClose, editingItem, onSuccess, userRol
       setFormData({
         name: val.name || '',
         title: val.title || '',
-        story: val.story || '',
+        story: stripHtml(val.story || ''),
         image: val.image || '',
         category: val.category || 'general',
         impact: val.impact || '',
@@ -375,7 +376,7 @@ export function StoryFormDialog({ show, onClose, editingItem, onSuccess, userRol
       const storyPayload = {
         name: formData.name,
         title: formData.title,
-        story: formData.story,
+        story: stripHtml(formData.story),
         image: formData.image || '',
         category: formData.category || 'general',
         impact: formData.impact || '',
@@ -486,22 +487,18 @@ export function StoryFormDialog({ show, onClose, editingItem, onSuccess, userRol
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Story *</label>
-            <div className="border border-slate-200 rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-emerald-500/20 focus-within:border-emerald-500 transition-all">
-              <ReactQuill
-                value={formData.story}
-                onChange={(value) => setFormData({ ...formData, story: value })}
-                className="bg-white border-0"
-                modules={{
-                  toolbar: [
-                    ['bold', 'italic', 'underline'],
-                    [{ list: 'ordered' }, { list: 'bullet' }],
-                    ['link'],
-                    ['clean']
-                  ]
-                }}
-              />
-            </div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Story / Testimonial Statement *</label>
+            <textarea
+              value={formData.story}
+              onChange={(e) => setFormData({ ...formData, story: e.target.value })}
+              required
+              rows={6}
+              placeholder="Beneficiary's first-person statement or story narrative..."
+              className="w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all outline-none leading-relaxed text-sm text-slate-800"
+            />
+            <p className="text-xs text-slate-400 mt-1">
+              Enter the beneficiary's personal statement or story without raw HTML tags.
+            </p>
           </div>
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Impact Summary</label>

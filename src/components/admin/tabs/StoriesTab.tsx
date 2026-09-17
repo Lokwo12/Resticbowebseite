@@ -4,6 +4,7 @@ import { Button } from '../../ui/button';
 import { Badge } from '../../ui/badge';
 import { useAdminData } from '../../../hooks/useAdminData';
 import { useState } from 'react';
+import { stripHtml } from '../../../utils/textUtils';
 
 export function StoriesTab(props: any) {
   const { activeTab, projectId, accessToken, setViewingItem, setFormData, setEditingItem, setShowStoryForm } = props;
@@ -55,7 +56,9 @@ export function StoriesTab(props: any) {
                             <Badge className="bg-orange-50 text-orange-700 border-orange-100">{story.category}</Badge>
                           </div>
                           <p className="text-sm text-emerald-600 mb-2">{story.name}</p>
-                          <div className="text-sm text-slate-600 prose prose-sm" dangerouslySetInnerHTML={{ __html: story.story?.substring(0, 150) + '...' }} />
+                          <p className="text-sm text-slate-600 line-clamp-3">
+                            {stripHtml(story.story)}
+                          </p>
                         </div>
                         <div className="flex flex-wrap gap-2 mt-auto pt-4 border-t border-slate-100 w-full relative z-20" onClick={(e) => e.stopPropagation()}>
                           <button

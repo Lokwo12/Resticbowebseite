@@ -6,6 +6,7 @@ import { supabase } from '../utils/supabase/client';
 import { Card } from './ui/card';
 import { Badge } from './ui/badge';
 import { LoadingScreen } from './LoadingScreen';
+import { stripHtml } from '../utils/textUtils';
 
 interface Story {
   id: string;
@@ -180,7 +181,7 @@ export function StoriesArchive() {
                     </div>
 
                     <p className="text-gray-600 mb-4 leading-relaxed text-sm line-clamp-4 flex-grow">
-                      {story.story}
+                      {stripHtml(story.story)}
                     </p>
 
                     {story.impact && (

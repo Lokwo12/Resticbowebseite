@@ -8,6 +8,7 @@ import { LoadingScreen } from './LoadingScreen';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import { useDonationModal } from './DonationModalContext';
+import { stripHtml } from '../utils/textUtils';
 
 interface Story {
   id: string;
@@ -136,7 +137,7 @@ export function StoryDetail() {
     <div className="bg-gray-50 min-h-screen pt-28 sm:pt-36 pb-24">
       <SEO 
         title={`${storyData.title} | Impact Story`} 
-        description={storyData.impact || storyData.story.substring(0, 150)} 
+        description={storyData.impact || stripHtml(storyData.story).substring(0, 150)} 
         image={storyData.image} 
         type="article"
       />
@@ -197,7 +198,7 @@ export function StoryDetail() {
 
             <div className="prose prose-emerald max-w-none text-gray-700 leading-relaxed text-lg mb-10 whitespace-pre-wrap">
               <Quote className="text-emerald-100 w-16 h-16 float-left mr-4 -mt-2" />
-              {storyData.story}
+              {stripHtml(storyData.story)}
             </div>
 
             {/* Impact Section */}
