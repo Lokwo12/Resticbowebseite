@@ -344,9 +344,9 @@ export function Hero() {
               variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease: "easeOut" } } }}
               className="max-w-3xl mx-auto space-y-3.5"
             >
-              <div className="space-y-3 text-base sm:text-lg md:text-xl font-sans font-normal leading-relaxed text-slate-200/90 drop-shadow-sm">
+              <div className="space-y-3 text-base sm:text-lg md:text-xl font-sans font-normal leading-relaxed text-slate-200/90 drop-shadow-sm text-center">
                 {paragraphs.map((para, idx) => (
-                  <p key={idx}>{para}</p>
+                  <p key={idx} className="text-center">{para}</p>
                 ))}
               </div>
 
