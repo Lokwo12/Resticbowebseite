@@ -11,6 +11,7 @@ interface AboutValue {
 }
 
 import { DEFAULT_TRUST_BADGES, TrustBadge } from './About';
+import { DEFAULT_WAY_WE_WORK, WayWeWorkSettings } from './SiteSettingsTab';
 
 interface AboutSettings {
   title: string;
@@ -23,6 +24,7 @@ interface AboutSettings {
   missionVideoUrl: string;
   timeline: { year: string; title: string; desc: string }[];
   trustBadges?: TrustBadge[];
+  wayWeWork?: WayWeWorkSettings;
 }
 
 const iconMap: Record<string, typeof Heart> = {
@@ -58,7 +60,8 @@ const DEFAULT_ABOUT_SETTINGS: AboutSettings = {
     { year: '2023', title: 'Education Hub', desc: 'Opened a community learning center equipped with modern resources for youth.' },
     { year: 'Present', title: 'Sustainable Future', desc: 'Continuing to expand our reach, directly impacting over 20,000 lives annually.' }
   ],
-  trustBadges: DEFAULT_TRUST_BADGES
+  trustBadges: DEFAULT_TRUST_BADGES,
+  wayWeWork: DEFAULT_WAY_WE_WORK
 };
 
 export function AboutPage() {
@@ -94,6 +97,7 @@ export function AboutPage() {
           merged.story = Array.isArray(fetchedAbout.story) && fetchedAbout.story.length > 0 ? fetchedAbout.story : DEFAULT_ABOUT_SETTINGS.story;
           merged.values = Array.isArray(fetchedAbout.values) && fetchedAbout.values.length > 0 ? fetchedAbout.values : DEFAULT_ABOUT_SETTINGS.values;
           merged.trustBadges = Array.isArray(fetchedAbout.trustBadges) && fetchedAbout.trustBadges.length > 0 ? fetchedAbout.trustBadges : DEFAULT_TRUST_BADGES;
+          merged.wayWeWork = (fetchedAbout.wayWeWork && Array.isArray(fetchedAbout.wayWeWork.items)) ? fetchedAbout.wayWeWork : DEFAULT_WAY_WE_WORK;
           setSettings(merged);
         }
       }
@@ -211,12 +215,16 @@ export function AboutPage() {
         </div>
       </section>
 
-      {/* ── THE WAY WE WORK (Replaced Core Values) ── */}
+      {/* ── THE WAY WE WORK (Guiding Principles) ── */}
       <section className="py-24 bg-gray-50">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-sm font-bold text-emerald-600 uppercase tracking-widest mb-2">Guiding Principles</h2>
-            <h3 className="text-3xl md:text-5xl font-bold font-heading text-gray-900">The Way We Work</h3>
+            <h2 className="text-sm font-bold text-emerald-600 uppercase tracking-widest mb-2">
+              {settings.wayWeWork?.badge || DEFAULT_WAY_WE_WORK.badge}
+            </h2>
+            <h3 className="text-3xl md:text-5xl font-bold font-heading text-gray-900">
+              {settings.wayWeWork?.title || DEFAULT_WAY_WE_WORK.title}
+            </h3>
           </div>
 
           <div 
@@ -225,25 +233,20 @@ export function AboutPage() {
           >
             <div className="bg-white p-8 md:p-12 rounded-3xl shadow-premium-soft border border-gray-100">
               <div className="space-y-8 text-gray-700 text-lg leading-relaxed font-normal">
-                <p className="text-xl font-medium text-gray-800">
-                  Our values guide how we carry out our daily work and how we interact with each other, with communities, and with partners.
-                </p>
-                <p>
-                  <strong className="text-emerald-800 text-xl block mb-2">We value people.</strong>
-                  All people have inherent dignity and potential. We place communities at the centre of our work, treating everyone with respect regardless of ethnicity, gender, religion, age, or displacement status. We seek to enable people to live normal and peaceful lives, develop their potential, and build hope for the future.
-                </p>
-                <p>
-                  <strong className="text-emerald-800 text-xl block mb-2">We are committed.</strong>
-                  We aim for lasting change, not short-term assistance. We stay with communities beyond the initial crisis, supporting them as they move from relief to recovery and from potential to sustainable transformation.
-                </p>
-                <p>
-                  <strong className="text-emerald-800 text-xl block mb-2">We are good stewards.</strong>
-                  We use the resources entrusted to us in the most responsible, efficient, and transparent way. We are accountable to the communities we serve and to the partners and donors who support our work.
-                </p>
-                <p>
-                  <strong className="text-emerald-800 text-xl block mb-2">We serve with integrity.</strong>
-                  We uphold high standards of personal and organizational integrity. We are open and honest in how we deal and communicate with stakeholders, and we treat people with respect in all our interactions.
-                </p>
+                {(settings.wayWeWork?.intro || DEFAULT_WAY_WE_WORK.intro) && (
+                  <p className="text-xl font-medium text-gray-800">
+                    {settings.wayWeWork?.intro || DEFAULT_WAY_WE_WORK.intro}
+                  </p>
+                )}
+                {(settings.wayWeWork?.items && settings.wayWeWork.items.length > 0
+                  ? settings.wayWeWork.items
+                  : DEFAULT_WAY_WE_WORK.items
+                ).map((item, index) => (
+                  <p key={index}>
+                    <strong className="text-emerald-800 text-xl block mb-2">{item.title}</strong>
+                    {item.desc}
+                  </p>
+                ))}
               </div>
             </div>
           </div>

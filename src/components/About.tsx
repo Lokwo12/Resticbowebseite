@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { motion } from 'framer-motion';
+import { DEFAULT_WAY_WE_WORK, WayWeWorkSettings } from './SiteSettingsTab';
 
 interface AboutValue {
   icon: string;
@@ -24,6 +25,7 @@ interface AboutSettings {
   values: AboutValue[];
   story: string[];
   trustBadges?: TrustBadge[];
+  wayWeWork?: WayWeWorkSettings;
 }
 
 const iconMap: Record<string, typeof Heart> = {
@@ -55,7 +57,8 @@ const DEFAULT_ABOUT_SETTINGS: AboutSettings = {
     'Refugee Empowerment For Sustainable Transformation Initiative CBO (RESTI) was born from a shared vision among community members who recognized the need for organized, sustainable development initiatives in our district. What started as small-scale educational support has grown into a comprehensive community development organization.',
     'Today, we work closely with local government, international partners, and most importantly, the communities we serve, to identify needs, develop solutions, and implement programs that create lasting positive change. Our grassroots approach ensures that every initiative is community-driven and culturally appropriate.'
   ],
-  trustBadges: DEFAULT_TRUST_BADGES
+  trustBadges: DEFAULT_TRUST_BADGES,
+  wayWeWork: DEFAULT_WAY_WE_WORK
 };
 
 export function About() {
@@ -92,7 +95,10 @@ export function About() {
           story: (aboutData.story && aboutData.story.length > 0) ? aboutData.story : DEFAULT_ABOUT_SETTINGS.story,
           trustBadges: (aboutData.trustBadges && Array.isArray(aboutData.trustBadges) && aboutData.trustBadges.length > 0) 
             ? aboutData.trustBadges 
-            : DEFAULT_TRUST_BADGES
+            : DEFAULT_TRUST_BADGES,
+          wayWeWork: (aboutData.wayWeWork && Array.isArray(aboutData.wayWeWork.items))
+            ? aboutData.wayWeWork
+            : DEFAULT_WAY_WE_WORK
         });
       }
     } catch {
@@ -164,7 +170,7 @@ export function About() {
           </motion.div>
         </div>
 
-        {/* The Way We Work (Replaced Core Values) */}
+        {/* The Way We Work (Guiding Principles) */}
         <motion.div 
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -174,30 +180,28 @@ export function About() {
         >
           <div className="absolute top-0 left-0 w-1.5 h-full bg-emerald-500"></div>
           <div className="max-w-3xl mx-auto">
+            <span className="inline-block text-xs font-bold text-emerald-700 uppercase tracking-widest mb-1.5">
+              {displaySettings.wayWeWork?.badge || DEFAULT_WAY_WE_WORK.badge}
+            </span>
             <h3 className="text-3xl font-bold font-heading tracking-tight text-gray-900 mb-6 flex items-center gap-2">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
-              The Way We Work
+              {displaySettings.wayWeWork?.title || DEFAULT_WAY_WE_WORK.title}
             </h3>
             <div className="space-y-6 text-gray-700 text-lg leading-relaxed font-normal">
-              <p>
-                Our values guide how we carry out our daily work and how we interact with each other, with communities, and with partners.
-              </p>
-              <p>
-                <strong className="text-emerald-800">We value people.</strong><br />
-                All people have inherent dignity and potential. We place communities at the centre of our work, treating everyone with respect regardless of ethnicity, gender, religion, age, or displacement status. We seek to enable people to live normal and peaceful lives, develop their potential, and build hope for the future.
-              </p>
-              <p>
-                <strong className="text-emerald-800">We are committed.</strong><br />
-                We aim for lasting change, not short-term assistance. We stay with communities beyond the initial crisis, supporting them as they move from relief to recovery and from potential to sustainable transformation.
-              </p>
-              <p>
-                <strong className="text-emerald-800">We are good stewards.</strong><br />
-                We use the resources entrusted to us in the most responsible, efficient, and transparent way. We are accountable to the communities we serve and to the partners and donors who support our work.
-              </p>
-              <p>
-                <strong className="text-emerald-800">We serve with integrity.</strong><br />
-                We uphold high standards of personal and organizational integrity. We are open and honest in how we deal and communicate with stakeholders, and we treat people with respect in all our interactions.
-              </p>
+              {(displaySettings.wayWeWork?.intro || DEFAULT_WAY_WE_WORK.intro) && (
+                <p>
+                  {displaySettings.wayWeWork?.intro || DEFAULT_WAY_WE_WORK.intro}
+                </p>
+              )}
+              {(displaySettings.wayWeWork?.items && displaySettings.wayWeWork.items.length > 0
+                ? displaySettings.wayWeWork.items
+                : DEFAULT_WAY_WE_WORK.items
+              ).map((item, index) => (
+                <p key={index}>
+                  <strong className="text-emerald-800">{item.title}</strong><br />
+                  {item.desc}
+                </p>
+              ))}
             </div>
           </div>
         </motion.div>

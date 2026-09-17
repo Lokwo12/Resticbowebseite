@@ -22,7 +22,7 @@ export const SETTING_SECTIONS = [
   { id: 'legal', label: 'Legal Pages', category: 'branding', icon: ShieldCheck, desc: 'Privacy Notice & Terms of Service' },
   
   { id: 'hero', label: 'Hero Showcase', category: 'content', icon: Sparkles, desc: 'Homepage banner, sliders & primary CTA' },
-  { id: 'about', label: 'About & Mission', category: 'content', icon: FileText, desc: 'Mission, vision, core values & story' },
+  { id: 'about', label: 'About & Mission', category: 'content', icon: FileText, desc: 'Mission, vision, The Way We Work & story' },
   { id: 'sections', label: 'Section Headers', category: 'content', icon: FileText, desc: 'Subheadings and introductory blurbs' },
 
   { id: 'impactDashboard', label: 'Impact Dashboard', category: 'impact', icon: TrendingUp, desc: 'Live stats, KPI badges & methodology' },
@@ -185,6 +185,42 @@ export const DEFAULT_TRUST_BADGES = [
   { icon: '💯', label: '100% Transparent', sub: 'Annual Reports Published' },
   { icon: '🤝', label: 'Community-Led', sub: 'Locally Driven Solutions' },
 ];
+
+export interface WayWeWorkItem {
+  title: string;
+  desc: string;
+}
+
+export interface WayWeWorkSettings {
+  badge?: string;
+  title?: string;
+  intro: string;
+  items: WayWeWorkItem[];
+}
+
+export const DEFAULT_WAY_WE_WORK: WayWeWorkSettings = {
+  badge: 'Guiding Principles',
+  title: 'The Way We Work',
+  intro: 'Our values guide how we carry out our daily work and how we interact with each other, with communities, and with partners.',
+  items: [
+    {
+      title: 'We value people.',
+      desc: 'All people have inherent dignity and potential. We place communities at the centre of our work, treating everyone with respect regardless of ethnicity, gender, religion, age, or displacement status. We seek to enable people to live normal and peaceful lives, develop their potential, and build hope for the future.'
+    },
+    {
+      title: 'We are committed.',
+      desc: 'We aim for lasting change, not short-term assistance. We stay with communities beyond the initial crisis, supporting them as they move from relief to recovery and from potential to sustainable transformation.'
+    },
+    {
+      title: 'We are good stewards.',
+      desc: 'We use the resources entrusted to us in the most responsible, efficient, and transparent way. We are accountable to the communities we serve and to the partners and donors who support our work.'
+    },
+    {
+      title: 'We serve with integrity.',
+      desc: 'We uphold high standards of personal and organizational integrity. We are open and honest in how we deal and communicate with stakeholders, and we treat people with respect in all our interactions.'
+    }
+  ]
+};
 
 interface SiteSettingsTabProps {
   settings: any;
@@ -1229,9 +1265,247 @@ export function SiteSettingsTab({ settings: initialSettings, onUpdate, accessTok
                 ))}
               </div>
 
+              {/* The Way We Work (Guiding Principles) */}
+              <div className="pt-6 border-t border-slate-200">
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-4">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <label className="block text-base font-bold text-gray-900">
+                        The Way We Work (Guiding Principles)
+                      </label>
+                      <span className="text-[11px] font-semibold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full">
+                        Featured on About & Homepage
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      Manage the guiding principles, section badge, title, intro text, and each organizational value statement.
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const currentWWW = settings.about?.wayWeWork || DEFAULT_WAY_WE_WORK;
+                        const newItems = [...(currentWWW.items || []), { title: '', desc: '' }];
+                        setSettings({
+                          ...settings,
+                          about: {
+                            ...settings.about,
+                            wayWeWork: { ...currentWWW, items: newItems }
+                          }
+                        });
+                      }}
+                      className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 bg-emerald-100/70 hover:bg-emerald-200/80 px-3.5 py-2 rounded-xl transition-all cursor-pointer"
+                    >
+                      <Plus size={15} /> Add Principle
+                    </button>
+                  </div>
+                </div>
+
+                {/* Header & Intro settings */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 bg-emerald-50/40 p-4 rounded-2xl border border-emerald-100">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">Section Badge</label>
+                    <input
+                      type="text"
+                      value={(settings.about?.wayWeWork?.badge !== undefined) ? settings.about.wayWeWork.badge : DEFAULT_WAY_WE_WORK.badge}
+                      onChange={(e) => {
+                        const currentWWW = settings.about?.wayWeWork || DEFAULT_WAY_WE_WORK;
+                        setSettings({
+                          ...settings,
+                          about: {
+                            ...settings.about,
+                            wayWeWork: { ...currentWWW, badge: e.target.value }
+                          }
+                        });
+                      }}
+                      placeholder="Guiding Principles"
+                      className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">Section Heading</label>
+                    <input
+                      type="text"
+                      value={(settings.about?.wayWeWork?.title !== undefined) ? settings.about.wayWeWork.title : DEFAULT_WAY_WE_WORK.title}
+                      onChange={(e) => {
+                        const currentWWW = settings.about?.wayWeWork || DEFAULT_WAY_WE_WORK;
+                        setSettings({
+                          ...settings,
+                          about: {
+                            ...settings.about,
+                            wayWeWork: { ...currentWWW, title: e.target.value }
+                          }
+                        });
+                      }}
+                      placeholder="The Way We Work"
+                      className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none font-semibold text-gray-900"
+                    />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-xs font-bold text-gray-700 mb-1">Introductory Statement</label>
+                    <textarea
+                      value={(settings.about?.wayWeWork?.intro !== undefined) ? settings.about.wayWeWork.intro : DEFAULT_WAY_WE_WORK.intro}
+                      onChange={(e) => {
+                        const currentWWW = settings.about?.wayWeWork || DEFAULT_WAY_WE_WORK;
+                        setSettings({
+                          ...settings,
+                          about: {
+                            ...settings.about,
+                            wayWeWork: { ...currentWWW, intro: e.target.value }
+                          }
+                        });
+                      }}
+                      rows={2}
+                      placeholder="Our values guide how we carry out our daily work..."
+                      className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                {/* Principle cards */}
+                <div className="space-y-3">
+                  {((settings.about?.wayWeWork?.items !== undefined) ? settings.about.wayWeWork.items : DEFAULT_WAY_WE_WORK.items).map((item: any, index: number) => {
+                    const currentWWW = settings.about?.wayWeWork || DEFAULT_WAY_WE_WORK;
+                    const itemsList = currentWWW.items || [];
+                    return (
+                      <div key={index} className="flex gap-3 items-start p-4 bg-white rounded-2xl border border-gray-200 shadow-sm hover:border-emerald-200 transition-all">
+                        <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-xs shrink-0 mt-1">
+                          {index + 1}
+                        </div>
+                        <div className="flex-1 space-y-2">
+                          <div>
+                            <label className="block text-[11px] font-bold text-gray-700 mb-1">Principle Title</label>
+                            <input
+                              type="text"
+                              value={item.title}
+                              onChange={(e) => {
+                                const updated = [...itemsList];
+                                updated[index] = { ...updated[index], title: e.target.value };
+                                setSettings({
+                                  ...settings,
+                                  about: {
+                                    ...settings.about,
+                                    wayWeWork: { ...currentWWW, items: updated }
+                                  }
+                                });
+                              }}
+                              placeholder="e.g. We value people."
+                              className="w-full px-3 py-2 text-sm font-semibold text-gray-900 border border-slate-200 rounded-xl bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-medium text-gray-600 mb-1">Description / Commitment</label>
+                            <textarea
+                              value={item.desc}
+                              onChange={(e) => {
+                                const updated = [...itemsList];
+                                updated[index] = { ...updated[index], desc: e.target.value };
+                                setSettings({
+                                  ...settings,
+                                  about: {
+                                    ...settings.about,
+                                    wayWeWork: { ...currentWWW, items: updated }
+                                  }
+                                });
+                              }}
+                              rows={3}
+                              placeholder="Description of this guiding principle..."
+                              className="w-full px-3 py-2 text-sm text-gray-700 border border-slate-200 rounded-xl bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none leading-relaxed"
+                            />
+                          </div>
+                        </div>
+                        <div className="flex flex-col gap-1 shrink-0 mt-6">
+                          <button
+                            type="button"
+                            disabled={index === 0}
+                            onClick={() => {
+                              if (index === 0) return;
+                              const updated = [...itemsList];
+                              const temp = updated[index - 1];
+                              updated[index - 1] = updated[index];
+                              updated[index] = temp;
+                              setSettings({
+                                ...settings,
+                                about: {
+                                  ...settings.about,
+                                  wayWeWork: { ...currentWWW, items: updated }
+                                }
+                              });
+                            }}
+                            className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-30 disabled:hover:bg-transparent"
+                            title="Move Up"
+                          >
+                            <ChevronUp size={16} />
+                          </button>
+                          <button
+                            type="button"
+                            disabled={index === itemsList.length - 1}
+                            onClick={() => {
+                              if (index === itemsList.length - 1) return;
+                              const updated = [...itemsList];
+                              const temp = updated[index + 1];
+                              updated[index + 1] = updated[index];
+                              updated[index] = temp;
+                              setSettings({
+                                ...settings,
+                                about: {
+                                  ...settings.about,
+                                  wayWeWork: { ...currentWWW, items: updated }
+                                }
+                              });
+                            }}
+                            className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-30 disabled:hover:bg-transparent"
+                            title="Move Down"
+                          >
+                            <ChevronDown size={16} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const updated = itemsList.filter((_: any, i: number) => i !== index);
+                              setSettings({
+                                ...settings,
+                                about: {
+                                  ...settings.about,
+                                  wayWeWork: { ...currentWWW, items: updated }
+                                }
+                              });
+                            }}
+                            className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            title="Delete Principle"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                  {(!settings.about?.wayWeWork?.items || settings.about.wayWeWork.items.length === 0) && (
+                    <div className="p-6 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                      <p className="text-sm text-gray-500 mb-2">No custom principles defined. Default principles are currently showing on the website.</p>
+                      <button
+                        type="button"
+                        onClick={() => setSettings({
+                          ...settings,
+                          about: {
+                            ...settings.about,
+                            wayWeWork: DEFAULT_WAY_WE_WORK
+                          }
+                        })}
+                        className="text-xs font-semibold text-emerald-600 hover:underline"
+                      >
+                        Load Default Principles
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+
               <div className="pt-4 border-t">
                 <div className="flex justify-between items-center mb-4">
-                  <label className="block text-sm font-medium text-gray-900">Core Values</label>
+                  <label className="block text-sm font-medium text-gray-900">Legacy Core Values</label>
                   <button
                     onClick={() => {
                       const newValues = [...(settings.about?.values || []), { icon: 'Heart', title: '', description: '' }];
