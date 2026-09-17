@@ -470,85 +470,148 @@ export function DonationModal() {
       <div className="elegant-modal relative rounded-3xl shadow-premium-soft flex flex-col md:flex-row overflow-hidden border border-slate-100 bg-white w-[95vw] max-w-5xl max-h-[95vh]">
         
         {/* Left Side: Impact Image (Hidden on mobile) */}
-        <div className="hidden md:flex md:w-5/12 relative bg-[#0A192F] overflow-hidden flex-col justify-between p-10">
-          {/* Background image with overlay */}
+        <div className="hidden md:flex md:w-5/12 relative bg-[#0A192F] overflow-hidden flex-col justify-between p-8 lg:p-10 select-none">
+          {/* Authentic RESTI Community Image Background */}
           <div className="absolute inset-0 z-0">
             <img 
-              src="https://images.unsplash.com/photo-1641569707854-c80945fb4719?w=800&q=80" 
-              alt="Community impact" 
-              className="w-full h-full object-cover opacity-30 mix-blend-overlay"
+              src="https://mxffqgefsufcdgnhjjsw.supabase.co/storage/v1/object/public/make-2a4be611-uploads/3da296bb-e651-490b-acf8-64e974f2b55b-WhatsApp_Image_2026-09-11_at_2.56.48_AM.jpeg" 
+              alt="RESTI Community Impact" 
+              className="w-full h-full object-cover scale-105 transition-transform duration-1000 ease-out"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?w=1200&auto=format&fit=crop&q=80';
+              }}
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-[#0A192F] via-[#0A192F]/80 to-transparent"></div>
+            {/* Elegant multi-layer gradient for optimal readability & photo beauty */}
+            <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/75 to-slate-900/40"></div>
           </div>
           
-          <div className="relative z-10">
-            {/* Elegant clean logo, no borders */}
-            <img src={logoUrl} alt="Logo" className="h-14 w-auto max-w-[140px] object-contain drop-shadow-md brightness-0 invert" onError={(e) => { e.currentTarget.src = '/logo.png'; }} />
+          {/* Top: Official RESTI-CBO Logo Card */}
+          <div className="relative z-10 flex items-center justify-between">
+            <div className="inline-flex items-center gap-3 bg-white/95 backdrop-blur-md px-3.5 py-2 rounded-2xl shadow-xl border border-white/90">
+              <img 
+                src={logoUrl} 
+                alt="RESTI-CBO Logo" 
+                className="h-10 w-10 object-contain rounded-xl p-0.5 bg-white border border-emerald-500/20 shadow-xs" 
+                onError={(e) => { (e.target as HTMLImageElement).src = '/logo.png'; }} 
+              />
+              <div className="flex flex-col text-left">
+                <div className="flex items-center gap-1.5">
+                  <span className="font-extrabold font-heading text-slate-900 text-sm tracking-tight leading-none">RESTI-CBO</span>
+                  <span className="px-1.5 py-0.5 rounded text-[8px] font-black uppercase bg-emerald-100 text-emerald-800 border border-emerald-200/80">Verified</span>
+                </div>
+                <span className="text-[10px] text-slate-500 font-semibold tracking-wider uppercase mt-0.5">Kiryandongo, Uganda</span>
+              </div>
+            </div>
+            <div className="hidden lg:inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-300 bg-emerald-950/60 backdrop-blur-sm px-2.5 py-1 rounded-full border border-emerald-500/30">
+              <ShieldCheck size={13} className="text-emerald-400" />
+              <span>Direct Aid</span>
+            </div>
           </div>
           
-          <div className="relative z-10 space-y-4">
+          {/* Middle/Bottom: Mission & Impact Points */}
+          <div className="relative z-10 space-y-4 pt-8">
             <div>
-              <span className="inline-block px-3 py-1 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded-full text-[11px] font-bold tracking-widest uppercase mb-2">
-                DONATE NOW
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded-full text-[11px] font-bold tracking-widest uppercase mb-2 backdrop-blur-xs">
+                <Heart size={11} fill="currentColor" className="text-emerald-400" /> COMMUNITY IMPACT
               </span>
               <h3 className="text-2xl lg:text-3xl font-heading font-bold text-white leading-tight drop-shadow-md">
                 Your Support Transforms Lives
               </h3>
             </div>
-            <div className="bg-white/10 rounded-2xl p-4 backdrop-blur-sm border border-white/15 space-y-2">
-              <p className="text-white text-xs sm:text-sm font-semibold leading-relaxed">
-                Your donation helps refugees and host communities access skills, strengthen livelihoods, and build a more resilient future. Every contribution makes a difference.
+            
+            <div className="bg-slate-900/60 rounded-2xl p-4 backdrop-blur-md border border-white/15 space-y-2.5 shadow-lg">
+              <p className="text-white text-xs sm:text-sm font-medium leading-relaxed">
+                Your donation helps refugees and host communities access skills, strengthen livelihoods, and build a more resilient future.
               </p>
-              <p className="text-emerald-100/90 text-xs leading-relaxed pt-1 border-t border-white/10">
-                When you donate to RESTI, you help refugees and host communities build sustainable livelihoods, access new opportunities, and create a better future. We can’t do this without your support. Please support RESTI today.
-              </p>
+              
+              <div className="pt-2 border-t border-white/10 space-y-1.5 text-xs text-emerald-100">
+                <div className="flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                  <span><strong>Education & Skills:</strong> Youth vocational training</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                  <span><strong>Livelihoods:</strong> Climate-smart farming & micro-grants</span>
+                </div>
+              </div>
             </div>
-            <p className="text-emerald-100/80 text-xs font-medium leading-relaxed">
-              Based on our latest financial disclosures, 90% of your gift goes directly to community programs in Kiryandongo District, funding education, healthcare, and sustainable agriculture.
-            </p>
+
+            <div className="flex items-center justify-between text-[11px] font-medium text-emerald-200/90 pt-1">
+              <span className="flex items-center gap-1.5"><Lock size={12} className="text-emerald-400" /> 256-bit SSL Encrypted</span>
+              <span className="flex items-center gap-1.5"><CheckCircle size={12} className="text-emerald-400" /> 90% to Programs</span>
+            </div>
           </div>
         </div>
 
         {/* Right Side: Form Content */}
         <div className="w-full md:w-7/12 flex flex-col relative bg-white overflow-hidden">
 
-
-
         {/* ── HEADER ───────────────────────────────────────────── */}
-         <div
-          className="shrink-0 px-4 pt-6 pb-4 flex flex-col items-center relative overflow-hidden bg-white border-b border-slate-100"
-        >
-          {/* Subtle background pattern/glow */}
+        <div className="shrink-0 px-6 pt-5 pb-4 flex flex-col relative overflow-hidden bg-white border-b border-slate-100">
+          {/* Top accent line */}
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-500"></div>
-          <div className="absolute -top-24 -right-24 w-48 h-48 bg-emerald-50 rounded-full opacity-50"></div>
           
           {/* Close button */}
           <button
             onClick={handleClose}
-            className="absolute right-4 top-5 z-10 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 p-2 rounded-full transition-all duration-300"
-            aria-label="Close"
+            className="absolute right-4 top-4 z-10 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 p-2 rounded-full transition-all duration-300"
+            aria-label="Close modal"
           >
-            <X size={22} />
+            <X size={20} />
           </button>
 
-          <div className="flex flex-col items-center gap-4 text-center">
-            <div className="relative md:hidden mb-2">
-              <img src={logoUrl} alt="Company Logo" className="h-14 w-auto max-w-[140px] object-contain drop-shadow-sm relative z-10" onError={(e) => { (e.target as HTMLImageElement).src = '/logo.png'; }} />
-            </div>
-            <div className="space-y-1">
-              <h2 className="font-heading text-xl font-bold text-[#0A192F] tracking-tight">Support Our Mission</h2>
-              <p className="text-[10px] text-gray-500 font-medium uppercase tracking-[0.2em] opacity-70">RESTI CBO</p>
+          {/* Top branding for mobile/header */}
+          <div className="flex items-center justify-between pr-8">
+            <div className="flex items-center gap-3">
+              <div className="md:hidden flex items-center justify-center p-1 bg-white rounded-xl border border-emerald-200 shadow-2xs">
+                <img 
+                  src={logoUrl} 
+                  alt="RESTI-CBO Logo" 
+                  className="h-8 w-8 object-contain" 
+                  onError={(e) => { (e.target as HTMLImageElement).src = '/logo.png'; }} 
+                />
+              </div>
+              <div className="text-left">
+                <div className="flex items-center gap-2">
+                  <h2 className="font-heading text-lg font-bold text-slate-900 tracking-tight leading-none">Support Our Mission</h2>
+                  <span className="hidden sm:inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200/80">
+                    Tax Deductible
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-500 font-medium mt-1">Refugee Empowerment for Sustainable Transformation Initiative</p>
+              </div>
             </div>
           </div>
 
-          {/* Step progress dots */}
+          {/* Clean Step Indicator */}
           {!done && (
-            <div className="flex gap-2.5 mt-7">
-              {[1, 2, 3].map(i => (
-                <div
-                  key={i}
-                  className={`h-1.5 rounded-full transition-all duration-500 ${step === i ? 'w-10 bg-emerald-600' : step > i ? 'w-4 bg-emerald-200' : 'w-4 bg-gray-100'}`}
-                />
+            <div className="flex items-center gap-2 mt-4 pt-3 border-t border-slate-100">
+              {[
+                { s: 1, label: 'Amount' },
+                { s: 2, label: 'Payment' },
+                { s: 3, label: 'Confirm' },
+              ].map((item, idx) => (
+                <React.Fragment key={item.s}>
+                  <div className="flex items-center gap-1.5">
+                    <span className={`flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-bold transition-all ${
+                      step === item.s 
+                        ? 'bg-emerald-600 text-white shadow-xs' 
+                        : step > item.s 
+                          ? 'bg-emerald-100 text-emerald-800' 
+                          : 'bg-slate-100 text-slate-400'
+                    }`}>
+                      {step > item.s ? '✓' : item.s}
+                    </span>
+                    <span className={`text-xs font-semibold ${
+                      step === item.s ? 'text-slate-900 font-bold' : step > item.s ? 'text-emerald-700' : 'text-slate-400'
+                    }`}>
+                      {item.label}
+                    </span>
+                  </div>
+                  {idx < 2 && (
+                    <span className="text-slate-300 text-xs px-1">›</span>
+                  )}
+                </React.Fragment>
               ))}
             </div>
           )}

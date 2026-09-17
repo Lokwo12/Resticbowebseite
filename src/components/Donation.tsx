@@ -105,6 +105,7 @@ export function Donation() {
     postalCode: ''
   });
   const [familiesSupported, setFamiliesSupported] = useState('0');
+  const [logoUrl, setLogoUrl] = useState('/logo.png');
 
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -120,6 +121,10 @@ export function Donation() {
         if (data?.settings?.hero?.stats) {
           const famStat = data.settings.hero.stats.find((s: any) => /families/i.test(s.label));
           if (famStat && famStat.value !== undefined) setFamiliesSupported(famStat.value);
+        }
+        if (data?.settings?.general?.logoUrl) {
+          const fetchedLogo = data.settings.general.logoUrl;
+          setLogoUrl(fetchedLogo && !fetchedLogo.includes('figma:asset') ? fetchedLogo : '/logo.png');
         }
       })
       .catch(() => { });
@@ -240,7 +245,26 @@ export function Donation() {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative">
 
         {/* Page header */}
-        <div className="text-center mb-16">
+        <div className="text-center mb-12 sm:mb-16">
+          {/* Official Organization Brand Badge with crisp logo */}
+          <div className="flex justify-center mb-5">
+            <div className="inline-flex items-center gap-3 bg-white px-4 py-2 rounded-2xl shadow-sm border border-emerald-100 hover:border-emerald-200 transition-all">
+              <img 
+                src={logoUrl} 
+                alt="RESTI-CBO Official Logo" 
+                className="h-11 w-11 object-contain rounded-xl p-0.5 bg-emerald-50/60 border border-emerald-200/60" 
+                onError={(e) => { (e.target as HTMLImageElement).src = '/logo.png'; }} 
+              />
+              <div className="flex flex-col text-left">
+                <div className="flex items-center gap-1.5">
+                  <span className="font-extrabold font-heading text-slate-900 text-sm tracking-tight leading-none">RESTI-CBO</span>
+                  <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase bg-emerald-100 text-emerald-800 border border-emerald-200/80">Verified</span>
+                </div>
+                <span className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider mt-0.5">Kiryandongo Refugee Settlement, Uganda</span>
+              </div>
+            </div>
+          </div>
+
           <div className="inline-flex items-center gap-2 bg-emerald-100 text-emerald-800 text-xs sm:text-sm font-bold px-5 py-2 rounded-full mb-4 uppercase tracking-widest shadow-2xs">
             <Heart size={14} fill="currentColor" className="text-emerald-600" /> {donationConfig.badge || 'DONATE NOW'}
           </div>
@@ -272,40 +296,75 @@ export function Donation() {
 
           {/* LEFT COLUMN: Impact & Info */}
           <div className="w-full lg:w-5/12 space-y-6">
-            <div className="bg-gradient-to-br from-emerald-600 to-teal-700 text-white rounded-3xl p-8 shadow-xl relative overflow-hidden h-full flex flex-col justify-between">
-              <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_top_right,white,transparent)]"></div>
-              <div>
-                <div className="font-bold text-lg mb-2">{donationConfig.orgName || 'Refugee Empowerment For Sustainable Transformation Initiative CBO (RESTI)'}</div>
-                <div className="text-emerald-100 text-sm mb-5">{donationConfig.orgSub || 'Registered CBO - Uganda NGO Bureau'}</div>
+            <div className="relative rounded-3xl p-8 shadow-xl overflow-hidden h-full flex flex-col justify-between text-white group bg-slate-900">
+              {/* Authentic RESTI Community Image Background */}
+              <div className="absolute inset-0 z-0">
+                <img 
+                  src="https://mxffqgefsufcdgnhjjsw.supabase.co/storage/v1/object/public/make-2a4be611-uploads/3da296bb-e651-490b-acf8-64e974f2b55b-WhatsApp_Image_2026-09-11_at_2.56.48_AM.jpeg" 
+                  alt="RESTI Community Impact" 
+                  className="w-full h-full object-cover scale-105 transition-transform duration-700 ease-out group-hover:scale-110"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?w=1200&auto=format&fit=crop&q=80';
+                  }}
+                />
+                {/* Refined gradient overlay for readability */}
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/85 to-slate-900/60"></div>
+              </div>
 
-                <div className="bg-white/10 rounded-2xl p-4.5 backdrop-blur-sm border border-white/20 mb-6 space-y-2.5">
+              <div className="relative z-10">
+                {/* Official Logo Badge */}
+                <div className="mb-6">
+                  <div className="inline-flex items-center gap-3 bg-white/95 backdrop-blur-md px-3.5 py-2 rounded-2xl shadow-lg border border-white/90">
+                    <img 
+                      src={logoUrl} 
+                      alt="RESTI Logo" 
+                      className="h-10 w-10 object-contain rounded-xl p-0.5 bg-white border border-emerald-500/20 shadow-xs" 
+                      onError={(e) => { (e.target as HTMLImageElement).src = '/logo.png'; }} 
+                    />
+                    <div className="text-left">
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-extrabold font-heading text-slate-900 text-sm tracking-tight leading-none">RESTI-CBO</span>
+                        <span className="px-1.5 py-0.5 rounded text-[8px] font-black uppercase bg-emerald-100 text-emerald-800 border border-emerald-200">Registered</span>
+                      </div>
+                      <span className="text-[10px] text-slate-500 font-medium block mt-0.5">Reg. No. CBO/KIR/2023/048</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="font-bold text-lg mb-1 leading-snug drop-shadow-sm">{donationConfig.orgName || 'Refugee Empowerment For Sustainable Transformation Initiative (RESTI)'}</div>
+                <div className="text-emerald-300 text-xs font-semibold uppercase tracking-wider mb-5 flex items-center gap-1.5">
+                  <Shield size={13} className="text-emerald-400" />
+                  <span>{donationConfig.orgSub || 'Registered CBO - Uganda NGO Bureau'}</span>
+                </div>
+
+                <div className="bg-slate-900/60 rounded-2xl p-4.5 backdrop-blur-md border border-white/15 mb-6 space-y-2.5 shadow-lg">
                   <p className="text-white text-xs sm:text-sm font-semibold leading-relaxed">
                     {donationConfig.leftQuote1 || 'Your donation helps refugees and host communities access skills, strengthen livelihoods, and build a more resilient future. Every contribution makes a difference.'}
                   </p>
-                  <p className="text-emerald-100/90 text-xs leading-relaxed pt-2 border-t border-white/15">
+                  <p className="text-emerald-100/90 text-xs leading-relaxed pt-2 border-t border-white/10">
                     {donationConfig.leftQuote2 || 'When you donate to RESTI, you help refugees and host communities build sustainable livelihoods, access new opportunities, and create a better future. We can’t do this without your support. Please support RESTI today.'}
                   </p>
                 </div>
 
-                <h3 className="text-2xl sm:text-3xl font-bold mb-3 leading-snug">{donationConfig.whySupportTitle || 'Why Your Support Matters'}</h3>
-                <p className="text-emerald-50 text-sm leading-relaxed mb-6">
+                <h3 className="text-2xl sm:text-3xl font-bold mb-3 leading-snug drop-shadow-sm">{donationConfig.whySupportTitle || 'Why Your Support Matters'}</h3>
+                <p className="text-slate-200 text-sm leading-relaxed mb-6">
                   {donationConfig.whySupportText || 'Every contribution helps us provide essential services to vulnerable families. Based on our latest financial disclosures, 90% of all public donations go directly to community programs, with only 10% used for essential administrative overhead.'}
                 </p>
                 <div className="grid grid-cols-2 gap-4 mb-6">
-                  <div className="bg-white/10 rounded-xl p-4 backdrop-blur-sm">
+                  <div className="bg-slate-900/60 rounded-xl p-4 backdrop-blur-md border border-white/10">
                     <div className="text-2xl font-bold text-white">{familiesSupported || donationConfig.familiesSupported || '0'}</div>
-                    <div className="text-emerald-200 text-xs mt-1">{donationConfig.familiesLabel || 'Families Supported'}</div>
+                    <div className="text-emerald-300 text-xs mt-1 font-medium">{donationConfig.familiesLabel || 'Families Supported'}</div>
                   </div>
-                  <div className="bg-white/10 rounded-xl p-4 backdrop-blur-sm">
-                    <div className="text-2xl font-bold text-white">{donationConfig.programPercentage || '90%'}</div>
-                    <div className="text-emerald-200 text-xs mt-1">{donationConfig.programLabel || 'Goes to Programs'}</div>
+                  <div className="bg-slate-900/60 rounded-xl p-4 backdrop-blur-md border border-white/10">
+                    <div className="text-2xl font-bold text-emerald-400">{donationConfig.programPercentage || '90%'}</div>
+                    <div className="text-emerald-300 text-xs mt-1 font-medium">{donationConfig.programLabel || 'Goes to Programs'}</div>
                   </div>
                 </div>
               </div>
-              <div className="border-t border-white/20 pt-6 mt-auto">
-                <div className="flex items-center justify-between text-xs text-emerald-100">
-                  <span className="flex items-center gap-1"><Lock size={12} /> 256-bit SSL</span>
-                  <span className="flex items-center gap-1"><Shield size={12} /> Verified NGO</span>
+              <div className="border-t border-white/15 pt-5 mt-auto relative z-10">
+                <div className="flex items-center justify-between text-xs text-emerald-200/90 font-medium">
+                  <span className="flex items-center gap-1.5"><Lock size={12} className="text-emerald-400" /> 256-bit SSL Encrypted</span>
+                  <span className="flex items-center gap-1.5"><Shield size={12} className="text-emerald-400" /> Verified NGO Bureau</span>
                 </div>
               </div>
             </div>
