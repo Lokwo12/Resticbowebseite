@@ -10,7 +10,7 @@ export interface BotReply {
 export const INITIAL_QUICK_REPLIES = [
   '💚 How to Donate',
   '📚 Our Programs',
-  '🤝 Volunteer with Us',
+  '🌟 Opportunities',
   '📍 Location & Contact',
   '📊 Impact & Reports',
   '🙋 Speak to Staff'
@@ -23,7 +23,7 @@ export function generateBotReply(rawMessage: string): BotReply {
   if (/^(hi|hello|hey|good morning|good afternoon|good evening|greetings|hola|jambo)/i.test(msg) || msg === 'hi' || msg === 'hello') {
     return {
       text: "Hello and welcome to RESTI CBO! 👋 We are a community-based organization serving refugees and host families in Kiryandongo District, Uganda. How can I assist you today?",
-      quickReplies: ['💚 How to Donate', '📚 Our Programs', '🤝 Volunteer', '📍 Where We Work']
+      quickReplies: ['💚 How to Donate', '📚 Our Programs', '🌟 Opportunities', '📍 Where We Work']
     };
   }
 
@@ -66,7 +66,7 @@ export function generateBotReply(rawMessage: string): BotReply {
   ) {
     return {
       text: "We would love to have you on our team! 🤝 We welcome both local field volunteers in Kiryandongo and remote digital volunteers worldwide.\n\nOpen areas include:\n• 👥 Community Peer Educators & Coordinators\n• 💻 Remote Grant Writing, Social Media & Communications\n• 🏫 Youth Mentors & Digital Computer Trainers\n• 📋 Monitoring, Evaluation & Learning (MEL)",
-      link: { text: 'Apply to Volunteer →', url: '/volunteer' },
+      link: { text: 'View Opportunities →', url: '/opportunities' },
       quickReplies: ['📍 Location Details', '💚 Make a Gift Instead', '🙋 Contact Coordinator']
     };
   }

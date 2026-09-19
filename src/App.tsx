@@ -40,7 +40,6 @@ import { NewsDetail } from './components/NewsDetail';
 import { TeamPage } from './components/TeamPage';
 import { TeamMemberDetail } from './components/TeamMemberDetail';
 import { ImpactReports } from './components/ImpactReports';
-import { VolunteerPage } from './components/VolunteerPage';
 import { FAQPage } from './components/FAQPage';
 import { PartnersPage } from './components/PartnersPage';
 import { OpportunitiesPage } from './components/OpportunitiesPage';
@@ -75,7 +74,6 @@ function PageTitleManager() {
       '/team': 'Our Team | RESTI CBO',
       '/reports': 'Impact Reports | RESTI CBO',
       '/impact-dashboard': 'Impact Dashboard | RESTI CBO',
-      '/volunteer': 'Volunteer | RESTI CBO',
       '/faqs': 'Frequently Asked Questions | RESTI CBO',
       '/partners': 'Our Partners | RESTI CBO',
       '/opportunities': 'Opportunities | RESTI CBO',
@@ -244,7 +242,7 @@ export default function App() {
         <Route path="/about" element={<MainLayout><AdminErrorBoundary><AboutPage /></AdminErrorBoundary></MainLayout>} />
         <Route path="/reports" element={<MainLayout><ImpactReports /></MainLayout>} />
         <Route path="/impact-dashboard" element={<MainLayout><ImpactDashboard /></MainLayout>} />
-        <Route path="/volunteer" element={<MainLayout><VolunteerPage /></MainLayout>} />
+        <Route path="/volunteer" element={<Navigate to="/opportunities" replace />} />
         <Route path="/events" element={<MainLayout><Events /></MainLayout>} />
         <Route path="/resources" element={<MainLayout><Resources /></MainLayout>} />
         <Route path="/faqs" element={<MainLayout><FAQPage /></MainLayout>} />

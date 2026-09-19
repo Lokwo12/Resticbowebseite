@@ -169,7 +169,6 @@ export function Footer() {
           <div>
             <h4 className="mb-4">Get Involved</h4>
             <ul className="space-y-3 text-base text-gray-400">
-              <li><Link to="/volunteer" className="block hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Volunteer</Link></li>
               <li><button onClick={openDonationModal} className="block text-left hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Donate</button></li>
               <li><Link to="/partners" className="block hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Become a Partner</Link></li>
               <li><Link to="/opportunities" className="block hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Opportunities</Link></li>

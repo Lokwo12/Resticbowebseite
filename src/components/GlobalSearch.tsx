@@ -165,7 +165,7 @@ export function GlobalSearch({ isOpen, onClose }: { isOpen: boolean, onClose: ()
               <div className="grid grid-cols-2 gap-2">
                 {[
                   { name: 'Donate to Cause', link: '/#donate', icon: Heart },
-                  { name: 'Volunteer With Us', link: '/volunteer', icon: ExternalLink },
+                  { name: 'Careers & Opportunities', link: '/opportunities', icon: ExternalLink },
                   { name: 'Read Impact Stories', link: '/stories', icon: ExternalLink },
                   { name: 'Upcoming Events', link: '/#events', icon: ExternalLink }
                 ].map((l, i) => (

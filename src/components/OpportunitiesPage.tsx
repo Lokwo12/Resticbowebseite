@@ -150,11 +150,8 @@ export function OpportunitiesPage() {
 
               {/* Action */}
               <div className="flex-shrink-0">
-                <Link
-                  to="/volunteer"
-                  className="inline-flex items-center justify-center bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-medium py-3 px-6 rounded-xl transition-colors gap-2 w-full md:w-auto"
-                >
-                  <span>Apply Now</span>
+                <Link to="/contact" className="inline-flex items-center justify-center bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-medium py-3 px-6 rounded-xl transition-colors gap-2 w-full md:w-auto">
+                  <span>Inquire / Apply</span>
                   <ArrowRight size={16} />
                 </Link>
               </div>

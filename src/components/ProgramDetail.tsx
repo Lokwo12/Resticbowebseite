@@ -812,9 +812,9 @@ export function ProgramDetail() {
                 Are you an institution, NGO, researcher, or specialist wishing to contribute technical expertise or funding to this program?
               </p>
               <div className="flex flex-col gap-2.5">
-                <Link to="/volunteer">
+                <Link to="/opportunities">
                   <Button variant="outline" className="w-full bg-white/10 hover:bg-white/20 text-white border-white/20 text-xs font-semibold">
-                    Volunteer in the Field
+                    Work or Partner With Us
                   </Button>
                 </Link>
                 <Link to="/partners">

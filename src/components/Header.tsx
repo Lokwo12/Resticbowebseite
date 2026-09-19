@@ -462,7 +462,7 @@ export function Header() {
                 <button
                   onClick={() => setActiveDropdown(activeDropdown === 'involved' ? null : 'involved')}
                   className={`px-2 xl:px-2.5 py-2 rounded-lg text-sm xl:text-[15px] font-medium transition-colors flex items-center gap-1 whitespace-nowrap ${
-                    isActive('/volunteer') || isActive('/opportunities') || isActive('/partners') || isActive('/donor')
+                    isActive('/opportunities') || isActive('/partners') || isActive('/donor')
                       ? isSolid ? 'text-emerald-600 font-bold bg-emerald-50/80' : 'text-white font-bold bg-white/15'
                       : isSolid ? 'text-gray-700 hover:text-emerald-600 hover:bg-slate-50' : 'text-white/90 hover:text-white hover:bg-white/10'
                   }`}
@@ -474,17 +474,6 @@ export function Header() {
                   activeDropdown === 'involved' ? 'opacity-100 visible translate-y-0' : 'opacity-0 invisible -translate-y-2 pointer-events-none'
                 }`}>
                   <div className="bg-white rounded-xl shadow-xl border border-slate-100 overflow-hidden py-1.5 ring-1 ring-black/5">
-                    <Link 
-                      to="/volunteer" 
-                      onClick={() => setActiveDropdown(null)}
-                      className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-700 transition-colors"
-                    >
-                      <HandHeart size={16} className="text-emerald-600 shrink-0" />
-                      <div>
-                        <div className="font-semibold text-gray-900 leading-tight">Volunteer</div>
-                        <div className="text-[11px] text-gray-500">Join our field missions</div>
-                      </div>
-                    </Link>
                     <Link 
                       to="/opportunities" 
                       onClick={() => setActiveDropdown(null)}
@@ -748,9 +737,6 @@ export function Header() {
 
                 {mobileSectionOpen === 'involved' && (
                   <div className="pl-7 pr-3 py-1.5 flex flex-col space-y-1 animate-in fade-in duration-150">
-                    <Link to="/volunteer" onClick={() => setMobileMenuOpen(false)} className="py-1.5 text-sm text-gray-700 hover:text-emerald-600 flex items-center gap-2">
-                      <span>Volunteer With Us</span>
-                    </Link>
                     <Link to="/opportunities" onClick={() => setMobileMenuOpen(false)} className="py-1.5 text-sm text-gray-700 hover:text-emerald-600 flex items-center gap-2">
                       <span>Careers & Opportunities</span>
                     </Link>

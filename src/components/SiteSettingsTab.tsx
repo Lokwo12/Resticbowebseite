@@ -30,8 +30,6 @@ export const SETTING_SECTIONS = [
 
   { id: 'donation', label: 'Donation & Gateways', category: 'engagement', icon: DollarSign, desc: 'Presets, MTN/Airtel/Bank & allocation' },
   { id: 'donorPortal', label: "Donor's Portal", category: 'engagement', icon: HandHeart, desc: 'Manage your donation, tabs, field stories & FAQs' },
-  { id: 'volunteer', label: 'Volunteer Portal', category: 'engagement', icon: Heart, desc: 'Hero banner, open roles & requirements' },
-  { id: 'quiz', label: 'Volunteer Quiz', category: 'engagement', icon: HelpCircle, desc: 'Interactive volunteer match questions' },
   { id: 'contact', label: 'Contact Info', category: 'engagement', icon: Users, desc: 'Headquarters, phone, email & field map' },
 
   { id: 'analytics', label: 'Analytics & Code', category: 'developer', icon: Code, desc: 'Google Tag, tracking & custom headers' },
@@ -2298,103 +2296,6 @@ export function SiteSettingsTab({ settings: initialSettings, onUpdate, accessTok
           </Card>
         </TabsContent>
 
-        {/* ===== VOLUNTEER PAGE SETTINGS ===== */}
-        <TabsContent value="volunteer">
-          <Card className="p-6 space-y-6">
-            <div className="flex items-center gap-3 border-b pb-4">
-              <div className="p-3 bg-purple-50 text-purple-600 rounded-xl">
-                <Heart size={24} />
-              </div>
-              <div>
-                <h3 className="text-xl font-bold text-gray-900">Volunteer Page (/volunteer)</h3>
-                <p className="text-sm text-gray-500">Customize the volunteer hero banner, background image, and application confirmation messages.</p>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">Hero Title</label>
-                <input
-                  type="text"
-                  value={settings.volunteer?.heroTitle ?? DEFAULT_VOLUNTEER_SETTINGS.heroTitle}
-                  onChange={(e) => setSettings({
-                    ...settings,
-                    volunteer: { ...(settings.volunteer || DEFAULT_VOLUNTEER_SETTINGS), heroTitle: e.target.value }
-                  })}
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">Hero Subtitle</label>
-                <textarea
-                  value={settings.volunteer?.heroSubtitle ?? DEFAULT_VOLUNTEER_SETTINGS.heroSubtitle}
-                  onChange={(e) => setSettings({
-                    ...settings,
-                    volunteer: { ...(settings.volunteer || DEFAULT_VOLUNTEER_SETTINGS), heroSubtitle: e.target.value }
-                  })}
-                  rows={2}
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">Hero Background Image</label>
-                <div className="flex gap-3 items-center">
-                  <input
-                    type="text"
-                    value={settings.volunteer?.heroImage ?? DEFAULT_VOLUNTEER_SETTINGS.heroImage}
-                    onChange={(e) => setSettings({
-                      ...settings,
-                      volunteer: { ...(settings.volunteer || DEFAULT_VOLUNTEER_SETTINGS), heroImage: e.target.value }
-                    })}
-                    className="flex-1 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 text-sm"
-                  />
-                  <label className="cursor-pointer bg-emerald-50 hover:bg-emerald-100 text-emerald-700 px-4 py-2 rounded-lg border border-emerald-200 text-sm font-medium flex items-center gap-2 transition-colors">
-                    <Upload size={16} /> Upload Photo
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={handleVolunteerBannerUpload}
-                    />
-                  </label>
-                </div>
-              </div>
-
-              <div className="pt-4 border-t border-gray-200">
-                <h4 className="text-sm font-bold text-gray-800 mb-3">Application Submission Feedback</h4>
-                <div className="space-y-3">
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-700 mb-1">Success Headline</label>
-                    <input
-                      type="text"
-                      value={settings.volunteer?.successTitle ?? DEFAULT_VOLUNTEER_SETTINGS.successTitle}
-                      onChange={(e) => setSettings({
-                        ...settings,
-                        volunteer: { ...(settings.volunteer || DEFAULT_VOLUNTEER_SETTINGS), successTitle: e.target.value }
-                      })}
-                      className="w-full px-3 py-2 border rounded-lg text-sm"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-700 mb-1">Success Message</label>
-                    <textarea
-                      value={settings.volunteer?.successMessage ?? DEFAULT_VOLUNTEER_SETTINGS.successMessage}
-                      onChange={(e) => setSettings({
-                        ...settings,
-                        volunteer: { ...(settings.volunteer || DEFAULT_VOLUNTEER_SETTINGS), successMessage: e.target.value }
-                      })}
-                      rows={2}
-                      className="w-full px-3 py-2 border rounded-lg text-sm"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </Card>
-        </TabsContent>
-
         {/* Contact Section */}
         <TabsContent value="contact">
           <Card className="p-6">
@@ -4467,62 +4368,6 @@ export function SiteSettingsTab({ settings: initialSettings, onUpdate, accessTok
         </TabsContent>
 
         {/* Quiz Settings */}
-        <TabsContent value="quiz">
-          <Card className="p-6">
-            <h3 className="text-lg text-gray-900 mb-4">Volunteer Match Quiz</h3>
-            <p className="text-sm text-gray-500 mb-6">Customize the texts for the Volunteer Matching Quiz.</p>
-            <div className="space-y-6">
-              <div>
-                <label className="block text-sm text-gray-700 mb-2">Quiz Modal Title</label>
-                <input
-                  type="text"
-                  value={settings.quiz?.title || 'Find Your Perfect Volunteer Role'}
-                  onChange={(e) => setSettings({ ...settings, quiz: { ...settings.quiz, title: e.target.value } })}
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm text-gray-700 mb-2">Quiz Modal Subtitle</label>
-                <textarea
-                  value={settings.quiz?.subtitle || 'Take our quick 3-question quiz to see where you can make the biggest impact.'}
-                  onChange={(e) => setSettings({ ...settings, quiz: { ...settings.quiz, subtitle: e.target.value } })}
-                  rows={2}
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
-                />
-              </div>
-              <div className="pt-4 border-t border-slate-100">
-                <label className="block text-sm font-bold text-gray-900 mb-2">Question 1: Impact Area</label>
-                <input
-                  type="text"
-                  value={settings.quiz?.q1Text || 'What type of impact are you looking to make?'}
-                  onChange={(e) => setSettings({ ...settings, quiz: { ...settings.quiz, q1Text: e.target.value } })}
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 mb-2"
-                />
-                <p className="text-xs text-gray-500">Matches against the Opportunity "Category" (e.g. Healthcare, Education)</p>
-              </div>
-              <div className="pt-4 border-t border-slate-100">
-                <label className="block text-sm font-bold text-gray-900 mb-2">Question 2: Time Commitment</label>
-                <input
-                  type="text"
-                  value={settings.quiz?.q2Text || 'How much time can you commit?'}
-                  onChange={(e) => setSettings({ ...settings, quiz: { ...settings.quiz, q2Text: e.target.value } })}
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 mb-2"
-                />
-                <p className="text-xs text-gray-500">Helps filter roles by commitment level</p>
-              </div>
-              <div className="pt-4 border-t border-slate-100">
-                <label className="block text-sm font-bold text-gray-900 mb-2">Question 3: Core Skills</label>
-                <input
-                  type="text"
-                  value={settings.quiz?.q3Text || 'What are your primary skills?'}
-                  onChange={(e) => setSettings({ ...settings, quiz: { ...settings.quiz, q3Text: e.target.value } })}
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 mb-2"
-                />
-              </div>
-            </div>
-          </Card>
-        </TabsContent>
-
         {/* Analytics Settings */}
         <TabsContent value="analytics">
           <Card className="p-6">
