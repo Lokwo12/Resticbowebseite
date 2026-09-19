@@ -222,7 +222,7 @@ export function Programs() {
         <div className="mt-12 text-center">
           <Link
             to="/programs"
-            className="inline-flex items-center gap-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-8 py-4 rounded-xl shadow-md hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 text-base"
+            className="inline-flex items-center gap-2.5 bg-gradient-to-r from-sky-600 via-teal-600 to-emerald-600 hover:from-sky-700 hover:via-teal-700 hover:to-emerald-700 text-white font-bold px-8 py-4 rounded-xl shadow-md shadow-sky-950/10 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 text-base"
           >
             <span>Explore All Programs</span>
             <span>→</span>

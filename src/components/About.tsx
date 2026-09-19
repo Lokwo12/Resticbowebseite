@@ -61,6 +61,13 @@ const DEFAULT_ABOUT_SETTINGS: AboutSettings = {
   wayWeWork: DEFAULT_WAY_WE_WORK
 };
 
+const TRUST_BADGE_COLOR_THEMES = [
+  { bg: 'bg-sky-50/90', border: 'border-sky-200/90 hover:border-sky-300', label: 'text-sky-900', sub: 'text-sky-700' },
+  { bg: 'bg-emerald-50/90', border: 'border-emerald-200/90 hover:border-emerald-300', label: 'text-emerald-900', sub: 'text-emerald-700' },
+  { bg: 'bg-amber-50/90', border: 'border-amber-200/90 hover:border-amber-300', label: 'text-amber-950', sub: 'text-amber-700' },
+  { bg: 'bg-cyan-50/90', border: 'border-cyan-200/90 hover:border-cyan-300', label: 'text-cyan-950', sub: 'text-cyan-700' },
+];
+
 export function About() {
   const [settings, setSettings] = useState<AboutSettings>(DEFAULT_ABOUT_SETTINGS);
 
@@ -249,17 +256,20 @@ export function About() {
                 : 'grid-cols-2 md:grid-cols-4'
           }`}
         >
-          {(displaySettings.trustBadges || DEFAULT_TRUST_BADGES).map((item, index) => (
-            <motion.div 
-              key={`${item.label}-${index}`} 
-              variants={{ hidden: { opacity: 0, scale: 0.9 }, visible: { opacity: 1, scale: 1, transition: { type: "spring", bounce: 0.4 } } }}
-              className="flex flex-col items-center text-center bg-emerald-50 border border-emerald-100 rounded-2xl py-5 px-4 shadow-sm hover:shadow-md hover:border-emerald-200 transition-all duration-300"
-            >
-              <span className="text-3xl mb-2 select-none">{item.icon}</span>
-              <span className="text-base font-bold font-heading tracking-tight text-emerald-800 leading-snug">{item.label}</span>
-              <span className="text-sm text-emerald-600 mt-1 leading-snug font-medium">{item.sub}</span>
-            </motion.div>
-          ))}
+          {(displaySettings.trustBadges || DEFAULT_TRUST_BADGES).map((item, index) => {
+            const theme = TRUST_BADGE_COLOR_THEMES[index % TRUST_BADGE_COLOR_THEMES.length];
+            return (
+              <motion.div 
+                key={`${item.label}-${index}`} 
+                variants={{ hidden: { opacity: 0, scale: 0.9 }, visible: { opacity: 1, scale: 1, transition: { type: "spring", bounce: 0.4 } } }}
+                className={`flex flex-col items-center text-center ${theme.bg} border ${theme.border} rounded-2xl py-5 px-4 shadow-sm hover:shadow-md transition-all duration-300`}
+              >
+                <span className="text-3xl mb-2 select-none">{item.icon}</span>
+                <span className={`text-base font-bold font-heading tracking-tight ${theme.label} leading-snug`}>{item.label}</span>
+                <span className={`text-sm ${theme.sub} mt-1 leading-snug font-medium`}>{item.sub}</span>
+              </motion.div>
+            );
+          })}
         </motion.div>
       </div>
     </section>

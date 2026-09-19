@@ -422,7 +422,7 @@ export function ImpactDashboard() {
           <div className="flex flex-wrap items-center justify-center gap-4 pt-4">
             <Link
               to={data.ctaPrimaryLink || '/donate'}
-              className="bg-emerald-400 hover:bg-emerald-300 text-slate-950 font-bold px-8 py-3.5 rounded-2xl shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all text-base inline-flex items-center gap-2"
+              className="bg-gradient-to-r from-amber-400 via-amber-500 to-amber-400 hover:from-amber-500 hover:to-amber-600 text-slate-950 font-extrabold px-8 py-3.5 rounded-2xl shadow-lg shadow-amber-500/25 hover:shadow-xl hover:-translate-y-0.5 transition-all text-base inline-flex items-center gap-2"
             >
               <span>{data.ctaPrimaryText || 'Support Our Mission'}</span>
               <ArrowRight size={18} />
@@ -430,7 +430,7 @@ export function ImpactDashboard() {
 
             <Link
               to={data.ctaSecondaryLink || '/contact'}
-              className="bg-white/10 hover:bg-white/20 text-white font-bold px-7 py-3.5 rounded-2xl border border-white/20 hover:border-white/40 transition-all text-base"
+              className="bg-sky-500/20 hover:bg-sky-500/30 text-sky-100 hover:text-white font-bold px-7 py-3.5 rounded-2xl border border-sky-400/30 hover:border-sky-400/60 transition-all text-base inline-flex items-center gap-2"
             >
               {data.ctaSecondaryText || 'Contact Us'}
             </Link>

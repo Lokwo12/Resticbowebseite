@@ -536,9 +536,9 @@ export function Header() {
               {/* Donate Button */}
               <button
                 onClick={() => { setActiveDropdown(null); openDonationModal(); }}
-                className="flex items-center gap-1.5 px-3.5 xl:px-4.5 py-1.5 xl:py-2 rounded-xl font-bold text-xs xl:text-sm text-white bg-emerald-600 hover:bg-emerald-700 shadow-sm hover:shadow-md hover:shadow-emerald-600/20 active:scale-98 transition-all shrink-0 cursor-pointer"
+                className="flex items-center gap-1.5 px-3.5 xl:px-4.5 py-1.5 xl:py-2 rounded-xl font-bold text-xs xl:text-sm text-slate-950 bg-gradient-to-r from-amber-400 via-amber-500 to-amber-400 hover:from-amber-500 hover:to-amber-600 shadow-md shadow-amber-500/25 active:scale-98 transition-all shrink-0 cursor-pointer"
               >
-                <Heart size={14} fill="currentColor" />
+                <Heart size={14} fill="currentColor" className="text-slate-950" />
                 <span>Donate</span>
               </button>
             </div>
@@ -581,9 +581,9 @@ export function Header() {
             <div>
               <button 
                 onClick={() => { setMobileMenuOpen(false); openDonationModal(); }} 
-                className="w-full flex items-center justify-center gap-1.5 bg-emerald-600 text-white py-3 rounded-xl font-bold shadow-md hover:bg-emerald-700 transition-colors text-sm"
+                className="w-full flex items-center justify-center gap-1.5 bg-gradient-to-r from-amber-400 via-amber-500 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-slate-950 py-3 rounded-xl font-extrabold shadow-md shadow-amber-500/20 transition-all text-sm"
               >
-                <Heart size={16} fill="currentColor" />
+                <Heart size={16} fill="currentColor" className="text-slate-950" />
                 Donate Now
               </button>
             </div>

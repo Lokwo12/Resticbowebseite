@@ -233,7 +233,7 @@ export function ImpactReports() {
                   onClick={() => setSelectedCategory(cat)}
                   className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
                     selectedCategory === cat
-                      ? 'bg-emerald-700 text-white shadow-sm'
+                      ? 'bg-sky-600 text-white shadow-sm shadow-sky-600/20'
                       : 'bg-white text-slate-700 hover:bg-slate-200/80 border border-slate-200'
                   }`}
                 >
@@ -409,7 +409,7 @@ export function ImpactReports() {
           <div className="pt-4">
             <Link
               to={data.inquiriesActionLink || '/contact'}
-              className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold px-8 py-3.5 rounded-2xl shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all text-base inline-flex items-center gap-2"
+              className="bg-gradient-to-r from-amber-400 via-amber-500 to-amber-400 hover:from-amber-500 hover:to-amber-600 text-slate-950 font-extrabold px-8 py-3.5 rounded-2xl shadow-lg shadow-amber-500/25 hover:shadow-xl hover:-translate-y-0.5 transition-all text-base inline-flex items-center gap-2"
             >
               <span>{data.inquiriesActionText || 'Contact RESTI →'}</span>
               <ArrowRight size={18} />

@@ -115,8 +115,8 @@ function HomePage() {
         <Team />
         <ImpactStories />
         
-        <div className="w-full bg-emerald-50 py-16 flex justify-center border-y border-emerald-100">
-          <Link to="/impact-dashboard" className="inline-flex items-center gap-3 bg-emerald-600 text-white px-10 py-5 rounded-2xl hover:bg-emerald-700 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 font-bold text-xl">
+        <div className="w-full bg-gradient-to-r from-sky-50 via-emerald-50 to-amber-50/70 py-16 flex justify-center border-y border-slate-200/80">
+          <Link to="/impact-dashboard" className="inline-flex items-center gap-3 bg-gradient-to-r from-sky-600 via-teal-600 to-emerald-600 hover:from-sky-700 hover:via-teal-700 hover:to-emerald-700 text-white px-10 py-5 rounded-2xl shadow-lg shadow-sky-950/15 hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 font-bold text-xl">
             <span>View Our Impact Dashboard</span>
             <span className="bg-white/20 p-2 rounded-full">→</span>
           </Link>
