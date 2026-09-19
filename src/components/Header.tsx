@@ -32,7 +32,7 @@ export function Header() {
     },
     header: { 
       announcementText: 'Turning potential into sustainable transformation in fragile settings', 
-      announcementLink: 'volunteer', 
+      announcementLink: 'programs', 
       showAnnouncement: true 
     }
   });

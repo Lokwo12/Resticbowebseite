@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
-import { Mail, Phone, MapPin, Send, Loader2, MessageCircle, Clock, User, Briefcase, Calendar, MessageSquare, AlertCircle } from 'lucide-react';
+import { Mail, Phone, MapPin, Send, Loader2, MessageCircle, Clock, User, MessageSquare, AlertCircle, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import { useScrollAnimation, getStaggerDelay } from '../utils/animations';
 import { Card } from './ui/card';
@@ -12,16 +12,8 @@ const formSchema = z.object({
   name: z.string().min(2, 'Name is required'),
   email: z.string().email('Invalid email address'),
   phone: z.string().optional().or(z.literal('')),
+  subject: z.string().optional().or(z.literal('')),
   message: z.string().min(10, 'Message must be at least 10 characters'),
-  type: z.enum(['contact', 'volunteer']),
-}).superRefine((data, ctx) => {
-  if (data.type === 'volunteer' && (!data.phone || data.phone.length < 5)) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: 'Phone number is required for volunteers',
-      path: ['phone'],
-    });
-  }
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -56,18 +48,16 @@ export function Contact() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
-  const { register, handleSubmit, watch, setValue, reset, formState: { errors } } = useForm<FormData>({
+  const { register, handleSubmit, reset, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      type: 'contact',
       name: '',
       email: '',
       phone: '',
+      subject: '',
       message: '',
     }
   });
-
-  const formType = watch('type');
 
   useEffect(() => {
     fetchSettings();
@@ -90,7 +80,13 @@ export function Contact() {
 
       const data = await response.json();
       if (data?.settings?.contact) {
-        setSettings(data.settings.contact);
+        const cSettings = data.settings.contact;
+        setSettings({
+          ...cSettings,
+          subtitle: (cSettings.subtitle || '').replace(/volunteer,?/gi, 'partner with us,').trim(),
+          supportItems: (cSettings.supportItems || []).filter((item: string) => !item.toLowerCase().includes('volunteer')),
+          departments: (cSettings.departments || []).filter((dept: any) => !dept.name?.toLowerCase().includes('volunteer') && !dept.email?.toLowerCase().includes('volunteer')),
+        });
       } else {
         throw new Error('Contact settings not found in database');
       }
@@ -98,8 +94,8 @@ export function Contact() {
       console.error('Error fetching contact settings:', error);
       // Set default settings if fetch fails
       setSettings({
-        title: 'Get Involved',
-        subtitle: 'Join us in making a difference! Whether you want to volunteer, donate, or simply learn more about our work, we\'d love to hear from you.',
+        title: 'Contact Us',
+        subtitle: 'Join us in making a lasting difference! Whether you want to partner with us, support our initiatives, or learn more about our work, we\'d love to hear from you.',
         address: 'Kiryandongo District, Uganda',
         email: 'info@resticbo.org',
         phone: '+256 700 000 000',
@@ -109,10 +105,10 @@ export function Contact() {
           instagram: 'https://www.instagram.com/resticbo'
         },
         supportItems: [
-          'Volunteer your time and skills',
-          'Make a donation to support our programs',
           'Partner with us on community initiatives',
-          'Spread the word about our work'
+          'Make a donation to support our programs',
+          'Collaborate on local livelihood projects',
+          'Spread the word about our mission'
         ],
         locations: [
           {
@@ -124,8 +120,8 @@ export function Contact() {
         workingHours: 'Monday - Friday: 8:00 AM - 5:00 PM',
         departments: [
           { name: 'General Inquiries', email: 'info@resticbo.org' },
-          { name: 'Partnerships', email: 'partners@resticbo.org' },
-          { name: 'Volunteering', email: 'volunteer@resticbo.org' }
+          { name: 'Partnerships & Grants', email: 'partners@resticbo.org' },
+          { name: 'Community Programs', email: 'programs@resticbo.org' }
         ]
       });
     } finally {
@@ -137,24 +133,16 @@ export function Contact() {
     setSubmitting(true);
 
     try {
-      const endpoint = data.type === 'volunteer' ? 'volunteer' : 'contact';
-      const payload = data.type === 'volunteer'
-        ? {
-            name: data.name,
-            email: data.email,
-            phone: data.phone,
-            skills: '',
-            message: data.message,
-          }
-        : {
-            name: data.name,
-            email: data.email,
-            phone: data.phone,
-            message: data.message,
-          };
+      const payload = {
+        name: data.name,
+        email: data.email,
+        phone: data.phone || null,
+        subject: data.subject || 'General Inquiry',
+        message: data.message,
+      };
 
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/${endpoint}`,
+        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/contact`,
         {
           method: 'POST',
           headers: {
@@ -170,12 +158,7 @@ export function Contact() {
         throw new Error(errorData.error || 'Failed to submit form');
       }
 
-      toast.success(
-        data.type === 'volunteer'
-          ? 'Volunteer application submitted successfully! We will contact you soon.'
-          : 'Message sent successfully! We will get back to you soon.'
-      );
-
+      toast.success('Message sent successfully! Our team will get back to you soon.');
       reset();
     } catch (err) {
       console.error('Error submitting form:', err);
@@ -327,32 +310,6 @@ export function Contact() {
           {/* Contact Form */}
           <div className="bg-white p-8 rounded-2xl shadow-lg">
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-              {/* Form Type Selection - Tabbed Style */}
-              <div className="bg-gray-100 p-1.5 rounded-xl flex mb-8">
-                <button
-                  type="button"
-                  onClick={() => setValue('type', 'contact')}
-                  className={`flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all ${
-                    formType === 'contact' 
-                      ? 'bg-white text-emerald-600 shadow-sm' 
-                      : 'text-gray-500 hover:text-gray-700'
-                  }`}
-                >
-                  General Inquiry
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setValue('type', 'volunteer')}
-                  className={`flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all ${
-                    formType === 'volunteer' 
-                      ? 'bg-white text-emerald-600 shadow-sm' 
-                      : 'text-gray-500 hover:text-gray-700'
-                  }`}
-                >
-                  Volunteer Application
-                </button>
-              </div>
-
               <div>
                 <label htmlFor="name" className="text-xs font-bold text-slate-500 mb-2 ml-1 block uppercase tracking-wider">
                   Full Name <span className="text-emerald-500">*</span>
@@ -394,7 +351,7 @@ export function Contact() {
 
                 <div>
                   <label htmlFor="phone" className="text-xs font-bold text-slate-500 mb-2 ml-1 block uppercase tracking-wider">
-                    Phone Number {formType === 'volunteer' && <span className="text-emerald-500">*</span>}
+                    Phone Number
                   </label>
                   <div className={`relative flex items-center group rounded-xl border ${errors.phone ? 'border-red-300 bg-red-50/40' : 'border-slate-200 bg-slate-50/40 hover:bg-slate-50/80 focus-within:bg-white focus-within:border-emerald-500'} focus-within:ring-4 focus-within:ring-emerald-500/10 transition-all duration-300 shadow-sm`}>
                     <div className="absolute left-4 text-slate-400 group-focus-within:text-emerald-600 transition-colors duration-300 pointer-events-none">
@@ -412,59 +369,27 @@ export function Contact() {
                 </div>
               </div>
 
-              {formType === 'volunteer' && (
-                <div className="grid md:grid-cols-2 gap-6 animate-[fadeIn_0.5s_ease-out]">
-                  <div>
-                    <label className="text-xs font-bold text-slate-500 mb-2 ml-1 block uppercase tracking-wider">
-                      Area of Interest
-                    </label>
-                    <div className="relative flex items-center group rounded-xl border border-slate-200 bg-slate-50/40 hover:bg-slate-50/80 focus-within:bg-white focus-within:border-emerald-500 focus-within:ring-4 focus-within:ring-emerald-500/10 transition-all duration-300 shadow-sm">
-                      <div className="absolute left-4 text-slate-400 group-focus-within:text-emerald-600 transition-colors duration-300 pointer-events-none">
-                        <Briefcase size={20} />
-                      </div>
-                      <select 
-                        className="w-full pl-12 pr-10 py-2.5 bg-transparent outline-none text-slate-800 font-medium appearance-none cursor-pointer text-sm"
-                      >
-                        <option value="">Select Area</option>
-                        <option value="education">Education & Tutoring</option>
-                        <option value="healthcare">Healthcare Support</option>
-                        <option value="environment">Environmental Conservation</option>
-                        <option value="community">Community Outreach</option>
-                        <option value="admin">Administrative Support</option>
-                      </select>
-                      <div className="absolute right-4 text-slate-400 pointer-events-none group-focus-within:text-emerald-600 transition-colors duration-300">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
-                      </div>
-                    </div>
+              <div>
+                <label htmlFor="subject" className="text-xs font-bold text-slate-500 mb-2 ml-1 block uppercase tracking-wider">
+                  Subject / Topic
+                </label>
+                <div className="relative flex items-center group rounded-xl border border-slate-200 bg-slate-50/40 hover:bg-slate-50/80 focus-within:bg-white focus-within:border-emerald-500 focus-within:ring-4 focus-within:ring-emerald-500/10 transition-all duration-300 shadow-sm">
+                  <div className="absolute left-4 text-slate-400 group-focus-within:text-emerald-600 transition-colors duration-300 pointer-events-none">
+                    <FileText size={20} />
                   </div>
-                  <div>
-                    <label className="text-xs font-bold text-slate-500 mb-2 ml-1 block uppercase tracking-wider">
-                      Availability
-                    </label>
-                    <div className="relative flex items-center group rounded-xl border border-slate-200 bg-slate-50/40 hover:bg-slate-50/80 focus-within:bg-white focus-within:border-emerald-500 focus-within:ring-4 focus-within:ring-emerald-500/10 transition-all duration-300 shadow-sm">
-                      <div className="absolute left-4 text-slate-400 group-focus-within:text-emerald-600 transition-colors duration-300 pointer-events-none">
-                        <Calendar size={20} />
-                      </div>
-                      <select 
-                        className="w-full pl-12 pr-10 py-2.5 bg-transparent outline-none text-slate-800 font-medium appearance-none cursor-pointer text-sm"
-                      >
-                        <option value="">Select Availability</option>
-                        <option value="full-time">Full Time</option>
-                        <option value="part-time">Part Time</option>
-                        <option value="weekends">Weekends Only</option>
-                        <option value="remote">Remote / Digital</option>
-                      </select>
-                      <div className="absolute right-4 text-slate-400 pointer-events-none group-focus-within:text-emerald-600 transition-colors duration-300">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
-                      </div>
-                    </div>
-                  </div>
+                  <input
+                    type="text"
+                    id="subject"
+                    {...register('subject')}
+                    className="w-full pl-12 pr-5 py-2.5 bg-transparent outline-none text-slate-800 font-medium placeholder:text-slate-400/70 text-sm"
+                    placeholder="General Inquiry, Partnership, Program Collaboration..."
+                  />
                 </div>
-              )}
+              </div>
 
               <div>
                 <label htmlFor="message" className="text-xs font-bold text-slate-500 mb-2 ml-1 block uppercase tracking-wider">
-                  {formType === 'volunteer' ? 'Why do you want to join us?' : 'Message'} <span className="text-emerald-500">*</span>
+                  Message <span className="text-emerald-500">*</span>
                 </label>
                 <div className={`relative flex items-start group rounded-xl border ${errors.message ? 'border-red-300 bg-red-50/40' : 'border-slate-200 bg-slate-50/40 hover:bg-slate-50/80 focus-within:bg-white focus-within:border-emerald-500'} focus-within:ring-4 focus-within:ring-emerald-500/10 transition-all duration-300 shadow-sm`}>
                   <div className="absolute left-4 top-4 text-slate-400 group-focus-within:text-emerald-600 transition-colors duration-300 pointer-events-none">
@@ -475,11 +400,7 @@ export function Contact() {
                     rows={5}
                     {...register('message')}
                     className="w-full pl-12 pr-5 py-2.5 bg-transparent outline-none text-slate-800 font-medium placeholder:text-slate-400/70 text-sm resize-none"
-                    placeholder={
-                      formType === 'volunteer'
-                        ? 'Tell us about your background, skills, and what motivates you to volunteer...'
-                        : 'How can we help you?'
-                    }
+                    placeholder="How can we assist you or collaborate with your organization?"
                   />
                 </div>
                 {errors.message && <p className="text-red-500 text-xs mt-1 flex items-center"><AlertCircle size={12} className="mr-1"/>{errors.message.message}</p>}
@@ -498,7 +419,7 @@ export function Contact() {
                 ) : (
                   <>
                     <Send size={16} />
-                    <span>{formType === 'volunteer' ? 'Submit Application' : 'Send Message'}</span>
+                    <span>Send Message</span>
                   </>
                 )}
               </button>

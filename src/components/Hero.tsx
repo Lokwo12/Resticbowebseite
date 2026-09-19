@@ -123,7 +123,7 @@ const FALLBACK_BACKGROUND_IMAGES: string[] = [
 const DEFAULT_HERO_STATS = [
   { value: '0', label: 'Families Supported' },
   { value: '0', label: 'Active Programs' },
-  { value: '0', label: 'Volunteers' }
+  { value: '0', label: 'Communities Served' }
 ];
 
 const DEFAULT_HERO_SETTINGS: HeroSettings = {
@@ -227,7 +227,7 @@ export function Hero() {
   const { paragraphs, motto } = parseSubtitle(settings.subtitle || DEFAULT_HERO_SETTINGS.subtitle);
 
   const statsToDisplay = (settings.stats && settings.stats.length > 0)
-    ? settings.stats
+    ? settings.stats.map(s => s.label.toLowerCase().includes('volunteer') ? { ...s, label: 'Communities Served' } : s)
     : DEFAULT_HERO_STATS;
 
   return (

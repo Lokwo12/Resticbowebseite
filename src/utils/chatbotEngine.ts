@@ -58,16 +58,15 @@ export function generateBotReply(rawMessage: string): BotReply {
     };
   }
 
-  // 4. VOLUNTEER & CAREERS
+  // 4. PARTNERSHIPS & COLLABORATION
   if (
-    msg.includes('volunteer') || msg.includes('join') || msg.includes('intern') || 
-    msg.includes('internship') || msg.includes('job') || msg.includes('career') || 
-    msg.includes('hiring') || msg.includes('work with you') || msg.includes('help out')
+    msg.includes('partner') || msg.includes('join') || msg.includes('collaborate') || 
+    msg.includes('work with') || msg.includes('support') || msg.includes('opportunity')
   ) {
     return {
-      text: "We would love to have you on our team! 🤝 We welcome both local field volunteers in Kiryandongo and remote digital volunteers worldwide.\n\nOpen areas include:\n• 👥 Community Peer Educators & Coordinators\n• 💻 Remote Grant Writing, Social Media & Communications\n• 🏫 Youth Mentors & Digital Computer Trainers\n• 📋 Monitoring, Evaluation & Learning (MEL)",
-      link: { text: 'View Opportunities →', url: '/opportunities' },
-      quickReplies: ['📍 Location Details', '💚 Make a Gift Instead', '🙋 Contact Coordinator']
+      text: "We would love to collaborate with you! 🤝 We welcome community partners, institutional donors, and collaborative organizations.\n\nKey areas of engagement:\n• 👥 Community Programs & Direct Livelihood Initiatives\n• 🌾 Climate Agriculture & Sustainable Beekeeping\n• 💧 WASH & Community Water Infrastructure\n• 📋 Monitoring, Evaluation & Strategic Research",
+      link: { text: 'Contact Our Team →', url: '/contact' },
+      quickReplies: ['📍 Our Locations', '📚 Our Programs', '💬 Speak to Staff']
     };
   }
 
@@ -94,7 +93,7 @@ export function generateBotReply(rawMessage: string): BotReply {
     msg.includes('annual report') || msg.includes('cpa')
   ) {
     return {
-      text: "Radical transparency is our core commitment! 📊\n\n• 24,850+ People directly empowered\n• 6 Core flagship programs operational\n• 145+ Community volunteers on the ground\n• 18 Settlement zones and villages served\n• 90% Program spend efficiency\n\nAll annual reports and external CPA audits are 100% public for download.",
+      text: "Radical transparency is our core commitment! 📊\n\n• 24,850+ People directly empowered\n• 6 Core flagship programs operational\n• 145+ Active community leaders on the ground\n• 18 Settlement zones and villages served\n• 90% Program spend efficiency\n\nAll annual reports and external CPA audits are 100% public for download.",
       link: { text: 'View Impact Dashboard →', url: '/impact-dashboard' },
       quickReplies: ['📄 Download Annual Reports', '💚 Make a Donation', '📍 Settlement Zones']
     };
@@ -110,7 +109,7 @@ export function generateBotReply(rawMessage: string): BotReply {
     return {
       text: "Refugee Empowerment For Sustainable Transformation Initiative (RESTI) is a registered Community-Based Organization certified under the Uganda NGO Bureau. 🏛️\n\nFounded by local community leaders and refugees, we build self-reliance, economic resilience, and peaceful coexistence across Kiryandongo District.",
       link: { text: 'Read Our Story →', url: '/about' },
-      quickReplies: ['📚 Our Programs', '📊 Verified Impact', '🤝 Volunteer']
+      quickReplies: ['📚 Our Programs', '📊 Verified Impact', '🤝 Partner With Us']
     };
   }
 
@@ -144,7 +143,7 @@ export function generateBotReply(rawMessage: string): BotReply {
     quickReplies: [
       '💚 How to Donate',
       '📚 Our Programs',
-      '🤝 Volunteer with Us',
+      '🤝 Partner With Us',
       '📍 Location & Contact',
       '📊 Impact & Reports'
     ]
