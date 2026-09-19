@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ImpactDashboardManager } from './admin/ImpactDashboardManager';
+import { ImpactReportsManager } from './admin/ImpactReportsManager';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { toast } from 'sonner';
 import { Save, RefreshCw, Plus, Trash2, Upload, BarChart, Code, PieChart, TrendingUp, DollarSign, FileText, Heart, ShieldCheck, Sparkles, Globe, Eye, HelpCircle, Users, LayoutDashboard, HandHeart, Settings, Search, ExternalLink, ChevronDown, ChevronUp } from 'lucide-react';
@@ -27,6 +28,7 @@ export const SETTING_SECTIONS = [
   { id: 'sections', label: 'Section Headers', category: 'content', icon: FileText, desc: 'Subheadings and introductory blurbs' },
 
   { id: 'impactDashboard', label: 'Impact Dashboard', category: 'impact', icon: TrendingUp, desc: 'Live stats, KPI badges & methodology' },
+  { id: 'impactReports', label: 'Impact Reports', category: 'impact', icon: FileText, desc: 'Publications, accountability pillars & disclosures' },
   { id: 'financials', label: 'Financials & Audits', category: 'impact', icon: PieChart, desc: 'Expenses chart, revenue & PDF audits' },
 
   { id: 'donation', label: 'Donation & Gateways', category: 'engagement', icon: DollarSign, desc: 'Presets, MTN/Airtel/Bank & allocation' },
@@ -2136,6 +2138,16 @@ export function SiteSettingsTab({ settings: initialSettings, onUpdate, accessTok
         <TabsContent value="impactDashboard">
           <ImpactDashboardManager
             impactStats={settings.impactDashboard}
+            onUpdate={onUpdate}
+            accessToken={accessToken}
+            userRole={userRole}
+          />
+        </TabsContent>
+
+        {/* ===== IMPACT REPORTS SETTINGS ===== */}
+        <TabsContent value="impactReports">
+          <ImpactReportsManager
+            initialData={settings.impactReports}
             onUpdate={onUpdate}
             accessToken={accessToken}
             userRole={userRole}
