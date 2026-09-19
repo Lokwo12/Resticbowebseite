@@ -118,81 +118,13 @@ interface Analytics {
   growthTrends: any[];
 }
 
-// Navigation structure organized by logical operational modules
-export interface NavItemConfig {
-  id: string;
-  label: string;
-  icon: any;
-  color: string;
-  headerBg: string;
-  accentBg: string;
-  description: string;
-  badgeKey?: 'liveChat' | 'contacts' | 'volunteers' | 'donations';
-}
-
-export interface NavGroupConfig {
-  id: string;
-  title: string;
-  items: NavItemConfig[];
-}
-
-const NAVIGATION_GROUPS: NavGroupConfig[] = [
-  {
-    id: 'overview-group',
-    title: 'Overview & Activity',
-    items: [
-      { id: 'overview', label: 'Dashboard', icon: LayoutDashboard, color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496', description: 'Metrics & quick actions' },
-      { id: 'live-chat', label: 'Live Chat', icon: MessageCircle, color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496', description: 'Real-time visitor chats', badgeKey: 'liveChat' },
-      { id: 'activity-log', label: 'Activity Log', icon: Clock, color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496', description: 'System audit trails' },
-    ],
-  },
-  {
-    id: 'programs-group',
-    title: 'Programs & Impact',
-    items: [
-      { id: 'programs', label: 'Programs', icon: FileText, color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496', description: 'Core initiative projects' },
-      { id: 'impact', label: 'Impact Stats', icon: TrendingUp, color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496', description: 'Key performance indicators' },
-      { id: 'stories', label: 'Stories & Voices', icon: MessageSquare, color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496', description: 'Beneficiary testimonials' },
-      { id: 'reports', label: 'Reports & Audits', icon: Download, color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496', description: 'Financial & annual statements' },
-      { id: 'map', label: 'Map Locations', icon: MapPin, color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496', description: 'Field hubs & activity sites' },
-    ],
-  },
-  {
-    id: 'content-group',
-    title: 'Content & Media',
-    items: [
-      { id: 'news', label: 'News & Press', icon: Newspaper, color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496', description: 'Articles & press releases' },
-      { id: 'events', label: 'Events & Calendar', icon: Calendar, color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496', description: 'Workshops & community events' },
-      { id: 'gallery', label: 'Photo Gallery', icon: ImageIcon, color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496', description: 'Field photos & albums' },
-      { id: 'partners', label: 'Partners & Donors', icon: Handshake, color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496', description: 'Partner organizations' },
-      { id: 'opportunities', label: 'Opportunities', icon: Target, color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496', description: 'Jobs, tenders & internships' },
-    ],
-  },
-  {
-    id: 'audience-group',
-    title: 'Audience & Inquiries',
-    items: [
-      { id: 'donations', label: 'Donations Portal', icon: Heart, color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496', description: 'Donor records & contributions', badgeKey: 'donations' },
-      { id: 'volunteers', label: 'Volunteers', icon: Heart, color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496', description: 'Volunteer applications', badgeKey: 'volunteers' },
-      { id: 'contacts', label: 'Messages', icon: Mail, color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496', description: 'Contact form messages', badgeKey: 'contacts' },
-      { id: 'subscribers', label: 'Subscribers', icon: Send, color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496', description: 'Newsletter subscribers' },
-      { id: 'team', label: 'Team Members', icon: Users, color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496', description: 'Staff & leadership team' },
-    ],
-  },
-  {
-    id: 'settings-group',
-    title: 'Site Management',
-    items: [
-      { id: 'settings', label: 'Site Customizer', icon: Settings, color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496', description: 'Hero, financials, theme' },
-      { id: 'pages', label: 'Static Pages', icon: Globe, color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496', description: 'Static pages copy' },
-      { id: 'resources', label: 'Resources & Docs', icon: BookOpen, color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496', description: 'Public downloadable docs' },
-      { id: 'faqs', label: 'FAQs & Help', icon: HelpCircle, color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496', description: 'Frequently asked questions' },
-    ],
-  },
-];
-
-// Flat list for direct lookups
-const NAVIGATION_ITEMS = NAVIGATION_GROUPS.flatMap((g) => g.items);
+import {
+  AdminSidebar,
+  NAVIGATION_GROUPS,
+  NAVIGATION_ITEMS,
+  NavItemConfig,
+  NavGroupConfig
+} from './admin/AdminSidebar';
 
 export function EnhancedAdminDashboard() {
   const confirmDialog = useConfirm();
@@ -2790,49 +2722,7 @@ export function EnhancedAdminDashboard() {
     return 0;
   };
 
-  const filteredGroups = NAVIGATION_GROUPS.map((group) => ({
-    ...group,
-    items: group.items.filter((item) => {
-      if (!sidebarSearch.trim()) return true;
-      const q = sidebarSearch.toLowerCase();
-      return (
-        item.label.toLowerCase().includes(q) ||
-        item.description?.toLowerCase().includes(q) ||
-        group.title.toLowerCase().includes(q)
-      );
-    }),
-  })).filter((group) => group.items.length > 0);
 
-  // Category dropdown/accordion state handlers
-  const isGroupOpen = (groupId: string, items: any[]) => {
-    if (sidebarSearch.trim()) return true; // Keep expanded when searching
-    if (openGroups[groupId] !== undefined) return openGroups[groupId];
-    // Default: keep the active group open, others collapsed
-    return items.some((item) => item.id === activeTab);
-  };
-
-  const toggleGroup = (groupId: string, currentlyOpen: boolean) => {
-    setOpenGroups((prev) => ({
-      ...prev,
-      [groupId]: !currentlyOpen,
-    }));
-  };
-
-  const expandAllGroups = () => {
-    const allOpen: Record<string, boolean> = {};
-    NAVIGATION_GROUPS.forEach((g) => {
-      allOpen[g.id] = true;
-    });
-    setOpenGroups(allOpen);
-  };
-
-  const collapseAllGroups = () => {
-    const allClosed: Record<string, boolean> = {};
-    NAVIGATION_GROUPS.forEach((g) => {
-      allClosed[g.id] = false;
-    });
-    setOpenGroups(allClosed);
-  };
 
   return (
     <div className="min-h-screen bg-slate-100 admin-dashboard-root" data-admin-scope="true">
@@ -3019,246 +2909,23 @@ export function EnhancedAdminDashboard() {
         </div>
       </div>
 
-      <div className="flex pt-16">
-        {/* Standardized Categorized Sidebar */}
-        <aside
-          className={`${
-            sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-          } lg:translate-x-0 fixed lg:static inset-y-0 left-0 z-40 w-64 bg-slate-900 border-r border-slate-800 transition-transform duration-300 flex flex-col mt-16 lg:mt-0 shadow-2xl shrink-0 admin-sidebar-nav`}
-        >
-          {/* Sidebar Quick Search / Filter */}
-          <div className="p-3 border-b border-slate-800/80 bg-slate-900/90 sticky top-0 z-10">
-            <div className="relative flex items-center">
-              <Search size={13} className="absolute left-2.5 text-slate-500 pointer-events-none" />
-              <input
-                type="text"
-                value={sidebarSearch}
-                onChange={(e) => setSidebarSearch(e.target.value)}
-                placeholder="Filter navigation..."
-                className="w-full pl-8 pr-7 py-1.5 bg-slate-800 text-slate-200 placeholder-slate-500 text-xs rounded-lg border border-slate-700/70 focus:outline-none focus:border-emerald-500/60 focus:ring-1 focus:ring-emerald-500/30 transition"
-              />
-              {sidebarSearch && (
-                <button
-                  onClick={() => setSidebarSearch('')}
-                  className="absolute right-2 text-slate-400 hover:text-white p-0.5 rounded"
-                  title="Clear filter"
-                >
-                  <X size={12} />
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Categories Header with quick expand/collapse controls */}
-          <div className="px-3 pt-2 pb-1.5 flex items-center justify-between text-[10px] uppercase tracking-wider text-slate-400 border-b border-slate-800/60">
-            <span className="font-bold text-slate-400">Navigation</span>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={expandAllGroups}
-                className="hover:text-emerald-400 text-[10px] font-semibold transition"
-                title="Expand all category dropdowns"
-              >
-                Expand
-              </button>
-              <span className="text-slate-600">•</span>
-              <button
-                type="button"
-                onClick={collapseAllGroups}
-                className="hover:text-emerald-400 text-[10px] font-semibold transition"
-                title="Hide all category dropdowns"
-              >
-                Hide All
-              </button>
-            </div>
-          </div>
-
-          {/* Navigation Groups (Collapsible / Dropdown) */}
-          <div className="flex-1 overflow-y-auto px-3 py-2 space-y-2">
-            {filteredGroups.length === 0 ? (
-              <div className="p-4 text-center">
-                <p className="text-xs text-slate-500">No modules match "{sidebarSearch}"</p>
-                <button
-                  onClick={() => setSidebarSearch('')}
-                  className="mt-2 text-xs text-emerald-400 hover:text-emerald-300 font-medium"
-                >
-                  Clear search filter
-                </button>
-              </div>
-            ) : (
-              filteredGroups.map((group) => {
-                const isOpen = isGroupOpen(group.id, group.items);
-                const groupBadgeTotal = group.items.reduce(
-                  (total, item) => total + getBadgeCount(item.badgeKey),
-                  0
-                );
-                const hasActiveTab = group.items.some((item) => item.id === activeTab);
-
-                return (
-                  <div key={group.id} className="space-y-1">
-                    {/* Category Dropdown Trigger */}
-                    <button
-                      type="button"
-                      onClick={() => toggleGroup(group.id, isOpen)}
-                      className={`w-full px-2.5 py-1.5 text-[11px] font-bold uppercase tracking-wider rounded-xl transition flex items-center justify-between group cursor-pointer ${
-                        hasActiveTab
-                          ? 'text-white bg-slate-800/70 border border-slate-700/50'
-                          : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 border border-transparent'
-                      }`}
-                      title={isOpen ? `Click to hide ${group.title}` : `Click to dropdown ${group.title}`}
-                    >
-                      <div className="flex items-center gap-2 min-w-0">
-                        <span
-                          className={`text-slate-500 group-hover:text-emerald-400 transition-transform duration-200 ${
-                            isOpen ? 'rotate-90 text-emerald-400' : ''
-                          }`}
-                        >
-                          <ChevronRight size={13} />
-                        </span>
-                        <span className="truncate">{group.title}</span>
-                        {groupBadgeTotal > 0 && !isOpen && (
-                          <span className="ml-1 text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                            {groupBadgeTotal}
-                          </span>
-                        )}
-                      </div>
-                      <span className="text-[10px] font-mono text-slate-500 font-normal px-1.5 py-0.5 rounded bg-slate-800/70 border border-slate-700/50">
-                        {group.items.length}
-                      </span>
-                    </button>
-
-                    {/* Dropdown Items */}
-                    {isOpen && (
-                      <nav className="space-y-0.5 pl-2.5 border-l border-slate-800 ml-3.5 my-1 transition-all duration-200">
-                        {group.items.map((item) => {
-                          const Icon = item.icon;
-                          const isActive = activeTab === item.id;
-                          const badge = getBadgeCount(item.badgeKey);
-
-                          return (
-                            <button
-                              key={item.id}
-                              onClick={() => {
-                                setActiveTab(item.id);
-                                if (window.innerWidth < 1024) setSidebarOpen(false);
-                              }}
-                              className={`w-full flex items-center justify-between px-2.5 py-2 rounded-xl transition-all duration-150 group relative text-left ${
-                                isActive
-                                  ? 'text-white font-semibold shadow-md'
-                                  : 'text-slate-400 hover:bg-slate-800/80 hover:text-slate-200'
-                              }`}
-                              style={
-                                isActive
-                                  ? {
-                                      backgroundColor: item.accentBg || '#2f5496',
-                                      boxShadow: `0 3px 12px ${item.accentBg || '#2f5496'}40`,
-                                    }
-                                  : {}
-                              }
-                              title={item.description}
-                            >
-                              {isActive && (
-                                <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 rounded-r-full bg-white" />
-                              )}
-                              <div className="flex items-center gap-2.5 min-w-0">
-                                <Icon
-                                  size={16}
-                                  className={`shrink-0 ${
-                                    isActive ? 'text-white' : 'text-slate-400 group-hover:text-emerald-400'
-                                  }`}
-                                />
-                                <span className="text-[14px] lg:text-[14.5px] font-medium truncate">{item.label}</span>
-                              </div>
-
-                              {badge > 0 && (
-                                <span
-                                  className={`ml-2 text-[10px] font-bold px-1.5 py-0.5 rounded-full shrink-0 ${
-                                    isActive
-                                      ? 'bg-white text-slate-900'
-                                      : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                                  }`}
-                                >
-                                  {badge}
-                                </span>
-                              )}
-                            </button>
-                          );
-                        })}
-                      </nav>
-                    )}
-                  </div>
-                );
-              })
-            )}
-
-            {/* Super Admin Users Tab */}
-            {userRole === 'super-admin' && (
-              <div className="space-y-1 pt-2 border-t border-slate-800">
-                <div className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                  Access & Security
-                </div>
-                <button
-                  onClick={() => {
-                    setActiveTab('users');
-                    if (window.innerWidth < 1024) setSidebarOpen(false);
-                  }}
-                  className={`w-full flex items-center justify-between px-3 py-2 rounded-xl transition-all duration-150 group relative text-left ${
-                    activeTab === 'users'
-                      ? 'text-white font-semibold shadow-md bg-[#2f5496]'
-                      : 'text-slate-400 hover:bg-slate-800/80 hover:text-slate-200'
-                  }`}
-                >
-                  {activeTab === 'users' && (
-                    <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 rounded-r-full bg-white" />
-                  )}
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <Shield
-                      size={16}
-                      className={activeTab === 'users' ? 'text-white' : 'text-slate-400 group-hover:text-emerald-400'}
-                    />
-                    <span className="text-[14px] lg:text-[14.5px] font-medium truncate">System Users</span>
-                  </div>
-                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">
-                    Super
-                  </span>
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* User Profile & Quick Action Footer */}
-          <div className="p-3 bg-slate-900 border-t border-slate-800/80 flex flex-col gap-2">
-            <a
-              href="/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-xl text-xs font-semibold text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700/90 border border-slate-700/60 transition shadow-sm"
-            >
-              <ExternalLink size={13} className="text-emerald-400" />
-              <span>Preview Live Site</span>
-            </a>
-
-            <div className="flex items-center gap-2.5 p-2 bg-slate-800/60 rounded-xl border border-slate-700/50">
-              <Avatar className="h-8 w-8 shrink-0">
-                <AvatarFallback className="bg-gradient-to-br from-emerald-500 to-teal-600 text-white text-xs font-bold">
-                  {getUserInitials(userName)}
-                </AvatarFallback>
-              </Avatar>
-              <div className="min-w-0 flex-1">
-                <p className="text-xs font-semibold text-white truncate">{userName || 'Admin User'}</p>
-                <div className="flex items-center gap-1 mt-0.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
-                  <span className="text-[10px] text-slate-400 capitalize truncate">
-                    {USER_ROLES.find((r) => r.value === userRole)?.label || userRole || 'Administrator'}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </aside>
+      <div className="flex pt-16 min-h-[calc(100vh-4rem)] relative">
+        {/* Dynamic Customizable & Resizable Admin Sidebar */}
+        <AdminSidebar
+          isOpen={sidebarOpen}
+          setIsOpen={setSidebarOpen}
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          userRole={userRole}
+          userName={userName}
+          getBadgeCount={getBadgeCount}
+          USER_ROLES={USER_ROLES}
+          searchQuery={sidebarSearch}
+          setSearchQuery={setSidebarSearch}
+        />
 
         {/* Main Content Area */}
-        <div className={`flex-1 min-w-0 overflow-auto ${isDarkMode ? 'bg-slate-900 text-white dark-mode-override' : 'bg-slate-50'}`}>
+        <div className={`flex-1 min-w-0 overflow-x-hidden overflow-y-auto ${isDarkMode ? 'bg-slate-900 text-white dark-mode-override' : 'bg-slate-50'}`}>
           {isDarkMode && (
             <style>{`
               .dark-mode-override p, .dark-mode-override h1, .dark-mode-override h2, .dark-mode-override h3, .dark-mode-override h4, .dark-mode-override h5, .dark-mode-override h6, .dark-mode-override span, .dark-mode-override label, .dark-mode-override td, .dark-mode-override th {

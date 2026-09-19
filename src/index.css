@@ -1140,3 +1140,29 @@ p, .prose p, .content p, .body-text, article p, section p {
   line-height: 1.45;
 }
 
+/* ── Dynamic Admin Sidebar & Workspace Controls ────────────── */
+.admin-sidebar-nav::-webkit-scrollbar {
+  width: 4px;
+}
+.admin-sidebar-nav::-webkit-scrollbar-track {
+  background: transparent;
+}
+.admin-sidebar-nav::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 9999px;
+}
+.admin-sidebar-nav::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}
+
+/* Ensure data tables remain readable and scroll smoothly without text crushing */
+.admin-dashboard-root table {
+  min-width: 580px;
+}
+@media (min-width: 768px) {
+  .admin-dashboard-root table {
+    min-width: 680px;
+  }
+}
+
+
