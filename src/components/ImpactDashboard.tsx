@@ -1,15 +1,19 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { 
-  Users, Heart, BookOpen, Download, FileText, 
-  DollarSign, MapPin, Award, ArrowUpRight, 
-  CheckCircle2, ShieldCheck, Sparkles, Building
+  Briefcase, Droplets, TreePine, Users, HeartHandshake, 
+  GraduationCap, Download, ArrowRight, ShieldCheck, 
+  Heart, Sparkles, Compass, CheckCircle2, Quote
 } from 'lucide-react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
-import { Badge } from './ui/badge';
 import { SEO } from './SEO';
 import { toast } from 'sonner';
-import { DEFAULT_IMPACT_DATA, FullImpactData } from './admin/ImpactDashboardManager';
+import { 
+  DEFAULT_IMPACT_DATA, 
+  FullImpactData, 
+  ImpactArea,
+  normalizeImpactData 
+} from './admin/ImpactDashboardManager';
 
 interface Report {
   id: string;
@@ -24,23 +28,38 @@ interface Report {
 const FALLBACK_REPORTS: Report[] = [
   {
     id: 'rep-2025',
-    title: 'Annual Impact & Financial Audit Report 2025',
+    title: 'Annual Impact & Activity Report 2025',
     year: '2025',
     fileUrl: 'https://mxffqgefsufcdgnhjjsw.supabase.co/storage/v1/object/public/make-2a4be611-uploads/sample-report.pdf',
-    description: 'Statutory balance sheet review, project milestones, and independent auditor disclosures for FY 2025.',
-    fileSize: '5.4 MB',
-    category: 'Annual Audit'
+    description: 'Overview of community-led initiatives, skills workshops, and local partnerships in Kiryandongo District.',
+    fileSize: '3.8 MB',
+    category: 'Annual Report'
   },
   {
     id: 'rep-2024',
-    title: 'Kiryandongo Settlement Livelihood Evaluation 2024',
+    title: 'Kiryandongo Settlement Community Initiatives 2024',
     year: '2024',
     fileUrl: 'https://mxffqgefsufcdgnhjjsw.supabase.co/storage/v1/object/public/make-2a4be611-uploads/sample-report.pdf',
-    description: 'Outcome evaluation examining 180+ refugee vocational graduates and cooperative business sustainability.',
-    fileSize: '4.2 MB',
-    category: 'Evaluation'
+    description: 'Summary of community dialogue, clean-up activities, and beekeeping pilot project.',
+    fileSize: '3.1 MB',
+    category: 'Field Summary'
   }
 ];
+
+// Helper to resolve dynamic icon
+function renderAreaIcon(name: string) {
+  const props = { size: 26, className: "text-emerald-700" };
+  switch (name) {
+    case 'Briefcase': return <Briefcase {...props} />;
+    case 'Droplets': return <Droplets {...props} />;
+    case 'TreePine': return <TreePine {...props} />;
+    case 'Users': return <Users {...props} />;
+    case 'HeartHandshake': return <HeartHandshake {...props} />;
+    case 'GraduationCap': return <GraduationCap {...props} />;
+    case 'Heart': return <Heart {...props} />;
+    default: return <ShieldCheck {...props} />;
+  }
+}
 
 export function ImpactDashboard() {
   const [data, setData] = useState<FullImpactData>(DEFAULT_IMPACT_DATA);
@@ -67,37 +86,24 @@ export function ImpactDashboard() {
         )
       ]);
 
-      let mergedData: any = {};
+      let merged: any = {};
 
       if (settingsRes.ok) {
         const settingsJson = await settingsRes.json();
         if (settingsJson.settings?.impactDashboard) {
-          mergedData = { ...mergedData, ...settingsJson.settings.impactDashboard };
+          merged = { ...merged, ...settingsJson.settings.impactDashboard };
         }
       }
 
       if (statsRes.ok) {
         const statsJson = await statsRes.json();
         if (statsJson.stats) {
-          mergedData = { ...mergedData, ...statsJson.stats };
+          merged = { ...merged, ...statsJson.stats };
         }
       }
 
-      if (Object.keys(mergedData).length > 0) {
-        setData(prev => ({
-          ...prev,
-          ...mergedData,
-          heroTitle: mergedData.heroTitle || (mergedData.title && mergedData.title !== 'Live Impact & Accountability Dashboard' ? mergedData.title : prev.heroTitle),
-          heroSubtitle: mergedData.heroSubtitle || mergedData.description || prev.heroSubtitle,
-          heroBadge: mergedData.heroBadge || mergedData.badge || prev.heroBadge,
-          peopleServed: mergedData.peopleServed && mergedData.peopleServed > 0 ? mergedData.peopleServed : prev.peopleServed,
-          programsActive: mergedData.programsActive && mergedData.programsActive > 0 ? mergedData.programsActive : prev.programsActive,
-          volunteersActive: mergedData.volunteersActive && mergedData.volunteersActive > 0 ? mergedData.volunteersActive : prev.volunteersActive,
-          fundsRaised: mergedData.fundsRaised && mergedData.fundsRaised > 0 ? mergedData.fundsRaised : prev.fundsRaised,
-          communitiesReached: mergedData.communitiesReached && mergedData.communitiesReached > 0 ? mergedData.communitiesReached : prev.communitiesReached,
-          successRate: mergedData.successRate && mergedData.successRate > 0 ? mergedData.successRate : prev.successRate,
-          highlights: Array.isArray(mergedData.highlights) && mergedData.highlights.length > 0 ? mergedData.highlights : prev.highlights
-        }));
+      if (Object.keys(merged).length > 0) {
+        setData(normalizeImpactData(merged));
       }
 
       if (reportsRes.ok) {
@@ -109,26 +115,21 @@ export function ImpactDashboard() {
             year: r.value?.year || r.year || '2025',
             fileUrl: r.value?.fileUrl || r.fileUrl || '#',
             description: r.value?.description || r.description,
-            fileSize: r.value?.fileSize || r.fileSize || '4.5 MB',
+            fileSize: r.value?.fileSize || r.fileSize || '3.5 MB',
             category: r.value?.category || r.category || 'Annual Report'
           }));
           setReports(mapped);
         }
       }
     } catch (e) {
-      console.warn('Impact data fallback activated:', e);
+      console.warn('Impact data fetch fallback:', e);
     }
-  };
-
-  const formatFunds = (amountUgx: number) => {
-    if (!amountUgx || isNaN(amountUgx)) return 'UGX 310,000,000';
-    return `UGX ${Number(amountUgx).toLocaleString()}`;
   };
 
   const handleDownload = (fileUrl: string, title: string) => {
     if (!fileUrl || fileUrl === '#') {
       toast.info(`Downloading ${title}...`, {
-        description: 'Direct institutional access copy is being retrieved.'
+        description: 'Resource copy is being retrieved.'
       });
       return;
     }
@@ -142,257 +143,296 @@ export function ImpactDashboard() {
         description={data.heroSubtitle} 
       />
 
-      {/* ── PRECISE HERO BANNER ── */}
-      <section className="relative bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 text-white pt-32 pb-16 px-4 sm:px-6 lg:px-8 border-b border-slate-700/60">
+      {/* ── 1. AUTHENTIC HERO & MISSION SECTION ── */}
+      <section className="relative bg-gradient-to-b from-slate-950 via-slate-900 to-slate-800 text-white pt-32 pb-20 px-4 sm:px-6 lg:px-8 border-b border-slate-700/50">
         <div className="max-w-4xl mx-auto text-center">
-          {/* Status Badge */}
-          <div className="inline-flex items-center gap-2 bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs font-bold uppercase tracking-wider px-3.5 py-1.5 rounded-full mb-4">
+          {/* Badge */}
+          <div className="inline-flex items-center gap-2 bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs font-bold uppercase tracking-wider px-4 py-1.5 rounded-full mb-6">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-            <span>{data.heroBadge || 'Verified Community Impact'}</span>
+            {data.heroBadge}
           </div>
 
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold font-heading tracking-tight mb-4 text-white">
-            {data.heroTitle || 'Our Impact'}
+          {/* Main Title */}
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-white mb-6">
+            {data.heroTitle}
           </h1>
 
-          <p className="text-base sm:text-lg text-slate-300 max-w-2xl mx-auto leading-relaxed font-normal">
-            {data.heroSubtitle || 'Direct, measurable results empowering refugee and host families across Kiryandongo District, Uganda.'}
+          {/* Subtitle / Core Tagline */}
+          <p className="text-xl sm:text-2xl font-medium text-emerald-300/95 max-w-3xl mx-auto mb-10 leading-snug">
+            {data.heroSubtitle}
+          </p>
+
+          {/* Two Grounded Mission Paragraphs */}
+          <div className="bg-white/5 border border-white/10 rounded-3xl p-6 sm:p-8 text-left space-y-4 shadow-xl backdrop-blur-sm">
+            <p className="text-base sm:text-lg text-slate-200 leading-relaxed">
+              {data.heroIntroP1}
+            </p>
+            <div className="h-px bg-white/10 w-full" />
+            <p className="text-base sm:text-lg text-slate-300 leading-relaxed font-normal">
+              {data.heroIntroP2}
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* ── 2. OUR AREAS OF IMPACT ── */}
+      <section className="py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+        <div className="text-center max-w-3xl mx-auto mb-16">
+          <div className="inline-flex items-center gap-2 text-emerald-700 font-bold text-xs uppercase tracking-widest bg-emerald-100 px-3.5 py-1 rounded-full mb-3">
+            <Compass size={13} />
+            Holistic Community Pillars
+          </div>
+          <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
+            {data.areasTitle}
+          </h2>
+          <p className="text-slate-600 mt-3 text-base sm:text-lg">
+            {data.areasSubtitle}
           </p>
         </div>
-      </section>
 
-      {/* ── 6 PRECISE IMPACT COUNTERS ── */}
-      <section className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 -mt-6 relative z-10">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          
-          {/* People Served */}
-          <div className="bg-white rounded-2xl p-5 border border-slate-200/90 shadow-sm flex flex-col justify-between">
-            <div className="flex items-center justify-between mb-3">
-              <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
-                <Users size={20} />
-              </div>
-              <span className="text-[11px] font-bold px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded-md">
-                Direct
-              </span>
-            </div>
-            <div>
-              <div className="text-3xl font-black font-heading text-slate-900 tracking-tight mb-1">
-                {data.peopleServed.toLocaleString()}+
-              </div>
-              <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wide mb-1">{data.peopleServedLabel}</h3>
-              <p className="text-xs text-slate-500 font-medium">{data.peopleServedBadge}</p>
-            </div>
-          </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {data.areas.map((area: ImpactArea, index: number) => (
+            <div 
+              key={area.id || index}
+              className="bg-white rounded-3xl p-8 border border-slate-200/90 shadow-sm hover:shadow-lg hover:border-emerald-300 transition-all duration-300 flex flex-col justify-between group"
+            >
+              <div>
+                <div className="flex items-center justify-between mb-5">
+                  <div className="w-14 h-14 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center group-hover:scale-105 transition-transform duration-300">
+                    {renderAreaIcon(area.icon)}
+                  </div>
+                  <span className="text-xs font-bold text-slate-400 font-mono">
+                    0{index + 1}
+                  </span>
+                </div>
 
-          {/* Active Programs */}
-          <div className="bg-white rounded-2xl p-5 border border-slate-200/90 shadow-sm flex flex-col justify-between">
-            <div className="flex items-center justify-between mb-3">
-              <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
-                <BookOpen size={20} />
-              </div>
-              <span className="text-[11px] font-bold px-2 py-0.5 bg-blue-50 text-blue-700 rounded-md">
-                Pillars
-              </span>
-            </div>
-            <div>
-              <div className="text-3xl font-black font-heading text-slate-900 tracking-tight mb-1">
-                {data.programsActive}
-              </div>
-              <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wide mb-1">{data.programsActiveLabel}</h3>
-              <p className="text-xs text-slate-500 font-medium">{data.programsActiveBadge}</p>
-            </div>
-          </div>
+                <h3 className="text-xl font-bold text-slate-900 mb-3 group-hover:text-emerald-700 transition-colors">
+                  {area.title}
+                </h3>
 
-          {/* Communities Reached */}
-          <div className="bg-white rounded-2xl p-5 border border-slate-200/90 shadow-sm flex flex-col justify-between">
-            <div className="flex items-center justify-between mb-3">
-              <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
-                <MapPin size={20} />
+                <p className="text-slate-600 text-sm leading-relaxed mb-5">
+                  {area.description}
+                </p>
               </div>
-              <span className="text-[11px] font-bold px-2 py-0.5 bg-amber-50 text-amber-700 rounded-md">
-                Kiryandongo
-              </span>
-            </div>
-            <div>
-              <div className="text-3xl font-black font-heading text-slate-900 tracking-tight mb-1">
-                {data.communitiesReached}
-              </div>
-              <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wide mb-1">{data.communitiesReachedLabel}</h3>
-              <p className="text-xs text-slate-500 font-medium">{data.communitiesReachedBadge}</p>
-            </div>
-          </div>
 
-          {/* Community Volunteers */}
-          <div className="bg-white rounded-2xl p-5 border border-slate-200/90 shadow-sm flex flex-col justify-between">
-            <div className="flex items-center justify-between mb-3">
-              <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center">
-                <Heart size={20} />
-              </div>
-              <span className="text-[11px] font-bold px-2 py-0.5 bg-purple-50 text-purple-700 rounded-md">
-                Local Leaders
-              </span>
+              {area.activityHighlight && (
+                <div className="bg-slate-50 border-l-2 border-emerald-500 rounded-r-xl p-3.5 text-xs text-slate-700 leading-relaxed mt-4">
+                  <span className="font-semibold text-emerald-800 block mb-1">Key Activities:</span>
+                  {area.activityHighlight}
+                </div>
+              )}
             </div>
-            <div>
-              <div className="text-3xl font-black font-heading text-slate-900 tracking-tight mb-1">
-                {data.volunteersActive}+
-              </div>
-              <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wide mb-1">{data.volunteersActiveLabel}</h3>
-              <p className="text-xs text-slate-500 font-medium">{data.volunteersActiveBadge}</p>
-            </div>
-          </div>
-
-          {/* Funds Deployed */}
-          <div className="bg-white rounded-2xl p-5 border border-slate-200/90 shadow-sm flex flex-col justify-between">
-            <div className="flex items-center justify-between mb-3">
-              <div className="w-10 h-10 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center">
-                <DollarSign size={20} />
-              </div>
-              <span className="text-[11px] font-bold px-2 py-0.5 bg-teal-50 text-teal-700 rounded-md">
-                Transparent
-              </span>
-            </div>
-            <div>
-              <div className="text-2xl font-black font-heading text-slate-900 tracking-tight mb-1">
-                {formatFunds(data.fundsRaised)}
-              </div>
-              <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wide mb-1">{data.fundsRaisedLabel}</h3>
-              <p className="text-xs text-slate-500 font-medium">{data.fundsRaisedBadge}</p>
-            </div>
-          </div>
-
-          {/* Success Rate */}
-          <div className="bg-white rounded-2xl p-5 border border-slate-200/90 shadow-sm flex flex-col justify-between">
-            <div className="flex items-center justify-between mb-3">
-              <div className="w-10 h-10 rounded-xl bg-green-50 text-green-600 flex items-center justify-center">
-                <Award size={20} />
-              </div>
-              <span className="text-[11px] font-bold px-2 py-0.5 bg-green-50 text-green-700 rounded-md">
-                Verified
-              </span>
-            </div>
-            <div>
-              <div className="text-3xl font-black font-heading text-slate-900 tracking-tight mb-1">
-                {data.successRate}%
-              </div>
-              <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wide mb-1">{data.successRateLabel}</h3>
-              <p className="text-xs text-slate-500 font-medium">{data.successRateBadge}</p>
-            </div>
-          </div>
-
+          ))}
         </div>
       </section>
 
-      {/* ── KEY ACHIEVEMENTS (4 PRECISE CARDS) ── */}
-      {data.highlights && data.highlights.length > 0 && (
-        <section className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-14">
-          <div className="text-center mb-8">
-            <h2 className="text-2xl sm:text-3xl font-bold font-heading text-slate-900">
-              {data.highlightsTitle || 'Key Community Achievements'}
+      {/* ── 3. STORIES OF CHANGE (e.g. Okello John) ── */}
+      <section className="py-16 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-slate-100 to-white border-y border-slate-200">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center max-w-2xl mx-auto mb-12">
+            <div className="inline-flex items-center gap-2 text-amber-800 font-bold text-xs uppercase tracking-widest bg-amber-100 px-3.5 py-1 rounded-full mb-3">
+              <Quote size={13} />
+              Personal Journeys
+            </div>
+            <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
+              {data.storiesTitle}
             </h2>
-            <p className="text-slate-600 text-sm max-w-xl mx-auto mt-1.5 font-normal">
-              {data.highlightsSubtitle || 'Specific, tangible outcomes delivered directly into the hands of families who need it most.'}
+            <p className="text-slate-600 mt-2 text-sm sm:text-base">
+              {data.storiesSubtitle}
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {data.highlights.map((hl) => (
+          <div className="space-y-8">
+            {data.stories.map((story, idx) => (
               <div 
-                key={hl.id} 
-                className="bg-white rounded-2xl p-5 border border-slate-200 shadow-2xs hover:border-emerald-300 transition-all flex flex-col justify-between"
+                key={story.id || idx}
+                className="bg-white rounded-3xl p-8 sm:p-10 border border-slate-200 shadow-md flex flex-col md:flex-row gap-8 items-start hover:shadow-xl transition-all duration-300"
               >
-                <div>
-                  <div className="flex items-center justify-between gap-2 mb-2.5">
-                    <span className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-800 bg-emerald-50 px-2.5 py-0.5 rounded-md border border-emerald-100">
-                      <CheckCircle2 size={13} className="text-emerald-600" />
-                      {hl.metric}
-                    </span>
+                {/* Avatar / Initials */}
+                <div className="flex-shrink-0 flex flex-col items-center">
+                  <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500 text-white font-black text-2xl sm:text-3xl flex items-center justify-center shadow-lg">
+                    {story.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
                   </div>
-                  <h3 className="text-base font-bold text-slate-900 mb-1.5">{hl.title}</h3>
-                  <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-normal">
-                    {hl.description}
-                  </p>
+                  <span className="mt-3 text-[11px] font-bold uppercase tracking-wider text-slate-500 bg-slate-100 px-2.5 py-1 rounded-full text-center">
+                    {story.role}
+                  </span>
+                </div>
+
+                {/* Narrative */}
+                <div className="flex-1 space-y-4">
+                  <div>
+                    <h3 className="text-2xl font-extrabold text-slate-900">
+                      {story.name}
+                    </h3>
+                    <p className="text-sm font-semibold text-emerald-700 mt-0.5">
+                      {story.role}
+                    </p>
+                  </div>
+
+                  <div className="text-slate-700 text-sm sm:text-base leading-relaxed space-y-3">
+                    {story.story.split('\n\n').map((paragraph, pIdx) => (
+                      <p key={pIdx}>{paragraph}</p>
+                    ))}
+                  </div>
+
+                  {story.quote && (
+                    <div className="relative pl-5 border-l-4 border-amber-400 italic text-slate-800 font-serif text-sm sm:text-base py-1">
+                      "{story.quote}"
+                    </div>
+                  )}
+
+                  <div className="pt-2">
+                    <Link
+                      to={story.linkUrl || '/stories'}
+                      className="inline-flex items-center gap-2 font-bold text-emerald-700 hover:text-emerald-800 text-sm hover:underline transition-colors"
+                    >
+                      <span>{story.linkText || "Read story →"}</span>
+                    </Link>
+                  </div>
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── 4. OUR COMMUNITY APPROACH ── */}
+      <section className="py-20 px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto">
+        <div className="bg-slate-900 text-white rounded-3xl p-8 sm:p-12 lg:p-16 shadow-2xl relative overflow-hidden">
+          {/* Subtle decoration */}
+          <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none" />
+
+          <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
+            <div className="lg:col-span-5 space-y-4">
+              <div className="inline-flex items-center gap-2 bg-emerald-500/20 border border-emerald-400/30 text-emerald-300 text-xs font-bold px-3.5 py-1 rounded-full uppercase tracking-wider">
+                <Sparkles size={13} />
+                Guiding Philosophy
+              </div>
+              <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white leading-tight">
+                {data.approachTitle}
+              </h2>
+              <p className="text-emerald-300 font-semibold text-lg leading-snug">
+                "{data.approachLead}"
+              </p>
+            </div>
+
+            <div className="lg:col-span-7 bg-white/5 border border-white/10 rounded-2xl p-6 sm:p-8 backdrop-blur-sm">
+              <p className="text-slate-200 text-base sm:text-lg leading-relaxed">
+                {data.approachDescription}
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── 5. LOOKING AHEAD & ACCOUNTABILITY (MEAL) ── */}
+      <section className="py-16 px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto">
+        <div className="bg-emerald-50/70 border-2 border-emerald-200/80 rounded-3xl p-8 sm:p-12 shadow-sm space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-emerald-200/70 pb-6">
+            <div>
+              <div className="inline-flex items-center gap-2 text-emerald-800 font-bold text-xs uppercase tracking-wider bg-emerald-100 px-3 py-1 rounded-full mb-2">
+                <ShieldCheck size={14} />
+                Rigorous Transparency & MEAL
+              </div>
+              <h3 className="text-2xl sm:text-3xl font-extrabold text-slate-900">
+                {data.lookingAheadTitle}
+              </h3>
+            </div>
+          </div>
+
+          <p className="text-slate-700 text-base sm:text-lg leading-relaxed">
+            {data.lookingAheadDescription}
+          </p>
+
+          <div className="bg-white rounded-2xl p-6 border border-emerald-100 shadow-sm space-y-4">
+            <p className="text-sm sm:text-base font-semibold text-emerald-950">
+              {data.lookingAheadNote}
+            </p>
+
+            <div className="flex flex-wrap gap-2.5 pt-2">
+              {data.lookingAheadPillars.map((pillar, pIdx) => (
+                <span 
+                  key={pIdx}
+                  className="inline-flex items-center gap-1.5 bg-emerald-100/80 text-emerald-900 text-xs sm:text-sm font-bold px-3.5 py-1.5 rounded-xl border border-emerald-200"
+                >
+                  <CheckCircle2 size={14} className="text-emerald-600" />
+                  {pillar}
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── 6. PUBLISHED IMPACT REPORTS ── */}
+      {reports.length > 0 && (
+        <section className="py-12 px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto">
+          <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-sm">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+              <div>
+                <h3 className="text-xl font-bold text-slate-900">Download Reports & Documentation</h3>
+                <p className="text-xs text-slate-500 mt-1">
+                  Access published documentation and field summaries.
+                </p>
+              </div>
+              <Link 
+                to="/reports" 
+                className="text-xs font-bold text-emerald-700 hover:text-emerald-800 inline-flex items-center gap-1"
+              >
+                View all publications <ArrowRight size={13} />
+              </Link>
+            </div>
+
+            <div className="divide-y divide-slate-100">
+              {reports.slice(0, 3).map(rep => (
+                <div key={rep.id} className="py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 first:pt-0 last:pb-0">
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-xs font-bold bg-slate-100 text-slate-700 px-2 py-0.5 rounded">
+                        {rep.year}
+                      </span>
+                      <h4 className="font-bold text-slate-900 text-sm">{rep.title}</h4>
+                    </div>
+                    <p className="text-xs text-slate-500 line-clamp-1">{rep.description}</p>
+                  </div>
+
+                  <button
+                    onClick={() => handleDownload(rep.fileUrl, rep.title)}
+                    className="inline-flex items-center gap-2 text-xs font-bold bg-slate-100 hover:bg-emerald-50 text-slate-700 hover:text-emerald-800 px-3.5 py-2 rounded-xl border border-slate-200 transition-colors flex-shrink-0"
+                  >
+                    <Download size={13} />
+                    Download PDF ({rep.fileSize || 'PDF'})
+                  </button>
+                </div>
+              ))}
+            </div>
           </div>
         </section>
       )}
 
-      {/* ── ANNUAL REPORTS DOWNLOAD ── */}
-      <section className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pb-14">
-        <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-2xs">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5 pb-4 border-b border-slate-100">
-            <div>
-              <h3 className="text-lg font-bold font-heading text-slate-900">
-                Official Annual Reports & Audits
-              </h3>
-              <p className="text-xs text-slate-500 mt-0.5">
-                Download verified statutory filings, independent financial audits, and program evaluations.
-              </p>
-            </div>
+      {/* ── 7. CALL TO ACTION ── */}
+      <section className="bg-gradient-to-r from-emerald-800 via-teal-800 to-slate-900 text-white py-16 px-4 sm:px-6 lg:px-8 text-center mt-10">
+        <div className="max-w-3xl mx-auto space-y-6">
+          <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white">
+            {data.ctaTitle}
+          </h2>
+          <p className="text-emerald-100 text-base sm:text-lg max-w-2xl mx-auto">
+            {data.ctaSubtitle}
+          </p>
+          <div className="flex flex-wrap items-center justify-center gap-4 pt-4">
             <Link
-              to="/reports"
-              className="inline-flex items-center gap-1 text-xs font-bold text-emerald-700 hover:text-emerald-800 w-fit"
+              to={data.ctaPrimaryLink || '/donate'}
+              className="bg-emerald-400 hover:bg-emerald-300 text-slate-950 font-bold px-8 py-3.5 rounded-2xl shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all text-base inline-flex items-center gap-2"
             >
-              <span>View All Reports</span>
-              <ArrowUpRight size={14} />
+              <span>{data.ctaPrimaryText || 'Support Our Mission'}</span>
+              <ArrowRight size={18} />
             </Link>
-          </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-            {reports.slice(0, 2).map((rep) => (
-              <div 
-                key={rep.id}
-                className="p-4 rounded-xl bg-slate-50 border border-slate-200 hover:border-emerald-300 transition-all flex items-start gap-3"
-              >
-                <div className="w-9 h-9 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
-                  <FileText size={18} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between gap-1 mb-1">
-                    <h4 className="font-bold text-slate-900 text-xs truncate">{rep.title}</h4>
-                    <Badge variant="outline" className="text-[10px] shrink-0 font-semibold">{rep.year}</Badge>
-                  </div>
-                  <p className="text-xs text-slate-600 leading-relaxed mb-2 line-clamp-2">
-                    {rep.description}
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => handleDownload(rep.fileUrl, rep.title)}
-                    className="inline-flex items-center gap-1 text-xs font-bold text-emerald-700 hover:text-emerald-800 cursor-pointer"
-                  >
-                    <Download size={12} />
-                    <span>Download PDF ({rep.fileSize || '4.5 MB'})</span>
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── CALL TO ACTION ── */}
-      <section className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
-        <div className="bg-gradient-to-r from-emerald-800 to-teal-900 rounded-2xl p-6 sm:p-8 text-white shadow-md text-center sm:text-left sm:flex sm:items-center sm:justify-between gap-6">
-          <div className="max-w-xl mb-4 sm:mb-0">
-            <span className="inline-flex items-center gap-1 text-emerald-300 text-xs font-bold uppercase tracking-wider bg-white/10 px-2.5 py-0.5 rounded-full mb-2">
-              <ShieldCheck size={12} /> Direct Impact
-            </span>
-            <h3 className="text-xl sm:text-2xl font-bold font-heading text-white mb-1.5">
-              {data.ctaTitle || 'Support Our Work in Kiryandongo'}
-            </h3>
-            <p className="text-slate-200 text-xs sm:text-sm leading-relaxed font-normal">
-              {data.ctaSubtitle || 'Every contribution directly empowers vulnerable refugee and host families with essential tools for dignity and self-reliance.'}
-            </p>
-          </div>
-
-          <div className="shrink-0">
             <Link
-              to={data.ctaButtonLink || '/donate'}
-              className="inline-flex items-center justify-center gap-1.5 bg-emerald-400 hover:bg-emerald-300 text-slate-950 font-bold text-xs sm:text-sm px-6 py-2.5 rounded-xl shadow-sm transition-all"
+              to={data.ctaSecondaryLink || '/contact'}
+              className="bg-white/10 hover:bg-white/20 text-white font-bold px-7 py-3.5 rounded-2xl border border-white/20 hover:border-white/40 transition-all text-base"
             >
-              <span>{data.ctaButtonText || 'Donate Now'}</span>
-              <ArrowUpRight size={15} />
+              {data.ctaSecondaryText || 'Contact Us'}
             </Link>
           </div>
         </div>
