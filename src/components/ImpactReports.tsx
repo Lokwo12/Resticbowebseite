@@ -134,16 +134,16 @@ export function ImpactReports() {
             {data.heroBadge}
           </div>
 
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-white mb-6">
+          <h1 className="text-[32px] sm:text-[36px] lg:text-[48px] font-bold sm:font-extrabold font-heading tracking-tight text-white mb-6 leading-[1.1]">
             {data.heroTitle}
           </h1>
 
           <div className="bg-white/5 border border-white/10 rounded-3xl p-6 sm:p-8 text-left space-y-4 shadow-xl backdrop-blur-sm">
-            <p className="text-base sm:text-lg text-slate-200 leading-relaxed font-medium">
+            <p className="text-[17px] text-slate-200 leading-[1.6] font-normal">
               {data.heroIntroP1}
             </p>
             <div className="h-px bg-white/10 w-full" />
-            <p className="text-base sm:text-lg text-slate-300 leading-relaxed font-normal">
+            <p className="text-[17px] text-slate-300 leading-[1.6] font-normal">
               {data.heroIntroP2}
             </p>
           </div>
@@ -157,7 +157,7 @@ export function ImpactReports() {
             <ShieldCheck size={13} />
             Governance & Standards
           </div>
-          <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
+          <h2 className="text-[28px] sm:text-[30px] lg:text-[36px] font-bold font-heading text-slate-900 tracking-tight leading-[1.2]">
             {data.accountabilityTitle}
           </h2>
         </div>

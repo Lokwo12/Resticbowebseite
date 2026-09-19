@@ -141,10 +141,10 @@ export function Newsletter() {
           <div className="w-16 h-16 bg-white/20 backdrop-blur rounded-full flex items-center justify-center mx-auto mb-6">
             <Mail className="text-white" size={32} />
           </div>
-          <h2 className="text-3xl lg:text-4xl text-white mb-4">
+          <h2 className="text-[28px] sm:text-[30px] lg:text-[36px] font-bold font-heading text-white mb-4 leading-[1.2]">
             Stay Connected
           </h2>
-          <p className="text-lg text-emerald-50 mb-8">
+          <p className="text-[17px] font-normal leading-[1.6] text-emerald-50 mb-8">
             Subscribe to our newsletter for updates on our programs, success stories, and upcoming events.
           </p>
 
@@ -174,7 +174,7 @@ export function Newsletter() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full bg-gradient-to-r from-sky-600 via-teal-600 to-emerald-600 hover:from-sky-500 hover:via-teal-500 hover:to-emerald-500 text-white font-bold px-6 py-3.5 rounded-xl transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full bg-gradient-to-r from-sky-600 via-teal-600 to-emerald-600 hover:from-sky-500 hover:via-teal-500 hover:to-emerald-500 text-white text-[15px] sm:text-[16px] font-semibold px-6 py-3.5 rounded-xl transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {loading ? (
                     <>

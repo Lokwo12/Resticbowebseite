@@ -268,10 +268,10 @@ export function Donation() {
           <div className="inline-flex items-center gap-2 bg-emerald-100 text-emerald-800 text-xs sm:text-sm font-bold px-5 py-2 rounded-full mb-4 uppercase tracking-widest shadow-2xs">
             <Heart size={14} fill="currentColor" className="text-emerald-600" /> {donationConfig.badge || 'DONATE NOW'}
           </div>
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-gray-900 mb-4 leading-tight">
+          <h2 className="text-[28px] sm:text-[30px] lg:text-[36px] font-bold font-heading text-gray-900 mb-4 leading-[1.2]">
             {donationConfig.title || 'Support the Community Foundation'}
           </h2>
-          <p className="text-base sm:text-lg text-gray-700 max-w-2xl mx-auto leading-relaxed font-medium">
+          <p className="text-[17px] font-normal leading-[1.6] text-gray-700 max-w-2xl mx-auto">
             {donationConfig.subtitle || 'Your donation helps refugees and host communities access skills, strengthen livelihoods, and build a more resilient future.'}
           </p>
           {donationConfig.secondarySubtitle && (

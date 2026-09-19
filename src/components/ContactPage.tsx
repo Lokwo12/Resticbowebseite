@@ -64,10 +64,10 @@ export function ContactPage() {
             <span className="text-white font-medium">Contact</span>
           </nav>
 
-          <h1 className="text-4xl md:text-6xl font-bold mb-6 animate-[fadeInDown_0.8s_ease-out]">
+          <h1 className="text-[32px] sm:text-[36px] lg:text-[48px] font-bold sm:font-extrabold font-heading mb-6 leading-[1.1] animate-[fadeInDown_0.8s_ease-out]">
             {settings?.title || 'Get In Touch'}
           </h1>
-          <p className="text-xl text-emerald-50 max-w-2xl mx-auto animate-[fadeInUp_0.8s_ease-out]">
+          <p className="text-[17px] font-normal leading-[1.6] text-emerald-50 max-w-2xl mx-auto animate-[fadeInUp_0.8s_ease-out]">
             {settings?.subtitle || "Have questions or want to support our mission? Reach out to us. We'd love to hear from you."}
           </p>
 
@@ -87,7 +87,7 @@ export function ContactPage() {
       <section className="bg-white pt-16 pb-10">
         <div className="max-w-7xl mx-auto px-4 text-center">
           <span className="text-emerald-600 font-bold tracking-widest uppercase text-xs">Location</span>
-          <h2 className="text-4xl font-bold text-gray-900 mt-3">Find Our Office</h2>
+          <h2 className="text-[28px] sm:text-[30px] lg:text-[36px] font-bold font-heading text-gray-900 mt-3 leading-[1.2]">Find Our Office</h2>
         </div>
       </section>
 

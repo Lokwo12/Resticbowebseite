@@ -201,10 +201,10 @@ export function ProgramsPage() {
             <BookOpen size={16} />
             Our Core Initiatives
           </div>
-          <h1 className="text-4xl sm:text-5xl font-extrabold text-slate-900 tracking-tight mb-4 font-heading">
+          <h1 className="text-[32px] sm:text-[36px] lg:text-[48px] font-bold sm:font-extrabold text-slate-900 tracking-tight mb-4 font-heading leading-[1.1]">
             Community-Driven Programs
           </h1>
-          <p className="text-lg text-slate-600 leading-relaxed">
+          <p className="text-[17px] font-normal leading-[1.6] text-slate-600">
             We deliver targeted, high-impact programs designed to empower vulnerable families, refugees, and host communities across Kiryandongo District, Uganda.
           </p>
         </div>

@@ -131,10 +131,10 @@ export function AboutPage() {
             <Heart size={14} className="text-emerald-400" />
             Our Mission & Journey
           </div>
-          <h1 className="text-3xl sm:text-5xl md:text-6xl font-extrabold font-heading text-white mb-6 leading-tight animate-[fadeInUp_1s_ease-out_0.2s_both] drop-shadow-2xl">
+          <h1 className="text-[32px] sm:text-[36px] lg:text-[48px] font-bold sm:font-extrabold font-heading text-white mb-6 leading-[1.1] animate-[fadeInUp_1s_ease-out_0.2s_both] drop-shadow-2xl">
             {settings.title}
           </h1>
-          <p className="text-base sm:text-lg md:text-xl text-gray-200 max-w-3xl mx-auto leading-relaxed animate-[fadeInUp_1s_ease-out_0.4s_both] drop-shadow-lg font-medium">
+          <p className="text-[17px] font-normal text-gray-200 max-w-3xl mx-auto leading-[1.6] animate-[fadeInUp_1s_ease-out_0.4s_both] drop-shadow-lg">
             {settings.intro}
           </p>
         </div>
@@ -158,11 +158,11 @@ export function AboutPage() {
             
             <div className="space-y-6">
               <h2 className="text-sm font-bold text-emerald-600 uppercase tracking-widest mb-2">Our Story</h2>
-              <h3 className="text-3xl md:text-4xl font-bold font-heading text-gray-900 leading-tight">
+              <h3 className="text-[28px] sm:text-[30px] lg:text-[36px] font-bold font-heading text-gray-900 leading-[1.2]">
                 From a small village initiative to a district-wide movement.
               </h3>
               {settings.story?.map((paragraph, idx) => (
-                <p key={idx} className="text-gray-600 text-lg leading-relaxed">
+                <p key={idx} className="text-gray-600 text-[17px] font-normal leading-[1.6]">
                   {paragraph}
                 </p>
               ))}

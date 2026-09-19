@@ -87,10 +87,10 @@ export function FinancialReports() {
             <ShieldCheck size={14} />
             {financials.badge || 'Transparency'}
           </span>
-          <h1 className="text-4xl md:text-5xl font-heading font-bold text-gray-900 mb-4">
+          <h1 className="text-[32px] sm:text-[36px] lg:text-[48px] font-bold sm:font-extrabold font-heading text-gray-900 mb-4 leading-[1.1]">
             {financials.title || 'Financial Transparency'}
           </h1>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+          <p className="text-[17px] font-normal leading-[1.6] text-gray-600 max-w-2xl mx-auto">
             {financials.description || 'We believe in complete transparency. See exactly how your contributions are making a difference in the Kiryandongo District.'}
           </p>
         </div>
@@ -99,7 +99,7 @@ export function FinancialReports() {
           
           {/* Where the money goes */}
           <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
-            <h3 className="text-2xl font-bold text-gray-900 mb-6 font-heading">Where The Money Goes</h3>
+            <h3 className="text-[22px] lg:text-[24px] font-semibold text-gray-900 mb-6 font-heading leading-[1.3]">Where The Money Goes</h3>
             <div className="h-[300px] w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>

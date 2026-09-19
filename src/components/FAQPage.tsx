@@ -96,8 +96,8 @@ export function FAQPage() {
           <div className="inline-flex items-center justify-center w-16 h-16 bg-white/10 backdrop-blur-md rounded-full mb-6 animate-float">
             <HelpCircle className="text-white" size={32} />
           </div>
-          <h1 className="text-4xl md:text-5xl font-bold mb-4 text-white">Frequently Asked Questions</h1>
-          <p className="text-emerald-50 max-w-2xl mx-auto text-lg">
+          <h1 className="text-[32px] sm:text-[36px] lg:text-[48px] font-bold sm:font-extrabold font-heading mb-4 text-white leading-[1.1]">Frequently Asked Questions</h1>
+          <p className="text-[17px] font-normal leading-[1.6] text-emerald-50 max-w-2xl mx-auto">
             Find answers to common questions about our organization, programs, and how you can get involved.
           </p>
         </div>

@@ -130,6 +130,8 @@ body {
   body {
     background-color: var(--background);
     color: var(--foreground);
+    font-size: 17px;
+    font-weight: 400;
     line-height: 1.6;
     letter-spacing: normal;
     word-spacing: normal;
@@ -137,10 +139,84 @@ body {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
-  p {
-    line-height: 1.625;
+  
+  /* Major/Hero title (H1): 48px on desktop, 32–36px on mobile, font-weight 700–800, line-height 1.1 */
+  h1 {
+    font-family: 'Outfit', 'Inter', ui-sans-serif, system-ui, sans-serif !important;
+    font-size: 32px;
+    line-height: 1.1;
+    font-weight: 800;
+    letter-spacing: -0.025em;
+  }
+  @media (min-width: 640px) {
+    h1 {
+      font-size: 36px;
+    }
+  }
+  @media (min-width: 1024px) {
+    h1 {
+      font-size: 48px;
+    }
+  }
+
+  /* Section titles (H2): 36px on desktop, 28–30px on mobile, font-weight 600–700, line-height 1.2 */
+  h2 {
+    font-family: 'Outfit', 'Inter', ui-sans-serif, system-ui, sans-serif !important;
+    font-size: 28px;
+    line-height: 1.2;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+  @media (min-width: 640px) {
+    h2 {
+      font-size: 30px;
+    }
+  }
+  @media (min-width: 1024px) {
+    h2 {
+      font-size: 36px;
+    }
+  }
+
+  /* Subsection/card titles (H3): 22–24px, font-weight 600–700 */
+  h3 {
+    font-family: 'Outfit', 'Inter', ui-sans-serif, system-ui, sans-serif !important;
+    font-size: 22px;
+    line-height: 1.3;
+    font-weight: 650;
+    letter-spacing: -0.015em;
+  }
+  @media (min-width: 1024px) {
+    h3 {
+      font-size: 24px;
+    }
+  }
+
+  /* Normal body text: 17px, font-weight 400, line-height 1.6 */
+  p, .body-text {
+    font-size: 17px;
+    font-weight: 400;
+    line-height: 1.6;
     letter-spacing: normal;
     word-spacing: normal;
+  }
+
+  /* Small/supporting text: 14px */
+  small, .supporting-text {
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  /* Buttons: 15–16px, font-weight 500–600 */
+  button, .btn {
+    font-size: 15.5px;
+    font-weight: 600;
+  }
+
+  /* Navigation text: 15–17px, font-weight 500–600 */
+  .nav-link, nav a {
+    font-size: 15.5px;
+    font-weight: 500;
   }
 }
 
@@ -159,8 +235,65 @@ h1, h2, h3, h4, h5, h6, .font-heading {
   font-family: 'Outfit', 'Inter', ui-sans-serif, system-ui, sans-serif !important;
 }
 
-h1, h2, h3 {
+/* Standardized Reusable Typography Classes */
+.title-hero {
+  font-family: 'Outfit', 'Inter', ui-sans-serif, system-ui, sans-serif;
+  font-size: 32px;
+  line-height: 1.1;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+}
+@media (min-width: 640px) {
+  .title-hero { font-size: 36px; }
+}
+@media (min-width: 1024px) {
+  .title-hero { font-size: 48px; }
+}
+
+.title-section {
+  font-family: 'Outfit', 'Inter', ui-sans-serif, system-ui, sans-serif;
+  font-size: 28px;
+  line-height: 1.2;
+  font-weight: 700;
   letter-spacing: -0.02em;
+}
+@media (min-width: 640px) {
+  .title-section { font-size: 30px; }
+}
+@media (min-width: 1024px) {
+  .title-section { font-size: 36px; }
+}
+
+.title-subsection {
+  font-family: 'Outfit', 'Inter', ui-sans-serif, system-ui, sans-serif;
+  font-size: 22px;
+  line-height: 1.3;
+  font-weight: 650;
+  letter-spacing: -0.015em;
+}
+@media (min-width: 1024px) {
+  .title-subsection { font-size: 24px; }
+}
+
+.text-body-std {
+  font-size: 17px !important;
+  font-weight: 400 !important;
+  line-height: 1.6 !important;
+}
+
+.text-small-std {
+  font-size: 14px !important;
+  line-height: 1.5 !important;
+}
+
+.btn-std {
+  font-size: 15.5px !important;
+  font-weight: 600 !important;
+}
+
+.nav-std {
+  font-size: 15.5px !important;
+  font-weight: 500 !important;
 }
 
 /* --- Smooth Scrolling --- */

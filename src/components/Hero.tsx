@@ -333,7 +333,7 @@ export function Hero() {
               {/* Expanded Initiative Title standing directly below RESTI */}
               <motion.h1 
                 variants={{ hidden: { opacity: 0, y: 15 }, visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease: "easeOut", delay: 0.1 } } }}
-                className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold font-heading text-white tracking-tight leading-snug max-w-3xl mx-auto drop-shadow-sm"
+                className="text-[32px] sm:text-[36px] lg:text-[48px] font-bold sm:font-extrabold font-heading text-white tracking-tight leading-[1.1] max-w-4xl mx-auto drop-shadow-sm"
               >
                 {heroTitle.expandedTitle}
               </motion.h1>
@@ -344,7 +344,7 @@ export function Hero() {
               variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease: "easeOut" } } }}
               className="max-w-3xl mx-auto space-y-3.5"
             >
-              <div className="space-y-3 text-base sm:text-lg md:text-xl font-sans font-normal leading-relaxed text-slate-200/90 drop-shadow-sm text-center">
+              <div className="space-y-3 text-[17px] font-sans font-normal leading-[1.6] text-slate-200/90 drop-shadow-sm text-center">
                 {paragraphs.map((para, idx) => (
                   <p key={idx} className="text-center">{para}</p>
                 ))}
@@ -367,14 +367,14 @@ export function Hero() {
             >
               <button
                 onClick={openDonationModal}
-                className="w-full sm:w-auto group bg-gradient-to-r from-amber-400 via-amber-500 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-slate-950 font-extrabold px-8 py-3.5 sm:py-4 rounded-xl transition-all duration-300 flex items-center justify-center gap-2.5 shadow-lg shadow-amber-500/25 hover:shadow-amber-500/40 hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
+                className="w-full sm:w-auto group bg-gradient-to-r from-amber-400 via-amber-500 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-slate-950 text-[15px] sm:text-[16px] font-semibold px-8 py-3.5 sm:py-4 rounded-xl transition-all duration-300 flex items-center justify-center gap-2.5 shadow-lg shadow-amber-500/25 hover:shadow-amber-500/40 hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
               >
                 <span>{settings.primaryButtonText}</span>
                 <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform duration-300 text-slate-950" />
               </button>
               <button
                 onClick={scrollToAbout}
-                className="w-full sm:w-auto bg-sky-500/15 hover:bg-sky-500/25 text-sky-200 hover:text-white font-semibold border border-sky-400/35 hover:border-sky-400/60 backdrop-blur-md px-8 py-3.5 sm:py-4 rounded-xl transition-all duration-300 hover:-translate-y-0.5 shadow-md active:translate-y-0 cursor-pointer"
+                className="w-full sm:w-auto bg-sky-500/15 hover:bg-sky-500/25 text-sky-200 hover:text-white text-[15px] sm:text-[16px] font-semibold border border-sky-400/35 hover:border-sky-400/60 backdrop-blur-md px-8 py-3.5 sm:py-4 rounded-xl transition-all duration-300 hover:-translate-y-0.5 shadow-md active:translate-y-0 cursor-pointer"
               >
                 {settings.secondaryButtonText}
               </button>

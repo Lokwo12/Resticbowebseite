@@ -161,8 +161,8 @@ export function Team() {
           <div className="inline-flex items-center justify-center w-16 h-16 bg-emerald-100 rounded-full mb-6">
             <Users className="text-emerald-600" size={32} />
           </div>
-          <h2 className="text-4xl md:text-5xl font-bold font-heading text-emerald-600 mb-4 tracking-tight">{sectionSettings.title}</h2>
-          <p className="text-gray-600 max-w-2xl mx-auto text-base md:text-lg font-normal leading-relaxed tracking-normal">
+          <h2 className="text-[28px] sm:text-[30px] lg:text-[36px] font-bold font-heading text-emerald-600 mb-4 leading-[1.2]">{sectionSettings.title}</h2>
+          <p className="text-gray-600 max-w-2xl mx-auto text-[17px] font-normal leading-[1.6]">
             {sectionSettings.description}
           </p>
         </div>

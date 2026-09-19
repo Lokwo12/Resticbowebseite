@@ -186,10 +186,10 @@ export function Contact() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="max-w-3xl mx-auto text-center mb-16">
-          <h2 className="text-3xl lg:text-5xl text-gray-900 mb-6">
+          <h2 className="text-[28px] sm:text-[30px] lg:text-[36px] font-bold font-heading text-gray-900 mb-6 leading-[1.2]">
             {settings.title}
           </h2>
-          <p className="text-lg text-gray-600">
+          <p className="text-[17px] font-normal leading-[1.6] text-gray-600">
             {settings.subtitle}
           </p>
         </div>
@@ -198,7 +198,7 @@ export function Contact() {
           {/* Contact Info */}
           <div className="space-y-8">
             <div>
-              <h3 className="text-2xl text-gray-900 mb-6">Contact Information</h3>
+              <h3 className="text-[22px] lg:text-[24px] font-semibold font-heading text-gray-900 mb-6 leading-[1.3]">Contact Information</h3>
               <div className="space-y-4">
                 <div className="flex items-start gap-4">
                   <div className="flex-shrink-0 w-12 h-12 bg-emerald-100 rounded-lg flex items-center justify-center">
@@ -409,7 +409,7 @@ export function Contact() {
               <button
                 type="submit"
                 disabled={submitting}
-                className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold py-4 px-6 rounded-xl shadow-lg shadow-emerald-600/15 hover:shadow-xl hover:shadow-emerald-600/25 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.99] transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+                className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-[15px] sm:text-[16px] font-semibold py-4 px-6 rounded-xl shadow-lg shadow-emerald-600/15 hover:shadow-xl hover:shadow-emerald-600/25 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.99] transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
               >
                 {submitting ? (
                   <>

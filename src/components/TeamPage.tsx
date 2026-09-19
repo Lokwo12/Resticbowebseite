@@ -69,8 +69,8 @@ export function TeamPage() {
           <div className="inline-flex items-center justify-center w-16 h-16 bg-white/10 backdrop-blur-md rounded-full mb-6 animate-float">
             <Users className="text-white" size={32} />
           </div>
-          <h1 className="text-4xl md:text-5xl font-bold mb-4 text-white">Our Dedicated Team</h1>
-          <p className="text-emerald-50 max-w-2xl mx-auto text-lg">
+          <h1 className="text-[32px] sm:text-[36px] lg:text-[48px] font-bold sm:font-extrabold font-heading mb-4 text-white leading-[1.1]">Our Dedicated Team</h1>
+          <p className="text-[17px] font-normal leading-[1.6] text-emerald-50 max-w-2xl mx-auto">
             Meet the passionate individuals working behind the scenes to make a difference in our community.
           </p>
         </div>

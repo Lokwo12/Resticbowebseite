@@ -161,10 +161,10 @@ export function Programs() {
             <BookOpen size={14} />
             What We Do
           </div>
-          <h2 className="text-3xl lg:text-5xl text-gray-900 mb-6">
+          <h2 className="text-[28px] sm:text-[30px] lg:text-[36px] font-bold font-heading text-gray-900 mb-6 leading-[1.2]">
             {sectionSettings.title}
           </h2>
-          <p className="text-xl text-gray-600">
+          <p className="text-[17px] font-normal leading-[1.6] text-gray-600">
             {sectionSettings.description}
           </p>
         </motion.div>
@@ -211,15 +211,15 @@ export function Programs() {
                 }`}>
                   {program.value.category}
                 </div>
-                <h3 className="text-2xl text-gray-900 mb-3 group-hover:text-emerald-600 transition-colors duration-300">
+                <h3 className="text-[22px] lg:text-[24px] font-semibold font-heading text-gray-900 mb-3 leading-[1.3] group-hover:text-emerald-600 transition-colors duration-300">
                   {program.value.title}
                 </h3>
-                <p className="text-lg text-gray-600 leading-relaxed mb-4">
+                <p className="text-[17px] font-normal leading-[1.6] text-gray-600 mb-4">
                   {program.value.description}
                 </p>
                 <Link 
                   to={`/programs/${(program.value as any)?.id || program.key.replace(/^program:/, '')}`}
-                  className="text-emerald-700 hover:text-emerald-800 font-bold inline-flex items-center gap-1.5 group/link text-sm"
+                  className="text-emerald-700 hover:text-emerald-800 font-semibold inline-flex items-center gap-1.5 group/link text-[15px] sm:text-[16px]"
                 >
                   View Full Program & Details
                   <span className="group-hover/link:translate-x-1 transition-transform duration-200">→</span>

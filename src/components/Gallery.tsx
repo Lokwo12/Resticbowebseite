@@ -100,8 +100,8 @@ export function Gallery() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="text-center mb-12">
-          <h2 className="text-emerald-600 mb-4">{sectionSettings.title}</h2>
-          <p className="text-gray-600 max-w-2xl mx-auto">
+          <h2 className="text-[28px] sm:text-[30px] lg:text-[36px] font-bold font-heading text-emerald-600 mb-4 leading-[1.2]">{sectionSettings.title}</h2>
+          <p className="text-[17px] font-normal leading-[1.6] text-gray-600 max-w-2xl mx-auto">
             {sectionSettings.description}
           </p>
         </div>
@@ -143,9 +143,9 @@ export function Gallery() {
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                     <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
-                      <h3 className="text-lg mb-1">{image.title}</h3>
+                      <h3 className="text-[22px] lg:text-[24px] font-semibold text-white mb-1 leading-[1.3]">{image.title}</h3>
                       {image.description && (
-                        <p className="text-sm text-gray-200 line-clamp-2">
+                        <p className="text-[14px] leading-normal text-gray-200 line-clamp-2">
                           {image.description}
                         </p>
                       )}

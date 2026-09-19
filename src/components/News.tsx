@@ -156,8 +156,8 @@ export function News() {
           <div className="inline-flex items-center justify-center w-16 h-16 bg-emerald-100 rounded-full mb-6">
             <Newspaper className="text-emerald-600" size={32} />
           </div>
-          <h2 className="text-emerald-600 mb-4">{sectionSettings.title}</h2>
-          <p className="text-gray-600 max-w-3xl mx-auto text-xl">
+          <h2 className="text-[28px] sm:text-[30px] lg:text-[36px] font-bold font-heading text-emerald-600 mb-4 leading-[1.2]">{sectionSettings.title}</h2>
+          <p className="text-[17px] font-normal leading-[1.6] text-gray-600 max-w-3xl mx-auto">
             {sectionSettings.description}
           </p>
         </div>

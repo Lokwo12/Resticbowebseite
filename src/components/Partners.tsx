@@ -113,9 +113,9 @@ export function Partners() {
         <div className="text-center mb-12">
           <div className="flex items-center justify-center gap-2 mb-4">
             <Handshake className="text-emerald-600" size={32} />
-            <h2 className="text-emerald-600 text-4xl mb-4">{sectionSettings.title}</h2>
+            <h2 className="text-[28px] sm:text-[30px] lg:text-[36px] font-bold font-heading text-emerald-600 mb-4 leading-[1.2]">{sectionSettings.title}</h2>
           </div>
-          <p className="text-gray-600 max-w-3xl mx-auto text-xl">
+          <p className="text-[17px] font-normal leading-[1.6] text-gray-600 max-w-3xl mx-auto">
             {sectionSettings.description}
           </p>
         </div>

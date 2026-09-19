@@ -73,6 +73,15 @@ module.exports = {
         sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
         heading: ['Outfit', 'Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
       },
+      fontSize: {
+        'hero': ['clamp(2rem, 4vw, 3rem)', { lineHeight: '1.1', fontWeight: '800' }],
+        'section': ['clamp(1.75rem, 2.5vw, 2.25rem)', { lineHeight: '1.2', fontWeight: '700' }],
+        'subsection': ['clamp(1.375rem, 1.5vw, 1.5rem)', { lineHeight: '1.3', fontWeight: '600' }],
+        'body-std': ['17px', { lineHeight: '1.6', fontWeight: '400' }],
+        'small-std': ['14px', { lineHeight: '1.5' }],
+        'btn': ['15.5px', { lineHeight: '1.4', fontWeight: '600' }],
+        'nav': ['16px', { lineHeight: '1.4', fontWeight: '500' }],
+      },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",

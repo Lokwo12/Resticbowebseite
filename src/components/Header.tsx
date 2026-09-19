@@ -230,7 +230,7 @@ export function Header() {
               {/* Home */}
               <Link
                 to="/"
-                className={`px-2 xl:px-2.5 py-2 rounded-lg text-sm xl:text-[15px] font-medium transition-colors whitespace-nowrap ${
+                className={`px-2 xl:px-2.5 py-2 rounded-lg text-[15px] xl:text-[16px] font-medium transition-colors whitespace-nowrap ${
                   isActive('/') && !location.hash
                     ? isSolid ? 'text-emerald-600 font-bold bg-emerald-50/80' : 'text-white font-bold bg-white/15'
                     : isSolid ? 'text-gray-700 hover:text-emerald-600 hover:bg-slate-50' : 'text-white/90 hover:text-white hover:bg-white/10'
@@ -247,7 +247,7 @@ export function Header() {
               >
                 <button
                   onClick={() => setActiveDropdown(activeDropdown === 'about' ? null : 'about')}
-                  className={`px-2 xl:px-2.5 py-2 rounded-lg text-sm xl:text-[15px] font-medium transition-colors flex items-center gap-1 whitespace-nowrap ${
+                  className={`px-2 xl:px-2.5 py-2 rounded-lg text-[15px] xl:text-[16px] font-medium transition-colors flex items-center gap-1 whitespace-nowrap ${
                     isActive('/about') || isActive('/team') || isActive('/financials') || isActive('/faqs')
                       ? isSolid ? 'text-emerald-600 font-bold bg-emerald-50/80' : 'text-white font-bold bg-white/15'
                       : isSolid ? 'text-gray-700 hover:text-emerald-600 hover:bg-slate-50' : 'text-white/90 hover:text-white hover:bg-white/10'
@@ -267,7 +267,7 @@ export function Header() {
                     >
                       <Sparkles size={16} className="text-emerald-600 shrink-0" />
                       <div>
-                        <div className="font-semibold text-gray-900 leading-tight">About RESTI</div>
+                        <div className="font-semibold text-[15px] text-gray-900 leading-tight">About RESTI</div>
                         <div className="text-[11px] text-gray-500">Mission, vision & values</div>
                       </div>
                     </Link>
@@ -278,7 +278,7 @@ export function Header() {
                     >
                       <Users size={16} className="text-emerald-600 shrink-0" />
                       <div>
-                        <div className="font-semibold text-gray-900 leading-tight">Our Team</div>
+                        <div className="font-semibold text-[15px] text-gray-900 leading-tight">Our Team</div>
                         <div className="text-[11px] text-gray-500">Leadership & field staff</div>
                       </div>
                     </Link>
@@ -289,7 +289,7 @@ export function Header() {
                     >
                       <ShieldCheck size={16} className="text-emerald-600 shrink-0" />
                       <div>
-                        <div className="font-semibold text-gray-900 leading-tight">Financial Transparency</div>
+                        <div className="font-semibold text-[15px] text-gray-900 leading-tight">Financial Transparency</div>
                         <div className="text-[11px] text-gray-500">Audits & accountability</div>
                       </div>
                     </Link>
@@ -300,7 +300,7 @@ export function Header() {
                     >
                       <HelpCircle size={16} className="text-emerald-600 shrink-0" />
                       <div>
-                        <div className="font-semibold text-gray-900 leading-tight">Frequently Asked Questions</div>
+                        <div className="font-semibold text-[15px] text-gray-900 leading-tight">Frequently Asked Questions</div>
                         <div className="text-[11px] text-gray-500">Answers to common inquiries</div>
                       </div>
                     </Link>
@@ -311,7 +311,7 @@ export function Header() {
               {/* Programs */}
               <Link
                 to="/programs"
-                className={`px-2 xl:px-2.5 py-2 rounded-lg text-sm xl:text-[15px] font-medium transition-colors whitespace-nowrap ${
+                className={`px-2 xl:px-2.5 py-2 rounded-lg text-[15px] xl:text-[16px] font-medium transition-colors whitespace-nowrap ${
                   isActive('/programs')
                     ? isSolid ? 'text-emerald-600 font-bold bg-emerald-50/80' : 'text-white font-bold bg-white/15'
                     : isSolid ? 'text-gray-700 hover:text-emerald-600 hover:bg-slate-50' : 'text-white/90 hover:text-white hover:bg-white/10'
@@ -328,7 +328,7 @@ export function Header() {
               >
                 <button
                   onClick={() => setActiveDropdown(activeDropdown === 'impact' ? null : 'impact')}
-                  className={`px-2 xl:px-2.5 py-2 rounded-lg text-sm xl:text-[15px] font-medium transition-colors flex items-center gap-1 whitespace-nowrap ${
+                  className={`px-2 xl:px-2.5 py-2 rounded-lg text-[15px] xl:text-[16px] font-medium transition-colors flex items-center gap-1 whitespace-nowrap ${
                     isActive('/stories') || isActive('/reports') || isActive('/impact-dashboard')
                       ? isSolid ? 'text-emerald-600 font-bold bg-emerald-50/80' : 'text-white font-bold bg-white/15'
                       : isSolid ? 'text-gray-700 hover:text-emerald-600 hover:bg-slate-50' : 'text-white/90 hover:text-white hover:bg-white/10'
@@ -348,7 +348,7 @@ export function Header() {
                     >
                       <Sparkles size={16} className="text-emerald-600 shrink-0" />
                       <div>
-                        <div className="font-semibold text-gray-900 leading-tight">Impact Stories</div>
+                        <div className="font-semibold text-[15px] text-gray-900 leading-tight">Impact Stories</div>
                         <div className="text-[11px] text-gray-500">Real lives transformed</div>
                       </div>
                     </Link>
@@ -359,7 +359,7 @@ export function Header() {
                     >
                       <FileText size={16} className="text-emerald-600 shrink-0" />
                       <div>
-                        <div className="font-semibold text-gray-900 leading-tight">Impact Reports</div>
+                        <div className="font-semibold text-[15px] text-gray-900 leading-tight">Impact Reports</div>
                         <div className="text-[11px] text-gray-500">Annual & field evaluations</div>
                       </div>
                     </Link>
@@ -370,7 +370,7 @@ export function Header() {
                     >
                       <BarChart3 size={16} className="text-emerald-600 shrink-0" />
                       <div>
-                        <div className="font-semibold text-gray-900 leading-tight">Live Impact Dashboard</div>
+                        <div className="font-semibold text-[15px] text-gray-900 leading-tight">Live Impact Dashboard</div>
                         <div className="text-[11px] text-gray-500">Real-time metrics & reach</div>
                       </div>
                     </Link>
@@ -386,7 +386,7 @@ export function Header() {
               >
                 <button
                   onClick={() => setActiveDropdown(activeDropdown === 'resources' ? null : 'resources')}
-                  className={`px-2 xl:px-2.5 py-2 rounded-lg text-sm xl:text-[15px] font-medium transition-colors flex items-center gap-1 whitespace-nowrap ${
+                  className={`px-2 xl:px-2.5 py-2 rounded-lg text-[15px] xl:text-[16px] font-medium transition-colors flex items-center gap-1 whitespace-nowrap ${
                     isActive('/news') || isActive('/events') || isActive('/resources')
                       ? isSolid ? 'text-emerald-600 font-bold bg-emerald-50/80' : 'text-white font-bold bg-white/15'
                       : isSolid ? 'text-gray-700 hover:text-emerald-600 hover:bg-slate-50' : 'text-white/90 hover:text-white hover:bg-white/10'
@@ -406,7 +406,7 @@ export function Header() {
                     >
                       <Newspaper size={16} className="text-emerald-600 shrink-0" />
                       <div>
-                        <div className="font-semibold text-gray-900 leading-tight">Latest News</div>
+                        <div className="font-semibold text-[15px] text-gray-900 leading-tight">Latest News</div>
                         <div className="text-[11px] text-gray-500">Press releases & community news</div>
                       </div>
                     </Link>
@@ -417,7 +417,7 @@ export function Header() {
                     >
                       <Calendar size={16} className="text-emerald-600 shrink-0" />
                       <div>
-                        <div className="font-semibold text-gray-900 leading-tight">Events Calendar</div>
+                        <div className="font-semibold text-[15px] text-gray-900 leading-tight">Events Calendar</div>
                         <div className="text-[11px] text-gray-500">Workshops & community drives</div>
                       </div>
                     </Link>
@@ -428,7 +428,7 @@ export function Header() {
                     >
                       <FolderDown size={16} className="text-emerald-600 shrink-0" />
                       <div>
-                        <div className="font-semibold text-gray-900 leading-tight">Resources & Downloads</div>
+                        <div className="font-semibold text-[15px] text-gray-900 leading-tight">Resources & Downloads</div>
                         <div className="text-[11px] text-gray-500">Publications & toolkits</div>
                       </div>
                     </Link>
@@ -461,7 +461,7 @@ export function Header() {
               >
                 <button
                   onClick={() => setActiveDropdown(activeDropdown === 'involved' ? null : 'involved')}
-                  className={`px-2 xl:px-2.5 py-2 rounded-lg text-sm xl:text-[15px] font-medium transition-colors flex items-center gap-1 whitespace-nowrap ${
+                  className={`px-2 xl:px-2.5 py-2 rounded-lg text-[15px] xl:text-[16px] font-medium transition-colors flex items-center gap-1 whitespace-nowrap ${
                     isActive('/opportunities') || isActive('/partners') || isActive('/donor')
                       ? isSolid ? 'text-emerald-600 font-bold bg-emerald-50/80' : 'text-white font-bold bg-white/15'
                       : isSolid ? 'text-gray-700 hover:text-emerald-600 hover:bg-slate-50' : 'text-white/90 hover:text-white hover:bg-white/10'
@@ -481,7 +481,7 @@ export function Header() {
                     >
                       <Briefcase size={16} className="text-emerald-600 shrink-0" />
                       <div>
-                        <div className="font-semibold text-gray-900 leading-tight">Opportunities</div>
+                        <div className="font-semibold text-[15px] text-gray-900 leading-tight">Opportunities</div>
                         <div className="text-[11px] text-gray-500">Careers & internships</div>
                       </div>
                     </Link>
@@ -492,7 +492,7 @@ export function Header() {
                     >
                       <Building2 size={16} className="text-emerald-600 shrink-0" />
                       <div>
-                        <div className="font-semibold text-gray-900 leading-tight">Become a Partner</div>
+                        <div className="font-semibold text-[15px] text-gray-900 leading-tight">Become a Partner</div>
                         <div className="text-[11px] text-gray-500">Institutional collaborations</div>
                       </div>
                     </Link>
@@ -503,7 +503,7 @@ export function Header() {
               {/* Contact */}
               <Link
                 to="/contact"
-                className={`px-2 xl:px-2.5 py-2 rounded-lg text-sm xl:text-[15px] font-medium transition-colors whitespace-nowrap ${
+                className={`px-2 xl:px-2.5 py-2 rounded-lg text-[15px] xl:text-[16px] font-medium transition-colors whitespace-nowrap ${
                   isActive('/contact')
                     ? isSolid ? 'text-emerald-600 font-bold bg-emerald-50/80' : 'text-white font-bold bg-white/15'
                     : isSolid ? 'text-gray-700 hover:text-emerald-600 hover:bg-slate-50' : 'text-white/90 hover:text-white hover:bg-white/10'
@@ -536,7 +536,7 @@ export function Header() {
               {/* Donate Button */}
               <button
                 onClick={() => { setActiveDropdown(null); openDonationModal(); }}
-                className="flex items-center gap-1.5 px-3.5 xl:px-4.5 py-1.5 xl:py-2 rounded-xl font-bold text-xs xl:text-sm text-slate-950 bg-gradient-to-r from-amber-400 via-amber-500 to-amber-400 hover:from-amber-500 hover:to-amber-600 shadow-md shadow-amber-500/25 active:scale-98 transition-all shrink-0 cursor-pointer"
+                className="flex items-center gap-1.5 px-3.5 xl:px-4.5 py-1.5 xl:py-2 rounded-xl font-semibold text-[15px] text-slate-950 bg-gradient-to-r from-amber-400 via-amber-500 to-amber-400 hover:from-amber-500 hover:to-amber-600 shadow-md shadow-amber-500/25 active:scale-98 transition-all shrink-0 cursor-pointer"
               >
                 <Heart size={14} fill="currentColor" className="text-slate-950" />
                 <span>Donate</span>
@@ -581,7 +581,7 @@ export function Header() {
             <div>
               <button 
                 onClick={() => { setMobileMenuOpen(false); openDonationModal(); }} 
-                className="w-full flex items-center justify-center gap-1.5 bg-gradient-to-r from-amber-400 via-amber-500 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-slate-950 py-3 rounded-xl font-extrabold shadow-md shadow-amber-500/20 transition-all text-sm"
+                className="w-full flex items-center justify-center gap-1.5 bg-gradient-to-r from-amber-400 via-amber-500 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-slate-950 py-3 rounded-xl font-semibold shadow-md shadow-amber-500/20 transition-all text-[15px] sm:text-[16px]"
               >
                 <Heart size={16} fill="currentColor" className="text-slate-950" />
                 Donate Now

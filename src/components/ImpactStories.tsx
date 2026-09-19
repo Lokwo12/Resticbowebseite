@@ -173,10 +173,10 @@ export function ImpactStories() {
             <Heart size={14} fill="currentColor" />
             Real Impact & Voices
           </span>
-          <h2 className="text-4xl md:text-5xl font-bold font-heading text-white mb-6">
+          <h2 className="text-[28px] sm:text-[30px] lg:text-[36px] font-bold font-heading text-white mb-6 leading-[1.2]">
             {sectionSettings.title}
           </h2>
-          <p className="text-lg md:text-xl text-slate-300 max-w-3xl mx-auto leading-relaxed">
+          <p className="text-[17px] font-normal leading-[1.6] text-slate-300 max-w-3xl mx-auto">
             {sectionSettings.description}
           </p>
         </div>
@@ -225,8 +225,8 @@ export function ImpactStories() {
                 <div className="p-6 flex-grow flex flex-col">
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex-1 min-w-0 pr-2">
-                      <h3 className="text-xl text-gray-900 mb-1 line-clamp-1">{story.name}</h3>
-                      <p className="text-base text-emerald-600 mb-2">{story.title}</p>
+                      <h3 className="text-[22px] lg:text-[24px] font-semibold font-heading text-gray-900 mb-1 line-clamp-1 leading-[1.3]">{story.name}</h3>
+                      <p className="text-[15px] font-medium text-emerald-600 mb-2">{story.title}</p>
                     </div>
                     <Quote className="text-emerald-200 flex-shrink-0" size={28} />
                   </div>

@@ -132,12 +132,12 @@ export function About() {
               <Heart size={14} className="fill-emerald-600 text-emerald-600" />
               Community Based Organization
             </div>
-            <h2 className="text-3xl lg:text-4xl font-bold font-heading tracking-tight text-gray-900 mb-5 flex items-center gap-2">
+            <h2 className="text-[28px] sm:text-[30px] lg:text-[36px] font-bold font-heading tracking-tight text-gray-900 mb-5 leading-[1.2] flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-emerald-600 hidden md:block"></span>
               About RESTI
             </h2>
             <div className="space-y-4">
-              <p className="text-lg sm:text-xl text-gray-600 leading-relaxed font-normal">
+              <p className="text-[17px] text-gray-600 leading-[1.6] font-normal">
                 {displaySettings.intro}
               </p>
               <div className="pt-2">
@@ -158,8 +158,8 @@ export function About() {
             transition={{ duration: 0.8, ease: "easeOut" }}
             className="group bg-gradient-to-br from-emerald-50 to-teal-50 p-8 rounded-2xl shadow-sm hover:shadow-premium-soft hover:-translate-y-1 transition-all duration-300"
           >
-            <h3 className="text-3xl text-gray-900 mb-4 group-hover:text-emerald-600 transition-colors">Our Mission</h3>
-            <p className="text-lg text-gray-700 leading-relaxed">
+            <h3 className="text-[22px] lg:text-[24px] font-semibold font-heading text-gray-900 mb-4 leading-[1.3] group-hover:text-emerald-600 transition-colors">Our Mission</h3>
+            <p className="text-[17px] text-gray-700 leading-[1.6] font-normal">
               {displaySettings.mission}
             </p>
           </motion.div>
@@ -170,8 +170,8 @@ export function About() {
             transition={{ duration: 0.8, ease: "easeOut", delay: 0.2 }}
             className="group bg-gradient-to-br from-blue-50 to-indigo-50 p-8 rounded-2xl shadow-sm hover:shadow-premium-soft hover:-translate-y-1 transition-all duration-300"
           >
-            <h3 className="text-3xl text-gray-900 mb-4 group-hover:text-blue-600 transition-colors">Our Vision</h3>
-            <p className="text-lg text-gray-700 leading-relaxed">
+            <h3 className="text-[22px] lg:text-[24px] font-semibold font-heading text-gray-900 mb-4 leading-[1.3] group-hover:text-blue-600 transition-colors">Our Vision</h3>
+            <p className="text-[17px] text-gray-700 leading-[1.6] font-normal">
               {displaySettings.vision}
             </p>
           </motion.div>
@@ -190,11 +190,11 @@ export function About() {
             <span className="inline-block text-xs font-bold text-emerald-700 uppercase tracking-widest mb-1.5">
               {displaySettings.wayWeWork?.badge || DEFAULT_WAY_WE_WORK.badge}
             </span>
-            <h3 className="text-3xl font-bold font-heading tracking-tight text-gray-900 mb-6 flex items-center gap-2">
+            <h3 className="text-[22px] lg:text-[24px] font-semibold font-heading tracking-tight text-gray-900 mb-6 leading-[1.3] flex items-center gap-2">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
               {displaySettings.wayWeWork?.title || DEFAULT_WAY_WE_WORK.title}
             </h3>
-            <div className="space-y-6 text-gray-700 text-lg leading-relaxed font-normal">
+            <div className="space-y-6 text-gray-700 text-[17px] leading-[1.6] font-normal">
               {(displaySettings.wayWeWork?.intro || DEFAULT_WAY_WE_WORK.intro) && (
                 <p>
                   {displaySettings.wayWeWork?.intro || DEFAULT_WAY_WE_WORK.intro}

@@ -144,17 +144,17 @@ export function Footer() {
           <div className="col-span-2 sm:col-span-3 lg:col-span-2">
             <div className="mb-4">
               <img src={getLogoUrl()} alt={`${generalSettings.siteName} Logo`} className="h-40 w-40 rounded-full object-cover shadow-md border-2 border-slate-700 mb-2" />
-              <h3 className="text-2xl text-white mb-1">{generalSettings.siteName}</h3>
+              <h3 className="text-[22px] lg:text-[24px] font-semibold font-heading text-white mb-1 leading-[1.3]">{generalSettings.siteName}</h3>
               <p className="text-base text-gray-400 mb-3">{generalSettings.tagline}</p>
             </div>
-            <p className="text-gray-400 text-base">
+            <p className="text-gray-400 text-[14px] leading-[1.6] font-normal">
               {footerSettings.description}
             </p>
           </div>
 
           {/* Quick Links */}
           <div>
-            <h4 className="mb-4">Quick Links</h4>
+            <h4 className="text-[16px] font-semibold text-white mb-4 tracking-wide">Quick Links</h4>
             <ul className="space-y-3 text-base text-gray-400">
               <li><Link to="/#home" className="block hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Home</Link></li>
               <li><Link to="/about" className="block hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">About Us</Link></li>
@@ -167,7 +167,7 @@ export function Footer() {
 
           {/* Get Involved */}
           <div>
-            <h4 className="mb-4">Get Involved</h4>
+            <h4 className="text-[16px] font-semibold text-white mb-4 tracking-wide">Get Involved</h4>
             <ul className="space-y-3 text-base text-gray-400">
               <li><button onClick={openDonationModal} className="block text-left hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Donate</button></li>
               <li><Link to="/partners" className="block hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Become a Partner</Link></li>
@@ -179,7 +179,7 @@ export function Footer() {
 
           {/* Resources */}
           <div>
-            <h4 className="mb-4">Resources</h4>
+            <h4 className="text-[16px] font-semibold text-white mb-4 tracking-wide">Resources</h4>
             <ul className="space-y-3 text-base text-gray-400">
               <li><Link to="/#gallery" className="block hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Gallery</Link></li>
               <li><Link to="/news" className="block hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">News</Link></li>
@@ -200,7 +200,7 @@ export function Footer() {
 
           {/* Contact */}
           <div>
-            <h4 className="mb-4">Contact</h4>
+            <h4 className="text-[16px] font-semibold text-white mb-4 tracking-wide">Contact</h4>
             <ul className="space-y-3 text-base text-gray-400">
               <li>{contactSettings.address}</li>
               <li>
@@ -214,7 +214,7 @@ export function Footer() {
 
           {/* Social */}
           <div>
-            <h4 className="mb-4">Follow Us</h4>
+            <h4 className="text-[16px] font-semibold text-white mb-4 tracking-wide">Follow Us</h4>
             <div className="flex gap-3">
               <a
                 href={contactSettings.socialLinks.facebook}
