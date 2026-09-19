@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { ImpactDashboardManager } from './admin/ImpactDashboardManager';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { toast } from 'sonner';
 import { Save, RefreshCw, Plus, Trash2, Upload, BarChart, Code, PieChart, TrendingUp, DollarSign, FileText, Heart, ShieldCheck, Sparkles, Globe, Eye, HelpCircle, Users, LayoutDashboard, HandHeart, Settings, Search, ExternalLink, ChevronDown, ChevronUp } from 'lucide-react';
@@ -96,7 +97,7 @@ export const DEFAULT_DONATION_PAGE_SETTINGS = {
 
 export const DEFAULT_IMPACT_DASHBOARD_SETTINGS = {
   badge: 'Live Impact',
-  title: 'Impact Dashboard',
+  title: 'Our Impact',
   description: 'See the measurable impact of our work through data, statistics, and comprehensive reports.',
   peopleServedBadge: '+12% YoY',
   programsActiveBadge: 'Active',
@@ -2133,167 +2134,12 @@ export function SiteSettingsTab({ settings: initialSettings, onUpdate, accessTok
 
         {/* ===== IMPACT DASHBOARD SETTINGS ===== */}
         <TabsContent value="impactDashboard">
-          <Card className="p-6 space-y-6">
-            <div className="flex items-center gap-3 border-b pb-4">
-              <div className="p-3 bg-blue-50 text-blue-600 rounded-xl">
-                <TrendingUp size={24} />
-              </div>
-              <div>
-                <h3 className="text-xl font-bold text-gray-900">Impact Dashboard Page (/impact-dashboard)</h3>
-                <p className="text-sm text-gray-500">Edit page titles, badge texts, live metric card overrides, and transparency statements.</p>
-              </div>
-            </div>
-
-            <div className="p-4 bg-gray-50 rounded-xl border border-gray-200/70 space-y-4">
-              <h4 className="text-sm font-bold text-gray-800">Page Header</h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1">Page Title</label>
-                  <input
-                    type="text"
-                    value={settings.impactDashboard?.title ?? DEFAULT_IMPACT_DASHBOARD_SETTINGS.title}
-                    onChange={(e) => setSettings({
-                      ...settings,
-                      impactDashboard: { ...(settings.impactDashboard || DEFAULT_IMPACT_DASHBOARD_SETTINGS), title: e.target.value }
-                    })}
-                    className="w-full px-3 py-2 border rounded-lg text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1">Header Description</label>
-                  <textarea
-                    value={settings.impactDashboard?.description ?? DEFAULT_IMPACT_DASHBOARD_SETTINGS.description}
-                    onChange={(e) => setSettings({
-                      ...settings,
-                      impactDashboard: { ...(settings.impactDashboard || DEFAULT_IMPACT_DASHBOARD_SETTINGS), description: e.target.value }
-                    })}
-                    rows={2}
-                    className="w-full px-3 py-2 border rounded-lg text-sm"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="p-4 bg-emerald-50/50 rounded-xl border border-emerald-100 space-y-4">
-              <h4 className="text-sm font-bold text-gray-800">KPI Card Badges & Customization</h4>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">People Served Badge</label>
-                  <input
-                    type="text"
-                    value={settings.impactDashboard?.peopleServedBadge ?? DEFAULT_IMPACT_DASHBOARD_SETTINGS.peopleServedBadge}
-                    onChange={(e) => setSettings({
-                      ...settings,
-                      impactDashboard: { ...(settings.impactDashboard || DEFAULT_IMPACT_DASHBOARD_SETTINGS), peopleServedBadge: e.target.value }
-                    })}
-                    className="w-full px-2.5 py-1.5 border rounded-md text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Active Programs Badge</label>
-                  <input
-                    type="text"
-                    value={settings.impactDashboard?.programsActiveBadge ?? DEFAULT_IMPACT_DASHBOARD_SETTINGS.programsActiveBadge}
-                    onChange={(e) => setSettings({
-                      ...settings,
-                      impactDashboard: { ...(settings.impactDashboard || DEFAULT_IMPACT_DASHBOARD_SETTINGS), programsActiveBadge: e.target.value }
-                    })}
-                    className="w-full px-2.5 py-1.5 border rounded-md text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Volunteers Badge</label>
-                  <input
-                    type="text"
-                    value={settings.impactDashboard?.volunteersActiveBadge ?? DEFAULT_IMPACT_DASHBOARD_SETTINGS.volunteersActiveBadge}
-                    onChange={(e) => setSettings({
-                      ...settings,
-                      impactDashboard: { ...(settings.impactDashboard || DEFAULT_IMPACT_DASHBOARD_SETTINGS), volunteersActiveBadge: e.target.value }
-                    })}
-                    className="w-full px-2.5 py-1.5 border rounded-md text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Funds Raised Badge</label>
-                  <input
-                    type="text"
-                    value={settings.impactDashboard?.fundsRaisedBadge ?? DEFAULT_IMPACT_DASHBOARD_SETTINGS.fundsRaisedBadge}
-                    onChange={(e) => setSettings({
-                      ...settings,
-                      impactDashboard: { ...(settings.impactDashboard || DEFAULT_IMPACT_DASHBOARD_SETTINGS), fundsRaisedBadge: e.target.value }
-                    })}
-                    className="w-full px-2.5 py-1.5 border rounded-md text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Communities Badge</label>
-                  <input
-                    type="text"
-                    value={settings.impactDashboard?.communitiesReachedBadge ?? DEFAULT_IMPACT_DASHBOARD_SETTINGS.communitiesReachedBadge}
-                    onChange={(e) => setSettings({
-                      ...settings,
-                      impactDashboard: { ...(settings.impactDashboard || DEFAULT_IMPACT_DASHBOARD_SETTINGS), communitiesReachedBadge: e.target.value }
-                    })}
-                    className="w-full px-2.5 py-1.5 border rounded-md text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Success Rate Badge</label>
-                  <input
-                    type="text"
-                    value={settings.impactDashboard?.successRateBadge ?? DEFAULT_IMPACT_DASHBOARD_SETTINGS.successRateBadge}
-                    onChange={(e) => setSettings({
-                      ...settings,
-                      impactDashboard: { ...(settings.impactDashboard || DEFAULT_IMPACT_DASHBOARD_SETTINGS), successRateBadge: e.target.value }
-                    })}
-                    className="w-full px-2.5 py-1.5 border rounded-md text-sm"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="p-4 bg-gray-50 rounded-xl border border-gray-200/70 space-y-4">
-              <h4 className="text-sm font-bold text-gray-800">Transparency Banner</h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1">Headline</label>
-                  <input
-                    type="text"
-                    value={settings.impactDashboard?.commitmentTitle ?? DEFAULT_IMPACT_DASHBOARD_SETTINGS.commitmentTitle}
-                    onChange={(e) => setSettings({
-                      ...settings,
-                      impactDashboard: { ...(settings.impactDashboard || DEFAULT_IMPACT_DASHBOARD_SETTINGS), commitmentTitle: e.target.value }
-                    })}
-                    className="w-full px-3 py-2 border rounded-lg text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1">Button Text</label>
-                  <input
-                    type="text"
-                    value={settings.impactDashboard?.commitmentButtonText ?? DEFAULT_IMPACT_DASHBOARD_SETTINGS.commitmentButtonText}
-                    onChange={(e) => setSettings({
-                      ...settings,
-                      impactDashboard: { ...(settings.impactDashboard || DEFAULT_IMPACT_DASHBOARD_SETTINGS), commitmentButtonText: e.target.value }
-                    })}
-                    className="w-full px-3 py-2 border rounded-lg text-sm"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">Description</label>
-                <textarea
-                  value={settings.impactDashboard?.commitmentDescription ?? DEFAULT_IMPACT_DASHBOARD_SETTINGS.commitmentDescription}
-                  onChange={(e) => setSettings({
-                    ...settings,
-                    impactDashboard: { ...(settings.impactDashboard || DEFAULT_IMPACT_DASHBOARD_SETTINGS), commitmentDescription: e.target.value }
-                  })}
-                  rows={2}
-                  className="w-full px-3 py-2 border rounded-lg text-sm"
-                />
-              </div>
-            </div>
-          </Card>
+          <ImpactDashboardManager
+            impactStats={settings.impactDashboard}
+            onUpdate={onUpdate}
+            accessToken={accessToken}
+            userRole={userRole}
+          />
         </TabsContent>
 
         {/* Contact Section */}
