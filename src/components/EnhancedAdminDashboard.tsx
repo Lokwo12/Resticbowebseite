@@ -93,6 +93,7 @@ import { MapLocationFormDialog } from './AdminMapLocationDialog';
 import { ImpactMap } from './ImpactMap';
 import { ProgramFormDialog } from './admin/ProgramFormDialog';
 import { DETAILED_FALLBACK_PROGRAMS } from './ProgramDetail';
+import { getDeletedProgramIds, recordDeletedProgramIds, unmarkDeletedProgramId } from '../utils/programDeletedRegistry';
 import { stripHtml } from '../utils/textUtils';
 
 const supabase = createClient(
@@ -643,8 +644,9 @@ export function EnhancedAdminDashboard() {
       );
       const data = await response.json();
       
-      // If no programs exist, initialize default data
-      if (!data.programs || data.programs.length === 0) {
+      // If no programs exist and user hasn't explicitly deleted programs, initialize default data
+      const deletedSetOnInit = await getDeletedProgramIds();
+      if ((!data.programs || data.programs.length === 0) && deletedSetOnInit.size === 0) {
         await fetch(
           `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/initialize`,
           {
@@ -879,6 +881,7 @@ export function EnhancedAdminDashboard() {
         }
         if (analyticsData) setAnalytics(analyticsData);
       } else if (activeTab === 'programs') {
+        const deletedSet = await getDeletedProgramIds();
         let fetched: any[] = [];
         try {
           const response = await fetch(
@@ -924,13 +927,24 @@ export function EnhancedAdminDashboard() {
           console.warn('KV store programs query error:', sbErr);
         }
 
-        // Ensure all flagship programs from DETAILED_FALLBACK_PROGRAMS are editable in the dashboard
+        // Filter out any programs that have been deleted by admin
+        fetched = fetched.filter((p: any) => {
+          const pId = (p.value?.id || p.key || p.id || '').replace(/^program:/, '').trim().toLowerCase();
+          return !deletedSet.has(pId);
+        });
+
+        // Ensure flagship programs from DETAILED_FALLBACK_PROGRAMS are editable in the dashboard,
+        // UNLESS the admin has explicitly deleted them!
         const flagshipKeys = Object.keys(DETAILED_FALLBACK_PROGRAMS);
         const currentKeys = new Set(fetched.map((p: any) => (p.value?.id || p.key || p.id || '').replace(/^program:/, '').toLowerCase()));
 
         for (const fKey of flagshipKeys) {
+          const lowerKey = fKey.toLowerCase();
+          // Never resurrect programs deleted by admin
+          if (deletedSet.has(lowerKey)) continue;
+
           const fb = DETAILED_FALLBACK_PROGRAMS[fKey];
-          if (!currentKeys.has(fKey.toLowerCase())) {
+          if (!currentKeys.has(lowerKey)) {
             fetched.push({
               key: `program:${fb.id}`,
               value: {
@@ -939,7 +953,7 @@ export function EnhancedAdminDashboard() {
               }
             });
           } else {
-            const idx = fetched.findIndex((p: any) => (p.value?.id || p.key || p.id || '').replace(/^program:/, '').toLowerCase() === fKey.toLowerCase());
+            const idx = fetched.findIndex((p: any) => (p.value?.id || p.key || p.id || '').replace(/^program:/, '').toLowerCase() === lowerKey);
             if (idx > -1) {
               const existingVal = fetched[idx].value || fetched[idx];
               fetched[idx] = {
@@ -1275,6 +1289,12 @@ export function EnhancedAdminDashboard() {
 
       if (!response.ok) throw new Error('Failed to save program');
 
+      // If this program was previously marked deleted, unmark it so it displays actively
+      const restoredId = (editingItem?.value?.id || editingItem?.key || formData.id || formData.title || '').replace(/^program:/, '').trim().toLowerCase().replace(/\s+/g, '-');
+      if (restoredId) {
+        await unmarkDeletedProgramId(restoredId);
+      }
+
       toast.success(editingItem ? 'Program updated' : 'Program created');
       logActivity(editingItem ? 'updated' : 'created', 'Programs', `${editingItem ? 'Updated' : 'Created'} program: ${formData.title}`);
       setShowProgramForm(false);
@@ -1291,9 +1311,25 @@ export function EnhancedAdminDashboard() {
     if (!(await confirmDialog({ title: 'Confirm Action', message: 'Delete this program?' }))) return;
 
     try {
-      const cleanId = id.replace(/^program:/, '');
+      const rawId = String(id || '').trim();
+      if (!rawId) {
+        toast.error('Invalid program ID');
+        return;
+      }
+      const cleanId = rawId.replace(/^program:/, '').trim().toLowerCase();
       const fullKey = `program:${cleanId}`;
 
+      // 1. Immediately remove from state for snappy user feedback
+      setPrograms(prev => prev.filter(p => {
+        const pId = (p.value?.id || p.key || p.id || '').replace(/^program:/, '').trim().toLowerCase();
+        return pId !== cleanId;
+      }));
+      setSelectedPrograms(prev => prev.filter(pId => pId.replace(/^program:/, '').trim().toLowerCase() !== cleanId));
+
+      // 2. Persist to deleted programs registry so default programs NEVER resurrect
+      await recordDeletedProgramIds([cleanId]);
+
+      // 3. Delete from backend edge function if available
       try {
         await fetch(
           `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/programs/${encodeURIComponent(fullKey)}`,
@@ -1306,11 +1342,12 @@ export function EnhancedAdminDashboard() {
         console.warn('Edge function delete program notice:', e);
       }
 
+      // 4. Delete from Supabase tables
       await supabase.from('kv_store_2a4be611').delete().eq('key', fullKey);
       await supabase.from('programs').delete().eq('id', cleanId);
 
-      toast.success('Program deleted');
-      logActivity('deleted', 'Programs', `Deleted program ID: ${id}`);
+      toast.success('Program deleted successfully');
+      logActivity('deleted', 'Programs', `Deleted program ID: ${cleanId}`);
       loadData();
     } catch (err: any) {
       console.error('Delete error:', err);
@@ -1319,12 +1356,26 @@ export function EnhancedAdminDashboard() {
   };
 
   const handleBulkDeletePrograms = async (ids: string[]) => {
+    if (!ids || ids.length === 0) return;
     if (!(await confirmDialog({ title: 'Confirm Action', message: `Delete ${ids.length} programs?` }))) return;
 
     try {
+      const cleanIds = ids.map(id => String(id || '').replace(/^program:/, '').trim().toLowerCase()).filter(Boolean);
+      const cleanIdsSet = new Set(cleanIds);
+
+      // 1. Immediately remove from state
+      setPrograms(prev => prev.filter(p => {
+        const pId = (p.value?.id || p.key || p.id || '').replace(/^program:/, '').trim().toLowerCase();
+        return !cleanIdsSet.has(pId);
+      }));
+      setSelectedPrograms([]);
+
+      // 2. Persist to deleted programs registry
+      await recordDeletedProgramIds(cleanIds);
+
+      // 3. Delete from backend & Supabase
       await Promise.all(
-        ids.map(async (id) => {
-          const cleanId = id.replace(/^program:/, '');
+        cleanIds.map(async (cleanId) => {
           const fullKey = `program:${cleanId}`;
           try {
             await fetch(
@@ -1340,8 +1391,7 @@ export function EnhancedAdminDashboard() {
         })
       );
 
-      toast.success(`${ids.length} programs deleted`);
-      setSelectedPrograms([]);
+      toast.success(`${cleanIds.length} programs deleted successfully`);
       loadData();
     } catch (err: any) {
       console.error('Bulk delete error:', err);
@@ -3718,55 +3768,59 @@ export function EnhancedAdminDashboard() {
 
                 {/* Cards grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
-                  {(programs || []).map((program) => (
-                    <div
-                      key={program.key}
-                      className="bg-white border border-gray-200 border-l-4 border-l-blue-500 rounded-2xl hover:shadow-xl hover:-translate-y-1 hover:border-blue-300 transition-all duration-300 shadow-sm cursor-pointer group flex flex-col overflow-hidden"
-                      onClick={() => { setEditingItem(program); setFormData(program.value); setShowProgramForm(true); }}
-                    >
-                      {program.value.image && (
-                        <img src={program.value.image} alt={program.value.title} className="w-full h-44 object-cover" />
-                      )}
-                      <div className="p-6 flex flex-col flex-1">
-                        <div className="flex items-start gap-3 mb-3">
-                          <input
-                            type="checkbox"
-                            checked={selectedPrograms.includes(program.key)}
-                            onClick={(e) => e.stopPropagation()}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setSelectedPrograms([...selectedPrograms, program.key]);
-                              } else {
-                                setSelectedPrograms(selectedPrograms.filter(id => id !== program.key));
-                              }
-                            }}
-                            className="mt-0.5 w-4 h-4 rounded flex-shrink-0 text-blue-600 focus:ring-blue-400"
-                          />
-                          <div className="flex-1 min-w-0">
-                            <h4 className="text-sm font-semibold text-slate-800 truncate mb-1.5">{program.value.title}</h4>
-                            <Badge className="bg-blue-50 text-blue-700 border-blue-200">{program.value.category}</Badge>
+                  {(programs || []).map((program) => {
+                    const progVal = program.value || program;
+                    const pKey = program.key || (progVal?.id ? `program:${progVal.id}` : program.id || '');
+                    return (
+                      <div
+                        key={pKey || program.key}
+                        className="bg-white border border-gray-200 border-l-4 border-l-blue-500 rounded-2xl hover:shadow-xl hover:-translate-y-1 hover:border-blue-300 transition-all duration-300 shadow-sm cursor-pointer group flex flex-col overflow-hidden"
+                        onClick={() => { setEditingItem(program); setFormData(progVal); setShowProgramForm(true); }}
+                      >
+                        {progVal.image && (
+                          <img src={progVal.image} alt={progVal.title} className="w-full h-44 object-cover" />
+                        )}
+                        <div className="p-6 flex flex-col flex-1">
+                          <div className="flex items-start gap-3 mb-3">
+                            <input
+                              type="checkbox"
+                              checked={selectedPrograms.includes(pKey)}
+                              onClick={(e) => e.stopPropagation()}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedPrograms([...selectedPrograms, pKey]);
+                                } else {
+                                  setSelectedPrograms(selectedPrograms.filter(id => id !== pKey));
+                                }
+                              }}
+                              className="mt-0.5 w-4 h-4 rounded flex-shrink-0 text-blue-600 focus:ring-blue-400"
+                            />
+                            <div className="flex-1 min-w-0">
+                              <h4 className="text-sm font-semibold text-slate-800 truncate mb-1.5">{progVal.title}</h4>
+                              <Badge className="bg-blue-50 text-blue-700 border-blue-200">{progVal.category}</Badge>
+                            </div>
+                          </div>
+                          <p className="text-sm text-slate-600 line-clamp-2 flex-1 pl-7">{progVal.description}</p>
+                          <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-slate-100 relative z-20" onClick={(e) => e.stopPropagation()}>
+                            <button
+                              onClick={() => { setEditingItem(program); setFormData(progVal); setShowProgramForm(true); }}
+                              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors"
+                            >
+                              <Edit size={13} />
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => handleDeleteProgram(pKey || program.key || progVal.id)}
+                              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-colors"
+                            >
+                              <Trash2 size={13} />
+                              Delete
+                            </button>
                           </div>
                         </div>
-                        <p className="text-sm text-slate-600 line-clamp-2 flex-1 pl-7">{program.value.description}</p>
-                        <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-slate-100 relative z-20" onClick={(e) => e.stopPropagation()}>
-                          <button
-                            onClick={() => { setEditingItem(program); setFormData(program.value); setShowProgramForm(true); }}
-                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors"
-                          >
-                            <Edit size={13} />
-                            Edit
-                          </button>
-                          <button
-                            onClick={() => handleDeleteProgram(program.key)}
-                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-colors"
-                          >
-                            <Trash2 size={13} />
-                            Delete
-                          </button>
-                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                   {programs.length === 0 && (
                     <div className="col-span-3 text-center py-16">
                       <div className="w-14 h-14 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center mx-auto mb-4">

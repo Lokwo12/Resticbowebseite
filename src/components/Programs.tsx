@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { BookOpen } from 'lucide-react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { motion } from 'framer-motion';
+import { getDeletedProgramIds, getDeletedProgramIdsSync } from '../utils/programDeletedRegistry';
 
 interface Program {
   key: string;
@@ -79,7 +80,10 @@ const FALLBACK_PROGRAMS: Program[] = [
 ];
 
 export function Programs() {
-  const [programs, setPrograms] = useState<Program[]>(FALLBACK_PROGRAMS);
+  const [programs, setPrograms] = useState<Program[]>(() => {
+    const deleted = getDeletedProgramIdsSync();
+    return FALLBACK_PROGRAMS.filter(p => !deleted.has(p.key.toLowerCase()));
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [sectionSettings, setSectionSettings] = useState({ title: 'Our Programs', description: 'We run comprehensive programs designed to address the most pressing needs in our community, creating pathways to opportunity and sustainable development.' });
@@ -122,9 +126,16 @@ export function Programs() {
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
       const data = await response.json();
-      const fetched: Program[] = data.programs || [];
-      // Only replace fallback if the API actually returned programs
-      if (fetched.length > 0) setPrograms(fetched);
+      const deletedSet = await getDeletedProgramIds();
+      const fetched: Program[] = (data.programs || []).filter((p: Program) => {
+        const id = (p.key || (p.value as any)?.id || '').replace(/^program:/, '').toLowerCase();
+        return !deletedSet.has(id);
+      });
+      if (fetched.length > 0) {
+        setPrograms(fetched);
+      } else {
+        setPrograms(FALLBACK_PROGRAMS.filter(p => !deletedSet.has(p.key.toLowerCase())));
+      }
     } catch (err) {
       // API unreachable — fallback data already set, so just log silently
       console.warn('Programs API unavailable, using fallback data.', err);

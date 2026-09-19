@@ -12,6 +12,7 @@ import { useDonationModal } from './DonationModalContext';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { DETAILED_FALLBACK_PROGRAMS } from './ProgramDetail';
+import { getDeletedProgramIds, getDeletedProgramIdsSync } from '../utils/programDeletedRegistry';
 
 const supabase = createClient(
   `https://${projectId}.supabase.co`,
@@ -59,7 +60,10 @@ const FALLBACK_PROGRAMS: Program[] = Object.keys(DETAILED_FALLBACK_PROGRAMS).map
 
 export function ProgramsPage() {
   const { open: openDonationModal } = useDonationModal();
-  const [programs, setPrograms] = useState<Program[]>(FALLBACK_PROGRAMS);
+  const [programs, setPrograms] = useState<Program[]>(() => {
+    const deleted = getDeletedProgramIdsSync();
+    return FALLBACK_PROGRAMS.filter(p => !deleted.has((p.value?.id || p.key || '').replace(/^program:/, '').toLowerCase()));
+  });
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -121,6 +125,10 @@ export function ProgramsPage() {
         console.warn('Direct kv store read notice:', sbErr);
       }
 
+      const deletedSet = await getDeletedProgramIds();
+      // Filter out any programs that have been deleted by admin
+      fetched = fetched.filter(f => !deletedSet.has((f.value?.id || f.key || '').replace(/^program:/, '').toLowerCase()));
+
       if (fetched.length > 0) {
         // Merge API/KV programs with fallback enrichments if needed
         const merged = fetched.map(f => {
@@ -144,10 +152,19 @@ export function ProgramsPage() {
           return f;
         });
 
-        // Ensure all flagship programs are present
+        // Only include missing fallbacks if they have NOT been deleted by admin
         const fetchedIds = new Set(fetched.map(f => (f.value?.id || f.key || '').replace(/^program:/, '').toLowerCase()));
-        const missingFallbacks = FALLBACK_PROGRAMS.filter(fp => !fetchedIds.has((fp.value?.id || fp.key || '').replace(/^program:/, '').toLowerCase()));
+        const missingFallbacks = FALLBACK_PROGRAMS.filter(fp => {
+          const fpId = (fp.value?.id || fp.key || '').replace(/^program:/, '').toLowerCase();
+          return !fetchedIds.has(fpId) && !deletedSet.has(fpId);
+        });
         setPrograms([...merged, ...missingFallbacks]);
+      } else {
+        // No programs in DB: only show non-deleted fallbacks
+        setPrograms(FALLBACK_PROGRAMS.filter(fp => {
+          const fpId = (fp.value?.id || fp.key || '').replace(/^program:/, '').toLowerCase();
+          return !deletedSet.has(fpId);
+        }));
       }
     } catch (err) {
       console.warn('Could not fetch live programs, displaying default programs.', err);

@@ -12,6 +12,7 @@ import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { toast } from 'sonner';
 import { useDonationModal } from './DonationModalContext';
+import { getDeletedProgramIds } from '../utils/programDeletedRegistry';
 
 export interface ProgramMetric {
   label: string;
@@ -327,6 +328,12 @@ export function ProgramDetail() {
       try {
         setLoading(true);
         const cleanId = (id || '').replace(/^program:/, '').trim().toLowerCase();
+        const deletedSet = await getDeletedProgramIds();
+        if (deletedSet.has(cleanId)) {
+          setProgram(null);
+          setLoading(false);
+          return;
+        }
         let matchedProgram: Program | null = DETAILED_FALLBACK_PROGRAMS[cleanId] || null;
 
         // Try single program API route
