@@ -2835,7 +2835,7 @@ export function EnhancedAdminDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-100">
+    <div className="min-h-screen bg-slate-100 admin-dashboard-root" data-admin-scope="true">
       {/* Top Navigation Bar */}
       <div className="bg-slate-900 border-b border-slate-700 shadow-lg fixed top-0 left-0 right-0 z-50">
         <div className="flex items-center justify-between px-4 h-16">
@@ -3024,7 +3024,7 @@ export function EnhancedAdminDashboard() {
         <aside
           className={`${
             sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-          } lg:translate-x-0 fixed lg:static inset-y-0 left-0 z-40 w-64 bg-slate-900 border-r border-slate-800 transition-transform duration-300 flex flex-col mt-16 lg:mt-0 shadow-2xl shrink-0`}
+          } lg:translate-x-0 fixed lg:static inset-y-0 left-0 z-40 w-64 bg-slate-900 border-r border-slate-800 transition-transform duration-300 flex flex-col mt-16 lg:mt-0 shadow-2xl shrink-0 admin-sidebar-nav`}
         >
           {/* Sidebar Quick Search / Filter */}
           <div className="p-3 border-b border-slate-800/80 bg-slate-900/90 sticky top-0 z-10">
@@ -3162,12 +3162,12 @@ export function EnhancedAdminDashboard() {
                               )}
                               <div className="flex items-center gap-2.5 min-w-0">
                                 <Icon
-                                  size={15}
+                                  size={16}
                                   className={`shrink-0 ${
                                     isActive ? 'text-white' : 'text-slate-400 group-hover:text-emerald-400'
                                   }`}
                                 />
-                                <span className="text-xs truncate">{item.label}</span>
+                                <span className="text-[14px] lg:text-[14.5px] font-medium truncate">{item.label}</span>
                               </div>
 
                               {badge > 0 && (
@@ -3216,7 +3216,7 @@ export function EnhancedAdminDashboard() {
                       size={16}
                       className={activeTab === 'users' ? 'text-white' : 'text-slate-400 group-hover:text-emerald-400'}
                     />
-                    <span className="text-xs truncate">System Users</span>
+                    <span className="text-[14px] lg:text-[14.5px] font-medium truncate">System Users</span>
                   </div>
                   <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">
                     Super
@@ -3328,7 +3328,7 @@ export function EnhancedAdminDashboard() {
                   <CurrentIcon size={22} className="text-white" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold text-white leading-tight tracking-tight">{currentMenuItem?.label || 'Dashboard'}</h2>
+                  <h2 className="text-[24px] sm:text-[28px] lg:text-[30px] font-bold text-white leading-tight tracking-tight admin-page-title">{currentMenuItem?.label || 'Dashboard'}</h2>
                   <div className="flex items-center gap-1.5 text-xs text-white/60 mt-0.5">
                     <span>Admin</span>
                     <ChevronRight size={11} />
@@ -3376,7 +3376,7 @@ export function EnhancedAdminDashboard() {
                       </div>
                       <span className="text-xs font-semibold text-white bg-white/20 border border-white/30 rounded-lg px-2.5 py-1">Active</span>
                     </div>
-                    <p className="text-3xl font-bold text-white mb-1">{stats?.programs ?? 0}</p>
+                    <p className="text-[24px] sm:text-[28px] lg:text-[32px] font-bold text-white mb-1 admin-kpi-stat">{stats?.programs ?? 0}</p>
                     <p className="text-sm font-medium text-blue-100">Total Programs</p>
                     <div className="mt-4 pt-4 border-t border-white/20 flex items-center gap-1.5 text-xs text-blue-200 font-medium">
                       <TrendingUp size={12} />
@@ -3391,7 +3391,7 @@ export function EnhancedAdminDashboard() {
                       </div>
                       <span className="text-xs font-semibold text-white bg-white/20 border border-white/30 rounded-lg px-2.5 py-1">Published</span>
                     </div>
-                    <p className="text-3xl font-bold text-white mb-1">{stats?.news ?? 0}</p>
+                    <p className="text-[24px] sm:text-[28px] lg:text-[32px] font-bold text-white mb-1 admin-kpi-stat">{stats?.news ?? 0}</p>
                     <p className="text-sm font-medium text-violet-100">News Articles</p>
                     <div className="mt-4 pt-4 border-t border-white/20 flex items-center gap-1.5 text-xs text-violet-200 font-medium">
                       <TrendingUp size={12} />
@@ -3406,7 +3406,7 @@ export function EnhancedAdminDashboard() {
                       </div>
                       <span className="text-xs font-semibold text-white bg-white/20 border border-white/30 rounded-lg px-2.5 py-1">Registered</span>
                     </div>
-                    <p className="text-3xl font-bold text-white mb-1">{stats?.volunteers ?? 0}</p>
+                    <p className="text-[24px] sm:text-[28px] lg:text-[32px] font-bold text-white mb-1 admin-kpi-stat">{stats?.volunteers ?? 0}</p>
                     <p className="text-sm font-medium text-rose-100">Volunteers</p>
                     <div className="mt-4 pt-4 border-t border-white/20 flex items-center gap-1.5 text-xs text-rose-200 font-medium">
                       <TrendingUp size={12} />
@@ -3421,7 +3421,7 @@ export function EnhancedAdminDashboard() {
                       </div>
                       <span className="text-xs font-semibold text-white bg-white/20 border border-white/30 rounded-lg px-2.5 py-1">Raised</span>
                     </div>
-                    <p className="text-3xl font-bold text-white mb-1">${stats?.totalDonations ?? 0}</p>
+                    <p className="text-[24px] sm:text-[28px] lg:text-[32px] font-bold text-white mb-1 admin-kpi-stat">${stats?.totalDonations ?? 0}</p>
                     <p className="text-sm font-medium text-emerald-100">Total Donations</p>
                     <div className="mt-4 pt-4 border-t border-white/20 flex items-center gap-1.5 text-xs text-emerald-200 font-medium">
                       <TrendingUp size={12} />
@@ -3439,7 +3439,7 @@ export function EnhancedAdminDashboard() {
                           <BarChart3 size={18} className="text-emerald-600" />
                         </div>
                         <div>
-                          <h3 className="text-sm font-semibold text-slate-800 tracking-tight">Monthly Donations</h3>
+                          <h3 className="text-[18px] sm:text-[20px] font-semibold text-slate-800 tracking-tight admin-card-title">Monthly Donations</h3>
                           <p className="text-xs text-gray-400">Revenue over time</p>
                         </div>
                       </div>
@@ -3466,7 +3466,7 @@ export function EnhancedAdminDashboard() {
                           <TrendingUp size={18} className="text-blue-600" />
                         </div>
                         <div>
-                          <h3 className="text-sm font-semibold text-slate-800 tracking-tight">Contact Status</h3>
+                          <h3 className="text-[18px] sm:text-[20px] font-semibold text-slate-800 tracking-tight admin-card-title">Contact Status</h3>
                           <p className="text-xs text-gray-400">Distribution overview</p>
                         </div>
                       </div>
@@ -3498,7 +3498,7 @@ export function EnhancedAdminDashboard() {
                           <Heart size={18} className="text-rose-600" />
                         </div>
                         <div>
-                          <h3 className="text-sm font-semibold text-slate-800 tracking-tight">Volunteer Applications</h3>
+                          <h3 className="text-[18px] sm:text-[20px] font-semibold text-slate-800 tracking-tight admin-card-title">Volunteer Applications</h3>
                           <p className="text-xs text-gray-400">By status</p>
                         </div>
                       </div>
@@ -3519,7 +3519,7 @@ export function EnhancedAdminDashboard() {
                           <TrendingUp size={18} className="text-purple-600" />
                         </div>
                         <div>
-                          <h3 className="text-sm font-semibold text-slate-800 tracking-tight">Growth Trends</h3>
+                          <h3 className="text-[18px] sm:text-[20px] font-semibold text-slate-800 tracking-tight admin-card-title">Growth Trends</h3>
                           <p className="text-xs text-gray-400">Users & donations over time</p>
                         </div>
                       </div>

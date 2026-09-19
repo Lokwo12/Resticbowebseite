@@ -932,7 +932,7 @@ export function DonationsManager({
               <DollarSign size={16} />
             </div>
           </div>
-          <div className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+          <div className="text-[24px] sm:text-[28px] lg:text-[32px] font-bold text-slate-900 tracking-tight admin-kpi-stat">
             ${metrics.totalUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </div>
           <div className="text-xs text-emerald-600 font-semibold mt-1 flex items-center gap-1">
@@ -948,7 +948,7 @@ export function DonationsManager({
               <CheckCircle2 size={16} />
             </div>
           </div>
-          <div className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+          <div className="text-[24px] sm:text-[28px] lg:text-[32px] font-bold text-slate-900 tracking-tight admin-kpi-stat">
             {metrics.completedCount}
           </div>
           <div className="text-xs text-slate-500 font-medium mt-1">
@@ -964,7 +964,7 @@ export function DonationsManager({
               <Clock size={16} />
             </div>
           </div>
-          <div className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+          <div className="text-[24px] sm:text-[28px] lg:text-[32px] font-bold text-slate-900 tracking-tight admin-kpi-stat">
             {metrics.pendingCount}
           </div>
           <div className="text-xs text-amber-600 font-medium mt-1">
@@ -980,7 +980,7 @@ export function DonationsManager({
               <User size={16} />
             </div>
           </div>
-          <div className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+          <div className="text-[24px] sm:text-[28px] lg:text-[32px] font-bold text-slate-900 tracking-tight admin-kpi-stat">
             {metrics.uniqueDonorsCount}
           </div>
           <div className="text-xs text-slate-500 font-medium mt-1">

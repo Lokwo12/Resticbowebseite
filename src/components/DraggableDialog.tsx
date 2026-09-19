@@ -106,7 +106,8 @@ export function DraggableDialog({
 
       {/* Dialog window */}
       <div
-        className="absolute bg-white rounded-xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden"
+        className="absolute bg-white rounded-xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden admin-dialog-window"
+        data-admin-scope="true"
         style={{
           left: position.x,
           top: position.y,
@@ -126,7 +127,7 @@ export function DraggableDialog({
         >
           <div className="flex items-center gap-2.5 min-w-0">
             <GripHorizontal size={15} className="text-emerald-300 flex-shrink-0" />
-            <h2 className="text-base font-semibold text-white tracking-wide truncate">{title}</h2>
+            <h2 className="text-[18px] sm:text-[20px] font-semibold text-white tracking-tight truncate admin-section-title">{title}</h2>
           </div>
           <button
             data-no-drag
