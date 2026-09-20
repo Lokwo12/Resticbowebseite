@@ -1,12 +1,13 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { supabase } from '../utils/supabase/client';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { 
   Heart, CreditCard, Calendar, ArrowRight, Settings, LogOut, 
   Download, Printer, Shield, CheckCircle2, Clock, User, 
   FileText, ChevronRight, Sparkles, Building2, Phone, Mail, 
-  ExternalLink, X, Search, Filter, RefreshCw, Zap
+  ExternalLink, X, Search, Filter, RefreshCw, Zap, AlertCircle,
+  Eye, EyeOff, Lock, Check, Menu, ChevronLeft
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
@@ -14,318 +15,337 @@ import { toast } from 'sonner';
 import { DEFAULT_DONOR_PORTAL_SETTINGS } from './SiteSettingsTab';
 import { useDonationModal } from './DonationModalContext';
 
-interface Donation {
+export interface Donation {
   id: string;
   amount: number;
   currency: string;
   date: string;
-  status: string;
+  status: 'completed' | 'pending' | 'failed' | 'cancelled' | string;
   paymentMethod: string;
   donorName?: string;
   donorEmail?: string;
   donorPhone?: string;
   reference?: string;
+  receiptNumber?: string;
+  campaign?: string;
 }
+
+export interface Subscription {
+  id: string;
+  donor_id: string;
+  provider_subscription_id?: string;
+  status: string;
+  plan?: string;
+  amount: number;
+  currency: string;
+  frequency?: string;
+  next_payment_date?: string;
+  payment_method?: string;
+  created_at?: string;
+}
+
+type TabType = 'overview' | 'history' | 'recurring' | 'impact' | 'profile';
 
 export function DonorDashboard() {
   const { open: openDonationModal } = useDonationModal();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
+
+  // Portal State
+  const [activeTab, setActiveTab] = useState<TabType>('overview');
   const [portalConfig, setPortalConfig] = useState<any>(DEFAULT_DONOR_PORTAL_SETTINGS);
   const [donations, setDonations] = useState<Donation[]>([]);
+  const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [loading, setLoading] = useState(true);
-  const [billingLoading, setBillingLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [user, setUser] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState<'history' | 'recurring' | 'impact' | 'profile'>('history');
+  const [billingLoading, setBillingLoading] = useState(false);
   const [selectedDonation, setSelectedDonation] = useState<Donation | null>(null);
+  const [emailSending, setEmailSending] = useState(false);
+
+  // Search & Filters in Giving History
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'completed' | 'pending'>('all');
-  
-  // Quick Giving State for Direct Live Modal Access
-  const [selectedQuickAmount, setSelectedQuickAmount] = useState<number>(50);
-  const [customQuickAmount, setCustomQuickAmount] = useState<string>('');
-  const [isCustomQuick, setIsCustomQuick] = useState<boolean>(false);
-  const [realtimeConnected, setRealtimeConnected] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<'all' | 'completed' | 'pending' | 'failed'>('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 8;
 
-  // Admin view toggle (if superadmin visits donor portal)
-  const [adminShowAll, setAdminShowAll] = useState(false);
+  // Impact Updates State
+  const [stories, setStories] = useState<any[]>([]);
+  const [loadingStories, setLoadingStories] = useState(false);
 
-  // Guest Lookup & Inline Login state
-  const [lookupQuery, setLookupQuery] = useState('');
-  const [lookupLoading, setLookupLoading] = useState(false);
-  const [lookupSubmitted, setLookupSubmitted] = useState(false);
-  const [guestBillingEmail, setGuestBillingEmail] = useState('');
-  const [loginEmail, setLoginEmail] = useState('');
-  const [loginPassword, setLoginPassword] = useState('');
-  const [loginLoading, setLoginLoading] = useState(false);
-
-  // Profile edit state
+  // Profile Form State
   const [displayName, setDisplayName] = useState('');
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
   const [city, setCity] = useState('');
   const [country, setCountry] = useState('Uganda');
   const [postalCode, setPostalCode] = useState('');
+  const [commImmediateReceipt, setCommImmediateReceipt] = useState(true);
+  const [commQuarterlyDigest, setCommQuarterlyDigest] = useState(true);
+  const [commAnnualStatement, setCommAnnualStatement] = useState(true);
   const [savingProfile, setSavingProfile] = useState(false);
 
-  const navigate = useNavigate();
+  // Password Update State
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [savingPassword, setSavingPassword] = useState(false);
 
-  const isUserAdmin = user?.email === 'lokwodenis0@gmail.com' || user?.user_metadata?.role === 'admin';
+  // Auth / Guest State
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [loginLoading, setLoginLoading] = useState(false);
+  const [magicLinkSent, setMagicLinkSent] = useState(false);
+  const [lookupQuery, setLookupQuery] = useState('');
+  const [lookupLoading, setLookupLoading] = useState(false);
+  const [lookupDone, setLookupDone] = useState(false);
 
-  const fetchDonations = useCallback(async (query?: string, showAllOverride?: boolean): Promise<Donation[]> => {
+  // Mobile navigation drawer toggle
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // Sync tab from URL if provided
+  useEffect(() => {
+    const tabParam = searchParams.get('tab') as TabType;
+    if (tabParam && ['overview', 'history', 'recurring', 'impact', 'profile'].includes(tabParam)) {
+      setActiveTab(tabParam);
+    }
+  }, [searchParams]);
+
+  const switchTab = (tab: TabType) => {
+    setActiveTab(tab);
+    setMobileMenuOpen(false);
+    setSearchParams(prev => {
+      const p = new URLSearchParams(prev);
+      p.set('tab', tab);
+      return p;
+    }, { replace: true });
+  };
+
+  // Helper to format currency
+  const formatCurrency = (amount: number, currency = 'USD') => {
+    const curr = (currency || 'USD').toUpperCase();
+    if (curr === 'USD') {
+      return `$${amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    }
+    return `${amount.toLocaleString()} ${curr}`;
+  };
+
+  // Fetch authenticated donor data
+  const fetchDonorData = useCallback(async (authToken?: string, queryEmail?: string, queryRef?: string) => {
     try {
-      setLoading(true);
-      const q = (query !== undefined ? query : (lookupQuery || user?.email || '')).toLowerCase().trim();
+      setRefreshing(true);
+      const headers: Record<string, string> = {
+        Authorization: authToken ? `Bearer ${authToken}` : `Bearer ${publicAnonKey}`
+      };
 
-      // 1. Fetch from canonical PostgreSQL donations table
-      const { data: pgData, error: pgErr } = await supabase
+      const params = new URLSearchParams();
+      if (queryEmail) params.set('email', queryEmail);
+      if (queryRef) params.set('ref', queryRef);
+
+      const endpoint = `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/donor/donations${params.toString() ? `?${params.toString()}` : ''}`;
+
+      const res = await fetch(endpoint, { headers });
+      if (res.ok) {
+        const data = await res.json();
+        if (data && Array.isArray(data.donations)) {
+          setDonations(data.donations);
+          return data.donations;
+        }
+      }
+
+      // Fallback: direct query via Supabase Client (handles RLS)
+      let directQuery = supabase
         .from('donations')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (pgErr) console.warn('Postgres donations query notice:', pgErr.message);
+      if (queryEmail) {
+        directQuery = directQuery.ilike('email', queryEmail);
+      }
 
-      // 2. Fetch from kv_store_2a4be611 for compatibility
-      const { data: kvData, error: kvErr } = await supabase
-        .from('kv_store_2a4be611')
-        .select('*')
-        .like('key', 'donation:%');
-
-      if (kvErr) console.warn('KV donations query notice:', kvErr.message);
-
-      const unifiedList: Donation[] = [];
-      const seenRefs = new Set<string>();
-
-      // Normalize Postgres rows
-      if (pgData && Array.isArray(pgData)) {
-        for (const r of pgData) {
-          const amt = Number(r.amount);
-          if (!amt || isNaN(amt) || amt <= 0) continue;
-
+      const { data: directData, error: directErr } = await directQuery;
+      if (!directErr && directData) {
+        const normalized: Donation[] = directData.map((r: any) => {
           const rawRef = (r.transaction_id || r.id || '').replace(/^donation:/, '');
-          const dEmail = (r.email || '').trim();
-          const dName = `${r.first_name || ''} ${r.last_name || ''}`.trim();
-          const pMethod = (r.method || r.provider || 'card').toLowerCase();
-
-          const item: Donation = {
-            id: r.id || `pg-${rawRef}`,
-            amount: amt,
-            currency: r.currency || 'USD',
+          return {
+            id: r.id || `don-${rawRef}`,
+            amount: Number(r.amount) || 0,
+            currency: (r.currency || 'USD').toUpperCase(),
             date: r.created_at || r.updated_at || new Date().toISOString(),
             status: (r.status || 'completed').toLowerCase(),
-            paymentMethod: pMethod,
-            donorName: dName || undefined,
-            donorEmail: dEmail || undefined,
+            paymentMethod: (r.method || r.provider || 'card').toLowerCase(),
+            donorName: `${r.first_name || ''} ${r.last_name || ''}`.trim() || undefined,
+            donorEmail: r.email || undefined,
             donorPhone: r.phone || undefined,
-            reference: rawRef
+            reference: rawRef,
+            receiptNumber: `REC-${rawRef.slice(-8).toUpperCase()}`,
+            campaign: r.campaign || 'Community Empowerment & Education',
           };
-
-          if (rawRef) seenRefs.add(rawRef.toLowerCase());
-          unifiedList.push(item);
-        }
-      }
-
-      // Normalize KV rows (skip duplicates)
-      if (kvData && Array.isArray(kvData)) {
-        for (const k of kvData) {
-          const v = k.value || {};
-          const amt = Number(v.amount);
-          if (!amt || isNaN(amt) || amt <= 0) continue;
-
-          const rawRef = (v.reference || v.transactionId || v.paymentIntentId || k.key?.replace(/^donation:/, '') || '').trim();
-          if (rawRef && seenRefs.has(rawRef.toLowerCase())) continue;
-
-          const pMethod = (v.paymentMethod || v.provider || 'card').toLowerCase();
-          const item: Donation = {
-            id: k.key || `kv-${rawRef}`,
-            amount: amt,
-            currency: v.currency || 'USD',
-            date: v.timestamp || v.date || new Date().toISOString(),
-            status: (v.status || 'completed').toLowerCase(),
-            paymentMethod: pMethod,
-            donorName: v.donorName || v.name || undefined,
-            donorEmail: v.donorEmail || v.email || undefined,
-            donorPhone: v.donorPhone || undefined,
-            reference: rawRef
-          };
-
-          if (rawRef) seenRefs.add(rawRef.toLowerCase());
-          unifiedList.push(item);
-        }
-      }
-
-      // Sort by date descending
-      unifiedList.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-
-      // Filter by query (if provided)
-      let filtered = unifiedList;
-      const shouldShowAll = showAllOverride !== undefined ? showAllOverride : adminShowAll;
-
-      if (!shouldShowAll && q) {
-        filtered = unifiedList.filter(d => {
-          const dEmail = (d.donorEmail || '').toLowerCase();
-          const dRef = (d.reference || d.id || '').toLowerCase();
-          const dName = (d.donorName || '').toLowerCase();
-          const dMethod = (d.paymentMethod || '').toLowerCase();
-          return dEmail === q ||
-                 dEmail.includes(q) ||
-                 dRef.includes(q) ||
-                 dName.includes(q) ||
-                 dMethod.includes(q) ||
-                 d.amount.toString() === q;
         });
-      } else if (!shouldShowAll && !q) {
-        // Guest who hasn't submitted a query yet
-        filtered = [];
+        setDonations(normalized);
+        return normalized;
       }
 
-      setDonations(filtered);
-      return filtered;
+      return [];
     } catch (err) {
-      console.error('Error fetching donations', err);
+      console.error('Error in fetchDonorData:', err);
       return [];
     } finally {
+      setRefreshing(false);
       setLoading(false);
     }
-  }, [lookupQuery, user?.email, adminShowAll]);
+  }, []);
 
+  // Fetch recurring subscriptions
+  const fetchSubscriptions = useCallback(async (authToken?: string, queryEmail?: string) => {
+    try {
+      const headers: Record<string, string> = {
+        Authorization: authToken ? `Bearer ${authToken}` : `Bearer ${publicAnonKey}`
+      };
+      const params = queryEmail ? `?email=${encodeURIComponent(queryEmail)}` : '';
+      const res = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/donor/subscriptions${params}`, { headers });
+      if (res.ok) {
+        const data = await res.json();
+        if (data?.subscriptions) {
+          setSubscriptions(data.subscriptions);
+        }
+      }
+    } catch (err) {
+      console.warn('Subscriptions fetch notice:', err);
+    }
+  }, []);
+
+  // Fetch dynamic impact stories
+  const fetchImpactUpdates = useCallback(async () => {
+    try {
+      setLoadingStories(true);
+      const res = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/stories`, {
+        headers: { Authorization: `Bearer ${publicAnonKey}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data?.stories && Array.isArray(data.stories) && data.stories.length > 0) {
+          setStories(data.stories);
+          return;
+        }
+      }
+      // Fallback to configured portal stories
+      setStories(portalConfig?.impactStories || DEFAULT_DONOR_PORTAL_SETTINGS.impactStories);
+    } catch (err) {
+      setStories(portalConfig?.impactStories || DEFAULT_DONOR_PORTAL_SETTINGS.impactStories);
+    } finally {
+      setLoadingStories(false);
+    }
+  }, [portalConfig?.impactStories]);
+
+  // Initial user check and setup
   useEffect(() => {
-    const checkUser = async () => {
+    let mounted = true;
+
+    const checkAuth = async () => {
       try {
+        setLoading(true);
         const { data: { session } } = await supabase.auth.getSession();
-        if (session?.user) {
+        
+        const urlEmail = searchParams.get('email');
+        const urlRef = searchParams.get('ref');
+
+        if (session?.user && mounted) {
           setUser(session.user);
-          setDisplayName(session.user.user_metadata?.name || '');
-          setPhone(session.user.user_metadata?.phone || '');
-          setAddress(session.user.user_metadata?.address || '');
-          setCity(session.user.user_metadata?.city || '');
-          setCountry(session.user.user_metadata?.country || 'Uganda');
-          setPostalCode(session.user.user_metadata?.postal_code || session.user.user_metadata?.postalCode || '');
+          const meta = session.user.user_metadata || {};
+          setDisplayName(meta.name || '');
+          setPhone(meta.phone || '');
+          setAddress(meta.address || '');
+          setCity(meta.city || '');
+          setCountry(meta.country || 'Uganda');
+          setPostalCode(meta.postal_code || meta.postalCode || '');
+          setCommImmediateReceipt(meta.commImmediateReceipt ?? true);
+          setCommQuarterlyDigest(meta.commQuarterlyDigest ?? true);
+          setCommAnnualStatement(meta.commAnnualStatement ?? true);
+
+          await Promise.all([
+            fetchDonorData(session.access_token, session.user.email),
+            fetchSubscriptions(session.access_token, session.user.email),
+            fetchImpactUpdates()
+          ]);
         } else {
           setUser(null);
-        }
-
-        // Verify any Stripe checkout session returning from card payment
-        const urlParams = new URLSearchParams(window.location.search);
-        const sessionId = urlParams.get('session_id');
-        const emailParam = urlParams.get('email');
-        const refParam = urlParams.get('ref');
-        const storedEmail = localStorage.getItem('lasti_donor_email') || '';
-        const storedRef = localStorage.getItem('lasti_donor_ref') || '';
-
-        let verifiedDonation: any = null;
-        if (sessionId) {
-          try {
-            const vRes = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/verify-session`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${publicAnonKey}` },
-              body: JSON.stringify({ sessionId })
-            });
-            const vData = await vRes.json();
-            if (vData.status === 'success' && vData.donation) {
-              verifiedDonation = vData.donation;
-              toast.success('Thank you! Your donation was successfully confirmed and recorded.');
-            }
-            window.history.replaceState({}, document.title, window.location.pathname);
-          } catch (err) {
-            console.error('Failed to verify session', err);
+          // If guest provided email or ref in URL
+          if (urlEmail || urlRef) {
+            setLookupQuery(urlEmail || urlRef || '');
+            setLookupDone(true);
+            await fetchDonorData(undefined, urlEmail || undefined, urlRef || undefined);
           }
+          await fetchImpactUpdates();
         }
 
-        const queryToFetch = session?.user?.email || emailParam || refParam || storedEmail || storedRef || '';
-        if (queryToFetch) {
-          setLookupQuery(queryToFetch);
-          setLookupSubmitted(true);
-          await fetchDonations(queryToFetch);
-        } else {
-          setLoading(false);
-        }
-
-        if (verifiedDonation) {
-          setDonations(prev => {
-            const exists = prev.find(d => d.date === verifiedDonation?.timestamp || d.id === verifiedDonation?.id);
-            if (exists) return prev;
-            return [{
-              id: verifiedDonation.id || `donation-${Date.now()}`,
-              amount: verifiedDonation.amount,
-              currency: verifiedDonation.currency || 'USD',
-              date: verifiedDonation.timestamp || new Date().toISOString(),
-              status: verifiedDonation.status || 'completed',
-              paymentMethod: verifiedDonation.paymentMethod || 'card',
-              donorName: verifiedDonation.donorName || session?.user?.user_metadata?.name || 'Supporter',
-              donorEmail: verifiedDonation.donorEmail || session?.user?.email || '',
-              reference: verifiedDonation.reference || (sessionId ? sessionId.slice(-8).toUpperCase() : 'ONLINE')
-            }, ...prev];
-          });
-        }
-
-        // Fetch dynamic donor portal settings from admin dashboard
+        // Fetch custom site-settings if configured
         try {
           const setRes = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/site-settings`, {
             headers: { Authorization: `Bearer ${publicAnonKey}` },
-            signal: AbortSignal.timeout(6000),
+            signal: AbortSignal.timeout(5000),
           });
-          if (setRes.ok) {
+          if (setRes.ok && mounted) {
             const setData = await setRes.json();
             if (setData?.settings?.donorPortal) {
               setPortalConfig((prev: any) => ({ ...prev, ...setData.settings.donorPortal }));
             }
           }
-        } catch (err) {
-          console.warn('Could not load site-settings for donor portal, using defaults', err);
+        } catch {
+          // Defaults preserved
         }
       } catch (err) {
-        console.error('Error in checkUser:', err);
+        console.error('Error during donor auth check:', err);
       } finally {
-        setLoading(false);
+        if (mounted) setLoading(false);
       }
     };
-    checkUser();
-  }, [fetchDonations]);
 
-  // Real-time live synchronization
-  useEffect(() => {
-    const channel = supabase
-      .channel('donor_portal_live_realtime')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'donations' },
-        (payload) => {
-          console.log('Real-time donation update in DonorDashboard:', payload);
-          fetchDonations();
-        }
-      )
-      .subscribe((status) => {
-        if (status === 'SUBSCRIBED') setRealtimeConnected(true);
-      });
+    checkAuth();
+
+    // Listen to Supabase auth state changes
+    const { data: { subscription: authSub } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session?.user && mounted) {
+        setUser(session.user);
+        await fetchDonorData(session.access_token, session.user.email);
+        await fetchSubscriptions(session.access_token, session.user.email);
+      } else if (!session && mounted) {
+        setUser(null);
+      }
+    });
 
     return () => {
-      supabase.removeChannel(channel);
+      mounted = false;
+      authSub?.unsubscribe();
     };
-  }, [fetchDonations]);
+  }, [fetchDonorData, fetchSubscriptions, fetchImpactUpdates, searchParams]);
 
-
-  const handleLookupDonations = async (e: React.FormEvent) => {
+  // Handle Guest Lookup
+  const handleLookup = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!lookupQuery.trim()) {
-      toast.error('Please enter your donation email or receipt reference.');
+      toast.error('Please enter your donation email or transaction reference.');
       return;
     }
     setLookupLoading(true);
     try {
-      const results = await fetchDonations(lookupQuery.trim());
-      setLookupSubmitted(true);
+      const q = lookupQuery.trim();
+      const results = await fetchDonorData(undefined, q.includes('@') ? q : undefined, !q.includes('@') ? q : undefined);
+      setLookupDone(true);
       if (results && results.length > 0) {
         toast.success(`Found ${results.length} donation ${results.length === 1 ? 'record' : 'records'}!`);
       } else {
-        toast.info('No donations found for this email or reference. If you recently donated, please allow a moment to sync.');
+        toast.info('No donations found for this lookup. If you recently gave, please allow 1-2 minutes to sync.');
       }
-    } catch (err) {
+    } catch {
       toast.error('Unable to search donations right now.');
     } finally {
       setLookupLoading(false);
     }
   };
 
-  const handleInlineLogin = async (e: React.FormEvent) => {
+  // Handle Email Password Login
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!loginEmail || !loginPassword) {
       toast.error('Please enter both email and password.');
@@ -339,17 +359,7 @@ export function DonorDashboard() {
       });
       if (error) throw error;
       if (data.user) {
-        setUser(data.user);
-        setDisplayName(data.user.user_metadata?.name || '');
-        setPhone(data.user.user_metadata?.phone || '');
-        setAddress(data.user.user_metadata?.address || '');
-        setCity(data.user.user_metadata?.city || '');
-        setCountry(data.user.user_metadata?.country || 'Uganda');
-        setPostalCode(data.user.user_metadata?.postal_code || data.user.user_metadata?.postalCode || '');
-        toast.success('Signed in successfully!');
-        if (data.user.email) {
-          await fetchDonations(data.user.email);
-        }
+        toast.success('Welcome back to the RESTI Donor Portal!');
       }
     } catch (err: any) {
       toast.error(err.message || 'Login failed. Please check your credentials.');
@@ -358,78 +368,118 @@ export function DonorDashboard() {
     }
   };
 
+  // Handle Magic Link Login
+  const handleSendMagicLink = async () => {
+    if (!loginEmail) {
+      toast.error('Please enter your donor email address first.');
+      return;
+    }
+    setLoginLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        email: loginEmail,
+        options: { emailRedirectTo: `${window.location.origin}/donor-portal` }
+      });
+      if (error) throw error;
+      setMagicLinkSent(true);
+      toast.success('Secure magic link sent! Please check your email inbox.');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to send magic link.');
+    } finally {
+      setLoginLoading(false);
+    }
+  };
+
+  // Handle Sign Out
   const handleLogout = async () => {
     await supabase.auth.signOut();
     setUser(null);
     setDonations([]);
+    setSubscriptions([]);
     setLookupQuery('');
-    setLookupSubmitted(false);
-    toast.success('Logged out successfully');
+    setLookupDone(false);
+    toast.success('Signed out of Donor Portal');
   };
 
-  const handleManageBilling = async () => {
-    const targetEmail = user?.email || guestBillingEmail.trim();
+  // Launch Stripe Customer Billing Portal
+  const handleLaunchBillingPortal = async () => {
+    const targetEmail = user?.email || lookupQuery;
     if (!targetEmail) {
-      toast.error('Please enter the email address linked to your recurring donation.');
+      toast.error('Please sign in or provide the email linked to your monthly pledge.');
       return;
     }
+    setBillingLoading(true);
     try {
-      setBillingLoading(true);
-      const response = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/create-portal-session`, {
+      const res = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/create-portal-session`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${publicAnonKey}`
+          Authorization: `Bearer ${publicAnonKey}`
         },
         body: JSON.stringify({
           email: targetEmail,
           returnUrl: window.location.href
         })
       });
-
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to create billing session');
-      }
-
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to launch portal session');
       if (data.url) {
         window.location.href = data.url;
       }
     } catch (err: any) {
-      console.error('Donation portal error:', err);
-      toast.info(err.message || 'Unable to open donation portal. If you made a one-time gift, no recurring subscription is active.');
+      console.error('Portal session error:', err);
+      toast.info(err.message || 'Could not open billing portal. If your gift was one-time, no recurring pledge is on file.');
     } finally {
       setBillingLoading(false);
     }
   };
 
+  // Resend Receipt Email
+  const handleSendReceiptEmail = async (donation: Donation) => {
+    setEmailSending(true);
+    try {
+      const session = (await supabase.auth.getSession()).data.session;
+      const res = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/donor/send-receipt`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: session?.access_token ? `Bearer ${session.access_token}` : `Bearer ${publicAnonKey}`
+        },
+        body: JSON.stringify({
+          donationId: donation.id,
+          reference: donation.reference,
+          targetEmail: donation.donorEmail || user?.email
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Could not send receipt email');
+      toast.success(data.message || `Official receipt sent to ${donation.donorEmail || user?.email}`);
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to send receipt email. You can print/save PDF directly.');
+    } finally {
+      setEmailSending(false);
+    }
+  };
+
+  // Save Donor Profile Details
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     setSavingProfile(true);
     try {
       const { error } = await supabase.auth.updateUser({
-        data: { 
+        data: {
           name: displayName,
           phone,
           address,
           city,
           country,
-          postal_code: postalCode
+          postal_code: postalCode,
+          commImmediateReceipt,
+          commQuarterlyDigest,
+          commAnnualStatement,
         }
       });
       if (error) throw error;
-      setUser((prev: any) => ({
-        ...prev,
-        user_metadata: { 
-          ...prev?.user_metadata, 
-          name: displayName,
-          phone,
-          address,
-          city,
-          country,
-          postal_code: postalCode
-        }
-      }));
       toast.success('Donor profile updated successfully');
     } catch (err: any) {
       toast.error(err.message || 'Failed to update profile');
@@ -438,1064 +488,1510 @@ export function DonorDashboard() {
     }
   };
 
-  // Metrics
-  const totalGivenUSD = donations
-    .filter(d => d.status.toLowerCase() === 'completed')
-    .reduce((sum, d) => sum + (d.currency.toUpperCase() === 'USD' ? d.amount : d.amount / 3800), 0);
-
-  const completedCount = donations.filter(d => d.status.toLowerCase() === 'completed').length;
-
-  const getTier = (count: number, total: number) => {
-    if (total >= 500 || count >= 5) return { name: 'Transformational Partner', badge: 'bg-amber-100 text-amber-800 border-amber-300' };
-    if (total >= 100 || count >= 2) return { name: 'Community Pillar', badge: 'bg-emerald-100 text-emerald-800 border-emerald-300' };
-    return { name: 'Empowerment Supporter', badge: 'bg-teal-100 text-teal-800 border-teal-300' };
+  // Update Password
+  const handleUpdatePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newPassword.length < 8) {
+      toast.error('New password must be at least 8 characters.');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      toast.error('Passwords do not match.');
+      return;
+    }
+    setSavingPassword(true);
+    try {
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      if (error) throw error;
+      toast.success('Password updated successfully');
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to update password');
+    } finally {
+      setSavingPassword(false);
+    }
   };
 
-  const tier = getTier(completedCount, totalGivenUSD);
+  // Summary Metrics
+  const completedGifts = useMemo(() => 
+    donations.filter(d => d.status.toLowerCase() === 'completed'),
+    [donations]
+  );
 
-  // Filtered donations
-  const filteredDonations = donations.filter(d => {
-    const matchesStatus = statusFilter === 'all' || d.status.toLowerCase() === statusFilter;
-    const matchesSearch = searchQuery === '' ||
-      (d.reference && d.reference.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (d.paymentMethod && d.paymentMethod.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      d.amount.toString().includes(searchQuery);
-    return matchesStatus && matchesSearch;
-  });
+  const totalDonatedUSD = useMemo(() => 
+    completedGifts.reduce((sum, d) => {
+      const amt = Number(d.amount) || 0;
+      return sum + (d.currency.toUpperCase() === 'USD' ? amt : amt / 3800);
+    }, 0),
+    [completedGifts]
+  );
+
+  const latestDonation = useMemo(() => 
+    donations.length > 0 ? donations[0] : null,
+    [donations]
+  );
+
+  const activeSubscription = useMemo(() => 
+    subscriptions.find(s => s.status === 'active') || null,
+    [subscriptions]
+  );
+
+  // Filtered & Paginated Donations
+  const filteredDonations = useMemo(() => {
+    return donations.filter(d => {
+      const matchesStatus = statusFilter === 'all' || d.status.toLowerCase() === statusFilter;
+      const q = searchQuery.toLowerCase().trim();
+      const matchesSearch = !q ||
+        (d.reference && d.reference.toLowerCase().includes(q)) ||
+        (d.receiptNumber && d.receiptNumber.toLowerCase().includes(q)) ||
+        (d.paymentMethod && d.paymentMethod.toLowerCase().includes(q)) ||
+        (d.campaign && d.campaign.toLowerCase().includes(q)) ||
+        d.amount.toString().includes(q);
+      return matchesStatus && matchesSearch;
+    });
+  }, [donations, statusFilter, searchQuery]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredDonations.length / itemsPerPage));
+  const paginatedDonations = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return filteredDonations.slice(start, start + itemsPerPage);
+  }, [filteredDonations, currentPage, itemsPerPage]);
 
   const getMethodBadge = (m: string) => {
     const method = (m || '').toLowerCase();
     if (method.includes('mtn')) return { label: 'MTN MoMo', color: 'bg-yellow-50 text-yellow-800 border-yellow-200' };
     if (method.includes('airtel')) return { label: 'Airtel Money', color: 'bg-red-50 text-red-800 border-red-200' };
     if (method.includes('paypal')) return { label: 'PayPal', color: 'bg-blue-50 text-blue-800 border-blue-200' };
-    if (method.includes('bank')) return { label: 'Bank Transfer', color: 'bg-purple-50 text-purple-800 border-purple-200' };
-    return { label: 'Credit Card (Stripe)', color: 'bg-emerald-50 text-emerald-800 border-emerald-200' };
+    if (method.includes('bank')) return { label: 'Bank Wire', color: 'bg-purple-50 text-purple-800 border-purple-200' };
+    return { label: 'Credit Card', color: 'bg-emerald-50 text-emerald-800 border-emerald-200' };
+  };
+
+  const getStatusBadge = (s: string) => {
+    const status = (s || '').toLowerCase();
+    if (status === 'completed') {
+      return { label: 'Completed', color: 'bg-emerald-100 text-emerald-800 border-emerald-300', dot: 'bg-emerald-500' };
+    }
+    if (status === 'pending') {
+      return { label: 'Pending', color: 'bg-amber-100 text-amber-800 border-amber-300', dot: 'bg-amber-500' };
+    }
+    return { label: 'Failed', color: 'bg-rose-100 text-rose-800 border-rose-300', dot: 'bg-rose-500' };
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
         <div className="flex flex-col items-center gap-3">
           <div className="animate-spin w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full" />
-          <p className="text-sm text-slate-500 font-medium">Accessing your Donor Portal...</p>
+          <p className="text-sm text-slate-600 font-medium">Opening your RESTI Donor Portal...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-50/80 pt-28 sm:pt-36 pb-24 font-sans">
+    <div className="min-h-screen bg-slate-50/80 pt-24 sm:pt-32 pb-24 font-sans">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        
-        {/* Top Banner & Header */}
-        <div className="bg-gradient-to-r from-emerald-800 via-emerald-700 to-teal-800 rounded-3xl p-6 sm:p-10 text-white shadow-xl mb-8 relative overflow-hidden">
-          <div className="absolute right-0 top-0 translate-x-10 -translate-y-10 w-96 h-96 bg-white/5 rounded-full blur-2xl pointer-events-none" />
+
+        {/* ── Top Header Card ────────────────────────────────────────── */}
+        <div className="bg-gradient-to-r from-emerald-900 via-emerald-800 to-teal-900 rounded-3xl p-6 sm:p-8 text-white shadow-xl mb-6 relative overflow-hidden">
+          <div className="absolute right-0 top-0 translate-x-12 -translate-y-12 w-96 h-96 bg-white/5 rounded-full blur-2xl pointer-events-none" />
           <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-            <div className="flex items-center gap-4 sm:gap-6">
-              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center shrink-0 shadow-inner">
-                <Heart className="w-8 h-8 sm:w-10 sm:h-10 text-emerald-300" fill="currentColor" />
+            <div className="flex items-center gap-4 sm:gap-5">
+              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center shrink-0 shadow-inner">
+                <Heart className="w-7 h-7 sm:w-8 sm:h-8 text-emerald-300" fill="currentColor" />
               </div>
               <div>
-                <div className="flex flex-wrap items-center gap-2 mb-1.5">
-                  <span className="text-xs font-bold tracking-widest uppercase bg-emerald-500/30 border border-emerald-400/40 text-emerald-200 px-3 py-0.5 rounded-full">
+                <div className="flex flex-wrap items-center gap-2 mb-1">
+                  <span className="text-[11px] font-bold tracking-widest uppercase bg-emerald-500/30 border border-emerald-400/30 text-emerald-200 px-3 py-0.5 rounded-full">
                     {portalConfig?.badge || 'RESTI Donor Portal'}
                   </span>
                   {user && (
-                    <span className={`text-xs font-semibold px-3 py-0.5 rounded-full border ${tier.badge}`}>
-                      {tier.name}
+                    <span className="text-[11px] font-semibold bg-white/15 text-white px-2.5 py-0.5 rounded-full">
+                      Verified Supporter
                     </span>
                   )}
                 </div>
-                <h1 className="text-2xl sm:text-4xl font-extrabold font-heading text-white tracking-tight">
+                <h1 className="text-2xl sm:text-3xl font-black font-heading text-white tracking-tight">
                   {user 
-                    ? `${portalConfig?.welcomePrefix || 'Welcome,'} ${user?.user_metadata?.name || portalConfig?.defaultName || 'Valued Supporter'}!`
-                    : (portalConfig?.welcomePrefix ? `${portalConfig.welcomePrefix} ${portalConfig?.defaultName || 'Supporter'}!` : 'RESTI Donor Portal & Receipts')
+                    ? `Welcome, ${user?.user_metadata?.name || 'Valued Supporter'}!`
+                    : 'RESTI Supporter & Donor Portal'
                   }
                 </h1>
-                <p className="text-emerald-100 text-sm sm:text-base mt-1 flex items-center gap-2">
-                  {user ? (
-                    <>
-                      <span>{user?.email}</span>
-                      <span>•</span>
-                      <span>Supporter since {new Date(user?.created_at).getFullYear()}</span>
-                    </>
-                  ) : (
-                    <span>Instant access to verified giving history, downloadable tax receipts, and contribution settings.</span>
-                  )}
+                <p className="text-emerald-100/90 text-xs sm:text-sm mt-0.5">
+                  {user ? user.email : 'View verified giving history, tax receipts, and community impact.'}
                 </p>
               </div>
             </div>
 
             <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
-              <Button 
+              <Button
                 onClick={() => openDonationModal()}
-                className="flex-1 sm:flex-initial bg-white text-emerald-800 hover:bg-emerald-50 font-bold shadow-md hover:shadow-lg transition-all cursor-pointer"
+                className="flex-1 sm:flex-initial bg-white text-emerald-900 hover:bg-emerald-50 font-bold shadow-md cursor-pointer"
               >
                 <Heart className="w-4 h-4 mr-2 text-rose-500" fill="currentColor" />
-                {portalConfig?.makeGiftBtnText || 'Make a Gift'}
+                Make a Gift
               </Button>
               {user ? (
                 <Button 
                   variant="outline" 
-                  onClick={handleLogout} 
-                  className="bg-emerald-900/40 border-white/20 text-white hover:bg-white/10 hover:text-white cursor-pointer"
+                  onClick={handleLogout}
+                  className="bg-emerald-950/40 border-white/20 text-white hover:bg-white/10 hover:text-white cursor-pointer text-xs"
                 >
-                  <LogOut className="w-4 h-4 mr-2" /> {portalConfig?.signOutBtnText || 'Sign Out'}
+                  <LogOut className="w-3.5 h-3.5 mr-1.5" /> Sign Out
                 </Button>
               ) : (
-                <Link to="/login?redirect=/donor-portal" className="flex-1 sm:flex-initial">
-                  <Button 
-                    variant="outline" 
-                    className="w-full bg-emerald-900/40 border-white/20 text-white hover:bg-white/10 hover:text-white cursor-pointer"
-                  >
-                    <User className="w-4 h-4 mr-2" /> Sign In
-                  </Button>
-                </Link>
-              )}
-            </div>
-
-          </div>
-        </div>
-
-        {/* Live Metrics Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-xs flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
-              <CreditCard className="w-6 h-6" />
-            </div>
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-                {portalConfig?.metric1Label || 'Total Contributed'}
-              </p>
-              <p className="text-2xl font-black text-slate-900 mt-0.5">
-                ${totalGivenUSD.toFixed(2)} <span className="text-xs font-normal text-slate-500">USD</span>
-              </p>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-xs flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center shrink-0">
-              <CheckCircle2 className="w-6 h-6" />
-            </div>
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-                {portalConfig?.metric2Label || 'Gifts Recorded'}
-              </p>
-              <p className="text-2xl font-black text-slate-900 mt-0.5">
-                {donations.length} <span className="text-xs font-normal text-slate-500">{donations.length === 1 ? 'Gift' : 'Gifts'}</span>
-              </p>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-xs flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
-              <Sparkles className="w-6 h-6" />
-            </div>
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-                {portalConfig?.metric3Label || 'Official Receipts'}
-              </p>
-              <p className="text-2xl font-black text-slate-900 mt-0.5">
-                {completedCount} <span className="text-xs font-normal text-slate-500">Available</span>
-              </p>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-xs flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
-              <Building2 className="w-6 h-6" />
-            </div>
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-                {portalConfig?.metric4Label || 'Field Focus'}
-              </p>
-              <p className="text-sm font-bold text-slate-900 mt-1 line-clamp-1">
-                {portalConfig?.metric4Value || 'Kiryandongo Settlements'}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Portal Tabs Bar */}
-        <div className="flex border-b border-slate-200 mb-8 overflow-x-auto gap-2 sm:gap-4 no-scrollbar">
-          <button
-            onClick={() => setActiveTab('history')}
-            className={`pb-4 px-3 sm:px-4 font-bold text-sm sm:text-base border-b-2 transition-colors whitespace-nowrap flex items-center gap-2 ${
-              activeTab === 'history'
-                ? 'border-emerald-600 text-emerald-700'
-                : 'border-transparent text-slate-500 hover:text-slate-800'
-            }`}
-          >
-            <FileText size={18} />
-            {portalConfig?.tabHistoryLabel || 'Giving History & Receipts'}
-          </button>
-
-          <button
-            onClick={() => setActiveTab('recurring')}
-            className={`pb-4 px-3 sm:px-4 font-bold text-sm sm:text-base border-b-2 transition-colors whitespace-nowrap flex items-center gap-2 ${
-              activeTab === 'recurring'
-                ? 'border-emerald-600 text-emerald-700'
-                : 'border-transparent text-slate-500 hover:text-slate-800'
-            }`}
-          >
-            <RefreshCw size={18} />
-            {portalConfig?.tabManageLabel || 'Manage Your Donation'}
-          </button>
-
-          <button
-            onClick={() => setActiveTab('impact')}
-            className={`pb-4 px-3 sm:px-4 font-bold text-sm sm:text-base border-b-2 transition-colors whitespace-nowrap flex items-center gap-2 ${
-              activeTab === 'impact'
-                ? 'border-emerald-600 text-emerald-700'
-                : 'border-transparent text-slate-500 hover:text-slate-800'
-            }`}
-          >
-            <Sparkles size={18} />
-            {portalConfig?.tabImpactLabel || 'Field Impact Bulletins'}
-          </button>
-
-          <button
-            onClick={() => setActiveTab('profile')}
-            className={`pb-4 px-3 sm:px-4 font-bold text-sm sm:text-base border-b-2 transition-colors whitespace-nowrap flex items-center gap-2 ${
-              activeTab === 'profile'
-                ? 'border-emerald-600 text-emerald-700'
-                : 'border-transparent text-slate-500 hover:text-slate-800'
-            }`}
-          >
-            <Settings size={18} />
-            {portalConfig?.tabProfileLabel || 'Profile & Tax Preferences'}
-          </button>
-        </div>
-
-        {/* TAB 1: GIVING HISTORY & RECEIPTS */}
-        {activeTab === 'history' && (
-          <div className="space-y-6">
-
-            {/* Quick Live Giving Gateway Card connecting all payment modes */}
-            <div className="bg-gradient-to-r from-emerald-900 via-teal-900 to-slate-900 rounded-3xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden border border-emerald-500/20">
-              <div className="absolute right-0 top-0 translate-x-12 -translate-y-12 w-64 h-64 bg-emerald-400/10 rounded-full blur-3xl pointer-events-none" />
-              <div className="relative z-10 space-y-4">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div className="flex items-center gap-2">
-                    <span className="flex h-2.5 w-2.5 relative">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
-                    </span>
-                    <span className="text-xs font-bold uppercase tracking-widest text-emerald-300">
-                      Live Donation Gateway • All Payment Modes
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {realtimeConnected && (
-                      <span className="text-[10px] font-bold text-emerald-300 bg-emerald-950/60 px-2.5 py-0.5 rounded-full border border-emerald-500/30 flex items-center gap-1">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Live Realtime Sync Active
-                      </span>
-                    )}
-                    <span className="text-[11px] text-slate-300 font-medium bg-white/10 px-3 py-1 rounded-full border border-white/10 hidden sm:inline-block">
-                      ⚡ Instant receipt generation & verification
-                    </span>
-                  </div>
-                </div>
-
-                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
-                  <div>
-                    <h3 className="text-xl sm:text-2xl font-black font-heading text-white tracking-tight">
-                      Support RESTI Community Programs Directly
-                    </h3>
-                    <p className="text-emerald-100/80 text-xs sm:text-sm mt-1 max-w-xl leading-relaxed">
-                      Choose an amount and click your preferred payment channel below. Gifts are processed instantly, recorded in the database, and reflected immediately on this dashboard.
-                    </p>
-                  </div>
-
-                  {/* Quick Amount Selector */}
-                  <div className="flex flex-wrap items-center gap-2 shrink-0">
-                    {[10, 25, 50, 100, 250].map((amt) => (
-                      <button
-                        key={amt}
-                        type="button"
-                        onClick={() => {
-                          setSelectedQuickAmount(amt);
-                          setIsCustomQuick(false);
-                          setCustomQuickAmount('');
-                        }}
-                        className={`px-3.5 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
-                          !isCustomQuick && selectedQuickAmount === amt
-                            ? 'bg-emerald-500 text-white border-emerald-400 shadow-md scale-105'
-                            : 'bg-white/10 text-white hover:bg-white/20 border-white/15'
-                        }`}
-                      >
-                        ${amt}
-                      </button>
-                    ))}
-                    <div className="relative">
-                      <input
-                        type="number"
-                        placeholder="Custom $"
-                        value={customQuickAmount}
-                        onChange={(e) => {
-                          setCustomQuickAmount(e.target.value);
-                          setIsCustomQuick(true);
-                        }}
-                        className={`w-24 px-3 py-2 rounded-xl text-xs font-bold bg-white/10 border text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-emerald-400 transition-all ${
-                          isCustomQuick ? 'border-emerald-400 bg-white/20 ring-1 ring-emerald-400' : 'border-white/15'
-                        }`}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* 5 Payment Mode Trigger Buttons */}
-                <div className="pt-2 border-t border-white/10 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2.5">
-                  <button
-                    type="button"
-                    onClick={() => openDonationModal({ method: 'card', amount: isCustomQuick ? Number(customQuickAmount) || 50 : selectedQuickAmount })}
-                    className="bg-blue-600 hover:bg-blue-500 text-white p-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-sm transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
-                  >
-                    <CreditCard size={15} />
-                    <span>Card (Stripe)</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => openDonationModal({ method: 'mtn', amount: isCustomQuick ? Number(customQuickAmount) || 50 : selectedQuickAmount })}
-                    className="bg-[#FFCC00] hover:bg-[#ffdb4d] text-slate-950 p-3 rounded-xl text-xs font-black flex items-center justify-center gap-2 shadow-sm transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
-                  >
-                    <Phone size={15} />
-                    <span>MTN MoMo</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => openDonationModal({ method: 'airtel', amount: isCustomQuick ? Number(customQuickAmount) || 50 : selectedQuickAmount })}
-                    className="bg-[#e40000] hover:bg-[#ff1a1a] text-white p-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-sm transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
-                  >
-                    <Phone size={15} />
-                    <span>Airtel Money</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => openDonationModal({ method: 'paypal', amount: isCustomQuick ? Number(customQuickAmount) || 50 : selectedQuickAmount })}
-                    className="bg-[#003087] hover:bg-[#0040b3] text-white p-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-sm transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
-                  >
-                    <ExternalLink size={15} />
-                    <span>PayPal</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => openDonationModal({ method: 'bank', amount: isCustomQuick ? Number(customQuickAmount) || 50 : selectedQuickAmount })}
-                    className="bg-slate-700 hover:bg-slate-600 text-white p-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-sm transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer col-span-2 sm:col-span-1"
-                  >
-                    <Building2 size={15} />
-                    <span>Bank Wire</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Admin Platform Overview Bar */}
-            {isUserAdmin && (
-              <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3 text-amber-900 text-xs">
-                <div className="flex items-center gap-2.5">
-                  <Shield className="w-5 h-5 text-amber-600 shrink-0" />
-                  <div>
-                    <span className="font-bold">Admin Platform Control:</span>{' '}
-                    <span>Logged in as administrator ({user?.email}). You can view your personal contributions or audit all live platform donations across all payment channels.</span>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setAdminShowAll(false);
-                      fetchDonations(user?.email, false);
-                    }}
-                    className={`px-3 py-1.5 rounded-xl font-bold cursor-pointer transition-all ${
-                      !adminShowAll ? 'bg-amber-600 text-white shadow-xs' : 'bg-white border border-amber-300 text-amber-800 hover:bg-amber-100'
-                    }`}
-                  >
-                    My Personal Gifts
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setAdminShowAll(true);
-                      fetchDonations('', true);
-                    }}
-                    className={`px-3 py-1.5 rounded-xl font-bold cursor-pointer transition-all ${
-                      adminShowAll ? 'bg-amber-600 text-white shadow-xs' : 'bg-white border border-amber-300 text-amber-800 hover:bg-amber-100'
-                    }`}
-                  >
-                    All Platform Donations (Live)
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {!user && donations.length === 0 ? (
-              <div className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Option A: Quick Lookup without password */}
-                  <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-xs flex flex-col justify-between">
-                    <div>
-                      <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mb-4">
-                        <Search className="w-6 h-6" />
-                      </div>
-                      <h3 className="text-xl font-bold font-heading text-slate-900 mb-2">
-                        Instant Receipt & Gift Lookup
-                      </h3>
-                      <p className="text-slate-600 text-sm mb-6 leading-relaxed">
-                        Contributed via Card, Bank, MTN MoMo, or Airtel Money? Enter your donation email or transaction reference to view records and download official PDF tax receipts immediately.
-                      </p>
-                      <form onSubmit={handleLookupDonations} className="space-y-4">
-                        <div>
-                          <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
-                            Donor Email Address or Reference ID
-                          </label>
-                          <input
-                            type="text"
-                            placeholder="e.g. supporter@example.com or REF-12345"
-                            value={lookupQuery}
-                            onChange={(e) => setLookupQuery(e.target.value)}
-                            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                          />
-                        </div>
-                        <Button
-                          type="submit"
-                          disabled={lookupLoading}
-                          className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl shadow-xs"
-                        >
-                          {lookupLoading ? 'Searching...' : 'Find My Receipts & History'}
-                        </Button>
-                      </form>
-                    </div>
-                    {lookupSubmitted && donations.length === 0 && (
-                      <p className="text-xs text-amber-600 mt-4 text-center">
-                        No records matched "{lookupQuery}". Check the email you used or make a gift to get started.
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Option B: Account Sign In */}
-                  <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-xs flex flex-col justify-between">
-                    <div>
-                      <div className="w-12 h-12 rounded-2xl bg-teal-50 text-teal-600 flex items-center justify-center mb-4">
-                        <User className="w-6 h-6" />
-                      </div>
-                      <h3 className="text-xl font-bold font-heading text-slate-900 mb-2">
-                        Donor Account Sign In
-                      </h3>
-                      <p className="text-slate-600 text-sm mb-6 leading-relaxed">
-                        Log in with your donor account to access recurring donation controls, save personal tax preferences, and manage your supporter profile.
-                      </p>
-                      <form onSubmit={handleInlineLogin} className="space-y-3">
-                        <div>
-                          <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
-                            Email Address
-                          </label>
-                          <input
-                            type="email"
-                            placeholder="you@example.com"
-                            value={loginEmail}
-                            onChange={(e) => setLoginEmail(e.target.value)}
-                            className="w-full px-4 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                          />
-                        </div>
-                        <div>
-                          <div className="flex justify-between items-center mb-1">
-                            <label className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                              Password
-                            </label>
-                            <Link to="/reset-password" className="text-xs text-emerald-600 hover:underline">
-                              Forgot?
-                            </Link>
-                          </div>
-                          <input
-                            type="password"
-                            placeholder="••••••••"
-                            value={loginPassword}
-                            onChange={(e) => setLoginPassword(e.target.value)}
-                            className="w-full px-4 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                          />
-                        </div>
-                        <Button
-                          type="submit"
-                          disabled={loginLoading}
-                          className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-2.5 rounded-xl shadow-xs"
-                        >
-                          {loginLoading ? 'Signing In...' : 'Sign In to Portal'}
-                        </Button>
-                      </form>
-                    </div>
-                    <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-                      <span>Don't have an account?</span>
-                      <Link to="/register" className="text-emerald-700 font-bold hover:underline">
-                        Create Free Account
-                      </Link>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="bg-white rounded-3xl shadow-xs border border-slate-100 overflow-hidden">
-                {!user && (
-                  <div className="bg-emerald-50 px-6 py-3 border-b border-emerald-100 flex flex-wrap items-center justify-between gap-2 text-xs text-emerald-800">
-                    <span className="font-medium">
-                      Showing records found for: <strong className="font-bold">{lookupQuery || 'Searched Donor'}</strong>
-                    </span>
-                    <button
-                      onClick={() => {
-                        setDonations([]);
-                        setLookupQuery('');
-                        setLookupSubmitted(false);
-                      }}
-                      className="font-bold underline hover:text-emerald-950"
-                    >
-                      Look Up Another Donor / Reference
-                    </button>
-                  </div>
-                )}
-                <div className="p-5 sm:p-6 border-b border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                  <div>
-                    <h2 className="text-xl font-bold font-heading text-slate-900">Your Contributions</h2>
-                    <p className="text-slate-500 text-sm mt-0.5">Instant verifiable donation records and downloadable official receipts</p>
-                  </div>
-
-                  <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
-                    <div className="relative flex-1 sm:w-56">
-                      <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                      <input
-                        type="text"
-                        placeholder="Search ref or amount..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-1.5 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition-all"
-                      />
-                    </div>
-
-                    <select
-                      value={statusFilter}
-                      onChange={(e: any) => setStatusFilter(e.target.value)}
-                      className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs sm:text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                    >
-                      <option value="all">All Statuses</option>
-                      <option value="completed">Completed</option>
-                      <option value="pending">Pending</option>
-                    </select>
-
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => fetchDonations()}
-                      className="bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-none h-auto"
-                      title="Refresh live donations"
-                    >
-                      <RefreshCw size={13} className={loading ? 'animate-spin text-emerald-600' : 'text-slate-500'} />
-                      <span className="hidden sm:inline">Sync Live</span>
-                    </Button>
-                  </div>
-                </div>
-
-                {filteredDonations.length === 0 ? (
-                  <div className="p-12 text-center">
-                    <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-400">
-                      <Heart size={28} />
-                    </div>
-                    <h3 className="text-lg font-bold text-slate-800">No donations found</h3>
-                    <p className="text-slate-500 text-sm max-w-md mx-auto mt-1 mb-6">
-                      {searchQuery ? 'No gifts matched your search criteria.' : 'You have not recorded any donations with this account email yet.'}
-                    </p>
-                    <Button 
-                      onClick={() => openDonationModal()}
-                      className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold cursor-pointer shadow-md"
-                    >
-                      <Heart size={15} className="mr-2 fill-current" />
-                      Make Your First Gift
-                    </Button>
-                  </div>
-                ) : (
-
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse">
-                    <thead>
-                      <tr className="bg-slate-50/70 border-b border-slate-100 text-[11px] uppercase tracking-wider text-slate-400 font-bold">
-                        <th className="py-3.5 px-6">Date</th>
-                        <th className="py-3.5 px-6">Amount</th>
-                        <th className="py-3.5 px-6">Payment Method</th>
-                        <th className="py-3.5 px-6">Reference ID</th>
-                        <th className="py-3.5 px-6">Status</th>
-                        <th className="py-3.5 px-6 text-right">Official Receipt</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100 text-sm">
-                      {filteredDonations.map((d) => {
-                        const mInfo = getMethodBadge(d.paymentMethod);
-                        return (
-                          <tr key={d.id} className="hover:bg-slate-50/50 transition-colors">
-                            <td className="py-4 px-6 font-medium text-slate-800 whitespace-nowrap">
-                              <div className="flex items-center gap-2">
-                                <Calendar size={14} className="text-slate-400" />
-                                {new Date(d.date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
-                              </div>
-                            </td>
-                            <td className="py-4 px-6 font-extrabold text-slate-900 whitespace-nowrap">
-                              {d.currency.toUpperCase() === 'USD' ? `$${d.amount.toFixed(2)}` : `${d.amount.toLocaleString()} ${d.currency.toUpperCase()}`}
-                            </td>
-                            <td className="py-4 px-6 whitespace-nowrap">
-                              <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border ${mInfo.color}`}>
-                                {mInfo.label}
-                              </span>
-                            </td>
-                            <td className="py-4 px-6 font-mono text-xs text-slate-500 whitespace-nowrap">
-                              {d.reference || d.id.slice(-8).toUpperCase()}
-                            </td>
-                            <td className="py-4 px-6 whitespace-nowrap">
-                              <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${
-                                d.status.toLowerCase() === 'completed'
-                                  ? 'bg-emerald-100 text-emerald-800'
-                                  : 'bg-amber-100 text-amber-800'
-                              }`}>
-                                <span className={`w-1.5 h-1.5 rounded-full ${d.status.toLowerCase() === 'completed' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
-                                {d.status.charAt(0).toUpperCase() + d.status.slice(1)}
-                              </span>
-                            </td>
-                            <td className="py-4 px-6 text-right whitespace-nowrap">
-                              <button
-                                onClick={() => setSelectedDonation(d)}
-                                className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-lg transition-colors"
-                              >
-                                <Printer size={13} />
-                                View Receipt
-                              </button>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-          )}
-
-            {/* Donor Assurance Note */}
-            <div className="bg-emerald-50/60 border border-emerald-100 rounded-2xl p-5 flex items-start gap-4">
-              <Shield className="w-6 h-6 text-emerald-600 shrink-0 mt-0.5" />
-              <div className="text-xs sm:text-sm text-emerald-950 leading-relaxed">
-                <p className="font-bold mb-0.5">RESTI Financial Transparency & Donor Privacy Guarantee</p>
-                <p className="text-emerald-800">
-                  {portalConfig?.securityNote || 'Every contribution is strictly deployed to on-the-ground programs in Kiryandongo District, Uganda. We never sell or exchange donor details with outside third parties. For institutional auditing or grant matching letters, contact info@resticbo.org.'}
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* TAB 2: MANAGE YOUR DONATION */}
-        {activeTab === 'recurring' && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-2 space-y-6">
-              <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-100 shadow-xs">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center">
-                    <RefreshCw size={20} />
-                  </div>
-                  <div>
-                    <h2 className="text-xl font-bold font-heading text-slate-900">
-                      {portalConfig?.manageTitle || 'Manage Your Donation'}
-                    </h2>
-                    <p className="text-slate-500 text-sm">
-                      {portalConfig?.manageSubtitle || 'Manage payment cards, pause, or adjust your monthly gifts securely'}
-                    </p>
-                  </div>
-                </div>
-
-                <p className="text-slate-600 text-sm sm:text-base leading-relaxed mb-6">
-                  {portalConfig?.manageDescription || "Recurring donors are the backbone of RESTI's sustainability in fragile settlement environments. They ensure vulnerable children have tuition for the full academic year and allow vocational workshops to stock ongoing training tools."}
-                </p>
-
-                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 mb-6 space-y-3">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-slate-500 font-medium">
-                      {portalConfig?.billingProviderLabel || 'Billing Provider:'}
-                    </span>
-                    <span className="font-bold text-slate-800">
-                      {portalConfig?.billingProviderValue || 'Secure PCI-DSS Level 1 Encrypted'}
-                    </span>
-                  </div>
-                  {user?.email ? (
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-slate-500 font-medium">Linked Donor Email:</span>
-                      <span className="font-mono text-xs font-semibold text-slate-700">{user.email}</span>
-                    </div>
-                  ) : (
-                    <div>
-                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
-                        Linked Recurring Donor Email:
-                      </label>
-                      <input
-                        type="email"
-                        placeholder="e.g. supporter@example.com"
-                        value={guestBillingEmail}
-                        onChange={(e) => setGuestBillingEmail(e.target.value)}
-                        className="w-full px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono text-xs"
-                      />
-                      <p className="text-[11px] text-slate-400 mt-1">
-                        Enter the email address you used when setting up your recurring gift to launch the management portal.
-                      </p>
-                    </div>
-                  )}
-                </div>
-
                 <Button
-                  onClick={handleManageBilling}
-                  disabled={billingLoading}
-                  className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-6 py-3 rounded-xl shadow-md"
+                  variant="outline"
+                  onClick={() => switchTab('profile')}
+                  className="bg-emerald-950/40 border-white/20 text-white hover:bg-white/10 hover:text-white cursor-pointer text-xs"
                 >
-                  {billingLoading ? (
-                    <span className="flex items-center gap-2">
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      {portalConfig?.buttonLoadingText || 'Connecting to Donation Portal...'}
-                    </span>
-                  ) : (
-                    <span className="flex items-center gap-2">
-                      {portalConfig?.buttonText || 'Manage Your Donation'} <ExternalLink size={16} />
-                    </span>
-                  )}
+                  <User className="w-3.5 h-3.5 mr-1.5" /> Donor Sign In
                 </Button>
-              </div>
-
-              <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-100 shadow-xs">
-                <h3 className="text-lg font-bold font-heading text-slate-900 mb-3">Frequently Asked Questions</h3>
-                <div className="space-y-4 text-sm text-slate-600">
-                  {(portalConfig?.faqs || DEFAULT_DONOR_PORTAL_SETTINGS.faqs).map((faq: any, idx: number) => (
-                    <div key={idx}>
-                      <h4 className="font-bold text-slate-800 mb-1">{faq.question}</h4>
-                      <p>{faq.answer}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Sidebar CTA */}
-            <div className="space-y-6">
-              <div className="bg-gradient-to-br from-emerald-600 to-teal-700 rounded-3xl p-6 sm:p-8 text-white shadow-lg">
-                <Sparkles className="w-8 h-8 text-emerald-200 mb-4" />
-                <h3 className="text-xl font-bold font-heading mb-2">
-                  {portalConfig?.sidebarPledgeTitle || 'Pledge $25 / Month'}
-                </h3>
-                <p className="text-emerald-100 text-sm leading-relaxed mb-6">
-                  {portalConfig?.sidebarPledgeText || 'A monthly pledge of $25 provides 2 refugee women with vocational tailoring materials and Village Savings (VSLA) seed capital every single month.'}
-                </p>
-                <Button 
-                  onClick={() => openDonationModal({ method: 'card', amount: 25 })}
-                  className="w-full bg-white text-emerald-800 hover:bg-emerald-50 font-bold border-none shadow-md cursor-pointer"
-                >
-                  {portalConfig?.sidebarPledgeButtonText || 'Set Up Monthly Gift'} <ArrowRight size={16} className="ml-2" />
-                </Button>
-
-              </div>
+              )}
             </div>
           </div>
-        )}
+        </div>
 
-        {/* TAB 3: FIELD IMPACT BULLETINS */}
-        {activeTab === 'impact' && (
-          <div className="space-y-8">
-            <div className="bg-white rounded-3xl p-6 sm:p-10 border border-slate-100 shadow-xs">
-              <span className="text-xs font-bold tracking-widest uppercase text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full">
-                {portalConfig?.impactBadge || 'Kiryandongo Field Dispatch'}
-              </span>
-              <h2 className="text-2xl sm:text-3xl font-bold font-heading text-slate-900 mt-3 mb-4">
-                {portalConfig?.impactTitle || 'How Your Contributions Are Changing Lives'}
-              </h2>
-              <p className="text-slate-600 leading-relaxed text-base mb-8">
-                {portalConfig?.impactSubtitle || 'Because of dedicated supporters like you, RESTI continues to bridge emergency survival and sustainable dignity across settlements in Kiryandongo District, Uganda.'}
-              </p>
+        {/* ── Mobile Navigation Trigger ──────────────────────────────── */}
+        <div className="md:hidden mb-4">
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="w-full bg-white border border-slate-200 rounded-2xl p-3.5 flex items-center justify-between text-slate-800 font-bold text-sm shadow-xs"
+          >
+            <span className="flex items-center gap-2">
+              <Menu size={18} className="text-emerald-600" />
+              <span>Menu: <strong>
+                {activeTab === 'overview' && '1. Overview'}
+                {activeTab === 'history' && '2. Giving History & Receipts'}
+                {activeTab === 'recurring' && '3. Manage Donations'}
+                {activeTab === 'impact' && '4. Impact Updates'}
+                {activeTab === 'profile' && '5. My Profile'}
+              </strong></span>
+            </span>
+            <span className="text-xs text-emerald-600">Change tab</span>
+          </button>
+        </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {(portalConfig?.impactStories || DEFAULT_DONOR_PORTAL_SETTINGS.impactStories).map((story: any, sIdx: number) => (
-                  <div key={sIdx} className="bg-slate-50 rounded-2xl p-5 border border-slate-100 flex flex-col">
-                    <div className="h-40 rounded-xl overflow-hidden mb-4 bg-slate-200 shrink-0">
-                      <img 
-                        src={story.image} 
-                        alt={story.title} 
-                        className="w-full h-full object-cover"
-                        onError={(e: any) => {
-                          e.currentTarget.src = 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=800&auto=format&fit=crop&q=80';
-                        }}
-                      />
-                    </div>
-                    <h3 className="font-bold text-slate-900 text-base mb-1">{story.title}</h3>
-                    <p className="text-slate-600 text-xs leading-relaxed mt-auto">
-                      {story.description}
-                    </p>
-                  </div>
-                ))}
-              </div>
+        {/* ── Primary Navigation (Desktop Pills / Mobile Drawer) ─────── */}
+        <div className={`mb-8 ${mobileMenuOpen ? 'block' : 'hidden md:block'}`}>
+          <div className="bg-white rounded-2xl border border-slate-200/80 p-1.5 shadow-xs flex flex-col md:flex-row gap-1">
+            <button
+              onClick={() => switchTab('overview')}
+              className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+                activeTab === 'overview'
+                  ? 'bg-emerald-600 text-white shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+              }`}
+            >
+              <Zap size={16} />
+              <span>1. Overview</span>
+            </button>
 
-              {/* Leadership Thank-You Box */}
-              <div className="mt-8 pt-8 border-t border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
-                <div>
-                  <h4 className="font-bold text-slate-900">
-                    {portalConfig?.leadershipHeading || 'A Message From RESTI Leadership'}
-                  </h4>
-                  <p className="text-slate-500 text-xs sm:text-sm mt-0.5 italic">
-                    {portalConfig?.leadershipQuote || '"On behalf of the refugee families and local host communities in Kiryandongo, thank you for walking this transformative journey with us."'}
-                  </p>
-                </div>
-                <div className="text-right shrink-0">
-                  <p className="font-bold text-sm text-slate-800">
-                    {portalConfig?.leadershipAuthor || 'Mr. Kwaya Daniel Loborach'}
-                  </p>
-                  <p className="text-xs text-emerald-600 font-semibold">
-                    {portalConfig?.leadershipRole || 'Co-Founder, RESTI Uganda'}
-                  </p>
-                </div>
-              </div>
-            </div>
+            <button
+              onClick={() => switchTab('history')}
+              className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+                activeTab === 'history'
+                  ? 'bg-emerald-600 text-white shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+              }`}
+            >
+              <FileText size={16} />
+              <span>2. Giving History & Receipts</span>
+              {donations.length > 0 && (
+                <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${activeTab === 'history' ? 'bg-emerald-700 text-white' : 'bg-slate-200 text-slate-700'}`}>
+                  {donations.length}
+                </span>
+              )}
+            </button>
+
+            <button
+              onClick={() => switchTab('recurring')}
+              className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+                activeTab === 'recurring'
+                  ? 'bg-emerald-600 text-white shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+              }`}
+            >
+              <RefreshCw size={16} />
+              <span>3. Manage Donations</span>
+            </button>
+
+            <button
+              onClick={() => switchTab('impact')}
+              className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+                activeTab === 'impact'
+                  ? 'bg-emerald-600 text-white shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+              }`}
+            >
+              <Sparkles size={16} />
+              <span>4. Impact Updates</span>
+            </button>
+
+            <button
+              onClick={() => switchTab('profile')}
+              className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+                activeTab === 'profile'
+                  ? 'bg-emerald-600 text-white shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+              }`}
+            >
+              <User size={16} />
+              <span>5. My Profile</span>
+            </button>
           </div>
-        )}
+        </div>
 
-        {/* TAB 4: PROFILE & PREFERENCES */}
-        {activeTab === 'profile' && (
-          <div className="max-w-2xl bg-white rounded-3xl p-6 sm:p-10 border border-slate-100 shadow-xs space-y-6">
-            <div>
-              <h2 className="text-xl font-bold font-heading text-slate-900">Donor Profile & Preferences</h2>
-              <p className="text-slate-500 text-sm mt-0.5">Ensure your donation receipts and impact communications are accurate</p>
-            </div>
-
-            {!user ? (
-              <div className="bg-slate-50 rounded-2xl p-6 border border-slate-200/70 text-center space-y-4">
-                <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center mx-auto">
-                  <User size={24} />
-                </div>
-                <h3 className="text-lg font-bold text-slate-900">Sign In to Save Tax & Receipt Details</h3>
-                <p className="text-slate-600 text-sm max-w-md mx-auto leading-relaxed">
-                  Log in or create a donor account to configure your official legal name, contact phone number, and physical mailing address for year-end tax letters and official acknowledgments.
+        {/* ── Guest Authentication Banner (when not logged in) ──────── */}
+        {!user && activeTab !== 'profile' && donations.length === 0 && (
+          <div className="bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 rounded-3xl p-6 sm:p-8 mb-8 text-emerald-950">
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+              <div className="space-y-2 max-w-xl">
+                <span className="text-xs font-bold uppercase tracking-wider text-emerald-700 bg-emerald-100 px-3 py-1 rounded-full">
+                  Donor Lookup & Sign In
+                </span>
+                <h2 className="text-xl sm:text-2xl font-bold font-heading text-slate-900">
+                  Access Your Official Receipts and Giving History
+                </h2>
+                <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+                  Sign in with your donor account or enter your donation email address below to look up previous contributions and download verified tax receipts.
                 </p>
-                <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
-                  <Link to="/login?redirect=/donor-portal">
-                    <Button className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold">
-                      Sign In to Account
-                    </Button>
-                  </Link>
-                  <Link to="/register">
-                    <Button variant="outline" className="border-slate-300 text-slate-700 font-semibold">
-                      Create Free Account
-                    </Button>
-                  </Link>
-                </div>
               </div>
-            ) : (
-              <form onSubmit={handleSaveProfile} className="space-y-5">
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
-                    Full Legal Name (For Official Tax Receipts)
-                  </label>
+
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto">
+                <Button
+                  onClick={() => switchTab('profile')}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold cursor-pointer"
+                >
+                  <User size={16} className="mr-2" /> Sign In to Portal
+                </Button>
+                <form onSubmit={handleLookup} className="flex gap-2">
                   <input
                     type="text"
-                    value={displayName}
-                    onChange={(e) => setDisplayName(e.target.value)}
-                    placeholder="e.g. Dr. Jane Doe"
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    placeholder="Enter email or reference..."
+                    value={lookupQuery}
+                    onChange={(e) => setLookupQuery(e.target.value)}
+                    className="bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 w-44 sm:w-56"
                   />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
-                    Account Email Address
-                  </label>
-                  <input
-                    type="email"
-                    disabled
-                    value={user?.email || ''}
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-500 text-sm cursor-not-allowed font-mono text-xs"
-                  />
-                  <p className="text-[11px] text-slate-400 mt-1">Contact support if you need to transfer your donation history to another email.</p>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
-                    Phone Number
-                  </label>
-                  <input
-                    type="tel"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder="+256 700 000000"
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
-                    Street Address / P.O. Box
-                  </label>
-                  <input
-                    type="text"
-                    value={address}
-                    onChange={(e) => setAddress(e.target.value)}
-                    placeholder="Street or Plot address"
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
-                      City / Town
-                    </label>
-                    <input
-                      type="text"
-                      value={city}
-                      onChange={(e) => setCity(e.target.value)}
-                      placeholder="City"
-                      className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
-                      Postal / ZIP Code
-                    </label>
-                    <input
-                      type="text"
-                      value={postalCode}
-                      onChange={(e) => setPostalCode(e.target.value)}
-                      placeholder="Postal Code"
-                      className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
-                      Country
-                    </label>
-                    <input
-                      type="text"
-                      value={country}
-                      onChange={(e) => setCountry(e.target.value)}
-                      placeholder="Country"
-                      className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                    />
-                  </div>
-                </div>
-
-                <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
                   <Button
                     type="submit"
-                    disabled={savingProfile}
-                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-6 py-2.5 rounded-xl shadow-xs"
+                    disabled={lookupLoading}
+                    variant="outline"
+                    className="border-emerald-600 text-emerald-700 hover:bg-emerald-100 cursor-pointer text-xs"
                   >
-                    {savingProfile ? 'Saving...' : 'Save Profile Details'}
+                    {lookupLoading ? 'Searching...' : 'Lookup'}
                   </Button>
+                </form>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ═════════════════════════════════════════════════════════════ */}
+        {/* SECTION 1: OVERVIEW                                          */}
+        {/* ═════════════════════════════════════════════════════════════ */}
+        {activeTab === 'overview' && (
+          <div className="space-y-8">
+            
+            {/* 4 Live KPI Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              
+              {/* Card 1: Total Donated */}
+              <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-xs flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                  <CreditCard className="w-6 h-6" />
+                </div>
+                <div>
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                    Total Contributed
+                  </p>
+                  <p className="text-2xl font-black text-slate-900 mt-0.5">
+                    ${totalDonatedUSD.toFixed(2)}
+                  </p>
+                  <p className="text-[11px] text-emerald-600 font-medium mt-0.5">
+                    {completedGifts.length} verified gifts
+                  </p>
+                </div>
+              </div>
+
+              {/* Card 2: Number of Donations */}
+              <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-xs flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center shrink-0">
+                  <CheckCircle2 className="w-6 h-6" />
+                </div>
+                <div>
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                    Number of Gifts
+                  </p>
+                  <p className="text-2xl font-black text-slate-900 mt-0.5">
+                    {donations.length}
+                  </p>
+                  <p className="text-[11px] text-slate-500 mt-0.5">
+                    Lifetime recorded contributions
+                  </p>
+                </div>
+              </div>
+
+              {/* Card 3: Latest Donation */}
+              <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-xs flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
+                  <Calendar className="w-6 h-6" />
+                </div>
+                <div>
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                    Latest Donation
+                  </p>
+                  <p className="text-xl font-black text-slate-900 mt-0.5 truncate">
+                    {latestDonation ? formatCurrency(latestDonation.amount, latestDonation.currency) : '$0.00'}
+                  </p>
+                  <p className="text-[11px] text-slate-500 mt-0.5">
+                    {latestDonation 
+                      ? new Date(latestDonation.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                      : 'No contributions yet'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Card 4: Recurring Status */}
+              <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-xs flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+                  <RefreshCw className="w-6 h-6" />
+                </div>
+                <div>
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                    Recurring Donation
+                  </p>
+                  <p className="text-sm font-bold text-slate-900 mt-1 flex items-center gap-1.5">
+                    {activeSubscription ? (
+                      <span className="text-emerald-700 flex items-center gap-1">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                        {formatCurrency(activeSubscription.amount, activeSubscription.currency)} / mo
+                      </span>
+                    ) : (
+                      <span className="text-slate-500 font-medium">None Active</span>
+                    )}
+                  </p>
+                  <button
+                    onClick={() => switchTab('recurring')}
+                    className="text-[11px] text-emerald-700 font-semibold hover:underline block mt-0.5"
+                  >
+                    {activeSubscription ? 'Manage pledge →' : 'Set up monthly gift →'}
+                  </button>
+                </div>
+              </div>
+
+            </div>
+
+            {/* Quick Actions Bar */}
+            <div className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-xs">
+              <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400 mb-4">
+                Quick Actions
+              </h3>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <button
+                  onClick={() => openDonationModal()}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white p-4 rounded-2xl flex flex-col items-center justify-center gap-2 text-center transition-all cursor-pointer shadow-sm hover:-translate-y-0.5"
+                >
+                  <Heart size={20} className="fill-current text-rose-300" />
+                  <span className="text-xs sm:text-sm font-bold">Make a Donation</span>
+                </button>
+
+                <button
+                  onClick={() => switchTab('history')}
+                  className="bg-slate-100 hover:bg-slate-200 text-slate-800 p-4 rounded-2xl flex flex-col items-center justify-center gap-2 text-center transition-all cursor-pointer hover:-translate-y-0.5"
+                >
+                  <FileText size={20} className="text-slate-600" />
+                  <span className="text-xs sm:text-sm font-bold">View Giving History</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    if (latestDonation) setSelectedDonation(latestDonation);
+                    else switchTab('history');
+                  }}
+                  disabled={donations.length === 0}
+                  className="bg-slate-100 hover:bg-slate-200 disabled:opacity-50 text-slate-800 p-4 rounded-2xl flex flex-col items-center justify-center gap-2 text-center transition-all cursor-pointer hover:-translate-y-0.5"
+                >
+                  <Printer size={20} className="text-slate-600" />
+                  <span className="text-xs sm:text-sm font-bold">Download Latest Receipt</span>
+                </button>
+
+                <button
+                  onClick={() => switchTab('recurring')}
+                  className="bg-slate-100 hover:bg-slate-200 text-slate-800 p-4 rounded-2xl flex flex-col items-center justify-center gap-2 text-center transition-all cursor-pointer hover:-translate-y-0.5"
+                >
+                  <Settings size={20} className="text-slate-600" />
+                  <span className="text-xs sm:text-sm font-bold">Manage Donations</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Two-Column: Recent Donation Activity & RESTI Field Impact Spotlight */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              
+              {/* Left 2 Cols: Recent Activity */}
+              <div className="lg:col-span-2 bg-white rounded-3xl p-6 border border-slate-200/80 shadow-xs flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <h3 className="text-lg font-bold font-heading text-slate-900">Recent Donation Activity</h3>
+                      <p className="text-xs text-slate-500">Your latest contributions and receipts</p>
+                    </div>
+                    <button
+                      onClick={() => switchTab('history')}
+                      className="text-xs font-bold text-emerald-700 hover:underline flex items-center gap-1"
+                    >
+                      View all ({donations.length}) <ChevronRight size={14} />
+                    </button>
+                  </div>
+
+                  {donations.length === 0 ? (
+                    <div className="py-12 text-center">
+                      <Heart size={32} className="mx-auto text-slate-300 mb-2" />
+                      <p className="text-sm font-bold text-slate-700">No donations recorded yet</p>
+                      <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1 mb-4">
+                        When you contribute to RESTI programs, your records, tax receipts, and payment references will appear here.
+                      </p>
+                      <Button
+                        onClick={() => openDonationModal()}
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold"
+                      >
+                        Make Your First Gift
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {donations.slice(0, 4).map((d) => {
+                        const status = getStatusBadge(d.status);
+                        const method = getMethodBadge(d.paymentMethod);
+                        return (
+                          <div
+                            key={d.id}
+                            className="p-3.5 rounded-2xl bg-slate-50 hover:bg-slate-100/80 transition-colors border border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center font-bold text-xs text-emerald-700 shrink-0">
+                                {d.currency}
+                              </div>
+                              <div>
+                                <p className="text-sm font-black text-slate-900">
+                                  {formatCurrency(d.amount, d.currency)}
+                                </p>
+                                <p className="text-xs text-slate-500 flex items-center gap-1.5">
+                                  <span>{new Date(d.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                                  <span>•</span>
+                                  <span className="font-mono text-[11px]">{d.reference || d.id.slice(-8).toUpperCase()}</span>
+                                </p>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center justify-between sm:justify-end gap-3 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-200/50">
+                              <span className={`inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${status.color}`}>
+                                <span className={`w-1.5 h-1.5 rounded-full ${status.dot}`} />
+                                {status.label}
+                              </span>
+                              <button
+                                onClick={() => setSelectedDonation(d)}
+                                className="text-xs font-bold text-emerald-700 bg-white hover:bg-emerald-50 border border-slate-200 hover:border-emerald-300 px-3 py-1.5 rounded-xl transition-colors cursor-pointer flex items-center gap-1"
+                              >
+                                <Printer size={12} /> View Receipt
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Right Col: Short RESTI Impact Spotlight */}
+              <div className="bg-gradient-to-br from-slate-900 via-emerald-950 to-teal-950 rounded-3xl p-6 text-white shadow-md flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <Sparkles size={16} className="text-amber-400" />
+                    <span className="text-xs font-bold uppercase tracking-widest text-emerald-300">
+                      Field Impact Spotlight
+                    </span>
+                  </div>
+                  <h3 className="text-xl font-bold font-heading text-white mb-2">
+                    Kiryandongo Community Transformation
+                  </h3>
+                  <p className="text-slate-300 text-xs sm:text-sm leading-relaxed mb-6">
+                    Because of dedicated donors like you, RESTI provides vocational tailoring certifications, clean water access, and digital skills workshops to over 500+ refugee families every quarter.
+                  </p>
+                  
+                  <div className="bg-white/10 rounded-2xl p-4 border border-white/10 space-y-2 mb-4">
+                    <div className="flex justify-between text-xs">
+                      <span className="text-slate-300">Program Allocation:</span>
+                      <span className="font-bold text-emerald-300">90% Direct Aid</span>
+                    </div>
+                    <div className="flex justify-between text-xs">
+                      <span className="text-slate-300">Target Region:</span>
+                      <span className="font-bold text-white">Kiryandongo District</span>
+                    </div>
+                    <div className="flex justify-between text-xs">
+                      <span className="text-slate-300">Legal Status:</span>
+                      <span className="font-bold text-white">Uganda NGO Bureau</span>
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => switchTab('impact')}
+                  className="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold py-2.5 rounded-xl text-xs transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+                >
+                  <span>Explore Impact Stories</span>
+                  <ArrowRight size={14} />
+                </button>
+              </div>
+
+            </div>
+
+          </div>
+        )}
+
+        {/* ═════════════════════════════════════════════════════════════ */}
+        {/* SECTION 2: GIVING HISTORY & RECEIPTS                         */}
+        {/* ═════════════════════════════════════════════════════════════ */}
+        {activeTab === 'history' && (
+          <div className="space-y-6">
+            <div className="bg-white rounded-3xl border border-slate-200/80 shadow-xs overflow-hidden">
+              
+              {/* Header with Search & Status Filter */}
+              <div className="p-5 sm:p-6 border-b border-slate-100 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+                <div>
+                  <h2 className="text-xl font-bold font-heading text-slate-900">Giving History & Receipts</h2>
+                  <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
+                    Verifiable transaction records and official tax-deductible receipts
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2.5 w-full lg:w-auto">
+                  <div className="relative flex-1 sm:w-64">
+                    <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <input
+                      type="text"
+                      placeholder="Search ref, receipt, or amount..."
+                      value={searchQuery}
+                      onChange={(e) => {
+                        setSearchQuery(e.target.value);
+                        setCurrentPage(1);
+                      }}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition-all"
+                    />
+                  </div>
+
+                  <select
+                    value={statusFilter}
+                    onChange={(e: any) => {
+                      setStatusFilter(e.target.value);
+                      setCurrentPage(1);
+                    }}
+                    className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer"
+                  >
+                    <option value="all">All Statuses</option>
+                    <option value="completed">Completed</option>
+                    <option value="pending">Pending</option>
+                    <option value="failed">Failed</option>
+                  </select>
 
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={handleLogout}
-                    className="text-rose-600 hover:bg-rose-50 border-rose-200"
+                    onClick={() => {
+                      const session = user ? user.access_token : undefined;
+                      fetchDonorData(session, user?.email || lookupQuery);
+                    }}
+                    className="border-slate-200 text-slate-700 text-xs px-3 py-2 rounded-xl cursor-pointer"
+                    title="Refresh data"
                   >
-                    <LogOut size={14} className="mr-1.5" /> Sign Out
+                    <RefreshCw size={13} className={refreshing ? 'animate-spin text-emerald-600 mr-1.5' : 'text-slate-500 mr-1.5'} />
+                    <span>Sync</span>
                   </Button>
                 </div>
-              </form>
+              </div>
+
+              {/* No Donations Message */}
+              {filteredDonations.length === 0 ? (
+                <div className="p-12 text-center">
+                  <div className="w-14 h-14 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3 text-slate-400">
+                    <FileText size={24} />
+                  </div>
+                  <h3 className="text-base font-bold text-slate-800">No donations found</h3>
+                  <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1 mb-6">
+                    {searchQuery 
+                      ? `No donations matched "${searchQuery}". Try clearing filters.` 
+                      : 'No contributions have been recorded for this account email yet.'}
+                  </p>
+                  <Button
+                    onClick={() => openDonationModal()}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs cursor-pointer"
+                  >
+                    <Heart size={14} className="mr-1.5 fill-current" />
+                    Make a Gift
+                  </Button>
+                </div>
+              ) : (
+                <>
+                  {/* Desktop Table View */}
+                  <div className="hidden md:block overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="bg-slate-50/70 border-b border-slate-100 text-[11px] uppercase tracking-wider text-slate-400 font-bold">
+                          <th className="py-3.5 px-6">Date</th>
+                          <th className="py-3.5 px-6">Amount</th>
+                          <th className="py-3.5 px-6">Campaign / Program</th>
+                          <th className="py-3.5 px-6">Method</th>
+                          <th className="py-3.5 px-6">Reference ID</th>
+                          <th className="py-3.5 px-6">Status</th>
+                          <th className="py-3.5 px-6 text-right">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 text-xs">
+                        {paginatedDonations.map((d) => {
+                          const status = getStatusBadge(d.status);
+                          const method = getMethodBadge(d.paymentMethod);
+                          return (
+                            <tr key={d.id} className="hover:bg-slate-50/50 transition-colors">
+                              <td className="py-4 px-6 font-medium text-slate-800 whitespace-nowrap">
+                                <div className="flex items-center gap-2">
+                                  <Calendar size={13} className="text-slate-400" />
+                                  {new Date(d.date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
+                                </div>
+                              </td>
+                              <td className="py-4 px-6 font-extrabold text-slate-900 whitespace-nowrap">
+                                {formatCurrency(d.amount, d.currency)}
+                              </td>
+                              <td className="py-4 px-6 text-slate-600 max-w-xs truncate">
+                                {d.campaign || 'Community Empowerment'}
+                              </td>
+                              <td className="py-4 px-6 whitespace-nowrap">
+                                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold border ${method.color}`}>
+                                  {method.label}
+                                </span>
+                              </td>
+                              <td className="py-4 px-6 font-mono text-[11px] text-slate-500 whitespace-nowrap">
+                                {d.reference || d.id.slice(-8).toUpperCase()}
+                              </td>
+                              <td className="py-4 px-6 whitespace-nowrap">
+                                <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${status.color}`}>
+                                  <span className={`w-1.5 h-1.5 rounded-full ${status.dot}`} />
+                                  {status.label}
+                                </span>
+                              </td>
+                              <td className="py-4 px-6 text-right whitespace-nowrap space-x-1.5">
+                                <button
+                                  onClick={() => setSelectedDonation(d)}
+                                  className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-2.5 py-1 rounded-lg transition-colors cursor-pointer"
+                                  title="View official printable receipt"
+                                >
+                                  <Printer size={12} /> View
+                                </button>
+                                <button
+                                  onClick={() => handleSendReceiptEmail(d)}
+                                  className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 px-2.5 py-1 rounded-lg transition-colors cursor-pointer"
+                                  title="Email receipt to yourself"
+                                >
+                                  <Mail size={12} /> Email
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Mobile Card List View (No horizontal scroll) */}
+                  <div className="md:hidden divide-y divide-slate-100">
+                    {paginatedDonations.map((d) => {
+                      const status = getStatusBadge(d.status);
+                      const method = getMethodBadge(d.paymentMethod);
+                      return (
+                        <div key={d.id} className="p-4 space-y-3">
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <p className="text-base font-black text-slate-900">
+                                {formatCurrency(d.amount, d.currency)}
+                              </p>
+                              <p className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
+                                <Calendar size={12} />
+                                {new Date(d.date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
+                              </p>
+                            </div>
+                            <span className={`inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${status.color}`}>
+                              <span className={`w-1.5 h-1.5 rounded-full ${status.dot}`} />
+                              {status.label}
+                            </span>
+                          </div>
+
+                          <div className="text-xs space-y-1 text-slate-600 bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                            <div className="flex justify-between">
+                              <span className="text-slate-400">Channel:</span>
+                              <span className="font-semibold">{method.label}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-slate-400">Reference:</span>
+                              <span className="font-mono">{d.reference || d.id.slice(-8).toUpperCase()}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-slate-400">Allocation:</span>
+                              <span className="truncate max-w-[180px]">{d.campaign || 'Community Programs'}</span>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2 pt-1">
+                            <button
+                              onClick={() => setSelectedDonation(d)}
+                              className="flex-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold py-2 rounded-xl text-xs flex items-center justify-center gap-1 cursor-pointer"
+                            >
+                              <Printer size={13} /> View Receipt
+                            </button>
+                            <button
+                              onClick={() => handleSendReceiptEmail(d)}
+                              className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold py-2 rounded-xl text-xs flex items-center justify-center gap-1 cursor-pointer"
+                            >
+                              <Mail size={13} /> Email Receipt
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Pagination Footer */}
+                  {totalPages > 1 && (
+                    <div className="p-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+                      <span>
+                        Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, filteredDonations.length)} of {filteredDonations.length} records
+                      </span>
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="outline"
+                          disabled={currentPage === 1}
+                          onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                          className="h-8 px-2.5 text-xs cursor-pointer"
+                        >
+                          <ChevronLeft size={14} className="mr-1" /> Prev
+                        </Button>
+                        <span className="px-2 font-bold text-slate-700">
+                          {currentPage} / {totalPages}
+                        </span>
+                        <Button
+                          variant="outline"
+                          disabled={currentPage === totalPages}
+                          onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                          className="h-8 px-2.5 text-xs cursor-pointer"
+                        >
+                          Next <ChevronRight size={14} className="ml-1" />
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+
+            </div>
+          </div>
+        )}
+
+        {/* ═════════════════════════════════════════════════════════════ */}
+        {/* SECTION 3: MANAGE DONATIONS                                  */}
+        {/* ═════════════════════════════════════════════════════════════ */}
+        {activeTab === 'recurring' && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2 space-y-6">
+              
+              {/* Recurring Donation Card */}
+              <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-xs space-y-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+                    <RefreshCw size={22} />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold font-heading text-slate-900">Recurring Donation Controls</h2>
+                    <p className="text-xs sm:text-sm text-slate-500">
+                      Manage monthly giving amount, renewal dates, and payment cards securely
+                    </p>
+                  </div>
+                </div>
+
+                {activeSubscription ? (
+                  <div className="p-5 rounded-2xl bg-emerald-50/60 border border-emerald-200 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold uppercase tracking-wider text-emerald-800">
+                        Active Monthly Sustaining Pledge
+                      </span>
+                      <span className="bg-emerald-600 text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase">
+                        {activeSubscription.status}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-xs">
+                      <div>
+                        <span className="text-slate-500 block">Pledge Amount</span>
+                        <span className="text-xl font-black text-slate-900 block mt-0.5">
+                          {formatCurrency(activeSubscription.amount, activeSubscription.currency)} / mo
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-slate-500 block">Billing Frequency</span>
+                        <span className="font-bold text-slate-800 block mt-0.5">Monthly Automated</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-500 block">Renewal Notice</span>
+                        <span className="font-bold text-slate-800 block mt-0.5">Automated Receipt</span>
+                      </div>
+                    </div>
+
+                    <div className="pt-3 border-t border-emerald-200/60 flex flex-wrap items-center gap-3">
+                      <Button
+                        onClick={handleLaunchBillingPortal}
+                        disabled={billingLoading}
+                        className="bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs cursor-pointer shadow-sm"
+                      >
+                        {billingLoading ? 'Connecting...' : 'Update Card or Change Amount'}
+                        <ExternalLink size={13} className="ml-1.5" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={handleLaunchBillingPortal}
+                        disabled={billingLoading}
+                        className="border-rose-300 text-rose-700 hover:bg-rose-50 font-semibold text-xs cursor-pointer"
+                      >
+                        Cancel Recurring Pledge
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200/70 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                        Current Recurring Status
+                      </span>
+                      <span className="bg-slate-200 text-slate-700 text-[10px] font-bold px-2.5 py-0.5 rounded-full">
+                        No Active Monthly Pledge
+                      </span>
+                    </div>
+                    <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+                      You currently do not have an automated monthly gift on file. Recurring contributions empower RESTI to plan sustainable vocational cohorts and secure ongoing school supplies for refugee children all year long.
+                    </p>
+                    
+                    <div className="pt-2">
+                      <Button
+                        onClick={() => openDonationModal({ method: 'card', amount: 25 })}
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs cursor-pointer"
+                      >
+                        <Heart size={14} className="mr-1.5 fill-current" />
+                        Pledge $25 / Month to RESTI
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Direct Launch to Stripe Billing Portal */}
+                <div className="p-4 rounded-2xl bg-white border border-slate-200 text-xs space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-slate-700">Billing Provider:</span>
+                    <span className="font-semibold text-emerald-800 flex items-center gap-1">
+                      <Shield size={13} className="text-emerald-600" /> PCI-DSS Level 1 Encrypted
+                    </span>
+                  </div>
+                  <p className="text-slate-500 leading-relaxed">
+                    RESTI never stores your payment card number or CVV in our database. Card and billing management is handled directly through Stripe's certified customer portal.
+                  </p>
+                  <div className="pt-2">
+                    <Button
+                      variant="outline"
+                      onClick={handleLaunchBillingPortal}
+                      disabled={billingLoading}
+                      className="border-slate-300 text-slate-800 text-xs font-semibold cursor-pointer"
+                    >
+                      {billingLoading ? 'Connecting...' : 'Launch Stripe Customer Portal'}
+                      <ExternalLink size={13} className="ml-1.5" />
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Frequently Asked Questions */}
+                <div className="pt-4 border-t border-slate-100 space-y-4">
+                  <h3 className="text-base font-bold font-heading text-slate-900">
+                    Recurring Donation Questions
+                  </h3>
+                  <div className="space-y-3 text-xs text-slate-600">
+                    <div className="p-3 bg-slate-50 rounded-xl">
+                      <p className="font-bold text-slate-900 mb-1">How can I update my payment card or billing address?</p>
+                      <p>Click "Launch Stripe Customer Portal" above. You will be redirected to our secure billing portal where you can update cards, change frequency, or download VAT invoices.</p>
+                    </div>
+                    <div className="p-3 bg-slate-50 rounded-xl">
+                      <p className="font-bold text-slate-900 mb-1">Can I set up recurring donations with Mobile Money (MTN / Airtel)?</p>
+                      <p>Mobile money networks in Uganda require mobile PIN authorization for each individual debit. For monthly automated giving, international debit or credit cards are recommended.</p>
+                    </div>
+                    <div className="p-3 bg-slate-50 rounded-xl">
+                      <p className="font-bold text-slate-900 mb-1">How do I cancel my recurring donation?</p>
+                      <p>You can pause or cancel your recurring contribution at any time through the customer portal with no cancellation fees or lock-ins.</p>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+            {/* Right Col: Become a Sustaining Partner CTA */}
+            <div className="space-y-6">
+              <div className="bg-gradient-to-br from-emerald-800 via-teal-800 to-slate-900 rounded-3xl p-6 sm:p-8 text-white shadow-xl space-y-4">
+                <Sparkles className="w-8 h-8 text-amber-300" />
+                <h3 className="text-xl font-bold font-heading">
+                  Become a Sustaining Monthly Pillar
+                </h3>
+                <p className="text-emerald-100/90 text-xs sm:text-sm leading-relaxed">
+                  Join our circle of monthly champions. Your predictable monthly support directly underwrites:
+                </p>
+
+                <ul className="space-y-2 text-xs text-slate-200">
+                  <li className="flex items-center gap-2">
+                    <Check size={14} className="text-emerald-400 shrink-0" />
+                    <span>$15/mo provides educational supplies for 3 students</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check size={14} className="text-emerald-400 shrink-0" />
+                    <span>$25/mo trains a refugee mother in vocational tailoring</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check size={14} className="text-emerald-400 shrink-0" />
+                    <span>$50/mo funds clean water borehole maintenance</span>
+                  </li>
+                </ul>
+
+                <div className="pt-2">
+                  <Button
+                    onClick={() => openDonationModal({ method: 'card', amount: 25 })}
+                    className="w-full bg-white text-emerald-900 hover:bg-emerald-50 font-bold text-xs py-3 rounded-xl cursor-pointer shadow-md"
+                  >
+                    Start Monthly Gift ($25/mo)
+                  </Button>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        )}
+
+        {/* ═════════════════════════════════════════════════════════════ */}
+        {/* SECTION 4: IMPACT UPDATES                                    */}
+        {/* ═════════════════════════════════════════════════════════════ */}
+        {activeTab === 'impact' && (
+          <div className="space-y-8">
+            <div className="bg-white rounded-3xl p-6 sm:p-10 border border-slate-200/80 shadow-xs space-y-6">
+              <div>
+                <span className="text-xs font-bold uppercase tracking-widest text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
+                  Kiryandongo District Field Updates
+                </span>
+                <h2 className="text-2xl sm:text-3xl font-black font-heading text-slate-900 mt-3 mb-2">
+                  Impact Updates: How Your Gifts Transform Communities
+                </h2>
+                <p className="text-slate-600 text-sm leading-relaxed max-w-2xl">
+                  Real stories and tangible progress from our programs in Kiryandongo District, Uganda. Every dollar you contribute creates real, documented change.
+                </p>
+              </div>
+
+              {/* Dynamic Stories Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
+                {stories.map((story: any, idx: number) => (
+                  <div
+                    key={story.id || idx}
+                    className="bg-slate-50 hover:bg-white transition-all duration-300 rounded-2xl border border-slate-200 overflow-hidden flex flex-col shadow-xs hover:shadow-md"
+                  >
+                    <div className="h-44 bg-slate-200 overflow-hidden relative">
+                      <img
+                        src={story.image || story.imageUrl || 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=800&auto=format&fit=crop&q=80'}
+                        alt={story.title || 'Impact Story'}
+                        className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
+                        onError={(e: any) => {
+                          e.currentTarget.src = 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=800&auto=format&fit=crop&q=80';
+                        }}
+                      />
+                      {story.category && (
+                        <span className="absolute top-3 left-3 bg-slate-900/80 backdrop-blur-xs text-white text-[10px] font-bold uppercase px-2.5 py-0.5 rounded-full">
+                          {story.category}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="p-5 flex flex-col flex-1">
+                      <h3 className="text-base font-bold text-slate-900 mb-1.5 line-clamp-2">
+                        {story.title}
+                      </h3>
+                      <p className="text-slate-600 text-xs leading-relaxed flex-1 line-clamp-4">
+                        {story.description || story.excerpt || story.content}
+                      </p>
+                      
+                      {story.date && (
+                        <p className="text-[11px] text-slate-400 mt-4 pt-3 border-t border-slate-200 flex items-center gap-1.5">
+                          <Calendar size={12} />
+                          {new Date(story.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Leadership Gratitude Message */}
+              <div className="mt-8 pt-8 border-t border-slate-200/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 bg-slate-50 p-6 rounded-2xl">
+                <div>
+                  <h4 className="font-bold text-slate-900 text-sm sm:text-base">
+                    A Direct Word From RESTI Field Leadership
+                  </h4>
+                  <p className="text-slate-600 text-xs sm:text-sm mt-1 italic max-w-xl">
+                    "On behalf of the refugee families and local host communities in Kiryandongo District, thank you for walking this transformative journey with us."
+                  </p>
+                </div>
+                <div className="text-left sm:text-right shrink-0">
+                  <p className="font-bold text-sm text-slate-900">
+                    Mr. Kwaya Daniel Loborach
+                  </p>
+                  <p className="text-xs text-emerald-700 font-semibold">
+                    Co-Founder, RESTI Uganda
+                  </p>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        )}
+
+        {/* ═════════════════════════════════════════════════════════════ */}
+        {/* SECTION 5: MY PROFILE                                        */}
+        {/* ═════════════════════════════════════════════════════════════ */}
+        {activeTab === 'profile' && (
+          <div className="max-w-3xl mx-auto space-y-8">
+            
+            {/* If Not Logged In: Dual Sign-In / Register Card */}
+            {!user ? (
+              <div className="bg-white rounded-3xl p-6 sm:p-10 border border-slate-200/80 shadow-xs space-y-6">
+                <div className="text-center max-w-md mx-auto space-y-2">
+                  <div className="w-14 h-14 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center mx-auto mb-3">
+                    <User size={28} />
+                  </div>
+                  <h2 className="text-2xl font-bold font-heading text-slate-900">
+                    Donor Account Sign In
+                  </h2>
+                  <p className="text-slate-500 text-xs sm:text-sm leading-relaxed">
+                    Sign in to customize your legal receipt name, view giving history across all devices, and manage donation preferences.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+                  
+                  {/* Password Login */}
+                  <form onSubmit={handleLogin} className="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-3.5">
+                    <span className="text-xs font-bold uppercase tracking-wider text-slate-500 block">
+                      Sign In with Password
+                    </span>
+                    <div>
+                      <label className="block text-xs font-medium text-slate-700 mb-1">Email Address</label>
+                      <input
+                        type="email"
+                        required
+                        placeholder="supporter@example.com"
+                        value={loginEmail}
+                        onChange={(e) => setLoginEmail(e.target.value)}
+                        className="w-full px-3 py-2 text-xs bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      />
+                    </div>
+                    <div>
+                      <div className="flex justify-between items-center mb-1">
+                        <label className="text-xs font-medium text-slate-700">Password</label>
+                        <Link to="/admin/reset-password" className="text-[11px] text-emerald-600 hover:underline">
+                          Forgot?
+                        </Link>
+                      </div>
+                      <input
+                        type="password"
+                        required
+                        placeholder="••••••••"
+                        value={loginPassword}
+                        onChange={(e) => setLoginPassword(e.target.value)}
+                        className="w-full px-3 py-2 text-xs bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      />
+                    </div>
+                    <Button
+                      type="submit"
+                      disabled={loginLoading}
+                      className="w-full bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs py-2.5 rounded-xl cursor-pointer shadow-sm"
+                    >
+                      {loginLoading ? 'Signing In...' : 'Sign In'}
+                    </Button>
+                  </form>
+
+                  {/* Passwordless Magic Link Login */}
+                  <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-3.5 flex flex-col justify-between">
+                    <div>
+                      <span className="text-xs font-bold uppercase tracking-wider text-slate-500 block mb-2">
+                        Passwordless Magic Link
+                      </span>
+                      <p className="text-xs text-slate-600 leading-relaxed mb-3">
+                        No password needed. We'll send an instant, secure sign-in link directly to your inbox.
+                      </p>
+                      <div>
+                        <label className="block text-xs font-medium text-slate-700 mb-1">Your Email</label>
+                        <input
+                          type="email"
+                          placeholder="supporter@example.com"
+                          value={loginEmail}
+                          onChange={(e) => setLoginEmail(e.target.value)}
+                          className="w-full px-3 py-2 text-xs bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                        />
+                      </div>
+                    </div>
+                    <Button
+                      type="button"
+                      onClick={handleSendMagicLink}
+                      disabled={loginLoading || !loginEmail}
+                      variant="outline"
+                      className="w-full border-emerald-600 text-emerald-700 hover:bg-emerald-100 font-bold text-xs py-2.5 rounded-xl cursor-pointer"
+                    >
+                      {magicLinkSent ? 'Link Sent! Check Inbox' : 'Send Secure Magic Link'}
+                    </Button>
+                  </div>
+
+                </div>
+
+                <div className="text-center pt-3 text-xs text-slate-500">
+                  <span>Want to create an account? </span>
+                  <Link to="/register" className="text-emerald-700 font-bold hover:underline">
+                    Create Donor Account
+                  </Link>
+                </div>
+              </div>
+            ) : (
+              /* Authenticated Profile Management Form */
+              <div className="space-y-6">
+                
+                {/* Profile Card */}
+                <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-xs space-y-6">
+                  <div>
+                    <h2 className="text-xl font-bold font-heading text-slate-900">Donor Profile & Receipt Information</h2>
+                    <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
+                      Ensure your legal name and contact details are accurate on official tax receipts
+                    </p>
+                  </div>
+
+                  <form onSubmit={handleSaveProfile} className="space-y-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">
+                          Full Legal Name (For Receipts)
+                        </label>
+                        <input
+                          type="text"
+                          value={displayName}
+                          onChange={(e) => setDisplayName(e.target.value)}
+                          placeholder="e.g. Dr. Jane Doe"
+                          className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">
+                          Authenticated Email
+                        </label>
+                        <input
+                          type="email"
+                          disabled
+                          value={user?.email || ''}
+                          className="w-full px-3.5 py-2 rounded-xl border border-slate-200 bg-slate-50 text-slate-500 text-xs font-mono cursor-not-allowed"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">
+                          Phone Number
+                        </label>
+                        <input
+                          type="tel"
+                          value={phone}
+                          onChange={(e) => setPhone(e.target.value)}
+                          placeholder="+256 700 000000"
+                          className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">
+                          Street / P.O. Box Address
+                        </label>
+                        <input
+                          type="text"
+                          value={address}
+                          onChange={(e) => setAddress(e.target.value)}
+                          placeholder="Street address"
+                          className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div>
+                        <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">City / District</label>
+                        <input
+                          type="text"
+                          value={city}
+                          onChange={(e) => setCity(e.target.value)}
+                          placeholder="City"
+                          className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">Postal Code</label>
+                        <input
+                          type="text"
+                          value={postalCode}
+                          onChange={(e) => setPostalCode(e.target.value)}
+                          placeholder="Postal Code"
+                          className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">Country</label>
+                        <input
+                          type="text"
+                          value={country}
+                          onChange={(e) => setCountry(e.target.value)}
+                          placeholder="Country"
+                          className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Communication Preferences */}
+                    <div className="pt-4 border-t border-slate-100 space-y-3">
+                      <span className="text-xs font-bold uppercase tracking-wider text-slate-600 block">
+                        Communication Preferences
+                      </span>
+                      <label className="flex items-center gap-2.5 text-xs text-slate-700 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={commImmediateReceipt}
+                          onChange={(e) => setCommImmediateReceipt(e.target.checked)}
+                          className="rounded text-emerald-600 focus:ring-emerald-500 h-4 w-4"
+                        />
+                        <span>Send immediate email receipt upon every donation</span>
+                      </label>
+                      <label className="flex items-center gap-2.5 text-xs text-slate-700 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={commQuarterlyDigest}
+                          onChange={(e) => setCommQuarterlyDigest(e.target.checked)}
+                          className="rounded text-emerald-600 focus:ring-emerald-500 h-4 w-4"
+                        />
+                        <span>Send quarterly RESTI community impact digest and field stories</span>
+                      </label>
+                      <label className="flex items-center gap-2.5 text-xs text-slate-700 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={commAnnualStatement}
+                          onChange={(e) => setCommAnnualStatement(e.target.checked)}
+                          className="rounded text-emerald-600 focus:ring-emerald-500 h-4 w-4"
+                        />
+                        <span>Send annual year-end cumulative tax statement in January</span>
+                      </label>
+                    </div>
+
+                    <div className="pt-4 flex items-center justify-between">
+                      <Button
+                        type="submit"
+                        disabled={savingProfile}
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs py-2 px-6 rounded-xl cursor-pointer"
+                      >
+                        {savingProfile ? 'Saving...' : 'Save Profile Details'}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={handleLogout}
+                        className="border-rose-200 text-rose-600 hover:bg-rose-50 text-xs cursor-pointer"
+                      >
+                        <LogOut size={13} className="mr-1.5" /> Sign Out
+                      </Button>
+                    </div>
+                  </form>
+                </div>
+
+                {/* Password / Security Settings Card */}
+                <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-xs space-y-4">
+                  <div className="flex items-center gap-2.5">
+                    <Lock size={18} className="text-emerald-700" />
+                    <h3 className="text-base font-bold font-heading text-slate-900">
+                      Security & Password Settings
+                    </h3>
+                  </div>
+                  <p className="text-xs text-slate-500">
+                    Update your account password securely.
+                  </p>
+
+                  <form onSubmit={handleUpdatePassword} className="space-y-3.5 max-w-md">
+                    <div>
+                      <label className="block text-xs font-medium text-slate-700 mb-1">New Password (min 8 characters)</label>
+                      <div className="relative">
+                        <input
+                          type={showPassword ? 'text' : 'password'}
+                          required
+                          value={newPassword}
+                          onChange={(e) => setNewPassword(e.target.value)}
+                          placeholder="••••••••"
+                          className="w-full px-3.5 py-2 text-xs border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                        >
+                          {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-medium text-slate-700 mb-1">Confirm New Password</label>
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        required
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        placeholder="••••••••"
+                        className="w-full px-3.5 py-2 text-xs border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      />
+                    </div>
+
+                    <Button
+                      type="submit"
+                      disabled={savingPassword || !newPassword}
+                      className="bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs py-2 px-5 rounded-xl cursor-pointer"
+                    >
+                      {savingPassword ? 'Updating...' : 'Update Password'}
+                    </Button>
+                  </form>
+                </div>
+
+              </div>
             )}
+
           </div>
         )}
 
       </div>
 
-      {/* ========================================================= */}
-      {/* OFFICIAL PRINTABLE DONATION RECEIPT MODAL */}
-      {/* ========================================================= */}
+      {/* ═════════════════════════════════════════════════════════════ */}
+      {/* OFFICIAL PRINTABLE DONATION RECEIPT MODAL                     */}
+      {/* ═════════════════════════════════════════════════════════════ */}
       {selectedDonation && (
-        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto animate-fade-in">
+        <div className="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
           <div className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full overflow-hidden border border-slate-200 my-8">
             
-            {/* Modal Top Bar (Actions) */}
+            {/* Modal Top Bar (Action Buttons) */}
             <div className="px-6 py-4 bg-slate-900 text-white flex items-center justify-between print:hidden">
               <div className="flex items-center gap-2">
                 <Shield size={16} className="text-emerald-400" />
-                <span className="text-xs sm:text-sm font-bold tracking-wide uppercase">Official Verification Document</span>
+                <span className="text-xs font-bold tracking-wide uppercase">Official Verification Receipt</span>
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2.5">
                 <Button
                   onClick={() => window.print()}
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-4 py-1.5 rounded-lg flex items-center gap-1.5"
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 cursor-pointer shadow-xs"
                 >
-                  <Printer size={14} /> Print / Save PDF
+                  <Printer size={13} /> Print / Save PDF
+                </Button>
+                <Button
+                  onClick={() => handleSendReceiptEmail(selectedDonation)}
+                  disabled={emailSending}
+                  variant="outline"
+                  className="bg-slate-800 hover:bg-slate-700 text-white border-slate-700 text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Mail size={13} /> {emailSending ? 'Sending...' : 'Email Me'}
                 </Button>
                 <button
                   onClick={() => setSelectedDonation(null)}
-                  className="text-slate-400 hover:text-white p-1 rounded-lg transition-colors"
+                  className="text-slate-400 hover:text-white p-1 rounded-lg transition-colors cursor-pointer"
+                  aria-label="Close receipt modal"
                 >
-                  <X size={20} />
+                  <X size={18} />
                 </button>
               </div>
             </div>
 
-            {/* Printable Receipt Paper Container */}
-            <div id="printable-receipt" className="p-8 sm:p-12 text-slate-800 bg-white print:p-0">
+            {/* Printable Receipt Canvas */}
+            <div id="printable-receipt" className="p-8 sm:p-10 text-slate-800 bg-white print:p-0">
               
               {/* Receipt Header */}
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b-2 border-emerald-600 pb-6 mb-6 gap-4">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b-2 border-emerald-600 pb-5 mb-5 gap-4">
                 <div>
                   <div className="flex items-center gap-2.5 mb-1">
-                    <div className="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-sm">
-                      R
+                    <img
+                      src="/logo.png"
+                      alt="RESTI CBO"
+                      className="h-10 w-auto object-contain"
+                      onError={(e: any) => {
+                        e.currentTarget.style.display = 'none';
+                      }}
+                    />
+                    <div>
+                      <h2 className="text-xl font-black font-heading tracking-tight text-slate-900 leading-none">
+                        RESTI CBO
+                      </h2>
+                      <p className="text-[11px] font-bold text-emerald-700 uppercase tracking-wider mt-0.5">
+                        Refugee Empowerment For Sustainable Transformation Initiative
+                      </p>
                     </div>
-                    <h2 className="text-xl sm:text-2xl font-black font-heading tracking-tight text-slate-900">RESTI</h2>
                   </div>
-                  <p className="text-xs font-bold text-emerald-700 uppercase tracking-wider">
-                    Refugee Empowerment For Sustainable Transformation Initiative
-                  </p>
-                  <p className="text-[11px] text-slate-500 mt-1">
+                  <p className="text-[10px] text-slate-500 mt-1">
                     Kiryandongo District, Uganda • Email: info@resticbo.org • Web: resticbo.org
                   </p>
                 </div>
 
                 <div className="text-left sm:text-right">
                   <span className="inline-block bg-slate-100 text-slate-800 text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-widest mb-1">
-                    Official Donation Receipt
+                    Official Tax Receipt
                   </span>
                   <p className="font-mono text-xs font-bold text-slate-900">
-                    REC-{selectedDonation.reference || selectedDonation.id.slice(-8).toUpperCase()}
+                    {selectedDonation.receiptNumber || `REC-${selectedDonation.reference || selectedDonation.id.slice(-8).toUpperCase()}`}
                   </p>
-                  <p className="text-[11px] text-slate-500 mt-0.5">
-                    Date: {new Date(selectedDonation.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+                  <p className="text-[10px] text-slate-500 mt-0.5">
+                    Issued: {new Date(selectedDonation.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
                   </p>
                 </div>
               </div>
 
-              {/* Receipt Summary Meta */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-100 mb-6 text-xs">
+              {/* Receipt Metadata Grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 bg-slate-50 p-3.5 rounded-2xl border border-slate-100 mb-5 text-xs">
                 <div>
-                  <span className="text-slate-400 font-semibold uppercase tracking-wider block mb-1">Donor Name</span>
-                  <span className="font-bold text-slate-900 block text-sm">
+                  <span className="text-slate-400 font-semibold uppercase text-[10px] block mb-0.5">Donor Name</span>
+                  <span className="font-bold text-slate-900 block truncate">
                     {selectedDonation.donorName || user?.user_metadata?.name || 'Valued Supporter'}
                   </span>
                 </div>
                 <div>
-                  <span className="text-slate-400 font-semibold uppercase tracking-wider block mb-1">Donor Email</span>
-                  <span className="font-medium text-slate-700 block font-mono text-[11px]">
-                    {selectedDonation.donorEmail || user?.email}
+                  <span className="text-slate-400 font-semibold uppercase text-[10px] block mb-0.5">Donor Email</span>
+                  <span className="font-medium text-slate-700 block font-mono text-[11px] truncate">
+                    {selectedDonation.donorEmail || user?.email || 'N/A'}
                   </span>
                 </div>
                 <div>
-                  <span className="text-slate-400 font-semibold uppercase tracking-wider block mb-1">Payment Channel</span>
+                  <span className="text-slate-400 font-semibold uppercase text-[10px] block mb-0.5">Payment Channel</span>
                   <span className="font-bold text-slate-900 block">
                     {getMethodBadge(selectedDonation.paymentMethod).label}
                   </span>
                 </div>
               </div>
 
-              {/* Contribution Line Item */}
-              <div className="border border-slate-200 rounded-2xl overflow-hidden mb-6">
-                <table className="w-full text-left text-xs sm:text-sm">
+              {/* Line Item Table */}
+              <div className="border border-slate-200 rounded-2xl overflow-hidden mb-5">
+                <table className="w-full text-left text-xs">
                   <thead className="bg-slate-100 text-slate-600 font-bold border-b border-slate-200">
                     <tr>
                       <th className="py-2.5 px-4">Description / Allocation</th>
@@ -1505,44 +2001,48 @@ export function DonorDashboard() {
                   <tbody className="divide-y divide-slate-100">
                     <tr>
                       <td className="py-3 px-4">
-                        <p className="font-bold text-slate-900">Charitable Contribution to RESTI Community Programs</p>
-                        <p className="text-xs text-slate-500 mt-0.5">Direct funding for refugee education, livelihoods & healthcare initiatives in Kiryandongo District</p>
+                        <p className="font-bold text-slate-900">
+                          {selectedDonation.campaign || 'Charitable Contribution to RESTI Community Programs'}
+                        </p>
+                        <p className="text-[11px] text-slate-500 mt-0.5">
+                          Direct support for refugee education, vocational livelihoods, and healthcare initiatives in Kiryandongo District.
+                        </p>
                       </td>
                       <td className="py-3 px-4 text-right font-bold text-slate-900 whitespace-nowrap">
-                        {selectedDonation.currency.toUpperCase() === 'USD' ? `$${selectedDonation.amount.toFixed(2)} USD` : `${selectedDonation.amount.toLocaleString()} ${selectedDonation.currency.toUpperCase()}`}
+                        {formatCurrency(selectedDonation.amount, selectedDonation.currency)}
                       </td>
                     </tr>
                   </tbody>
                   <tfoot className="bg-emerald-50/50 border-t-2 border-emerald-600 text-slate-900 font-bold">
                     <tr>
-                      <td className="py-3 px-4 text-emerald-950">Total Received & Acknowledged</td>
-                      <td className="py-3 px-4 text-right text-base text-emerald-800">
-                        {selectedDonation.currency.toUpperCase() === 'USD' ? `$${selectedDonation.amount.toFixed(2)} USD` : `${selectedDonation.amount.toLocaleString()} ${selectedDonation.currency.toUpperCase()}`}
+                      <td className="py-2.5 px-4 text-emerald-950 font-bold">Total Received & Acknowledged</td>
+                      <td className="py-2.5 px-4 text-right text-sm text-emerald-800 font-black">
+                        {formatCurrency(selectedDonation.amount, selectedDonation.currency)}
                       </td>
                     </tr>
                   </tfoot>
                 </table>
               </div>
 
-              {/* Legal & Acknowledgment Statement */}
-              <div className="bg-slate-50 p-4 rounded-xl text-[11px] text-slate-600 leading-relaxed border border-slate-100 mb-6">
-                <p className="font-bold text-slate-800 mb-1">Official Non-Profit Tax Certification:</p>
+              {/* Legal Non-Profit Tax Certification */}
+              <div className="bg-slate-50 p-3.5 rounded-xl text-[10px] text-slate-600 leading-relaxed border border-slate-100 mb-5">
+                <p className="font-bold text-slate-800 mb-0.5">Official Non-Profit Certification:</p>
                 <p>
-                  RESTI certifies that no goods, services, or commercial benefits were provided in whole or part in consideration for this financial contribution. This gift is recognized in accordance with Ugandan community-based non-profit standards and international charitable reporting guidelines.
+                  RESTI certifies that no goods, services, or commercial benefits were provided in consideration for this financial contribution. Recognized in accordance with Ugandan community-based non-profit standards and international charitable reporting guidelines.
                 </p>
               </div>
 
               {/* Signature & Seal */}
-              <div className="flex justify-between items-end pt-4 border-t border-slate-200">
-                <div className="text-[11px] text-slate-400">
+              <div className="flex justify-between items-end pt-3 border-t border-slate-200">
+                <div className="text-[10px] text-slate-400">
                   <p>Refugee Empowerment For Sustainable Transformation Initiative</p>
-                  <p>Registered Community-Based Organization • Kiryandongo, Uganda</p>
+                  <p>Registered Community-Based Organization • Kiryandongo District, Uganda</p>
                 </div>
                 <div className="text-right">
-                  <div className="inline-block border-b border-slate-400 pb-1 px-4 mb-1">
-                    <span className="font-serif italic text-sm font-bold text-slate-700">Kwaya Daniel Loborach</span>
+                  <div className="inline-block border-b border-slate-400 pb-0.5 px-3 mb-1">
+                    <span className="font-serif italic text-xs font-bold text-slate-700">Kwaya Daniel Loborach</span>
                   </div>
-                  <p className="text-[10px] uppercase font-bold tracking-wider text-slate-500">Authorized Signature & Seal</p>
+                  <p className="text-[9px] uppercase font-bold tracking-wider text-slate-500">Authorized Signature & Seal</p>
                 </div>
               </div>
 
@@ -1554,4 +2054,3 @@ export function DonorDashboard() {
     </div>
   );
 }
-

@@ -125,10 +125,11 @@ export const DEFAULT_DONOR_PORTAL_SETTINGS = {
   metric4Label: 'Field Focus',
   metric4Value: 'Kiryandongo Settlements',
 
+  tabOverviewLabel: 'Overview',
   tabHistoryLabel: 'Giving History & Receipts',
-  tabManageLabel: 'Manage Your Donation',
-  tabImpactLabel: 'Field Impact Bulletins',
-  tabProfileLabel: 'Profile & Tax Preferences',
+  tabManageLabel: 'Manage Donations',
+  tabImpactLabel: 'Impact Updates',
+  tabProfileLabel: 'My Profile',
 
   securityNote: 'Every contribution is strictly deployed to on-the-ground programs in Kiryandongo District, Uganda. We never sell or exchange donor details with outside third parties. For institutional auditing or grant matching letters, contact info@resticbo.org.',
   auditEmail: 'info@resticbo.org',

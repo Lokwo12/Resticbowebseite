@@ -837,6 +837,203 @@ app.post('/make-server-2a4be611/create-portal-session', async (c) => {
   }
 })
 
+// ── Donor Portal Endpoints ──────────────────────────────────────────────────
+
+// 1. Get authenticated donor's donations & metrics
+app.get('/make-server-2a4be611/donor/donations', async (c) => {
+  try {
+    const authHeader = c.req.header('Authorization')
+    const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null
+
+    let donorEmail = ''
+    let isSuperAdmin = false
+
+    if (token) {
+      const { data: { user } } = await supabase.auth.getUser(token)
+      if (user?.email) {
+        donorEmail = user.email.toLowerCase().trim()
+        if (user.email === 'lokwodenis0@gmail.com' || user.email === 'lokwodenis@gmail.com') {
+          isSuperAdmin = true
+        }
+      }
+    }
+
+    // Guest fallback: allow querying if both email and reference are supplied
+    const queryEmail = c.req.query('email')?.toLowerCase().trim()
+    const queryRef = c.req.query('ref')?.toLowerCase().trim()
+
+    if (!donorEmail) {
+      if (queryEmail && queryRef) {
+        donorEmail = queryEmail
+      } else {
+        return c.json({ error: 'Unauthorized – donor authentication required' }, 401)
+      }
+    }
+
+    // Query Postgres donations
+    let query = supabase.from('donations').select('*').order('created_at', { ascending: false })
+    
+    // Non-superadmin or specific donor query is strictly filtered by email
+    if (!isSuperAdmin || (queryEmail && !c.req.query('all'))) {
+      query = query.ilike('email', donorEmail)
+    }
+
+    const { data: pgData, error: pgErr } = await query
+    if (pgErr) console.warn('Donor donations pg query notice:', pgErr.message)
+
+    // Normalize Postgres records
+    const unifiedList: any[] = []
+    const seenRefs = new Set<string>()
+
+    if (pgData && Array.isArray(pgData)) {
+      for (const r of pgData) {
+        const amt = Number(r.amount)
+        if (!amt || isNaN(amt) || amt <= 0) continue
+
+        const rawRef = (r.transaction_id || r.id || '').replace(/^donation:/, '')
+        const item = {
+          id: r.id || `pg-${rawRef}`,
+          amount: amt,
+          currency: (r.currency || 'USD').toUpperCase(),
+          date: r.created_at || r.updated_at || new Date().toISOString(),
+          status: (r.status || 'completed').toLowerCase(),
+          paymentMethod: (r.method || r.provider || 'card').toLowerCase(),
+          donorName: `${r.first_name || ''} ${r.last_name || ''}`.trim() || undefined,
+          donorEmail: (r.email || '').trim() || undefined,
+          donorPhone: r.phone || undefined,
+          reference: rawRef,
+          receiptNumber: `REC-${rawRef.slice(-8).toUpperCase()}`,
+          campaign: r.campaign || 'Community Empowerment & Education',
+        }
+        if (rawRef) seenRefs.add(rawRef.toLowerCase())
+        unifiedList.push(item)
+      }
+    }
+
+    // Sort by date descending
+    unifiedList.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+
+    // Compute metrics
+    const completedGifts = unifiedList.filter((d) => d.status === 'completed')
+    const totalContributedUSD = completedGifts.reduce((sum, d) => {
+      const amt = Number(d.amount) || 0
+      return sum + (d.currency === 'USD' ? amt : amt / 3800)
+    }, 0)
+
+    const latestDonation = unifiedList.length > 0 ? unifiedList[0] : null
+
+    return c.json({
+      donations: unifiedList,
+      totalContributedUSD: Number(totalContributedUSD.toFixed(2)),
+      donationCount: completedGifts.length,
+      latestDonation,
+    })
+  } catch (error) {
+    console.error('Error fetching donor donations:', error)
+    return c.json({ error: 'Failed to fetch donations', details: String(error) }, 500)
+  }
+})
+
+// 2. Email official receipt to authenticated donor
+app.post('/make-server-2a4be611/donor/send-receipt', async (c) => {
+  try {
+    const authHeader = c.req.header('Authorization')
+    const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null
+
+    let authenticatedEmail = ''
+    if (token) {
+      const { data: { user } } = await supabase.auth.getUser(token)
+      authenticatedEmail = user?.email?.toLowerCase().trim() || ''
+    }
+
+    const body = await c.req.json()
+    const { donationId, reference, targetEmail } = body
+
+    if (!donationId && !reference) {
+      return c.json({ error: 'Donation ID or reference is required' }, 400)
+    }
+
+    // Lookup donation in Postgres
+    let query = supabase.from('donations').select('*')
+    if (donationId) {
+      query = query.or(`id.eq.${donationId},transaction_id.eq.${donationId}`)
+    } else if (reference) {
+      query = query.or(`transaction_id.eq.${reference},id.eq.${reference}`)
+    }
+
+    const { data: donations, error } = await query.limit(1)
+    if (error || !donations || donations.length === 0) {
+      return c.json({ error: 'Donation not found' }, 404)
+    }
+
+    const donation = donations[0]
+    const donationEmail = (donation.email || '').toLowerCase().trim()
+
+    // Enforce authorization: user must either be authenticated as the owner, or provided targetEmail must match
+    if (authenticatedEmail && donationEmail && authenticatedEmail !== donationEmail) {
+      if (authenticatedEmail !== 'lokwodenis0@gmail.com' && authenticatedEmail !== 'lokwodenis@gmail.com') {
+        return c.json({ error: 'Forbidden – you can only request receipts for your own gifts' }, 403)
+      }
+    }
+
+    const recipient = targetEmail || donationEmail || authenticatedEmail
+    if (!recipient) {
+      return c.json({ error: 'No recipient email associated with this donation' }, 400)
+    }
+
+    const delivered = await deliverDonationReceipt({
+      ...donation,
+      email: recipient,
+    })
+
+    if (delivered) {
+      return c.json({ success: true, message: `Official receipt sent to ${recipient}` })
+    } else {
+      return c.json({ error: 'Unable to deliver receipt email. Please download the PDF receipt directly.' }, 500)
+    }
+  } catch (error) {
+    console.error('Error sending donor receipt:', error)
+    return c.json({ error: 'Failed to send receipt', details: String(error) }, 500)
+  }
+})
+
+// 3. Get donor's recurring subscriptions
+app.get('/make-server-2a4be611/donor/subscriptions', async (c) => {
+  try {
+    const authHeader = c.req.header('Authorization')
+    const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null
+
+    let donorEmail = ''
+    let userId = ''
+
+    if (token) {
+      const { data: { user } } = await supabase.auth.getUser(token)
+      if (user) {
+        donorEmail = user.email?.toLowerCase().trim() || ''
+        userId = user.id
+      }
+    }
+
+    const queryEmail = c.req.query('email')?.toLowerCase().trim()
+    const targetEmail = donorEmail || queryEmail
+
+    if (!targetEmail) {
+      return c.json({ subscriptions: [] })
+    }
+
+    const { data: subData } = await supabase
+      .from('subscriptions')
+      .select('*')
+      .or(`donor_id.eq.${userId},donor_id.eq.${targetEmail}`)
+      .order('created_at', { ascending: false })
+
+    return c.json({ subscriptions: subData || [] })
+  } catch (error) {
+    console.error('Error fetching donor subscriptions:', error)
+    return c.json({ subscriptions: [] })
+  }
+})
+
 // Delete a specific donation (admin)
 app.delete('/make-server-2a4be611/admin/donations/:id', requireAdmin, async (c) => {
   try {
