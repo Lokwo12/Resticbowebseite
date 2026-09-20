@@ -64,7 +64,30 @@ export function AdminResetPassword() {
         return;
       }
 
-      // 2. Check if a valid session already exists or was set from the recovery token
+      // 2. Check if a code parameter exists (PKCE flow)
+      const code = searchParams.get('code');
+      if (code) {
+        try {
+          const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+          if (!error && data.session) {
+            if (isMounted) {
+              setLinkError(null);
+              setCheckingSession(false);
+            }
+            return;
+          } else if (error) {
+            if (isMounted) {
+              setLinkError(error.message || 'The password reset link is invalid or has expired.');
+              setCheckingSession(false);
+            }
+            return;
+          }
+        } catch (err: any) {
+          console.error('Error exchanging code for session:', err);
+        }
+      }
+
+      // 3. Check if a valid session already exists or was set from the recovery token
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (session) {
