@@ -3658,7 +3658,20 @@ export function EnhancedAdminDashboard() {
                             />
                             <div className="flex-1 min-w-0">
                               <h4 className="text-sm font-semibold text-slate-800 truncate mb-1.5">{progVal.title}</h4>
-                              <Badge className="bg-blue-50 text-blue-700 border-blue-200">{progVal.category}</Badge>
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <Badge className="bg-blue-50 text-blue-700 border-blue-200">{progVal.category}</Badge>
+                                <Badge className={
+                                  (progVal.status === 'Paused' || progVal.active === false)
+                                    ? 'bg-amber-50 text-amber-700 border-amber-200 text-[10px]'
+                                    : progVal.status === 'Upcoming'
+                                    ? 'bg-sky-50 text-sky-700 border-sky-200 text-[10px]'
+                                    : progVal.status === 'Completed'
+                                    ? 'bg-slate-100 text-slate-700 border-slate-200 text-[10px]'
+                                    : 'bg-emerald-50 text-emerald-700 border-emerald-200 text-[10px]'
+                                }>
+                                  {progVal.status || (progVal.active === false ? 'Paused' : 'Active')}
+                                </Badge>
+                              </div>
                             </div>
                           </div>
                           <p className="text-sm text-slate-600 line-clamp-2 flex-1 pl-7">{progVal.description}</p>
