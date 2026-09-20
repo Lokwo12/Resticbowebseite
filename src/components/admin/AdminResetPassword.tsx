@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { Button } from '../ui/button';
 import { SEO } from '../SEO';
+import { projectId, publicAnonKey } from '../../utils/supabase/info';
 
 export function AdminResetPassword() {
   const [password, setPassword] = useState('');
@@ -28,7 +29,27 @@ export function AdminResetPassword() {
   const [linkError, setLinkError] = useState<string | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
   const [countdown, setCountdown] = useState(4);
+  const [siteLogo, setSiteLogo] = useState('/logo.png');
+  const [siteName, setSiteName] = useState('RESTI CBO');
+  const [tagline, setTagline] = useState('Refugee Empowerment for Sustainable Transformation Initiative');
   const navigate = useNavigate();
+
+  useEffect(() => {
+    // Load dynamic site settings (logo, name, tagline)
+    fetch(`https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/site-settings`, {
+      headers: { Authorization: `Bearer ${publicAnonKey}` }
+    })
+      .then(res => res.ok ? res.json() : null)
+      .then(data => {
+        if (data?.settings?.general) {
+          const l = data.settings.general.logoUrl;
+          if (l && !l.includes('figma:asset')) setSiteLogo(l);
+          if (data.settings.general.siteName) setSiteName(data.settings.general.siteName.trim());
+          if (data.settings.general.tagline) setTagline(data.settings.general.tagline);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -233,17 +254,17 @@ export function AdminResetPassword() {
           <div className="flex flex-col items-center text-center mb-6">
             <div className="p-3.5 sm:p-4 bg-white rounded-2xl border border-slate-100 shadow-sm flex items-center justify-center mb-3.5 hover:shadow-md transition-all duration-300">
               <img
-                src="/logo.png"
-                alt="RESTI CBO Logo"
+                src={siteLogo || '/logo.png'}
+                alt={`${siteName} Logo`}
                 className="h-20 sm:h-24 w-auto max-w-[200px] object-contain block"
               />
             </div>
 
             <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
-              RESTI CBO
+              {siteName}
             </h1>
             <p className="text-xs sm:text-sm font-medium text-slate-600 max-w-xs mt-1 leading-snug">
-              Refugee Empowerment for Sustainable Transformation Initiative
+              {tagline}
             </p>
 
             <div className="mt-3 inline-flex items-center gap-1.5 px-3.5 py-1 bg-emerald-50 border border-emerald-200/70 rounded-full text-emerald-800 text-xs font-semibold uppercase tracking-wider">
