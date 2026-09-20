@@ -132,7 +132,7 @@ async function sendEmail(to: string, subject: string, html: string, replyTo?: st
 
   try {
     const payload: Record<string, any> = {
-      from: Deno.env.get('ADMIN_EMAIL') || 'RESTI-CBO <onboarding@resend.dev>',
+      from: Deno.env.get('ADMIN_EMAIL') || 'RESTI CBO <info@resticbo.org>',
       to: [to],
       subject,
       html,
@@ -1792,6 +1792,142 @@ app.post('/make-server-2a4be611/admin/signup', withRateLimit('admin-signup', 5, 
   } catch (error) {
     console.error('Error creating admin account:', error)
     return c.json({ error: 'Failed to create admin account', details: String(error) }, 500)
+  }
+})
+
+// Request password reset for admin users with branded email
+app.post('/make-server-2a4be611/admin/request-password-reset', withRateLimit('admin-reset-pw', 5, 15 * 60_000), async (c) => {
+  try {
+    const body = await c.req.json()
+    const email = (body.email || '').trim().toLowerCase()
+    const redirectTo = body.redirectTo || 'https://resticbo.org/admin/reset-password'
+
+    const emailV = validateEmail(email)
+    if (!emailV.ok) {
+      return c.json({ error: 'Please enter a valid email address.' }, 400)
+    }
+
+    // Call Supabase Auth admin API to generate the official recovery link
+    const { data, error } = await supabase.auth.admin.generateLink({
+      type: 'recovery',
+      email: email,
+      options: {
+        redirectTo: redirectTo
+      }
+    })
+
+    if (error) {
+      console.log('Password reset link generation error:', error.message)
+      // Return generic success to prevent email enumeration
+      return c.json({ 
+        success: true, 
+        message: 'If an administrator account exists with this email address, password reset instructions have been sent.' 
+      })
+    }
+
+    const resetLink = data?.properties?.action_link
+    if (resetLink) {
+      const emailHtml = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reset your password - RESTI CBO</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #1e293b;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color: #f8fafc; padding: 40px 16px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="100%" style="max-width: 560px; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -2px rgba(0, 0, 0, 0.06); border: 1px solid #e2e8f0;">
+          <tr>
+            <td style="height: 6px; background: linear-gradient(90deg, #059669 0%, #0d9488 100%);"></td>
+          </tr>
+          <tr>
+            <td style="padding: 32px 32px 16px 32px; text-align: center;">
+              <table role="presentation" align="center" cellspacing="0" cellpadding="0" border="0">
+                <tr>
+                  <td align="center" style="background-color: #ffffff; padding: 8px 16px; border-radius: 16px; border: 1px solid #f1f5f9;">
+                    <img src="https://resticbo.org/logo.png" alt="RESTI CBO Logo" width="110" style="display: block; width: 110px; height: auto; max-height: 110px; border: 0; outline: none; text-decoration: none;" />
+                  </td>
+                </tr>
+              </table>
+              <h1 style="margin: 16px 0 2px 0; font-size: 22px; font-weight: 800; color: #0f172a; letter-spacing: -0.02em;">RESTI CBO</h1>
+              <p style="margin: 0; font-size: 12px; font-weight: 600; color: #059669; text-transform: uppercase; letter-spacing: 0.08em;">Administrator Portal</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 12px 36px 32px 36px;">
+              <h2 style="margin: 0 0 16px 0; font-size: 18px; font-weight: 700; color: #1e293b;">Reset your password</h2>
+              <p style="margin: 0 0 14px 0; font-size: 14px; line-height: 1.6; color: #475569;">
+                Hello,
+              </p>
+              <p style="margin: 0 0 20px 0; font-size: 14px; line-height: 1.6; color: #475569;">
+                A password reset request was received for your <strong>RESTI CBO Administrator</strong> account. Click the button below to establish a new password for your account:
+              </p>
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin: 24px 0;">
+                <tr>
+                  <td align="center">
+                    <a href="${resetLink}" style="display: inline-block; background: linear-gradient(135deg, #059669 0%, #0d9488 100%); color: #ffffff; text-decoration: none; font-size: 15px; font-weight: 600; padding: 13px 32px; border-radius: 10px; box-shadow: 0 2px 4px rgba(5, 150, 105, 0.25);">
+                      Reset Password
+                    </a>
+                  </td>
+                </tr>
+              </table>
+              <div style="background-color: #f8fafc; border-left: 4px solid #059669; padding: 12px 16px; border-radius: 0 8px 8px 0; margin: 20px 0;">
+                <p style="margin: 0; font-size: 13px; line-height: 1.5; color: #64748b;">
+                  This recovery link is active for 24 hours and can only be used once.
+                </p>
+              </div>
+              <p style="margin: 18px 0 0 0; font-size: 13px; line-height: 1.6; color: #64748b;">
+                If you did not request a password reset, you can safely ignore this email. Your current password remains completely unchanged and secure.
+              </p>
+              <p style="margin: 20px 0 0 0; font-size: 14px; line-height: 1.6; color: #475569;">
+                Best regards,<br />
+                <strong>RESTI CBO Administration Team</strong>
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <td style="background-color: #f8fafc; padding: 20px 32px; text-align: center; border-top: 1px solid #e2e8f0;">
+              <p style="margin: 0 0 4px 0; font-size: 12px; font-weight: 600; color: #334155;">
+                Refugee Empowerment for Sustainable Transformation Initiative (RESTI CBO)
+              </p>
+              <p style="margin: 0 0 4px 0; font-size: 11px; color: #64748b;">
+                Kiryandongo District, Uganda • Certified & Regulated Community-Based Organization
+              </p>
+              <p style="margin: 0; font-size: 11px; color: #94a3b8;">
+                Support: <a href="mailto:info@resticbo.org" style="color: #059669; text-decoration: none;">info@resticbo.org</a> • <a href="https://resticbo.org" style="color: #059669; text-decoration: none;">resticbo.org</a>
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+      `.trim()
+
+      const emailResult = await sendEmail(
+        email,
+        'Reset your password - RESTI CBO',
+        emailHtml,
+        'info@resticbo.org'
+      )
+      console.log('Password reset email sending result:', emailResult)
+    }
+
+    return c.json({ 
+      success: true, 
+      message: 'If an administrator account exists with this email address, password reset instructions have been sent.' 
+    })
+  } catch (err) {
+    console.error('Exception in request-password-reset:', err)
+    return c.json({ 
+      success: true, 
+      message: 'If an administrator account exists with this email address, password reset instructions have been sent.' 
+    })
   }
 })
 

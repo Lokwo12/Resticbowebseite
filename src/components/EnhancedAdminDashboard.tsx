@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useConfirm } from '../hooks/useConfirm';
 import { createClient } from '@supabase/supabase-js';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
+import { getAuthRedirectUrl } from '../utils/url';
 import { toast } from 'sonner';
 import { DonationsManager } from './admin/DonationsManager';
 const logo = '/logo.png';
@@ -758,13 +759,51 @@ export function EnhancedAdminDashboard() {
     setLoading(true);
     setAuthError(null);
     setResetSuccess(false);
+
+    const targetEmail = resetEmail.trim().toLowerCase();
+    if (!targetEmail) {
+      setAuthError('Please enter your administrator email address.');
+      setLoading(false);
+      return;
+    }
+
+    const redirectUrl = getAuthRedirectUrl('/admin/reset-password');
+
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
-        redirectTo: `${window.location.origin}/admin`,
-      });
-      if (error) throw error;
+      // Primary: send branded RESTI CBO recovery email via backend edge function
+      let sentViaBackend = false;
+      try {
+        const response = await fetch(
+          `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/request-password-reset`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${publicAnonKey}`,
+            },
+            body: JSON.stringify({
+              email: targetEmail,
+              redirectTo: redirectUrl,
+            }),
+          }
+        );
+        if (response.ok) {
+          sentViaBackend = true;
+        }
+      } catch (backendErr) {
+        console.warn('Backend custom reset request failed, falling back to direct Supabase Auth:', backendErr);
+      }
+
+      // Fallback: direct Supabase Auth client reset if backend route not reachable
+      if (!sentViaBackend) {
+        const { error } = await supabase.auth.resetPasswordForEmail(targetEmail, {
+          redirectTo: redirectUrl,
+        });
+        if (error) throw error;
+      }
+
       setResetSuccess(true);
-      toast.success('Reset link sent to your email!');
+      toast.success('Password reset instructions have been sent!');
     } catch (err: any) {
       console.error('Reset error:', err);
       const msg = err.message || 'Failed to send reset link';
@@ -2597,7 +2636,9 @@ export function EnhancedAdminDashboard() {
               {resetSuccess && (
                 <div className="mb-4 p-3 bg-emerald-50 border border-emerald-200 rounded-xl flex items-start gap-2.5 text-xs text-emerald-800 animate-in fade-in duration-200">
                   <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                  <span className="leading-relaxed">Password reset email sent! Please check your inbox for instructions.</span>
+                  <span className="leading-relaxed">
+                    If an administrator account exists for <strong>{resetEmail}</strong>, instructions to reset your password have been sent. Please check your inbox and spam folder.
+                  </span>
                 </div>
               )}
 
@@ -2729,7 +2770,11 @@ export function EnhancedAdminDashboard() {
                       </label>
                       <button
                         type="button"
-                        onClick={() => { setShowForgotPassword(true); setAuthError(null); }}
+                        onClick={() => {
+                          setShowForgotPassword(true);
+                          setAuthError(null);
+                          if (email) setResetEmail(email);
+                        }}
                         className="text-emerald-600 hover:text-emerald-700 font-semibold transition-colors"
                       >
                         Forgot Password?

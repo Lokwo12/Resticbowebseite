@@ -30,6 +30,9 @@ import { PrivacyBanner } from './components/PrivacyBanner';
 const EnhancedAdminDashboard = React.lazy(() => 
   import('./components/EnhancedAdminDashboard').then(m => ({ default: m.EnhancedAdminDashboard }))
 );
+const AdminResetPassword = React.lazy(() => 
+  import('./components/admin/AdminResetPassword').then(m => ({ default: m.AdminResetPassword }))
+);
 import { LegalPage } from './components/LegalPage';
 import { NewsArchive } from './components/NewsArchive';
 import { StoriesArchive } from './components/StoriesArchive';
@@ -64,6 +67,7 @@ function PageTitleManager() {
   const titleMap: Record<string, string> = {
       '/': 'Home | RESTI CBO',
       '/admin': 'Admin Dashboard | RESTI CBO',
+      '/admin/reset-password': 'Reset Administrator Password | RESTI CBO',
       '/super-secret-admin-route': 'Admin Dashboard | RESTI CBO',
       '/privacy': 'Privacy Policy | RESTI CBO',
       '/cookies': 'Cookies Policy | RESTI CBO',
@@ -226,6 +230,18 @@ export default function App() {
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/admin" element={<AdminPage />} />
+        <Route path="/admin/reset-password" element={
+          <AdminErrorBoundary>
+            <React.Suspense fallback={
+              <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center text-white">
+                <div className="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mb-4" />
+                <p className="text-sm font-semibold tracking-wider uppercase text-slate-300">Loading Password Recovery...</p>
+              </div>
+            }>
+              <AdminResetPassword />
+            </React.Suspense>
+          </AdminErrorBoundary>
+        } />
         <Route path="/super-secret-admin-route" element={<AdminPage />} />
         <Route path="/privacy" element={<MainLayout><LegalPage type="privacy" /></MainLayout>} />
         <Route path="/cookies" element={<MainLayout><LegalPage type="cookies" /></MainLayout>} />
