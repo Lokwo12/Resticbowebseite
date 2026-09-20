@@ -276,6 +276,8 @@ export default function App() {
         <Route path="/reset-password" element={<MainLayout><ResetPassword /></MainLayout>} />
         <Route path="/contact" element={<ContactPage />} />
         <Route path="/financials" element={<MainLayout><FinancialReports /></MainLayout>} />
+        <Route path="/transparency" element={<Navigate to="/financials" replace />} />
+        <Route path="/financial-transparency" element={<Navigate to="/financials" replace />} />
         <Route path="/pages/:slug" element={<MainLayout><CustomPage /></MainLayout>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

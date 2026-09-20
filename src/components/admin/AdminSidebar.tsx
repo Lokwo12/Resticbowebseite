@@ -5,7 +5,7 @@ import {
   Image as ImageIcon, Handshake, Target, Heart, Mail, 
   Send, Users, Settings, Globe, BookOpen, HelpCircle, 
   Shield, Search, X, ChevronRight, Pin, PinOff, 
-  PanelLeftClose, PanelLeftOpen, ExternalLink
+  PanelLeftClose, PanelLeftOpen, ExternalLink, PieChart
 } from 'lucide-react';
 import { Avatar, AvatarFallback } from '../ui/avatar';
 
@@ -44,6 +44,7 @@ export const NAVIGATION_GROUPS: NavGroupConfig[] = [
       { id: 'impact', label: 'Impact Stats', icon: TrendingUp, color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496', description: 'Key performance indicators' },
       { id: 'stories', label: 'Stories & Voices', icon: MessageSquare, color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496', description: 'Beneficiary testimonials' },
       { id: 'reports', label: 'Reports & Audits', icon: Download, color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496', description: 'Financial & annual statements' },
+      { id: 'financials', label: 'Financial Transparency', icon: PieChart, color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496', description: 'Fund allocations, annual figures & audits' },
       { id: 'map', label: 'Map Locations', icon: MapPin, color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496', description: 'Field hubs & activity sites' },
     ],
   },

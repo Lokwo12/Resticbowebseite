@@ -76,6 +76,7 @@ import 'react-quill/dist/quill.snow.css';
 import { SiteSettingsTab } from './SiteSettingsTab';
 import { ImpactDashboardManager } from './admin/ImpactDashboardManager';
 import { ImpactReportsManager } from './admin/ImpactReportsManager';
+import { FinancialTransparencyManager } from './admin/FinancialTransparencyManager';
 import { 
   TeamFormDialog, 
   StoryFormDialog, 
@@ -4910,6 +4911,16 @@ export function EnhancedAdminDashboard() {
             {activeTab === 'reports' && (
               <ImpactReportsManager
                 initialData={siteSettings?.impactReports}
+                onUpdate={loadData}
+                accessToken={accessToken}
+                userRole={userRole}
+              />
+            )}
+
+            {/* Financial Transparency Management */}
+            {activeTab === 'financials' && (
+              <FinancialTransparencyManager
+                initialData={siteSettings?.financialTransparency || siteSettings?.financials}
                 onUpdate={loadData}
                 accessToken={accessToken}
                 userRole={userRole}

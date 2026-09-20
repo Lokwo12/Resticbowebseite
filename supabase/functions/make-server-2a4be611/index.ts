@@ -1856,14 +1856,14 @@ app.post('/make-server-2a4be611/upload-image', requireAdmin, async (c) => {
     }
 
     // Validate file type
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/svg+xml', 'application/pdf']
     if (!allowedTypes.includes(file.type)) {
-      return c.json({ error: 'Invalid file type. Only JPEG, PNG, WebP, and GIF allowed' }, 400)
+      return c.json({ error: 'Invalid file type. Only JPEG, PNG, WebP, GIF, SVG, and PDF allowed' }, 400)
     }
 
-    // Validate file size (5MB)
-    if (file.size > 5242880) {
-      return c.json({ error: 'File too large. Maximum size is 5MB' }, 400)
+    // Validate file size (15MB)
+    if (file.size > 15728640) {
+      return c.json({ error: 'File too large. Maximum size is 15MB' }, 400)
     }
 
     const bucketName = 'make-2a4be611-uploads'
@@ -1897,6 +1897,62 @@ app.post('/make-server-2a4be611/upload-image', requireAdmin, async (c) => {
   } catch (error) {
     console.error('Error uploading image:', error)
     return c.json({ error: 'Failed to upload image', details: String(error) }, 500)
+  }
+})
+
+// Document upload endpoint for reports and audited statements (admin only)
+app.post('/make-server-2a4be611/upload-document', requireAdmin, async (c) => {
+  try {
+    const formData = await c.req.formData()
+    const file = formData.get('file') as File
+    
+    if (!file) {
+      return c.json({ error: 'No file provided' }, 400)
+    }
+
+    // Validate file size (25MB)
+    if (file.size > 26214400) {
+      return c.json({ error: 'File too large. Maximum size is 25MB' }, 400)
+    }
+
+    const bucketName = 'make-2a4be611-uploads'
+    const cleanName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_')
+    const fileName = `documents/${crypto.randomUUID()}-${cleanName}`
+    
+    const arrayBuffer = await file.arrayBuffer()
+    const uint8Array = new Uint8Array(arrayBuffer)
+    
+    const { data, error } = await supabase.storage
+      .from(bucketName)
+      .upload(fileName, uint8Array, {
+        contentType: file.type || 'application/pdf',
+        upsert: false
+      })
+
+    if (error) {
+      console.error('Document upload error:', error)
+      return c.json({ error: 'Failed to upload document', details: error.message }, 500)
+    }
+
+    const { data: urlData } = supabase.storage
+      .from(bucketName)
+      .getPublicUrl(fileName)
+
+    const sizeInMB = (file.size / (1024 * 1024)).toFixed(1)
+    const formattedSize = file.size < 1048576 
+      ? `${(file.size / 1024).toFixed(0)} KB` 
+      : `${sizeInMB} MB`
+
+    console.log(`Document uploaded: ${fileName} (${formattedSize})`)
+    return c.json({ 
+      success: true, 
+      url: urlData.publicUrl,
+      fileName: fileName,
+      fileSize: formattedSize
+    })
+  } catch (error) {
+    console.error('Error uploading document:', error)
+    return c.json({ error: 'Failed to upload document', details: String(error) }, 500)
   }
 })
 
@@ -4236,6 +4292,140 @@ app.post('/make-server-2a4be611/site-settings/initialize', async (c) => {
   } catch (error) {
     console.error('Error initializing site settings:', error)
     return c.json({ error: 'Failed to initialize site settings', details: String(error) }, 500)
+  }
+})
+
+// ============= FINANCIAL TRANSPARENCY ROUTES =============
+
+// Get Financial Transparency data (public sees published only, admin sees all)
+app.get('/make-server-2a4be611/financial-transparency', async (c) => {
+  try {
+    const authHeader = c.req.header('Authorization')
+    let isAdmin = false
+
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.split(' ')[1]
+      try {
+        const { data: { user } } = await supabase.auth.getUser(token)
+        if (user) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', user.id)
+            .single()
+          if (profile && (profile.role === 'admin' || profile.role === 'superadmin')) {
+            isAdmin = true
+          }
+        }
+      } catch {
+        // public or invalid token
+      }
+    }
+
+    const dedicated = await kv.get('financial_transparency')
+    const siteSettings = await kv.get('site_settings') || {}
+    const rawData = dedicated || siteSettings.financialTransparency || siteSettings.financials || {}
+
+    const defaultData = {
+      badge: 'Financial Accountability & Stewardship',
+      title: 'Financial Transparency',
+      subtitle: 'We are committed to transparency and accountability. Learn how RESTI uses contributions to support communities, deliver programs, and strengthen sustainable development in Kiryandongo District.',
+      allocationsTitle: 'How Contributions Are Used',
+      allocationsSubtitle: 'A transparent breakdown of how resources are deployed across programmatic, community, and administrative activities.',
+      allocationsReportingPeriod: '',
+      allocationsCurrency: 'USD',
+      allocationsPublished: false,
+      allocationsLastUpdated: new Date().toISOString(),
+      allocations: [],
+      overviewTitle: 'Funding & Financial Overview',
+      overviewSubtitle: 'Annual financial statements and funding summaries by reporting period.',
+      overviewPublished: false,
+      financialPeriods: [],
+      documentsTitle: 'Annual Reports & Audited Financial Statements',
+      documentsSubtitle: 'Access official annual reports, audited financial statements, and reporting disclosures.',
+      documentsPublished: false,
+      documents: [],
+      transparencyTitle: 'Committed to Transparency',
+      transparencyStatement: 'RESTI is committed to responsible stewardship of the resources entrusted to us. We provide financial and program information to help donors, partners, community members, and other stakeholders understand how resources are managed and how they support our work.',
+      transparencyButtonText: 'Request More Information',
+      transparencyButtonLink: '/contact'
+    }
+
+    const merged = { ...defaultData, ...rawData }
+
+    // If public request, filter to published content only
+    if (!isAdmin) {
+      return c.json({
+        data: {
+          ...merged,
+          allocations: merged.allocationsPublished ? (merged.allocations || []) : [],
+          financialPeriods: merged.overviewPublished 
+            ? (merged.financialPeriods || []).filter((p: any) => p.isPublished)
+            : [],
+          documents: merged.documentsPublished 
+            ? (merged.documents || []).filter((d: any) => d.isPublished)
+            : []
+        },
+        isAdmin: false
+      })
+    }
+
+    return c.json({ data: merged, isAdmin: true })
+  } catch (error) {
+    console.error('Error fetching financial transparency data:', error)
+    return c.json({ error: 'Failed to fetch financial transparency data', details: String(error) }, 500)
+  }
+})
+
+// Update Financial Transparency data (admin only)
+app.put('/make-server-2a4be611/financial-transparency', requireAdmin, async (c) => {
+  try {
+    const body = await c.req.json()
+    const { data } = body
+
+    if (!data) {
+      return c.json({ error: 'Data object is required' }, 400)
+    }
+
+    // Validation: check allocation percentages
+    if (data.allocations && Array.isArray(data.allocations) && data.allocations.length > 0) {
+      let sum = 0
+      for (const cat of data.allocations) {
+        const p = Number(cat.percentage)
+        if (p < 0) {
+          return c.json({ error: `Category "${cat.name}" cannot have a negative percentage.` }, 400)
+        }
+        sum += p || 0
+      }
+      if (data.allocationsPublished && Math.round(sum) !== 100) {
+        return c.json({ error: `Allocation percentages must sum to 100% when published. Current sum is ${sum}%.` }, 400)
+      }
+    }
+
+    const updatedData = {
+      ...data,
+      lastUpdated: new Date().toISOString()
+    }
+
+    await kv.set('financial_transparency', updatedData)
+
+    // Also sync to site_settings.financials
+    const siteSettings = await kv.get('site_settings') || {}
+    await kv.set('site_settings', {
+      ...siteSettings,
+      financialTransparency: updatedData,
+      financials: {
+        ...(siteSettings.financials || {}),
+        ...updatedData
+      },
+      updatedAt: new Date().toISOString()
+    })
+
+    console.log('Financial transparency settings updated and synced')
+    return c.json({ success: true, message: 'Financial transparency data saved successfully' })
+  } catch (error) {
+    console.error('Error updating financial transparency data:', error)
+    return c.json({ error: 'Failed to update financial transparency data', details: String(error) }, 500)
   }
 })
 
