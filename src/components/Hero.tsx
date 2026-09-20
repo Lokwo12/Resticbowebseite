@@ -1,8 +1,8 @@
-import { ArrowRight, ChevronDown } from 'lucide-react';
+import { ArrowRight, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { useDonationModal } from './DonationModalContext';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence, Variants } from 'framer-motion';
 
 // Animated counter hook
 function useCountUp(target: number, duration = 1800, start = false) {
@@ -117,8 +117,40 @@ interface HeroSettings {
 }
 
 const FALLBACK_BACKGROUND_IMAGES: string[] = [
-  'https://images.unsplash.com/photo-1606471015285-85fa1288aa4e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxhZnJpY2FuJTIwY29tbXVuaXR5JTIwZW1wb3dlcm1lbnR8ZW58MXx8fHwxNzYyNDU3NTkyfDA&ixlib=rb-4.1.0&q=80&w=1080'
+  'https://images.unsplash.com/photo-1606471015285-85fa1288aa4e?auto=format&fit=crop&w=1920&q=85',
+  'https://images.unsplash.com/photo-1529070538774-1843cb3265df?auto=format&fit=crop&w=1920&q=85',
+  'https://images.unsplash.com/photo-1576091160550-2173dba999ef?auto=format&fit=crop&w=1920&q=85',
+  'https://images.unsplash.com/photo-1573497620053-ea5300f94f21?auto=format&fit=crop&w=1920&q=85',
+  'https://images.unsplash.com/photo-1641569707854-c80945fb4719?auto=format&fit=crop&w=1920&q=85',
 ];
+
+const slideVariants: Variants = {
+  enter: (direction: number) => ({
+    x: direction > 0 ? '100%' : '-100%',
+    opacity: 0.3,
+    scale: 1.05,
+  }),
+  center: {
+    x: '0%',
+    opacity: 1,
+    scale: 1,
+    transition: {
+      x: { type: 'tween' as const, duration: 1.8, ease: [0.25, 1, 0.5, 1] },
+      opacity: { duration: 1.4, ease: 'easeInOut' },
+      scale: { duration: 1.8, ease: [0.25, 1, 0.5, 1] },
+    },
+  },
+  exit: (direction: number) => ({
+    x: direction > 0 ? '-100%' : '100%',
+    opacity: 0,
+    scale: 0.98,
+    transition: {
+      x: { type: 'tween' as const, duration: 1.8, ease: [0.25, 1, 0.5, 1] },
+      opacity: { duration: 1.4, ease: 'easeInOut' },
+      scale: { duration: 1.8, ease: [0.25, 1, 0.5, 1] },
+    },
+  }),
+};
 
 const DEFAULT_HERO_STATS = [
   { value: '0', label: 'Families Supported' },
@@ -132,7 +164,7 @@ const DEFAULT_HERO_SETTINGS: HeroSettings = {
   subtitle: 'RESTI is a community-based organization working alongside refugees and host communities to turn local skills, ideas, and potential into sustainable livelihoods, resilience, and lasting community transformation.',
   primaryButtonText: 'Donate Now',
   secondaryButtonText: 'Learn More',
-  imageUrl: 'https://images.unsplash.com/photo-1606471015285-85fa1288aa4e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxhZnJpY2FuJTIwY29tbXVuaXR5JTIwZW1wb3dlcm1lbnR8ZW58MXx8fHwxNzYyNDU3NTkyfDA&ixlib=rb-4.1.0&q=80&w=1080',
+  imageUrl: 'https://images.unsplash.com/photo-1606471015285-85fa1288aa4e?auto=format&fit=crop&w=1920&q=85',
   stats: DEFAULT_HERO_STATS
 };
 
@@ -140,11 +172,14 @@ export function Hero() {
   const { open: openDonationModal } = useDonationModal();
   const [settings, setSettings] = useState<HeroSettings>(DEFAULT_HERO_SETTINGS);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [direction, setDirection] = useState(1);
   const [isPaused, setIsPaused] = useState(false);
   
-  const backgroundImages = (settings as any)?.backgroundImages?.length > 0 
+  const backgroundImages: string[] = (settings as any)?.backgroundImages?.length > 1
     ? (settings as any).backgroundImages 
-    : (settings.imageUrl ? [settings.imageUrl] : FALLBACK_BACKGROUND_IMAGES);
+    : (settings.imageUrl 
+        ? [settings.imageUrl, ...FALLBACK_BACKGROUND_IMAGES.filter(img => img !== settings.imageUrl)] 
+        : FALLBACK_BACKGROUND_IMAGES);
 
   const [imagesLoaded, setImagesLoaded] = useState<boolean[]>(new Array(backgroundImages.length).fill(false));
   const [statsVisible, setStatsVisible] = useState(false);
@@ -174,18 +209,37 @@ export function Hero() {
     });
   }, [backgroundImages]);
 
-  // Automatic background image carousel with pause functionality
+  // Automatic background image carousel with slow, elegant sliding
   useEffect(() => {
-    if (isPaused || backgroundImages.length === 0) return;
+    if (isPaused || backgroundImages.length <= 1) return;
     
     const interval = setInterval(() => {
+      setDirection(1);
       setCurrentImageIndex((prevIndex) => 
         (prevIndex + 1) % backgroundImages.length
       );
-    }, 6000); // Change image every 6 seconds
+    }, 8000); // 8 seconds per slide for a calm, professional experience
 
     return () => clearInterval(interval);
-  }, [isPaused, backgroundImages.length]);
+  }, [isPaused, backgroundImages.length, currentImageIndex]);
+
+  const nextSlide = () => {
+    if (backgroundImages.length <= 1) return;
+    setDirection(1);
+    setCurrentImageIndex((prev) => (prev + 1) % backgroundImages.length);
+  };
+
+  const prevSlide = () => {
+    if (backgroundImages.length <= 1) return;
+    setDirection(-1);
+    setCurrentImageIndex((prev) => (prev - 1 + backgroundImages.length) % backgroundImages.length);
+  };
+
+  const goToSlide = (index: number) => {
+    if (index === currentImageIndex || backgroundImages.length <= 1) return;
+    setDirection(index > currentImageIndex ? 1 : -1);
+    setCurrentImageIndex(index);
+  };
 
   useEffect(() => {
     fetchSettings();
@@ -232,53 +286,81 @@ export function Hero() {
 
   return (
     <section id="home" className="relative pt-28 sm:pt-36 lg:pt-40 pb-20 sm:pb-24 min-h-screen flex items-center justify-center overflow-hidden">
-      {/* Background Image Carousel */}
-      <div className="absolute inset-0 z-0">
-        {backgroundImages.map((image: string, index: number) => (
-          <div
-            key={index}
-            className={`absolute inset-0 transition-opacity duration-2000 ${
-              index === currentImageIndex ? 'opacity-100' : 'opacity-0'
-            }`}
+      {/* Background Image Carousel with Smooth Horizontal Slide */}
+      <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none select-none">
+        <AnimatePresence initial={false} custom={direction}>
+          <motion.div
+            key={currentImageIndex}
+            custom={direction}
+            variants={slideVariants}
+            initial="enter"
+            animate="center"
+            exit="exit"
+            className="absolute inset-0 bg-cover bg-center bg-no-repeat will-change-transform"
             style={{
-              backgroundImage: `url('${image}')`,
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-              backgroundRepeat: 'no-repeat',
+              backgroundImage: `url('${backgroundImages[currentImageIndex]}')`,
             }}
-          >
-            {/* Dark gradient overlay for high contrast & elegance */}
-            <div className="absolute inset-0 bg-gradient-to-b from-slate-950/85 via-slate-950/70 to-slate-950/95"></div>
-          </div>
-        ))}
+          />
+        </AnimatePresence>
+
+        {/* Stable Dark Gradient Overlay positioned on top of the sliding background (z-[1]) to eliminate flicker */}
+        <div className="absolute inset-0 bg-gradient-to-b from-slate-950/85 via-slate-950/70 to-slate-950/95 z-[1]" />
       </div>
 
       {/* Ambient background glow orb for modern depth */}
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] sm:w-[800px] h-[350px] sm:h-[500px] bg-emerald-500/15 rounded-full blur-3xl pointer-events-none z-0"></div>
 
-      {/* Carousel Indicators */}
-      <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-20 flex gap-2">
-        {backgroundImages.map((_: any, index: number) => (
+      {/* Slide Navigation Arrows (Prev / Next) */}
+      {backgroundImages.length > 1 && (
+        <>
           <button
-            key={index}
-            onClick={() => setCurrentImageIndex(index)}
+            onClick={prevSlide}
             onMouseEnter={() => setIsPaused(true)}
             onMouseLeave={() => setIsPaused(false)}
-            className={`h-2 rounded-full transition-all duration-300 ${
-              index === currentImageIndex 
-                ? 'w-8 bg-emerald-400' 
-                : 'w-2 bg-white/40 hover:bg-white/70'
-            }`}
-            aria-label={`Go to slide ${index + 1}`}
-          />
-        ))}
-      </div>
+            className="absolute left-3 sm:left-6 top-1/2 -translate-y-1/2 z-20 p-2.5 sm:p-3 rounded-full bg-slate-950/40 hover:bg-slate-900/80 text-white/70 hover:text-white border border-white/10 hover:border-emerald-500/40 backdrop-blur-md transition-all duration-300 hover:scale-110 active:scale-95 shadow-xl group cursor-pointer focus:outline-none focus:ring-2 focus:ring-emerald-400"
+            aria-label="Previous background photo"
+          >
+            <ChevronLeft size={22} className="sm:w-6 sm:h-6 group-hover:-translate-x-0.5 transition-transform" />
+          </button>
+          <button
+            onClick={nextSlide}
+            onMouseEnter={() => setIsPaused(true)}
+            onMouseLeave={() => setIsPaused(false)}
+            className="absolute right-3 sm:right-6 top-1/2 -translate-y-1/2 z-20 p-2.5 sm:p-3 rounded-full bg-slate-950/40 hover:bg-slate-900/80 text-white/70 hover:text-white border border-white/10 hover:border-emerald-500/40 backdrop-blur-md transition-all duration-300 hover:scale-110 active:scale-95 shadow-xl group cursor-pointer focus:outline-none focus:ring-2 focus:ring-emerald-400"
+            aria-label="Next background photo"
+          >
+            <ChevronRight size={22} className="sm:w-6 sm:h-6 group-hover:translate-x-0.5 transition-transform" />
+          </button>
+        </>
+      )}
+
+      {/* Carousel Indicators */}
+      {backgroundImages.length > 1 && (
+        <div 
+          className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-20 flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-950/40 backdrop-blur-md border border-white/10"
+          onMouseEnter={() => setIsPaused(true)}
+          onMouseLeave={() => setIsPaused(false)}
+        >
+          {backgroundImages.map((_: any, index: number) => (
+            <button
+              key={index}
+              onClick={() => goToSlide(index)}
+              className={`h-2 rounded-full transition-all duration-500 cursor-pointer ${
+                index === currentImageIndex 
+                  ? 'w-8 bg-emerald-400 shadow-sm shadow-emerald-400/50' 
+                  : 'w-2 bg-white/40 hover:bg-white/75'
+              }`}
+              aria-label={`Go to slide ${index + 1}`}
+            />
+          ))}
+        </div>
+      )}
 
       {/* Scroll Down Indicator */}
       <div className="absolute bottom-16 left-1/2 transform -translate-x-1/2 z-20 hidden xl:block">
         <button
           onClick={scrollToAbout}
-          className="flex flex-col items-center gap-1.5 text-white/70 hover:text-white transition-colors group animate-bounce"
+          className="flex flex-col items-center gap-1.5 text-white/70 hover:text-white transition-colors group animate-bounce cursor-pointer"
           aria-label="Scroll to learn more"
         >
           <span className="text-xs tracking-wider uppercase font-medium">Scroll Down</span>
@@ -287,11 +369,7 @@ export function Hero() {
       </div>
 
       {/* Content Container */}
-      <div 
-        className="relative z-10 w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16"
-        onMouseEnter={() => setIsPaused(true)}
-        onMouseLeave={() => setIsPaused(false)}
-      >
+      <div className="relative z-10 w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16">
         <div className="flex flex-col items-center justify-center text-center w-full max-w-4xl mx-auto">
           {/* Text Content */}
           <motion.div 
