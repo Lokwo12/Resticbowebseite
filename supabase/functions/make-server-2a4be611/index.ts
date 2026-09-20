@@ -108,6 +108,36 @@ const supabase = createClient(
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
 )
 
+async function checkIsAdmin(c: Context): Promise<boolean> {
+  try {
+    const authHeader = c.req.header('Authorization')
+    const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null
+    if (!token) return false
+    
+    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+    if (serviceRoleKey && token === serviceRoleKey) return true
+    
+    const { data: { user }, error } = await supabase.auth.getUser(token)
+    if (error || !user) return false
+    
+    if (user.email === 'lokwodenis0@gmail.com' || user.email === 'lokwodenis@gmail.com') {
+      return true
+    }
+    
+    const { data: admin, error: adminError } = await supabase
+      .from('admin_users')
+      .select('role, status')
+      .eq('id', user.id)
+      .single()
+      
+    if (adminError || !admin || admin.status !== 'active') return false
+    const role = normalizeAdminRole(admin?.role)
+    return ['admin', 'super-admin'].includes(role || '')
+  } catch {
+    return false
+  }
+}
+
 // Initialize Stripe
 const stripeSecretKey = Deno.env.get('STRIPE_SECRET_KEY')
 const stripe = stripeSecretKey ? new Stripe(stripeSecretKey, {
@@ -394,60 +424,188 @@ app.post('/make-server-2a4be611/programs', requireAdmin, async (c) => {
   }
 })
 
-// Get all news/updates
+// Get all news/updates (with status filtering for public vs admin)
 app.get('/make-server-2a4be611/news', async (c) => {
   try {
     const limit = parseInt(c.req.query('limit') || '100');
     const offset = parseInt(c.req.query('offset') || '0');
+    const categoryFilter = c.req.query('category');
+    const statusFilter = c.req.query('status');
+    const searchFilter = c.req.query('search')?.toLowerCase().trim();
     
-    if (c.req.query('limit') !== undefined) {
-      const { data, count } = await kv.getPaginatedByPrefix('news:', limit, offset);
-      data.sort((a, b) => new Date(b.value?.timestamp || b.value?.created_at || 0).getTime() - new Date(a.value?.timestamp || a.value?.created_at || 0).getTime());
-      return c.json({ news: data, count, limit, offset });
+    const isAdmin = await checkIsAdmin(c);
+    
+    const rawNews = await kv.getByPrefix('news:');
+    
+    let items = (rawNews || [])
+      .filter(n => n && n.value && (n.value.title || n.value.timestamp))
+      .map(n => ({
+        key: n.key,
+        id: n.key,
+        ...n.value
+      }));
+
+    // Status filtering
+    if (!isAdmin) {
+      // Public callers strictly get published articles where publishDate <= now
+      const nowMs = Date.now();
+      items = items.filter(item => {
+        const status = (item.status || 'published').toLowerCase();
+        if (status !== 'published') return false;
+        const pubDateMs = item.publishDate ? new Date(item.publishDate).getTime() : (item.timestamp ? new Date(item.timestamp).getTime() : 0);
+        return pubDateMs === 0 || pubDateMs <= nowMs;
+      });
+    } else if (statusFilter && statusFilter !== 'all') {
+      items = items.filter(item => (item.status || 'published').toLowerCase() === statusFilter.toLowerCase());
     }
-    
-    const news = await kv.getByPrefix('news:')
-    // Filter out any invalid entries
-    const validNews = news.filter(n => n && n.value && n.value.timestamp)
-    // Sort by timestamp descending
-    validNews.sort((a, b) => new Date(b.value.timestamp).getTime() - new Date(a.value.timestamp).getTime())
-    return c.json({ news: validNews })
+
+    // Category filtering
+    if (categoryFilter && categoryFilter !== 'all') {
+      items = items.filter(item => (item.category || '').toLowerCase() === categoryFilter.toLowerCase());
+    }
+
+    // Search filtering
+    if (searchFilter) {
+      items = items.filter(item => 
+        (item.title && item.title.toLowerCase().includes(searchFilter)) ||
+        (item.description && item.description.toLowerCase().includes(searchFilter)) ||
+        (item.summary && item.summary.toLowerCase().includes(searchFilter)) ||
+        (item.author && item.author.toLowerCase().includes(searchFilter)) ||
+        (item.content && item.content.toLowerCase().includes(searchFilter))
+      );
+    }
+
+    // Sort by publication date or timestamp descending
+    items.sort((a, b) => {
+      const dateA = new Date(a.publishDate || a.timestamp || a.createdAt || 0).getTime();
+      const dateB = new Date(b.publishDate || b.timestamp || b.createdAt || 0).getTime();
+      return dateB - dateA;
+    });
+
+    const totalCount = items.length;
+    const paginatedItems = items.slice(offset, offset + limit);
+
+    return c.json({ 
+      news: paginatedItems.map(item => ({
+        key: item.key,
+        value: item
+      })),
+      articles: paginatedItems,
+      count: totalCount, 
+      total: totalCount,
+      limit, 
+      offset 
+    });
   } catch (error) {
-    console.error('Error fetching news:', error)
-    return c.json({ error: 'Failed to fetch news', details: String(error) }, 500)
+    console.error('Error fetching news:', error);
+    return c.json({ error: 'Failed to fetch news', details: String(error) }, 500);
   }
-})
+});
+
+// Get single news article by ID, key, or slug
+app.get('/make-server-2a4be611/news/:idOrSlug', async (c) => {
+  try {
+    const rawParam = c.req.param('idOrSlug');
+    const decodedParam = decodeURIComponent(rawParam);
+    const normalizedKey = normalizeContentKey('news', decodedParam);
+
+    let article = await kv.get(normalizedKey);
+    let key = normalizedKey;
+
+    if (!article) {
+      const allNews = await kv.getByPrefix('news:');
+      const match = allNews.find(item => {
+        if (!item || !item.value) return false;
+        const v = item.value;
+        return item.key === decodedParam ||
+               item.key === normalizedKey ||
+               v.id === decodedParam ||
+               v.slug === decodedParam ||
+               (v.title && v.title.toLowerCase().trim().replace(/[^\w\s-]/g, '').replace(/[\s_-]+/g, '-') === decodedParam);
+      });
+      if (match) {
+        article = match.value;
+        key = match.key;
+      }
+    }
+
+    if (!article) {
+      return c.json({ error: 'News article not found' }, 404);
+    }
+
+    const isAdmin = await checkIsAdmin(c);
+    if (!isAdmin) {
+      const status = (article.status || 'published').toLowerCase();
+      const pubDateMs = article.publishDate ? new Date(article.publishDate).getTime() : (article.timestamp ? new Date(article.timestamp).getTime() : 0);
+      if (status !== 'published' || (pubDateMs > 0 && pubDateMs > Date.now())) {
+        return c.json({ error: 'News article not found' }, 404);
+      }
+    }
+
+    return c.json({ success: true, article: { ...article, key, id: key } });
+  } catch (error) {
+    console.error('Error fetching single news article:', error);
+    return c.json({ error: 'Failed to fetch article', details: String(error) }, 500);
+  }
+});
 
 // Add news/update (admin function)
 app.post('/make-server-2a4be611/news', requireAdmin, async (c) => {
   try {
-    const body = await c.req.json()
-    const { title, content, image } = body
+    const body = await c.req.json();
+    const { title, content } = body;
 
     if (!title || !content) {
-      return c.json({ error: 'Title and content are required' }, 400)
+      return c.json({ error: 'Title and content are required' }, 400);
     }
 
-    const newsId = `news:${crypto.randomUUID()}`
-    const nowIso = new Date().toISOString()
-    await kv.set(newsId, {
-      ...body,
-      title,
-      content,
-      image: image || '',
-      author: body.author || 'RESTI Team',
-      publishDate: body.publishDate || body.timestamp || nowIso,
-      timestamp: body.publishDate || body.timestamp || nowIso,
-      createdAt: nowIso
-    })
+    const newsId = `news:${crypto.randomUUID()}`;
+    const nowIso = new Date().toISOString();
+    
+    // Generate clean slug if not provided
+    const baseSlug = (body.slug || title)
+      .toLowerCase()
+      .trim()
+      .replace(/[^\w\s-]/g, '')
+      .replace(/[\s_-]+/g, '-')
+      .replace(/^-+|-+$/g, '') || 'news-article';
+      
+    const slug = baseSlug;
 
-    console.log(`News created: ${newsId}`)
-    return c.json({ success: true, message: 'News created successfully', id: newsId })
+    const articleData = {
+      ...body,
+      id: newsId,
+      key: newsId,
+      title: title.trim(),
+      slug,
+      description: body.description || body.summary || '',
+      summary: body.description || body.summary || '',
+      content,
+      image: body.image || '',
+      additionalImages: Array.isArray(body.additionalImages) ? body.additionalImages : [],
+      category: body.category || 'Community',
+      author: body.author || 'RESTI Communications Team',
+      publishDate: body.publishDate || nowIso,
+      status: body.status || 'published',
+      featured: Boolean(body.featured),
+      seoTitle: body.seoTitle || title,
+      seoDescription: body.seoDescription || body.description || body.summary || '',
+      ogTitle: body.ogTitle || body.seoTitle || title,
+      ogDescription: body.ogDescription || body.seoDescription || body.description || '',
+      timestamp: body.publishDate || nowIso,
+      createdAt: nowIso,
+      updatedAt: nowIso
+    };
+
+    await kv.set(newsId, articleData);
+
+    console.log(`News created: ${newsId} (slug: ${slug})`);
+    return c.json({ success: true, message: 'News created successfully', id: newsId, article: articleData });
   } catch (error) {
-    console.error('Error creating news:', error)
-    return c.json({ error: 'Failed to create news', details: String(error) }, 500)
+    console.error('Error creating news:', error);
+    return c.json({ error: 'Failed to create news', details: String(error) }, 500);
   }
-})
+});
 
 // Volunteer application submission
 app.post('/make-server-2a4be611/volunteer', withRateLimit('volunteer', 5, 10 * 60_000), async (c) => {
@@ -2861,27 +3019,55 @@ app.put('/make-server-2a4be611/news/:id', requireAdmin, async (c) => {
   try {
     const id = normalizeContentKey('news', c.req.param('id'))
     const body = await c.req.json()
-    const { title, content, image } = body
+    const { title, content } = body
 
     if (!title || !content) {
       return c.json({ error: 'Title and content are required' }, 400)
     }
 
     const existing = await kv.get(id) || {}
+    const nowIso = new Date().toISOString()
+    
+    // Slug handling
+    let slug = body.slug
+    if (!slug) {
+      slug = existing.slug || (title
+        .toLowerCase()
+        .trim()
+        .replace(/[^\w\s-]/g, '')
+        .replace(/[\s_-]+/g, '-')
+        .replace(/^-+|-+$/g, '') || 'news-article')
+    }
 
-    await kv.set(id, {
+    const updatedData = {
       ...existing,
       ...body,
-      title,
+      id,
+      key: id,
+      title: title.trim(),
+      slug,
+      description: body.description !== undefined ? body.description : (existing.description || existing.summary || ''),
+      summary: body.description !== undefined ? body.description : (existing.summary || existing.description || ''),
       content,
-      image: image || '',
-      author: body.author || existing.author || 'RESTI Team',
-      publishDate: body.publishDate || existing.publishDate || existing.timestamp || new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    })
+      image: body.image !== undefined ? body.image : (existing.image || ''),
+      additionalImages: Array.isArray(body.additionalImages) ? body.additionalImages : (existing.additionalImages || []),
+      category: body.category || existing.category || 'Community',
+      author: body.author || existing.author || 'RESTI Communications Team',
+      publishDate: body.publishDate || existing.publishDate || existing.timestamp || nowIso,
+      status: body.status || existing.status || 'published',
+      featured: body.featured !== undefined ? Boolean(body.featured) : Boolean(existing.featured),
+      seoTitle: body.seoTitle || existing.seoTitle || title,
+      seoDescription: body.seoDescription || existing.seoDescription || body.description || '',
+      ogTitle: body.ogTitle || existing.ogTitle || body.seoTitle || title,
+      ogDescription: body.ogDescription || existing.ogDescription || body.seoDescription || '',
+      timestamp: body.publishDate || existing.publishDate || existing.timestamp || nowIso,
+      updatedAt: nowIso
+    }
 
-    console.log(`News updated: ${id}`)
-    return c.json({ success: true, message: 'News updated successfully' })
+    await kv.set(id, updatedData)
+
+    console.log(`News updated: ${id} (slug: ${slug})`)
+    return c.json({ success: true, message: 'News updated successfully', article: updatedData })
   } catch (error) {
     console.error('Error updating news:', error)
     return c.json({ error: 'Failed to update news', details: String(error) }, 500)

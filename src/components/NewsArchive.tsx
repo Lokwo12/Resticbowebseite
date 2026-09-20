@@ -8,7 +8,9 @@ import { LoadingScreen } from './LoadingScreen';
 
 interface NewsArticle {
   id: string;
+  slug?: string;
   title: string;
+  description?: string;
   content: string;
   category: string;
   author: string;
@@ -70,7 +72,9 @@ export function NewsArchive() {
         const data = await response.json();
         const articles: NewsArticle[] = (data.news || []).map((item: any) => ({
           id: item.key || item.id || '',
+          slug: item.value?.slug || item.slug || '',
           title: item.value?.title || item.title || '',
+          description: item.value?.description || item.value?.summary || item.description || '',
           content: item.value?.content || item.content || '',
           image: item.value?.image || item.image || '',
           category: item.value?.category || item.category || 'general',
@@ -238,7 +242,7 @@ export function NewsArchive() {
                         </p>
 
                         <Link
-                          to={`/news/${article.id}`}
+                          to={`/news/${article.slug || article.id}`}
                           className="inline-flex items-center gap-2 text-emerald-600 hover:text-emerald-700 transition-colors duration-300 group/btn"
                         >
                           <span>Read More</span>

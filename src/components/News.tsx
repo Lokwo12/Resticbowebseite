@@ -7,7 +7,9 @@ import { Badge } from './ui/badge';
 
 interface NewsArticle {
   id: string;
+  slug?: string;
   title: string;
+  description?: string;
   content: string;
   category: string;
   author: string;
@@ -80,7 +82,9 @@ export function News() {
         // Backend returns { news: [{ key, value: { title, content, image, timestamp } }] }
         const articles: NewsArticle[] = (data.news || []).map((item: any) => ({
           id: item.key || item.id || '',
+          slug: item.value?.slug || item.slug || '',
           title: item.value?.title || item.title || '',
+          description: item.value?.description || item.value?.summary || item.description || '',
           content: item.value?.content || item.content || '',
           image: item.value?.image || item.image || '',
           category: item.value?.category || item.category || 'general',
@@ -266,7 +270,7 @@ export function News() {
 
                       {/* Read More Button */}
                       <Link
-                        to={`/news/${article.id}`}
+                        to={`/news/${article.slug || article.id}`}
                         className="inline-flex items-center gap-2 text-emerald-600 hover:text-emerald-700 transition-colors duration-300 group/btn"
                       >
                         <span>Read More</span>
