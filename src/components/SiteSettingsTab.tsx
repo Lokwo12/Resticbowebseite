@@ -295,6 +295,36 @@ export function SiteSettingsTab({ settings: initialSettings, onUpdate, accessTok
     }
   };
 
+  const handleStoryImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const toastId = toast.loading('Uploading story photo...');
+    try {
+      const formDataObj = new FormData();
+      formDataObj.append('file', file);
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/upload-image`,
+        { method: 'POST', headers: { Authorization: `Bearer ${accessToken || publicAnonKey}` }, body: formDataObj }
+      );
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Upload failed');
+      
+      setSettings((prev: any) => ({
+        ...prev,
+        about: {
+          ...prev.about,
+          storyImage: data.url,
+        },
+      }));
+      
+      toast.success('Story photo uploaded successfully', { id: toastId });
+    } catch (err: any) {
+      toast.error(err.message || 'Upload failed', { id: toastId });
+    } finally {
+      e.target.value = '';
+    }
+  };
+
   const handleReportUpload = async (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -1247,24 +1277,165 @@ export function SiteSettingsTab({ settings: initialSettings, onUpdate, accessTok
                 />
               </div>
 
-              <div>
-                <label className="block text-sm text-gray-700 mb-2">Story Paragraphs</label>
-                {settings.about?.story?.map((paragraph: string, index: number) => (
-                  <textarea
-                    key={index}
-                    value={paragraph}
-                    onChange={(e) => {
-                      const newStory = [...(settings.about?.story || [])];
-                      newStory[index] = e.target.value;
-                      setSettings({
-                        ...settings,
-                        about: { ...settings.about, story: newStory },
-                      });
-                    }}
-                    rows={3}
-                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 mb-2"
-                  />
-                ))}
+              {/* ── OUR STORY SECTION (HEADLINE & FEATURED PHOTO BESIDE IT) ── */}
+              <div className="pt-6 border-t border-slate-200">
+                <div className="flex items-center gap-2 mb-2">
+                  <label className="block text-base font-bold text-gray-900">
+                    Our Story (Headline, Photo & Narrative)
+                  </label>
+                  <span className="text-[11px] font-semibold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full">
+                    About Page Showcase
+                  </span>
+                </div>
+                <p className="text-xs text-gray-500 mb-4">
+                  Configure the movement headline, section tag, featured community photograph, and narrative paragraphs displayed on the About page.
+                </p>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 bg-slate-50 p-4 rounded-2xl border border-slate-200">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">Section Tag / Badge</label>
+                    <input
+                      type="text"
+                      value={settings.about?.storyBadge || ''}
+                      onChange={(e) =>
+                        setSettings({
+                          ...settings,
+                          about: { ...settings.about, storyBadge: e.target.value },
+                        })
+                      }
+                      placeholder="Our Story"
+                      className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">
+                      Main Story Headline / Movement Title
+                    </label>
+                    <input
+                      type="text"
+                      value={settings.about?.storyTitle || ''}
+                      onChange={(e) =>
+                        setSettings({
+                          ...settings,
+                          about: { ...settings.about, storyTitle: e.target.value },
+                        })
+                      }
+                      placeholder="From a small village initiative to a district-wide movement."
+                      className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none font-semibold text-gray-900"
+                    />
+                  </div>
+
+                  {/* Story Featured Photo beside headline */}
+                  <div className="md:col-span-2">
+                    <label className="block text-xs font-bold text-gray-700 mb-1.5">
+                      Story Photo (Featured Right Beside Headline)
+                    </label>
+                    <div className="flex flex-col sm:flex-row gap-4 items-start bg-white p-3.5 rounded-xl border border-slate-200">
+                      <div className="w-36 h-24 flex-shrink-0 bg-slate-100 rounded-xl overflow-hidden border border-slate-200 shadow-sm relative group">
+                        {settings.about?.storyImage ? (
+                          <img
+                            src={settings.about.storyImage}
+                            alt="Story preview"
+                            className="w-full h-full object-cover"
+                            onError={(e) => (e.currentTarget.style.display = 'none')}
+                          />
+                        ) : (
+                          <img
+                            src="https://images.unsplash.com/photo-1529070538774-1843cb3265df?w=1200&q=80"
+                            alt="Default story preview"
+                            className="w-full h-full object-cover opacity-60"
+                          />
+                        )}
+                      </div>
+                      <div className="flex-1 w-full space-y-2">
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            value={settings.about?.storyImage || ''}
+                            onChange={(e) =>
+                              setSettings({
+                                ...settings,
+                                about: { ...settings.about, storyImage: e.target.value },
+                              })
+                            }
+                            placeholder="https://images.unsplash.com/photo-1529070538774-1843cb3265df?w=1200&q=80"
+                            className="flex-1 px-3 py-2 text-xs border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                          />
+                          <label
+                            className="cursor-pointer bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs px-3.5 py-2 rounded-xl flex items-center gap-1.5 shadow-sm transition shrink-0"
+                            title="Upload new story photo"
+                          >
+                            <Upload size={14} />
+                            <span>Upload Photo</span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={handleStoryImageUpload}
+                            />
+                          </label>
+                        </div>
+                        <p className="text-[11px] text-slate-500">
+                          Recommended: High-resolution community photograph (1200×800px).
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Narrative Paragraphs */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-xs font-bold text-gray-700">Narrative Story Paragraphs</label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newStory = [...(settings.about?.story || []), ''];
+                        setSettings({
+                          ...settings,
+                          about: { ...settings.about, story: newStory },
+                        });
+                      }}
+                      className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 bg-emerald-100 hover:bg-emerald-200 px-2.5 py-1 rounded-lg transition"
+                    >
+                      <Plus size={13} /> Add Paragraph
+                    </button>
+                  </div>
+                  {(settings.about?.story || []).map((paragraph: string, index: number) => (
+                    <div key={index} className="flex gap-2 items-start">
+                      <textarea
+                        value={paragraph}
+                        onChange={(e) => {
+                          const newStory = [...(settings.about?.story || [])];
+                          newStory[index] = e.target.value;
+                          setSettings({
+                            ...settings,
+                            about: { ...settings.about, story: newStory },
+                          });
+                        }}
+                        rows={3}
+                        className="flex-1 px-3 py-2 text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500"
+                        placeholder={`Paragraph ${index + 1}...`}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const newStory = [...(settings.about?.story || [])];
+                          newStory.splice(index, 1);
+                          setSettings({
+                            ...settings,
+                            about: { ...settings.about, story: newStory },
+                          });
+                        }}
+                        className="p-2 text-rose-500 hover:bg-rose-50 rounded-lg transition mt-1"
+                        title="Remove paragraph"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
               </div>
 
               {/* The Way We Work (Guiding Principles) */}

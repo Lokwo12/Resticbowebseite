@@ -25,6 +25,9 @@ interface AboutSettings {
   timeline: { year: string; title: string; desc: string }[];
   trustBadges?: TrustBadge[];
   wayWeWork?: WayWeWorkSettings;
+  storyBadge?: string;
+  storyTitle?: string;
+  storyImage?: string;
 }
 
 const iconMap: Record<string, typeof Heart> = {
@@ -61,7 +64,10 @@ const DEFAULT_ABOUT_SETTINGS: AboutSettings = {
     { year: 'Present', title: 'Sustainable Future', desc: 'Continuing to expand our reach, directly impacting over 20,000 lives annually.' }
   ],
   trustBadges: DEFAULT_TRUST_BADGES,
-  wayWeWork: DEFAULT_WAY_WE_WORK
+  wayWeWork: DEFAULT_WAY_WE_WORK,
+  storyBadge: 'Our Story',
+  storyTitle: 'From a small village initiative to a district-wide movement.',
+  storyImage: 'https://images.unsplash.com/photo-1529070538774-1843cb3265df?w=1200&q=80',
 };
 
 export function AboutPage() {
@@ -98,6 +104,9 @@ export function AboutPage() {
           merged.values = Array.isArray(fetchedAbout.values) && fetchedAbout.values.length > 0 ? fetchedAbout.values : DEFAULT_ABOUT_SETTINGS.values;
           merged.trustBadges = Array.isArray(fetchedAbout.trustBadges) && fetchedAbout.trustBadges.length > 0 ? fetchedAbout.trustBadges : DEFAULT_TRUST_BADGES;
           merged.wayWeWork = (fetchedAbout.wayWeWork && Array.isArray(fetchedAbout.wayWeWork.items)) ? fetchedAbout.wayWeWork : DEFAULT_WAY_WE_WORK;
+          merged.storyBadge = fetchedAbout.storyBadge || DEFAULT_ABOUT_SETTINGS.storyBadge;
+          merged.storyTitle = fetchedAbout.storyTitle || DEFAULT_ABOUT_SETTINGS.storyTitle;
+          merged.storyImage = fetchedAbout.storyImage || DEFAULT_ABOUT_SETTINGS.storyImage;
           setSettings(merged);
         }
       }
@@ -150,16 +159,18 @@ export function AboutPage() {
             <div className="relative group">
               <div className="absolute inset-0 bg-emerald-500 rounded-3xl translate-x-4 translate-y-4 -z-10 transition-transform group-hover:translate-x-6 group-hover:translate-y-6"></div>
               <img 
-                src="https://images.unsplash.com/photo-1529070538774-1843cb3265df?w=1200&q=80" 
-                alt="Community meeting" 
+                src={settings.storyImage || "https://images.unsplash.com/photo-1529070538774-1843cb3265df?w=1200&q=80"} 
+                alt={settings.storyTitle || "Community meeting"} 
                 className="w-full h-[500px] object-cover rounded-3xl shadow-xl"
               />
             </div>
             
             <div className="space-y-6">
-              <h2 className="text-sm font-bold text-emerald-600 uppercase tracking-widest mb-2">Our Story</h2>
+              <h2 className="text-sm font-bold text-emerald-600 uppercase tracking-widest mb-2">
+                {settings.storyBadge || "Our Story"}
+              </h2>
               <h3 className="text-[28px] sm:text-[30px] lg:text-[36px] font-bold font-heading text-gray-900 leading-[1.2]">
-                From a small village initiative to a district-wide movement.
+                {settings.storyTitle || "From a small village initiative to a district-wide movement."}
               </h3>
               {settings.story?.map((paragraph, idx) => (
                 <p key={idx} className="text-gray-600 text-[17px] font-normal leading-[1.6]">

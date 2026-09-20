@@ -3993,6 +3993,9 @@ app.get('/make-server-2a4be611/site-settings', async (c) => {
             { icon: 'Target', title: 'Impact', description: 'Focused on measurable outcomes that improve quality of life.' },
             { icon: 'Award', title: 'Excellence', description: 'Committed to delivering high-quality programs and services.' }
           ],
+          storyBadge: 'Our Story',
+          storyTitle: 'From a small village initiative to a district-wide movement.',
+          storyImage: 'https://images.unsplash.com/photo-1529070538774-1843cb3265df?w=1200&q=80',
           story: [
             'Resti Kiryandongo CBO was born from a shared vision among community members who recognized the need for organized, sustainable development initiatives in our district. What started as small-scale educational support has grown into a comprehensive community development organization.',
             'Today, we work closely with local government, international partners, and most importantly, the communities we serve, to identify needs, develop solutions, and implement programs that create lasting positive change. Our grassroots approach ensures that every initiative is community-driven and culturally appropriate.'
@@ -4147,6 +4150,9 @@ app.post('/make-server-2a4be611/site-settings/initialize', async (c) => {
           { icon: 'Target', title: 'Impact', description: 'Focused on measurable outcomes that improve quality of life.' },
           { icon: 'Award', title: 'Excellence', description: 'Committed to delivering high-quality programs and services.' }
         ],
+        storyBadge: 'Our Story',
+        storyTitle: 'From a small village initiative to a district-wide movement.',
+        storyImage: 'https://images.unsplash.com/photo-1529070538774-1843cb3265df?w=1200&q=80',
         story: [
           'Resti Kiryandongo CBO was born from a shared vision among community members who recognized the need for organized, sustainable development initiatives in our district. What started as small-scale educational support has grown into a comprehensive community development organization.',
           'Today, we work closely with local government, international partners, and most importantly, the communities we serve, to identify needs, develop solutions, and implement programs that create lasting positive change. Our grassroots approach ensures that every initiative is community-driven and culturally appropriate.'
