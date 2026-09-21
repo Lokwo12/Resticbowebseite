@@ -90,6 +90,17 @@ export function validateMessage(msg: unknown, maxLen = 2000): ValidationResult {
   return { ok: true }
 }
 
+/** Validate a subject/topic: required, 1–200 characters. */
+export function validateSubject(subj: unknown, maxLen = 200): ValidationResult {
+  if (typeof subj !== 'string' || subj.trim().length === 0) {
+    return { ok: false, error: 'Subject is required' }
+  }
+  if (subj.length > maxLen) {
+    return { ok: false, error: `Subject must be ${maxLen} characters or fewer` }
+  }
+  return { ok: true }
+}
+
 /** Validate a donation amount: positive number, reasonable range. */
 export function validateAmount(amount: unknown): ValidationResult {
   const n = Number(amount)

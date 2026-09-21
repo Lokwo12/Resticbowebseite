@@ -5,7 +5,7 @@ import type { Context, Next } from 'npm:hono'
 import { createClient } from 'npm:@supabase/supabase-js@2'
 import Stripe from 'npm:stripe@17.5.0'
 import * as kv from './kv_store.tsx'
-import { escapeHtml, escapeMessage, validateName, validateEmail, validatePhone, validateMessage, validateAmount, validateMobileMoneyPhone, normaliseUgandanPhone } from './validation.ts'
+import { escapeHtml, escapeMessage, validateName, validateEmail, validatePhone, validateMessage, validateSubject, validateAmount, validateMobileMoneyPhone, normaliseUgandanPhone } from './validation.ts'
 import { withRateLimit } from './rateLimit.ts'
 import { handleStripeWebhook, handleMtnWebhook, handleAirtelWebhook, completeDonationFromWebhook, deliverDonationReceipt, notifyAdminFailedDonation, getAdminNotifyEmails } from './webhooks.ts'
 import { getMtnAccessToken, getAirtelAccessToken } from './tokens.ts'
@@ -200,16 +200,21 @@ async function sendEmail(to: string, subject: string, html: string, replyTo?: st
 app.post('/make-server-2a4be611/contact', withRateLimit('contact', 10, 10 * 60_000), async (c) => {
   try {
     const body = await c.req.json()
-    const { name, email, phone, message } = body
+    const { name, email, phone, subject, message } = body
 
     const nameV = validateName(name)
     const emailV = validateEmail(email)
     const phoneV = validatePhone(phone)
+    const subjRaw = typeof subject === 'string' && subject.trim().length > 0
+      ? subject.trim()
+      : (typeof body.topic === 'string' && body.topic.trim().length > 0 ? body.topic.trim() : 'General Inquiry')
+    const subjV = validateSubject(subjRaw)
     const msgV = validateMessage(message)
 
     if (!nameV.ok) return c.json({ error: nameV.error }, 400)
     if (!emailV.ok) return c.json({ error: emailV.error }, 400)
     if (!phoneV.ok) return c.json({ error: phoneV.error }, 400)
+    if (!subjV.ok) return c.json({ error: subjV.error }, 400)
     if (!msgV.ok) return c.json({ error: msgV.error }, 400)
 
     const rawId = crypto.randomUUID()
@@ -218,6 +223,7 @@ app.post('/make-server-2a4be611/contact', withRateLimit('contact', 10, 10 * 60_0
     const safeName = escapeHtml(name.trim())
     const safeEmail = escapeHtml(email.trim())
     const safePhone = escapeHtml(phone ? phone.trim() : '')
+    const safeSubject = escapeHtml(subjRaw)
     const safeMessage = escapeMessage(message)
 
     // 1. Store in KV store for Admin Dashboard
@@ -225,6 +231,7 @@ app.post('/make-server-2a4be611/contact', withRateLimit('contact', 10, 10 * 60_0
       name: name.trim(),
       email: email.trim(),
       phone: phone ? phone.trim() : '',
+      subject: subjRaw,
       message,
       timestamp: nowIso,
       status: 'new'
@@ -237,6 +244,7 @@ app.post('/make-server-2a4be611/contact', withRateLimit('contact', 10, 10 * 60_0
         name: name.trim(),
         email: email.trim(),
         phone: phone ? phone.trim() : null,
+        subject: subjRaw,
         message,
         status: 'new',
         created_at: nowIso,
@@ -295,6 +303,10 @@ app.post('/make-server-2a4be611/contact', withRateLimit('contact', 10, 10 * 60_0
                 <td class="value">${safePhone || '<span style="color:#94a3b8;">Not provided</span>'}</td>
               </tr>
               <tr>
+                <td class="label">Subject / Topic:</td>
+                <td class="value"><strong>${safeSubject}</strong></td>
+              </tr>
+              <tr>
                 <td class="label">Submitted At:</td>
                 <td class="value">${formattedDate}</td>
               </tr>
@@ -305,7 +317,7 @@ app.post('/make-server-2a4be611/contact', withRateLimit('contact', 10, 10 * 60_0
 
             <div class="reply-banner">
               <p>💡 You can reply directly to this email in your inbox to respond to <strong>${safeName}</strong>.</p>
-              <a href="mailto:${safeEmail}?subject=${encodeURIComponent(`Re: Your inquiry to RESTI-CBO`)}" class="reply-btn">Reply to ${safeName}</a>
+              <a href="mailto:${safeEmail}?subject=${encodeURIComponent(`Re: ${subjRaw} - RESTI-CBO`)}" class="reply-btn">Reply to ${safeName}</a>
             </div>
           </div>
           <div class="footer">
@@ -321,7 +333,7 @@ app.post('/make-server-2a4be611/contact', withRateLimit('contact', 10, 10 * 60_0
       console.log(`Dispatching visitor contact alert to admin: ${recipient}`)
       await sendEmail(
         recipient,
-        `🔔 New Website Message from ${safeName} - RESTI-CBO`,
+        `🔔 New Website Message: ${safeSubject} (from ${safeName}) - RESTI-CBO`,
         adminEmailHtml,
         email.trim()
       )
@@ -331,13 +343,14 @@ app.post('/make-server-2a4be611/contact', withRateLimit('contact', 10, 10 * 60_0
     try {
       await sendEmail(
         email.trim(),
-        'Thank you for contacting RESTI-CBO',
+        `Thank you for contacting RESTI-CBO: ${safeSubject}`,
         `
           <div style="font-family: sans-serif; line-height: 1.6; color: #1e293b; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 8px;">
             <h2 style="color: #047857; margin-top: 0;">Thank You for Reaching Out!</h2>
             <p>Dear ${safeName},</p>
-            <p>We have received your message and a member of the RESTI-CBO team will get back to you shortly.</p>
+            <p>We have received your message regarding <strong>${safeSubject}</strong> and a member of the RESTI-CBO team will get back to you shortly.</p>
             <div style="background: #f8fafc; border-left: 3px solid #10b981; padding: 12px 16px; margin: 16px 0;">
+              <strong>Topic:</strong> ${safeSubject}<br><br>
               <strong>Your Message:</strong><br>
               ${safeMessage}
             </div>
@@ -4275,8 +4288,8 @@ app.get('/make-server-2a4be611/site-settings', async (c) => {
           title: 'Get Involved',
           subtitle: 'Join us in making a difference! Whether you want to partner, donate, or simply learn more about our work, we\'d love to hear from you.',
           address: 'Kiryandongo District, Uganda',
-          email: 'info@restikirya.org',
-          phone: '+256 XXX XXX XXX',
+          email: 'info@resticbo.org',
+          phone: '+256 700 000 000',
           whatsappNumber: '+256700000000',
           socialLinks: {
             facebook: '#',
@@ -4432,8 +4445,8 @@ app.post('/make-server-2a4be611/site-settings/initialize', async (c) => {
         title: 'Get Involved',
         subtitle: 'Join us in making a difference! Whether you want to partner, donate, or simply learn more about our work, we\'d love to hear from you.',
         address: 'Kiryandongo District, Uganda',
-        email: 'info@restikirya.org',
-        phone: '+256 XXX XXX XXX',
+        email: 'info@resticbo.org',
+        phone: '+256 700 000 000',
         socialLinks: {
           facebook: '#',
           twitter: '#',

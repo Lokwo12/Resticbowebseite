@@ -4,7 +4,7 @@ import { ImpactReportsManager } from './admin/ImpactReportsManager';
 import { FinancialTransparencyManager } from './admin/FinancialTransparencyManager';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { toast } from 'sonner';
-import { Save, RefreshCw, Plus, Trash2, Upload, BarChart, Code, PieChart, TrendingUp, DollarSign, FileText, Heart, ShieldCheck, Sparkles, Globe, Eye, HelpCircle, Users, LayoutDashboard, HandHeart, Settings, Search, ExternalLink, ChevronDown, ChevronUp } from 'lucide-react';
+import { Save, RefreshCw, Plus, Trash2, Upload, BarChart, Code, PieChart, TrendingUp, DollarSign, FileText, Heart, ShieldCheck, Sparkles, Globe, Eye, HelpCircle, Users, LayoutDashboard, HandHeart, Settings, Search, ExternalLink, ChevronDown, ChevronUp, MapPin, MessageCircle, Mail, Phone, Check } from 'lucide-react';
 import { Card } from './ui/card';
 import { Button } from './ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
@@ -1924,324 +1924,681 @@ export function SiteSettingsTab({ settings: initialSettings, onUpdate, accessTok
         {/* Contact Section */}
         <TabsContent value="contact">
           <Card className="p-6">
-            <h3 className="text-lg text-gray-900 mb-4">Contact Information</h3>
-            <div className="space-y-4">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-gray-100 mb-6">
               <div>
-                <label className="block text-sm text-gray-700 mb-2">Section Title</label>
-                <input
-                  type="text"
-                  value={settings.contact?.title || ''}
-                  onChange={(e) =>
-                    setSettings({
-                      ...settings,
-                      contact: { ...settings.contact, title: e.target.value },
-                    })
-                  }
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
-                />
+                <h3 className="text-xl font-bold text-gray-900">Get Involved & Contact Info</h3>
+                <p className="text-sm text-gray-500 mt-1">
+                  Manage organization contact channels, official email, phone, social media, office locations, and team contacts.
+                </p>
               </div>
-
-              <div>
-                <label className="block text-sm text-gray-700 mb-2">Subtitle</label>
-                <textarea
-                  value={settings.contact?.subtitle || ''}
-                  onChange={(e) =>
-                    setSettings({
-                      ...settings,
-                      contact: { ...settings.contact, subtitle: e.target.value },
-                    })
-                  }
-                  rows={2}
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
-                />
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-800 text-xs font-semibold">
+                <ShieldCheck size={16} className="text-emerald-600" />
+                <span>Protected Official Communications</span>
               </div>
+            </div>
 
+            <div className="space-y-8">
+              {/* 1. Main Page Headings */}
               <div>
-                <label className="block text-sm text-gray-700 mb-2">Address</label>
-                <input
-                  type="text"
-                  value={settings.contact?.address || ''}
-                  onChange={(e) =>
-                    setSettings({
-                      ...settings,
-                      contact: { ...settings.contact, address: e.target.value },
-                    })
-                  }
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
-                />
-              </div>
+                <h4 className="text-sm font-bold uppercase tracking-wider text-emerald-700 mb-3">
+                  1. Page Header & Introduction
+                </h4>
+                <div className="space-y-4 bg-gray-50/70 p-4 rounded-xl border border-gray-200/80">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">Page Main Heading</label>
+                    <input
+                      type="text"
+                      value={settings.contact?.title || ''}
+                      onChange={(e) =>
+                        setSettings({
+                          ...settings,
+                          contact: { ...settings.contact, title: e.target.value },
+                        })
+                      }
+                      placeholder="Get Involved"
+                      className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 bg-white text-sm"
+                    />
+                  </div>
 
-              <div>
-                <label className="block text-sm text-gray-700 mb-2">Email</label>
-                <input
-                  type="email"
-                  value={settings.contact?.email || ''}
-                  onChange={(e) =>
-                    setSettings({
-                      ...settings,
-                      contact: { ...settings.contact, email: e.target.value },
-                    })
-                  }
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm text-gray-700 mb-2">Phone</label>
-                <input
-                  type="tel"
-                  value={settings.contact?.phone || ''}
-                  onChange={(e) =>
-                    setSettings({
-                      ...settings,
-                      contact: { ...settings.contact, phone: e.target.value },
-                    })
-                  }
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm text-gray-700 mb-2">WhatsApp Number (international format, e.g. +256700000000)</label>
-                <input
-                  type="tel"
-                  value={settings.contact?.whatsappNumber || ''}
-                  onChange={(e) =>
-                    setSettings({
-                      ...settings,
-                      contact: { ...settings.contact, whatsappNumber: e.target.value },
-                    })
-                  }
-                  placeholder="+256700000000"
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
-                />
-                <p className="text-xs text-gray-500 mt-1">Used for the WhatsApp quick-connect button on the Contact section.</p>
-              </div>
-
-              <div>
-                <label className="block text-sm text-gray-700 mb-2">Social Links</label>
-                <div className="space-y-2">
-                  <input
-                    type="url"
-                    value={settings.contact?.socialLinks?.facebook || ''}
-                    onChange={(e) =>
-                      setSettings({
-                        ...settings,
-                        contact: {
-                          ...settings.contact,
-                          socialLinks: {
-                            ...settings.contact?.socialLinks,
-                            facebook: e.target.value,
-                          },
-                        },
-                      })
-                    }
-                    placeholder="Facebook URL"
-                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
-                  />
-                  <input
-                    type="url"
-                    value={settings.contact?.socialLinks?.twitter || ''}
-                    onChange={(e) =>
-                      setSettings({
-                        ...settings,
-                        contact: {
-                          ...settings.contact,
-                          socialLinks: {
-                            ...settings.contact?.socialLinks,
-                            twitter: e.target.value,
-                          },
-                        },
-                      })
-                    }
-                    placeholder="Twitter URL"
-                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
-                  />
-                  <input
-                    type="url"
-                    value={settings.contact?.socialLinks?.instagram || ''}
-                    onChange={(e) =>
-                      setSettings({
-                        ...settings,
-                        contact: {
-                          ...settings.contact,
-                          socialLinks: {
-                            ...settings.contact?.socialLinks,
-                            instagram: e.target.value,
-                          },
-                        },
-                      })
-                    }
-                    placeholder="Instagram URL"
-                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
-                  />
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">Introduction Paragraph</label>
+                    <textarea
+                      value={settings.contact?.subtitle || ''}
+                      onChange={(e) =>
+                        setSettings({
+                          ...settings,
+                          contact: { ...settings.contact, subtitle: e.target.value },
+                        })
+                      }
+                      rows={3}
+                      placeholder="Join RESTI in supporting locally led solutions and creating opportunities for communities. Whether you want to volunteer, donate, partner with us, support our programs, or learn more about our work, there are many ways to get involved."
+                      className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 bg-white text-sm"
+                    />
+                  </div>
                 </div>
               </div>
 
-              {/* Branch Locations */}
-              <div className="pt-6 border-t">
-                <div className="flex items-center justify-between mb-4">
+              {/* 2. Official Organization Contacts */}
+              <div>
+                <h4 className="text-sm font-bold uppercase tracking-wider text-emerald-700 mb-3">
+                  2. Official Channels & Headquarters
+                </h4>
+                <div className="grid md:grid-cols-2 gap-4 bg-gray-50/70 p-4 rounded-xl border border-gray-200/80">
                   <div>
-                    <h4 className="text-sm font-medium text-gray-900">Branch Locations</h4>
-                    <p className="text-xs text-gray-500">Add branch names, addresses and Google Maps embed links</p>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">
+                      Official Organization Email <span className="text-emerald-600">*</span>
+                    </label>
+                    <input
+                      type="email"
+                      value={settings.contact?.email || ''}
+                      onChange={(e) =>
+                        setSettings({
+                          ...settings,
+                          contact: { ...settings.contact, email: e.target.value },
+                        })
+                      }
+                      placeholder="info@resticbo.org"
+                      className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 bg-white text-sm"
+                    />
+                    <p className="text-[11px] text-gray-500 mt-1">
+                      Must be an official RESTI email (e.g. info@resticbo.org). Personal Gmail addresses will not be displayed on the public site.
+                    </p>
                   </div>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
+
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">
+                      Official Telephone Number <span className="text-emerald-600">*</span>
+                    </label>
+                    <input
+                      type="tel"
+                      value={settings.contact?.phone || ''}
+                      onChange={(e) =>
+                        setSettings({
+                          ...settings,
+                          contact: { ...settings.contact, phone: e.target.value },
+                        })
+                      }
+                      placeholder="+256 700 000 000"
+                      className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 bg-white text-sm"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">
+                      WhatsApp Quick-Connect Number
+                    </label>
+                    <input
+                      type="tel"
+                      value={settings.contact?.whatsappNumber || ''}
+                      onChange={(e) =>
+                        setSettings({
+                          ...settings,
+                          contact: { ...settings.contact, whatsappNumber: e.target.value },
+                        })
+                      }
+                      placeholder="+256700000000"
+                      className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 bg-white text-sm"
+                    />
+                    <p className="text-[11px] text-gray-500 mt-1">
+                      International format with country code (e.g. +256700000000). If empty, the WhatsApp button is hidden on the public site.
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">
+                      Office / Working Hours
+                    </label>
+                    <input
+                      type="text"
+                      value={settings.contact?.workingHours || ''}
+                      onChange={(e) =>
+                        setSettings({
+                          ...settings,
+                          contact: { ...settings.contact, workingHours: e.target.value },
+                        })
+                      }
+                      placeholder="Monday - Friday: 8:30 AM - 5:00 PM (EAT)"
+                      className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 bg-white text-sm"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">
+                      Headquarters Address
+                    </label>
+                    <input
+                      type="text"
+                      value={settings.contact?.address || ''}
+                      onChange={(e) =>
+                        setSettings({
+                          ...settings,
+                          contact: { ...settings.contact, address: e.target.value },
+                        })
+                      }
+                      placeholder="Kiryandongo Refugee Settlement, Bweyale"
+                      className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 bg-white text-sm"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-700 mb-1">District</label>
+                      <input
+                        type="text"
+                        value={settings.contact?.district || ''}
+                        onChange={(e) =>
+                          setSettings({
+                            ...settings,
+                            contact: { ...settings.contact, district: e.target.value },
+                          })
+                        }
+                        placeholder="Kiryandongo District"
+                        className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 bg-white text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-700 mb-1">Country</label>
+                      <input
+                        type="text"
+                        value={settings.contact?.country || ''}
+                        onChange={(e) =>
+                          setSettings({
+                            ...settings,
+                            contact: { ...settings.contact, country: e.target.value },
+                          })
+                        }
+                        placeholder="Uganda"
+                        className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 bg-white text-sm"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* 3. Social Media Links */}
+              <div>
+                <h4 className="text-sm font-bold uppercase tracking-wider text-emerald-700 mb-3">
+                  3. Social Media Links
+                </h4>
+                <div className="grid md:grid-cols-2 gap-4 bg-gray-50/70 p-4 rounded-xl border border-gray-200/80">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">Facebook URL</label>
+                    <input
+                      type="url"
+                      value={settings.contact?.socialLinks?.facebook || ''}
+                      onChange={(e) =>
+                        setSettings({
+                          ...settings,
+                          contact: {
+                            ...settings.contact,
+                            socialLinks: {
+                              ...settings.contact?.socialLinks,
+                              facebook: e.target.value,
+                            },
+                          },
+                        })
+                      }
+                      placeholder="https://facebook.com/resticbo"
+                      className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 bg-white text-sm"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">Twitter / X URL</label>
+                    <input
+                      type="url"
+                      value={settings.contact?.socialLinks?.twitter || ''}
+                      onChange={(e) =>
+                        setSettings({
+                          ...settings,
+                          contact: {
+                            ...settings.contact,
+                            socialLinks: {
+                              ...settings.contact?.socialLinks,
+                              twitter: e.target.value,
+                            },
+                          },
+                        })
+                      }
+                      placeholder="https://x.com/resticbo"
+                      className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 bg-white text-sm"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">Instagram URL</label>
+                    <input
+                      type="url"
+                      value={settings.contact?.socialLinks?.instagram || ''}
+                      onChange={(e) =>
+                        setSettings({
+                          ...settings,
+                          contact: {
+                            ...settings.contact,
+                            socialLinks: {
+                              ...settings.contact?.socialLinks,
+                              instagram: e.target.value,
+                            },
+                          },
+                        })
+                      }
+                      placeholder="https://instagram.com/resticbo"
+                      className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 bg-white text-sm"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">LinkedIn URL</label>
+                    <input
+                      type="url"
+                      value={settings.contact?.socialLinks?.linkedin || ''}
+                      onChange={(e) =>
+                        setSettings({
+                          ...settings,
+                          contact: {
+                            ...settings.contact,
+                            socialLinks: {
+                              ...settings.contact?.socialLinks,
+                              linkedin: e.target.value,
+                            },
+                          },
+                        })
+                      }
+                      placeholder="https://linkedin.com/company/resticbo"
+                      className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 bg-white text-sm"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">YouTube URL</label>
+                    <input
+                      type="url"
+                      value={settings.contact?.socialLinks?.youtube || ''}
+                      onChange={(e) =>
+                        setSettings({
+                          ...settings,
+                          contact: {
+                            ...settings.contact,
+                            socialLinks: {
+                              ...settings.contact?.socialLinks,
+                              youtube: e.target.value,
+                            },
+                          },
+                        })
+                      }
+                      placeholder="https://youtube.com/@resticbo"
+                      className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 bg-white text-sm"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* 4. Branch & Office Locations */}
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    <h4 className="text-sm font-bold uppercase tracking-wider text-emerald-700">
+                      4. Office & Field Locations
+                    </h4>
+                    <p className="text-xs text-gray-500">Add physical offices, centers and Google Maps embed links</p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
                     onClick={() => {
                       const locations = [...(settings.contact?.locations || [])];
-                      locations.push({ name: 'New Branch', address: '', mapUrl: '' });
+                      locations.push({
+                        id: `loc-${Date.now()}`,
+                        name: 'Kiryandongo Community Office',
+                        address: 'Kiryandongo Refugee Settlement, Kiryandongo District, Uganda / Bweyale',
+                        district: 'Kiryandongo District',
+                        country: 'Uganda',
+                        mapUrl: '',
+                        isPrimary: locations.length === 0,
+                        published: true,
+                      });
                       setSettings({
                         ...settings,
-                        contact: { ...settings.contact, locations }
+                        contact: { ...settings.contact, locations },
                       });
                     }}
                   >
-                    <Plus size={14} className="mr-1" /> Add Branch
+                    <Plus size={14} className="mr-1" /> Add Location
                   </Button>
                 </div>
-                
+
                 <div className="space-y-4">
                   {(settings.contact?.locations || []).map((loc: any, idx: number) => (
-                    <div key={idx} className="p-4 border rounded-lg bg-gray-50 relative group">
-                      <button 
-                        onClick={() => {
-                          const locations = settings.contact.locations.filter((_: any, i: number) => i !== idx);
-                          setSettings({
-                            ...settings,
-                            contact: { ...settings.contact, locations }
-                          });
-                        }}
-                        className="absolute top-2 right-2 p-1 text-gray-400 hover:text-red-500 transition-colors"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                      
-                      <div className="grid md:grid-cols-2 gap-4">
+                    <div key={loc.id || idx} className="p-4 border rounded-xl bg-gray-50/80 relative group space-y-3">
+                      <div className="flex items-center justify-between pb-2 border-b border-gray-200">
+                        <div className="flex items-center gap-2">
+                          <MapPin size={16} className="text-emerald-600" />
+                          <span className="font-semibold text-sm text-gray-800">
+                            {loc.name || `Location #${idx + 1}`}
+                          </span>
+                          {loc.isPrimary && (
+                            <span className="text-[10px] uppercase font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full">
+                              Primary
+                            </span>
+                          )}
+                        </div>
+                        <button
+                          onClick={() => {
+                            const locations = settings.contact.locations.filter((_: any, i: number) => i !== idx);
+                            setSettings({
+                              ...settings,
+                              contact: { ...settings.contact, locations },
+                            });
+                          }}
+                          className="p-1 text-gray-400 hover:text-red-500 transition-colors"
+                          title="Delete location"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+
+                      <div className="grid md:grid-cols-2 gap-3">
                         <div>
-                          <label className="block text-xs text-gray-600 mb-1">Branch Name</label>
+                          <label className="block text-xs font-medium text-gray-600 mb-1">Location / Office Name</label>
                           <input
                             type="text"
-                            value={loc.name}
+                            value={loc.name || ''}
                             onChange={(e) => {
                               const locations = [...settings.contact.locations];
                               locations[idx] = { ...locations[idx], name: e.target.value };
                               setSettings({ ...settings, contact: { ...settings.contact, locations } });
                             }}
-                            className="w-full px-3 py-1.5 text-sm border rounded-md focus:ring-1 focus:ring-emerald-500"
+                            className="w-full px-3 py-1.5 text-sm border rounded-lg bg-white"
                           />
                         </div>
+
                         <div>
-                          <label className="block text-xs text-gray-600 mb-1">Address</label>
+                          <label className="block text-xs font-medium text-gray-600 mb-1">Address / Street</label>
                           <input
                             type="text"
-                            value={loc.address}
+                            value={loc.address || ''}
                             onChange={(e) => {
                               const locations = [...settings.contact.locations];
                               locations[idx] = { ...locations[idx], address: e.target.value };
                               setSettings({ ...settings, contact: { ...settings.contact, locations } });
                             }}
-                            className="w-full px-3 py-1.5 text-sm border rounded-md focus:ring-1 focus:ring-emerald-500"
+                            className="w-full px-3 py-1.5 text-sm border rounded-lg bg-white"
                           />
                         </div>
                       </div>
-                      <div className="mt-3">
-                        <label className="block text-xs text-gray-600 mb-1">Google Maps Embed URL</label>
+
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">Google Maps Embed URL or Coordinates</label>
                         <input
                           type="text"
-                          value={loc.mapUrl}
+                          value={loc.mapUrl || ''}
                           onChange={(e) => {
                             const locations = [...settings.contact.locations];
                             locations[idx] = { ...locations[idx], mapUrl: e.target.value };
                             setSettings({ ...settings, contact: { ...settings.contact, locations } });
                           }}
-                          placeholder="https://www.google.com/maps/embed?..."
-                          className="w-full px-3 py-1.5 text-sm border rounded-md focus:ring-1 focus:ring-emerald-500"
+                          placeholder="https://maps.google.com/maps?q=... or https://www.google.com/maps/embed?..."
+                          className="w-full px-3 py-1.5 text-sm border rounded-lg bg-white"
                         />
-                        <p className="text-[10px] text-gray-400 mt-1">To get this: Google Maps → Share → Embed a map → copy 'src' value from iframe.</p>
+                        <p className="text-[10px] text-gray-400 mt-1">
+                          Tip: Leave blank to auto-generate from the address, or paste the Google Maps embed iframe URL.
+                        </p>
+                      </div>
+
+                      <div className="flex items-center gap-6 pt-1">
+                        <label className="inline-flex items-center gap-2 cursor-pointer text-xs font-medium text-gray-700">
+                          <input
+                            type="checkbox"
+                            checked={Boolean(loc.isPrimary)}
+                            onChange={(e) => {
+                              const locations = settings.contact.locations.map((item: any, i: number) => ({
+                                ...item,
+                                isPrimary: i === idx ? e.target.checked : false,
+                              }));
+                              setSettings({ ...settings, contact: { ...settings.contact, locations } });
+                            }}
+                            className="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                          />
+                          Set as Primary Office (featured in map banner)
+                        </label>
+
+                        <label className="inline-flex items-center gap-2 cursor-pointer text-xs font-medium text-gray-700">
+                          <input
+                            type="checkbox"
+                            checked={loc.published !== false}
+                            onChange={(e) => {
+                              const locations = [...settings.contact.locations];
+                              locations[idx] = { ...locations[idx], published: e.target.checked };
+                              setSettings({ ...settings, contact: { ...settings.contact, locations } });
+                            }}
+                            className="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                          />
+                          Published on Public Website
+                        </label>
                       </div>
                     </div>
                   ))}
+
                   {(settings.contact?.locations || []).length === 0 && (
-                    <div className="text-center py-6 border-2 border-dashed rounded-lg text-gray-400 text-sm">
-                      No branch locations added.
+                    <div className="text-center py-6 border-2 border-dashed rounded-xl text-gray-400 text-sm">
+                      No locations configured. Click "Add Location" above to add your primary office.
                     </div>
                   )}
                 </div>
               </div>
-              {/* Working Hours */}
-              <div className="pt-6 border-t mt-6">
-                <label className="block text-sm font-medium text-gray-900 mb-2">Office Hours</label>
-                <input
-                  type="text"
-                  value={settings.contact?.workingHours || ''}
-                  onChange={(e) =>
-                    setSettings({
-                      ...settings,
-                      contact: { ...settings.contact, workingHours: e.target.value },
-                    })
-                  }
-                  placeholder="Monday - Friday: 8:00 AM - 5:00 PM"
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
-                />
-              </div>
 
-              {/* Department Contacts */}
-              <div className="pt-6 border-t mt-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h4 className="text-sm font-medium text-gray-900">Direct Contacts / Departments</h4>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
+              {/* 5. Direct Contacts / Department Persons */}
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    <h4 className="text-sm font-bold uppercase tracking-wider text-emerald-700">
+                      5. Direct Contacts & Department Leads
+                    </h4>
+                    <p className="text-xs text-gray-500">
+                      Displayed on the "Get Involved" page for targeted visitor inquiries.
+                    </p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
                     onClick={() => {
-                      const departments = [...(settings.contact?.departments || [])];
-                      departments.push({ name: '', email: '' });
+                      const contactPersons = [...(settings.contact?.contactPersons || [])];
+                      contactPersons.push({
+                        id: `cp-${Date.now()}`,
+                        name: '',
+                        role: '',
+                        email: 'info@resticbo.org',
+                        phone: '',
+                        image: '',
+                        order: contactPersons.length + 1,
+                        published: true,
+                      });
                       setSettings({
                         ...settings,
-                        contact: { ...settings.contact, departments }
+                        contact: { ...settings.contact, contactPersons },
                       });
                     }}
                   >
-                    <Plus size={14} className="mr-1" /> Add Department
+                    <Plus size={14} className="mr-1" /> Add Contact Person
                   </Button>
                 </div>
-                
-                <div className="space-y-3">
-                  {(settings.contact?.departments || []).map((dept: any, idx: number) => (
-                    <div key={idx} className="flex gap-3 items-start group">
-                      <input
-                        type="text"
-                        value={dept.name}
-                        onChange={(e) => {
-                          const departments = [...settings.contact.departments];
-                          departments[idx] = { ...departments[idx], name: e.target.value };
-                          setSettings({ ...settings, contact: { ...settings.contact, departments } });
-                        }}
-                        placeholder="Department Name"
-                        className="flex-1 px-3 py-1.5 text-sm border rounded-md"
-                      />
-                      <input
-                        type="email"
-                        value={dept.email}
-                        onChange={(e) => {
-                          const departments = [...settings.contact.departments];
-                          departments[idx] = { ...departments[idx], email: e.target.value };
-                          setSettings({ ...settings, contact: { ...settings.contact, departments } });
-                        }}
-                        placeholder="email@example.com"
-                        className="flex-1 px-3 py-1.5 text-sm border rounded-md"
-                      />
-                      <button 
-                        onClick={() => {
-                          const departments = settings.contact.departments.filter((_: any, i: number) => i !== idx);
-                          setSettings({ ...settings, contact: { ...settings.contact, departments } });
-                        }}
-                        className="p-2 text-gray-400 hover:text-red-500 transition-colors"
-                      >
-                        <Trash2 size={16} />
-                      </button>
+
+                <div className="space-y-4">
+                  {(settings.contact?.contactPersons || []).map((person: any, idx: number) => (
+                    <div key={person.id || idx} className="p-4 border rounded-xl bg-gray-50/80 relative space-y-3">
+                      <div className="flex items-center justify-between pb-2 border-b border-gray-200">
+                        <span className="font-semibold text-sm text-gray-800">
+                          {person.name || `Contact Person #${idx + 1}`}
+                        </span>
+                        <button
+                          onClick={() => {
+                            const contactPersons = settings.contact.contactPersons.filter((_: any, i: number) => i !== idx);
+                            setSettings({
+                              ...settings,
+                              contact: { ...settings.contact, contactPersons },
+                            });
+                          }}
+                          className="p-1 text-gray-400 hover:text-red-500 transition-colors"
+                          title="Delete contact person"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+
+                      <div className="grid md:grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-xs font-medium text-gray-600 mb-1">Full Name</label>
+                          <input
+                            type="text"
+                            value={person.name || ''}
+                            onChange={(e) => {
+                              const contactPersons = [...settings.contact.contactPersons];
+                              contactPersons[idx] = { ...contactPersons[idx], name: e.target.value };
+                              setSettings({ ...settings, contact: { ...settings.contact, contactPersons } });
+                            }}
+                            placeholder="e.g. Meta Alex"
+                            className="w-full px-3 py-1.5 text-sm border rounded-lg bg-white"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-medium text-gray-600 mb-1">Role / Position</label>
+                          <input
+                            type="text"
+                            value={person.role || ''}
+                            onChange={(e) => {
+                              const contactPersons = [...settings.contact.contactPersons];
+                              contactPersons[idx] = { ...contactPersons[idx], role: e.target.value };
+                              setSettings({ ...settings, contact: { ...settings.contact, contactPersons } });
+                            }}
+                            placeholder="e.g. Founding Director | Research & Community Engagement"
+                            className="w-full px-3 py-1.5 text-sm border rounded-lg bg-white"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-medium text-gray-600 mb-1">
+                            Official Email (@resticbo.org)
+                          </label>
+                          <input
+                            type="email"
+                            value={person.email || ''}
+                            onChange={(e) => {
+                              const contactPersons = [...settings.contact.contactPersons];
+                              contactPersons[idx] = { ...contactPersons[idx], email: e.target.value };
+                              setSettings({ ...settings, contact: { ...settings.contact, contactPersons } });
+                            }}
+                            placeholder="info@resticbo.org"
+                            className="w-full px-3 py-1.5 text-sm border rounded-lg bg-white"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-medium text-gray-600 mb-1">Phone Number (Optional)</label>
+                          <input
+                            type="tel"
+                            value={person.phone || ''}
+                            onChange={(e) => {
+                              const contactPersons = [...settings.contact.contactPersons];
+                              contactPersons[idx] = { ...contactPersons[idx], phone: e.target.value };
+                              setSettings({ ...settings, contact: { ...settings.contact, contactPersons } });
+                            }}
+                            placeholder="+256 700 000 000"
+                            className="w-full px-3 py-1.5 text-sm border rounded-lg bg-white"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">Photo / Avatar URL</label>
+                        <div className="flex gap-2 items-center">
+                          <input
+                            type="url"
+                            value={person.image || ''}
+                            onChange={(e) => {
+                              const contactPersons = [...settings.contact.contactPersons];
+                              contactPersons[idx] = { ...contactPersons[idx], image: e.target.value };
+                              setSettings({ ...settings, contact: { ...settings.contact, contactPersons } });
+                            }}
+                            placeholder="https://..."
+                            className="flex-1 px-3 py-1.5 text-sm border rounded-lg bg-white"
+                          />
+                          <label className="cursor-pointer px-3 py-1.5 bg-slate-100 hover:bg-slate-200 border rounded-lg text-xs font-medium text-slate-700 flex items-center gap-1">
+                            <Upload size={13} />
+                            <span>Upload</span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={async (e) => {
+                                const file = e.target.files?.[0];
+                                if (!file) return;
+                                const toastId = toast.loading('Uploading photo...');
+                                try {
+                                  const formDataObj = new FormData();
+                                  formDataObj.append('file', file);
+                                  const res = await fetch(
+                                    `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/upload-image`,
+                                    {
+                                      method: 'POST',
+                                      headers: { Authorization: `Bearer ${accessToken || publicAnonKey}` },
+                                      body: formDataObj,
+                                    }
+                                  );
+                                  const d = await res.json();
+                                  if (!res.ok) throw new Error(d.error || 'Upload failed');
+                                  const contactPersons = [...settings.contact.contactPersons];
+                                  contactPersons[idx] = { ...contactPersons[idx], image: d.url };
+                                  setSettings({ ...settings, contact: { ...settings.contact, contactPersons } });
+                                  toast.success('Photo uploaded', { id: toastId });
+                                } catch (err: any) {
+                                  toast.error(err.message || 'Upload failed', { id: toastId });
+                                } finally {
+                                  e.target.value = '';
+                                }
+                              }}
+                            />
+                          </label>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between pt-1">
+                        <label className="inline-flex items-center gap-2 cursor-pointer text-xs font-medium text-gray-700">
+                          <input
+                            type="checkbox"
+                            checked={person.published !== false}
+                            onChange={(e) => {
+                              const contactPersons = [...settings.contact.contactPersons];
+                              contactPersons[idx] = { ...contactPersons[idx], published: e.target.checked };
+                              setSettings({ ...settings, contact: { ...settings.contact, contactPersons } });
+                            }}
+                            className="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                          />
+                          Published on Public Website
+                        </label>
+
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-gray-500">Order:</span>
+                          <input
+                            type="number"
+                            value={person.order || idx + 1}
+                            onChange={(e) => {
+                              const contactPersons = [...settings.contact.contactPersons];
+                              contactPersons[idx] = { ...contactPersons[idx], order: parseInt(e.target.value) || 1 };
+                              setSettings({ ...settings, contact: { ...settings.contact, contactPersons } });
+                            }}
+                            className="w-16 px-2 py-1 text-xs border rounded bg-white"
+                          />
+                        </div>
+                      </div>
                     </div>
                   ))}
+
+                  {(settings.contact?.contactPersons || []).length === 0 && (
+                    <div className="text-center py-6 border-2 border-dashed rounded-xl text-gray-400 text-sm">
+                      No direct contacts added. Click "Add Contact Person" above to add leadership and department leads.
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

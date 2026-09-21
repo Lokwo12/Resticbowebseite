@@ -89,8 +89,8 @@ function PageTitleManager() {
       '/donor-portal': 'Donor Portal | RESTI',
       '/donor-dashboard': 'Donor Portal | RESTI',
       '/login': 'Donor Sign In | RESTI',
-      '/register': 'Create Donor Account | RESTI',
-      '/contact': 'Contact Us | RESTI',
+      '/contact': 'Get Involved & Contact | RESTI CBO',
+      '/get-involved': 'Get Involved | RESTI CBO',
       '/financials': 'Financial Transparency | RESTI',
       '/about': 'About Us | RESTI',
       '/events': 'Events Calendar | RESTI',
@@ -274,6 +274,7 @@ export default function App() {
         <Route path="/register" element={<MainLayout><Register /></MainLayout>} />
         <Route path="/reset-password" element={<MainLayout><ResetPassword /></MainLayout>} />
         <Route path="/contact" element={<ContactPage />} />
+        <Route path="/get-involved" element={<ContactPage />} />
         <Route path="/financials" element={<MainLayout><FinancialReports /></MainLayout>} />
         <Route path="/transparency" element={<Navigate to="/financials" replace />} />
         <Route path="/financial-transparency" element={<Navigate to="/financials" replace />} />

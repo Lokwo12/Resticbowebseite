@@ -12,7 +12,7 @@ const formSchema = z.object({
   name: z.string().min(2, 'Name is required'),
   email: z.string().email('Invalid email address'),
   phone: z.string().optional().or(z.literal('')),
-  subject: z.string().optional().or(z.literal('')),
+  subject: z.string().min(1, 'Subject / Topic is required'),
   message: z.string().min(10, 'Message must be at least 10 characters'),
 });
 
@@ -81,8 +81,10 @@ export function Contact() {
       const data = await response.json();
       if (data?.settings?.contact) {
         const cSettings = data.settings.contact;
+        const safeEmail = cSettings.email && !cSettings.email.toLowerCase().includes('gmail.com') ? cSettings.email : 'info@resticbo.org';
         setSettings({
           ...cSettings,
+          email: safeEmail,
           subtitle: (cSettings.subtitle || '').replace(/volunteer,?/gi, 'partner with us,').trim(),
           supportItems: (cSettings.supportItems || []).filter((item: string) => !item.toLowerCase().includes('volunteer')),
           departments: (cSettings.departments || []).filter((dept: any) => !dept.name?.toLowerCase().includes('volunteer') && !dept.email?.toLowerCase().includes('volunteer')),
