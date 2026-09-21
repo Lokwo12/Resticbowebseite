@@ -109,7 +109,6 @@ export function FAQPage() {
       case 'about resti': return <HelpCircle size={15} />;
       case 'programs': return <BookOpen size={15} />;
       case 'donations': return <Heart size={15} />;
-      case 'volunteering': return <Users size={15} />;
       case 'partnerships': return <Handshake size={15} />;
       case 'opportunities': return <Briefcase size={15} />;
       default: return <HelpCircle size={15} />;
@@ -120,7 +119,7 @@ export function FAQPage() {
     <div className="bg-slate-50 min-h-screen">
       <SEO 
         title="Frequently Asked Questions | RESTI CBO"
-        description="Find answers to common questions about RESTI, our programs, donations, volunteering, partnerships, and how you can get involved in Kiryandongo District, Uganda."
+        description="Find answers to common questions about RESTI, our programs, donations, partnerships, and how you can get involved in Kiryandongo District, Uganda."
       />
 
       {/* JSON-LD Structured Data for FAQPage */}
@@ -148,7 +147,7 @@ export function FAQPage() {
 
           {/* Introduction: 17-18px desktop, 16px mobile, leading ~1.6 */}
           <p className="text-[16px] sm:text-[17px] lg:text-[18px] text-emerald-50 leading-[1.6] font-normal max-w-2xl mx-auto">
-            Find answers to common questions about RESTI, our programs, donations, volunteering, partnerships, and how you can get involved.
+            Find answers to common questions about RESTI, our programs, donations, partnerships, and how you can get involved.
           </p>
         </div>
       </header>

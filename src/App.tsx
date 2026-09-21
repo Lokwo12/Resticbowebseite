@@ -258,7 +258,6 @@ export default function App() {
         <Route path="/about" element={<MainLayout><AdminErrorBoundary><AboutPage /></AdminErrorBoundary></MainLayout>} />
         <Route path="/reports" element={<MainLayout><ImpactReports /></MainLayout>} />
         <Route path="/impact-dashboard" element={<MainLayout><ImpactDashboard /></MainLayout>} />
-        <Route path="/volunteer" element={<Navigate to="/opportunities" replace />} />
         <Route path="/events" element={<MainLayout><Events /></MainLayout>} />
         <Route path="/resources" element={<MainLayout><Resources /></MainLayout>} />
         <Route path="/faqs" element={<MainLayout><FAQPage /></MainLayout>} />

@@ -565,7 +565,7 @@ export function ImpactStatsFormDialog({ show, onClose, currentStats, onSuccess, 
   const [formData, setFormData] = useState({
     peopleServed: 5000,
     programsActive: 12,
-    volunteersActive: 150,
+    householdsSupported: 150,
     fundsRaised: 250000,
     communitiesReached: 8,
     successRate: 92,
@@ -579,7 +579,7 @@ export function ImpactStatsFormDialog({ show, onClose, currentStats, onSuccess, 
     setFormData({
       peopleServed: currentStats?.peopleServed ?? 5000,
       programsActive: currentStats?.programsActive ?? 12,
-      volunteersActive: currentStats?.volunteersActive ?? 150,
+      householdsSupported: currentStats?.householdsSupported ?? 150,
       fundsRaised: currentStats?.fundsRaised ?? 250000,
       communitiesReached: currentStats?.communitiesReached ?? 8,
       successRate: currentStats?.successRate ?? 92,
@@ -666,14 +666,14 @@ export function ImpactStatsFormDialog({ show, onClose, currentStats, onSuccess, 
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Active Volunteers</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Households Supported</label>
               <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 focus-within:ring-2 focus-within:ring-emerald-500/20 focus-within:border-emerald-500 transition-all">
                 <Heart size={18} className="text-slate-400 shrink-0" />
                 <input
                   type="number"
                   min={0}
-                  value={formData.volunteersActive}
-                  onChange={(e) => handleNumber('volunteersActive', e.target.value)}
+                  value={formData.householdsSupported}
+                  onChange={(e) => handleNumber('householdsSupported', e.target.value)}
                   className="flex-1 bg-transparent py-3 outline-none text-slate-800 placeholder:text-slate-400"
                   placeholder="e.g. 150"
                 />

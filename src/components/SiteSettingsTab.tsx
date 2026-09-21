@@ -70,14 +70,6 @@ export const DEFAULT_FINANCIALS = {
   commitmentButtonLink: '#contact'
 };
 
-export const DEFAULT_VOLUNTEER_SETTINGS = {
-  heroTitle: 'Join Our Mission',
-  heroSubtitle: 'Share your skills, make new friends, and be a part of positive change in Kiryandongo.',
-  heroImage: 'https://images.unsplash.com/photo-1641569707854-c80945fb4719?w=1600&q=80',
-  successTitle: 'Application Received!',
-  successMessage: 'Thank you for your interest in volunteering with us. We have received your application and will get back to you shortly.'
-};
-
 export const DEFAULT_DONATION_PAGE_SETTINGS = {
   badge: 'DONATE NOW',
   title: 'Support the Community Foundation',
@@ -104,8 +96,7 @@ export const DEFAULT_IMPACT_DASHBOARD_SETTINGS = {
   description: 'See the measurable impact of our work through data, statistics, and comprehensive reports.',
   peopleServedBadge: '+12% YoY',
   programsActiveBadge: 'Active',
-  volunteersActiveBadge: 'Growing',
-  fundsRaisedBadge: '2025',
+    fundsRaisedBadge: '2025',
   communitiesReachedBadge: 'Expanding',
   successRateBadge: 'Excellence',
   commitmentTitle: 'Committed to Transparency',
@@ -351,32 +342,6 @@ export function SiteSettingsTab({ settings: initialSettings, onUpdate, accessTok
         financials: { ...(prev.financials || DEFAULT_FINANCIALS), reports: currentReports }
       }));
       toast.success('Document uploaded successfully', { id: toastId });
-    } catch (err: any) {
-      toast.error(err.message || 'Upload failed', { id: toastId });
-    } finally {
-      e.target.value = '';
-    }
-  };
-
-  const handleVolunteerBannerUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const toastId = toast.loading('Uploading banner image...');
-    try {
-      const formDataObj = new FormData();
-      formDataObj.append('file', file);
-      const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/upload-image`,
-        { method: 'POST', headers: { Authorization: `Bearer ${accessToken || publicAnonKey}` }, body: formDataObj }
-      );
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Upload failed');
-      
-      setSettings((prev: any) => ({
-        ...prev,
-        volunteer: { ...(prev.volunteer || DEFAULT_VOLUNTEER_SETTINGS), heroImage: data.url }
-      }));
-      toast.success('Banner uploaded successfully', { id: toastId });
     } catch (err: any) {
       toast.error(err.message || 'Upload failed', { id: toastId });
     } finally {
@@ -724,7 +689,7 @@ export function SiteSettingsTab({ settings: initialSettings, onUpdate, accessTok
                   onChange={(e) =>
                     setSettings({ ...settings, header: { ...settings.header, announcementText: e.target.value } })
                   }
-                  placeholder="We are looking for volunteers in Kiryandongo"
+                  placeholder="Explore our community programs in Kiryandongo"
                   className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
                 />
               </div>
@@ -738,7 +703,7 @@ export function SiteSettingsTab({ settings: initialSettings, onUpdate, accessTok
                   }
                   className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
                 >
-                  {['home','about','programs','impact','volunteer','contact','donate'].map(id => (
+                  {['home','about','programs','impact','opportunities','contact','donate'].map(id => (
                     <option key={id} value={id}>{id.charAt(0).toUpperCase() + id.slice(1)}</option>
                   ))}
                 </select>
@@ -1062,7 +1027,7 @@ export function SiteSettingsTab({ settings: initialSettings, onUpdate, accessTok
                             stats: [
                               { value: '0', label: 'Families Supported' },
                               { value: '0', label: 'Active Programs' },
-                              { value: '0', label: 'Volunteers' }
+                              { value: '0', label: 'Communities Served' }
                             ],
                           },
                         });
@@ -1078,7 +1043,7 @@ export function SiteSettingsTab({ settings: initialSettings, onUpdate, accessTok
                         const currentStats = settings.hero?.stats || [
                           { value: '0', label: 'Families Supported' },
                           { value: '0', label: 'Active Programs' },
-                          { value: '0', label: 'Volunteers' }
+                          { value: '0', label: 'Communities Served' }
                         ];
                         setSettings({
                           ...settings,
@@ -1101,7 +1066,7 @@ export function SiteSettingsTab({ settings: initialSettings, onUpdate, accessTok
                     : [
                         { value: '0', label: 'Families Supported' },
                         { value: '0', label: 'Active Programs' },
-                        { value: '0', label: 'Volunteers' }
+                        { value: '0', label: 'Communities Served' }
                       ]
                   ).map((stat: any, index: number) => (
                     <div key={index} className="flex gap-3 items-center bg-white p-3 rounded-xl border border-gray-200 shadow-sm">
@@ -1116,7 +1081,7 @@ export function SiteSettingsTab({ settings: initialSettings, onUpdate, accessTok
                               : [
                                   { value: '0', label: 'Families Supported' },
                                   { value: '0', label: 'Active Programs' },
-                                  { value: '0', label: 'Volunteers' }
+                                  { value: '0', label: 'Communities Served' }
                                 ];
                             statsList[index] = { ...statsList[index], value: e.target.value };
                             setSettings({
@@ -1139,7 +1104,7 @@ export function SiteSettingsTab({ settings: initialSettings, onUpdate, accessTok
                               : [
                                   { value: '0', label: 'Families Supported' },
                                   { value: '0', label: 'Active Programs' },
-                                  { value: '0', label: 'Volunteers' }
+                                  { value: '0', label: 'Communities Served' }
                                 ];
                             statsList[index] = { ...statsList[index], label: e.target.value };
                             setSettings({
@@ -1159,7 +1124,7 @@ export function SiteSettingsTab({ settings: initialSettings, onUpdate, accessTok
                             : [
                                 { value: '0', label: 'Families Supported' },
                                 { value: '0', label: 'Active Programs' },
-                                { value: '0', label: 'Volunteers' }
+                                { value: '0', label: 'Communities Served' }
                               ];
                           statsList.splice(index, 1);
                           setSettings({
@@ -2825,9 +2790,9 @@ export function SiteSettingsTab({ settings: initialSettings, onUpdate, accessTok
                 </div>
               </div>
 
-              {/* Volunteer Opportunities Section */}
+              {/* Opportunities Section */}
               <div className="p-4 bg-gray-50 rounded-lg">
-                <h4 className="text-sm text-gray-900 mb-3">Volunteer Opportunities Section</h4>
+                <h4 className="text-sm text-gray-900 mb-3">Opportunities Section</h4>
                 <div className="space-y-3">
                   <div>
                     <label className="block text-sm text-gray-700 mb-1">Title</label>

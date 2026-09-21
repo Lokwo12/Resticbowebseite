@@ -602,7 +602,6 @@ export function FAQManager({
                     <option value="About RESTI">About RESTI</option>
                     <option value="Programs">Programs</option>
                     <option value="Donations">Donations</option>
-                    <option value="Volunteering">Volunteering</option>
                     <option value="Partnerships">Partnerships</option>
                     <option value="Opportunities">Opportunities</option>
                     <option value="Custom">Custom Category...</option>

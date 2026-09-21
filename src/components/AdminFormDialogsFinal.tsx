@@ -29,7 +29,7 @@ interface OpportunityFormData {
   link: string;
 }
 
-// Volunteer Opportunity Form Dialog
+// Opportunity Form Dialog
 export function OpportunityFormDialog({ show, onClose, editingItem, onSuccess, userRole, accessToken }: FormDialogProps) {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState<OpportunityFormData>({
@@ -235,7 +235,6 @@ export function OpportunityFormDialog({ show, onClose, editingItem, onSuccess, u
               >
                 <option value="Full-Time">Full-Time Job</option>
                 <option value="Part-Time">Part-Time Job</option>
-                <option value="Volunteer">Volunteer Role</option>
                 <option value="Internship">Internship</option>
                 <option value="Contract / Tender">Contract / Tender</option>
               </select>
@@ -390,7 +389,6 @@ export function FAQFormDialog({ show, onClose, editingItem, onSuccess, userRole,
                 <option value="about-resti">About RESTI</option>
                 <option value="programs">Programs</option>
                 <option value="donations">Donations</option>
-                <option value="volunteering">Volunteering</option>
                 <option value="partnerships">Partnerships</option>
                 <option value="opportunities">Opportunities</option>
                 <option value="general">General</option>

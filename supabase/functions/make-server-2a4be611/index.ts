@@ -607,169 +607,6 @@ app.post('/make-server-2a4be611/news', requireAdmin, async (c) => {
   }
 });
 
-// Volunteer application submission
-app.post('/make-server-2a4be611/volunteer', withRateLimit('volunteer', 5, 10 * 60_000), async (c) => {
-  try {
-    const body = await c.req.json()
-    const { name, email, phone, skills, message } = body
-
-    const nameV = validateName(name)
-    const emailV = validateEmail(email)
-    const phoneV = validatePhone(phone)
-
-    if (!nameV.ok) return c.json({ error: nameV.error }, 400)
-    if (!emailV.ok) return c.json({ error: emailV.error }, 400)
-    if (phone && !phoneV.ok) return c.json({ error: phoneV.error }, 400)
-
-    const rawId = crypto.randomUUID()
-    const volunteerId = `volunteer:${rawId}`
-    const nowIso = new Date().toISOString()
-    const safeName = escapeHtml(name.trim())
-    const safeEmail = escapeHtml(email.trim())
-    const safePhone = escapeHtml(phone ? phone.trim() : '')
-    const safeSkills = escapeHtml(skills ? skills.trim() : '')
-    const safeMessage = escapeMessage(message || '')
-
-    // 1. Store in KV store for Admin Dashboard
-    await kv.set(volunteerId, {
-      name: name.trim(),
-      email: email.trim(),
-      phone: phone ? phone.trim() : '',
-      skills: skills ? skills.trim() : '',
-      message: message || '',
-      timestamp: nowIso,
-      status: 'pending'
-    })
-
-    // 2. Try inserting into SQL volunteers table if present
-    try {
-      await supabase.from('volunteers').insert({
-        id: rawId,
-        name: name.trim(),
-        email: email.trim(),
-        phone: phone ? phone.trim() : null,
-        skills: skills ? skills.trim() : null,
-        message: message || null,
-        status: 'pending',
-        created_at: nowIso,
-        updated_at: nowIso
-      })
-    } catch (dbErr) {
-      console.warn('Warning: Could not insert volunteer into SQL table:', dbErr)
-    }
-
-    // 3. Dispatch real notification email to Admin inbox(es) with applicant details & reply_to
-    const adminRecipients = await getAdminNotifyEmails()
-    const formattedDate = new Date().toUTCString()
-    const adminEmailHtml = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <style>
-          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #1e293b; background-color: #f8fafc; margin: 0; padding: 24px; }
-          .container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
-          .header { background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color: #ffffff; padding: 28px; text-align: center; }
-          .header h1 { margin: 0; font-size: 22px; font-weight: 700; letter-spacing: -0.025em; }
-          .badge { display: inline-block; background: rgba(255,255,255,0.2); padding: 4px 12px; border-radius: 9999px; font-size: 12px; font-weight: 600; margin-bottom: 8px; text-transform: uppercase; }
-          .content { padding: 28px; }
-          .info-table { width: 100%; border-collapse: collapse; margin-bottom: 24px; }
-          .info-table td { padding: 10px 12px; border-bottom: 1px solid #f1f5f9; font-size: 14px; }
-          .info-table td.label { font-weight: 600; color: #64748b; width: 120px; }
-          .info-table td.value { color: #0f172a; font-weight: 500; }
-          .message-card { background: #f8fafc; border-left: 4px solid #0284c7; border-radius: 4px; padding: 16px 20px; margin: 20px 0; font-size: 15px; color: #334155; line-height: 1.7; white-space: pre-wrap; }
-          .reply-banner { background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; padding: 14px 16px; margin: 24px 0 12px 0; text-align: center; }
-          .reply-banner p { margin: 0; font-size: 13px; color: #0369a1; font-weight: 500; }
-          .reply-btn { display: inline-block; background: #0284c7; color: #ffffff !important; text-decoration: none; padding: 10px 24px; border-radius: 6px; font-weight: 600; font-size: 14px; margin-top: 10px; }
-          .footer { background: #f8fafc; border-top: 1px solid #e2e8f0; padding: 16px 28px; text-align: center; font-size: 12px; color: #94a3b8; }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <div class="header">
-            <div class="badge">🤝 Real-Time Website Alert</div>
-            <h1>New Volunteer Application</h1>
-          </div>
-          <div class="content">
-            <p style="margin-top: 0; font-size: 15px; color: #475569;">A new volunteer application has been submitted on the <strong>RESTI-CBO</strong> website:</p>
-            
-            <table class="info-table">
-              <tr>
-                <td class="label">Applicant Name:</td>
-                <td class="value"><strong>${safeName}</strong></td>
-              </tr>
-              <tr>
-                <td class="label">Email Address:</td>
-                <td class="value"><a href="mailto:${safeEmail}" style="color: #0284c7; text-decoration: none; font-weight: 600;">${safeEmail}</a></td>
-              </tr>
-              <tr>
-                <td class="label">Phone Number:</td>
-                <td class="value">${safePhone || '<span style="color:#94a3b8;">Not provided</span>'}</td>
-              </tr>
-              <tr>
-                <td class="label">Skills / Interests:</td>
-                <td class="value">${safeSkills || '<span style="color:#94a3b8;">General Volunteering</span>'}</td>
-              </tr>
-              <tr>
-                <td class="label">Applied At:</td>
-                <td class="value">${formattedDate}</td>
-              </tr>
-            </table>
-
-            ${safeMessage ? `
-            <div style="font-weight: 600; font-size: 14px; color: #334155; margin-bottom: 6px;">Motivation / Message:</div>
-            <div class="message-card">${safeMessage}</div>
-            ` : ''}
-
-            <div class="reply-banner">
-              <p>💡 You can reply directly to this email to get in touch with <strong>${safeName}</strong>.</p>
-              <a href="mailto:${safeEmail}?subject=${encodeURIComponent(`Volunteer Application with RESTI-CBO`)}" class="reply-btn">Reply to ${safeName}</a>
-            </div>
-          </div>
-          <div class="footer">
-            RESTI-CBO • Refugee and Host Community Empowerment • Kiryandongo District, Uganda<br>
-            Notification automatically generated by resticbo.org
-          </div>
-        </div>
-      </body>
-      </html>
-    `
-
-    for (const recipient of adminRecipients) {
-      console.log(`Dispatching volunteer alert to admin: ${recipient}`)
-      await sendEmail(
-        recipient,
-        `🤝 New Volunteer Application: ${safeName} - RESTI-CBO`,
-        adminEmailHtml,
-        email.trim()
-      )
-    }
-
-    // 4. Send confirmation email to applicant (safely wrapped)
-    try {
-      await sendEmail(
-        email.trim(),
-        'Thank You for Applying to Volunteer with RESTI-CBO',
-        `
-          <div style="font-family: sans-serif; line-height: 1.6; color: #1e293b; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 8px;">
-            <h2 style="color: #0369a1; margin-top: 0;">Welcome to the RESTI-CBO Volunteer Community!</h2>
-            <p>Dear ${safeName},</p>
-            <p>Thank you for offering your time and skills to support our programs in Kiryandongo District. We have received your application and our volunteer coordinator will review your profile and reach out shortly.</p>
-            <p>Warm regards,<br><strong>RESTI-CBO Team</strong><br>Kiryandongo District, Uganda<br><a href="https://resticbo.org" style="color: #0369a1;">www.resticbo.org</a></p>
-          </div>
-        `
-      )
-    } catch (confErr) {
-      console.warn('Confirmation email to volunteer applicant skipped or failed:', confErr)
-    }
-
-    console.log(`Volunteer application submitted: ${volunteerId}`)
-    return c.json({ success: true, message: 'Volunteer application submitted successfully' })
-  } catch (error) {
-    console.error('Error submitting volunteer application:', error)
-    return c.json({ error: 'Failed to submit volunteer application', details: String(error) }, 500)
-  }
-})
 
 // Create Stripe payment intent
 app.post('/make-server-2a4be611/create-payment-intent', async (c) => {
@@ -2443,51 +2280,6 @@ app.patch('/make-server-2a4be611/admin/contacts/:id', requireAdmin, async (c) =>
   }
 })
 
-// Get all volunteers (admin)
-app.get('/make-server-2a4be611/admin/volunteers', requireAdmin, async (c) => {
-  try {
-    const limit = parseInt(c.req.query('limit') || '100');
-    const offset = parseInt(c.req.query('offset') || '0');
-    
-    if (c.req.query('limit') !== undefined) {
-      const { data, count } = await kv.getPaginatedByPrefix('volunteer:', limit, offset);
-      data.sort((a, b) => new Date(b.value?.timestamp || b.value?.created_at || 0).getTime() - new Date(a.value?.timestamp || a.value?.created_at || 0).getTime());
-      return c.json({ volunteers: data, count, limit, offset });
-    }
-    
-    const volunteers = await kv.getByPrefix('volunteer:')
-    // Sort by timestamp descending
-    volunteers.sort((a, b) => new Date(b.value.timestamp).getTime() - new Date(a.value.timestamp).getTime())
-    return c.json({ volunteers })
-  } catch (error) {
-    console.error('Error fetching volunteers:', error)
-    return c.json({ error: 'Failed to fetch volunteers', details: String(error) }, 500)
-  }
-})
-
-// Update volunteer status (admin)
-app.patch('/make-server-2a4be611/admin/volunteers/:id', requireAdmin, async (c) => {
-  try {
-    const id = c.req.param('id')
-    const body = await c.req.json()
-    const { status } = body
-
-    const volunteer = await kv.get(id)
-    if (!volunteer) {
-      return c.json({ error: 'Volunteer not found' }, 404)
-    }
-
-    await kv.set(id, {
-      ...volunteer,
-      status: status || volunteer.status
-    })
-
-    return c.json({ success: true, message: 'Volunteer status updated successfully' })
-  } catch (error) {
-    console.error('Error updating volunteer:', error)
-    return c.json({ error: 'Failed to update volunteer', details: String(error) }, 500)
-  }
-})
 
 // Get all donations (admin)
 app.get('/make-server-2a4be611/admin/donations', requireAdmin, async (c) => {
@@ -2717,30 +2509,6 @@ app.post('/make-server-2a4be611/admin/contacts/bulk-update', requireAdmin, async
   }
 })
 
-// Bulk update volunteer status
-app.post('/make-server-2a4be611/admin/volunteers/bulk-update', requireAdmin, async (c) => {
-  try {
-    const body = await c.req.json()
-    const { ids, status } = body
-
-    if (!ids || !Array.isArray(ids) || ids.length === 0) {
-      return c.json({ error: 'Invalid or empty IDs array' }, 400)
-    }
-
-    const volunteers = await kv.mget(ids)
-    const updates = volunteers.map((volunteer, index) => ({
-      key: ids[index],
-      value: { ...volunteer, status }
-    }))
-
-    await kv.mset(updates)
-    console.log(`Bulk updated ${ids.length} volunteers to status: ${status}`)
-    return c.json({ success: true, message: `${ids.length} volunteers updated successfully` })
-  } catch (error) {
-    console.error('Error bulk updating volunteers:', error)
-    return c.json({ error: 'Failed to bulk update volunteers', details: String(error) }, 500)
-  }
-})
 
 // Update contact status (admin)
 app.put('/make-server-2a4be611/admin/contacts/:id/status', requireAdmin, async (c) => {
@@ -2927,92 +2695,6 @@ app.post('/make-server-2a4be611/admin/contacts/bulk-delete', requireAdmin, async
   }
 })
 
-// Update volunteer status (admin)
-app.put('/make-server-2a4be611/admin/volunteers/:id/status', requireAdmin, async (c) => {
-  try {
-    const id = c.req.param('id')
-    const body = await c.req.json()
-    const { status } = body
-
-    const existing = await kv.get(id)
-    if (!existing) {
-      return c.json({ error: 'Volunteer not found' }, 404)
-    }
-
-    await kv.set(id, {
-      ...existing,
-      status,
-      updatedAt: new Date().toISOString()
-    })
-
-    // Send email notification to volunteer
-    if (status === 'approved' || status === 'rejected') {
-      const subject = status === 'approved' 
-        ? 'Your Volunteer Application Has Been Approved!'
-        : 'Update on Your Volunteer Application'
-      
-      const message = status === 'approved'
-        ? `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2 style="color: #10b981;">Congratulations ${existing.name}!</h2>
-            <p>We're excited to inform you that your volunteer application has been approved!</p>
-            <p>We'll be in touch soon with more details about next steps and opportunities to get involved.</p>
-            <p>Thank you for your interest in supporting our community!</p>
-            <p>Best regards,<br>RESTI-CBO Team</p>
-          </div>
-        `
-        : `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2 style="color: #10b981;">Thank you for your interest</h2>
-            <p>Dear ${existing.name},</p>
-            <p>Thank you for your interest in volunteering with RESTI-CBO.</p>
-            <p>While we aren't able to move forward with your application at this time, we encourage you to stay connected with our work and consider applying for future opportunities.</p>
-            <p>Best regards,<br>RESTI-CBO Team</p>
-          </div>
-        `
-      
-      await sendEmail(existing.email, subject, message)
-    }
-
-    console.log(`Volunteer status updated: ${id} -> ${status}`)
-    return c.json({ success: true, message: 'Volunteer status updated successfully' })
-  } catch (error) {
-    console.error('Error updating volunteer status:', error)
-    return c.json({ error: 'Failed to update volunteer status', details: String(error) }, 500)
-  }
-})
-
-// Delete volunteer (admin)
-app.delete('/make-server-2a4be611/admin/volunteers/:id', requireAdmin, async (c) => {
-  try {
-    const id = c.req.param('id')
-    await kv.del(id)
-    console.log(`Volunteer deleted: ${id}`)
-    return c.json({ success: true, message: 'Volunteer deleted successfully' })
-  } catch (error) {
-    console.error('Error deleting volunteer:', error)
-    return c.json({ error: 'Failed to delete volunteer', details: String(error) }, 500)
-  }
-})
-
-// Bulk delete volunteers (admin)
-app.post('/make-server-2a4be611/admin/volunteers/bulk-delete', requireAdmin, async (c) => {
-  try {
-    const body = await c.req.json()
-    const { ids } = body
-
-    if (!ids || !Array.isArray(ids) || ids.length === 0) {
-      return c.json({ error: 'Invalid or empty IDs array' }, 400)
-    }
-
-    await kv.mdel(ids)
-    console.log(`Bulk deleted ${ids.length} volunteers`)
-    return c.json({ success: true, message: `${ids.length} volunteers deleted successfully` })
-  } catch (error) {
-    console.error('Error bulk deleting volunteers:', error)
-    return c.json({ error: 'Failed to bulk delete volunteers', details: String(error) }, 500)
-  }
-})
 
 // Update news (admin)
 app.put('/make-server-2a4be611/news/:id', requireAdmin, async (c) => {
@@ -3077,11 +2759,10 @@ app.put('/make-server-2a4be611/news/:id', requireAdmin, async (c) => {
 // Get dashboard statistics (admin)
 app.get('/make-server-2a4be611/admin/stats', requireAdmin, async (c) => {
   try {
-    const [programs, news, contacts, volunteers, donations, subscribers] = await Promise.all([
+    const [programs, news, contacts, donations, subscribers] = await Promise.all([
       kv.getByPrefix('program:'),
       kv.getByPrefix('news:'),
       kv.getByPrefix('contact:'),
-      kv.getByPrefix('volunteer:'),
       // Fetch donations from Postgres
       supabase.from('donations').select('*'),
       kv.getByPrefix('newsletter:')
@@ -3091,15 +2772,12 @@ app.get('/make-server-2a4be611/admin/stats', requireAdmin, async (c) => {
     const donationRows = Array.isArray(donations) ? donations : (donations.data || [])
     const totalDonations = donationRows.reduce((sum: number, d: any) => sum + (Number(d.amount || 0)), 0)
     const newContacts = contacts.filter(c => c.value.status === 'new').length
-    const pendingVolunteers = volunteers.filter(v => v.value.status === 'pending').length
 
     const stats = {
       totalPrograms: programs.length,
       totalNews: news.length,
       totalContacts: contacts.length,
       newContacts,
-      totalVolunteers: volunteers.length,
-      pendingVolunteers,
       totalDonations: donationRows.length,
       totalDonationAmount: totalDonations,
       totalSubscribers: subscribers.length
@@ -3115,10 +2793,9 @@ app.get('/make-server-2a4be611/admin/stats', requireAdmin, async (c) => {
 // Get advanced analytics (admin)
 app.get('/make-server-2a4be611/admin/analytics', requireAdmin, async (c) => {
   try {
-    const [donationsRes, contacts, volunteers, subscribers] = await Promise.all([
+    const [donationsRes, contacts, subscribers] = await Promise.all([
       supabase.from('donations').select('*'),
       kv.getByPrefix('contact:'),
-      kv.getByPrefix('volunteer:'),
       kv.getByPrefix('newsletter:')
     ])
     const donations = donationsRes.data || []
@@ -3168,12 +2845,6 @@ app.get('/make-server-2a4be611/admin/analytics', requireAdmin, async (c) => {
       { name: 'Resolved', value: contacts.filter(c => c.value.status === 'resolved').length }
     ]
 
-    // Volunteer status distribution
-    const volunteerStatusData = [
-      { name: 'Pending', value: volunteers.filter(v => v.value.status === 'pending').length },
-      { name: 'Approved', value: volunteers.filter(v => v.value.status === 'approved').length },
-      { name: 'Rejected', value: volunteers.filter(v => v.value.status === 'rejected').length }
-    ]
 
     // Growth trends (last 30 days)
     const last30Days = Array.from({ length: 30 }, (_, i) => {
@@ -3183,7 +2854,6 @@ app.get('/make-server-2a4be611/admin/analytics', requireAdmin, async (c) => {
         date: date.toISOString().split('T')[0],
         donations: 0,
         contacts: 0,
-        volunteers: 0,
         subscribers: 0
       }
     }).reverse()
@@ -3200,11 +2870,6 @@ app.get('/make-server-2a4be611/admin/analytics', requireAdmin, async (c) => {
       if (day) day.contacts += 1
     })
 
-    volunteers.forEach(v => {
-      const date = (v.value.timestamp || v.value.created_at || new Date().toISOString()).split('T')[0]
-      const day = last30Days.find(day => day.date === date)
-      if (day) day.volunteers += 1
-    })
 
     subscribers.forEach(s => {
       const date = (s.value.timestamp || s.value.created_at || new Date().toISOString()).split('T')[0]
@@ -3216,7 +2881,6 @@ app.get('/make-server-2a4be611/admin/analytics', requireAdmin, async (c) => {
       monthlyDonations,
       paymentMethodData,
       contactStatusData,
-      volunteerStatusData,
       growthTrends: last30Days
     })
   } catch (error) {
@@ -3636,7 +3300,7 @@ app.delete('/make-server-2a4be611/admin/partners/:id', requireAdmin, async (c) =
 app.get('/make-server-2a4be611/impact-stats', async (c) => {
   try {
     const stats = await kv.get('impact-stats')
-    return c.json({ stats: stats || { peopleServed: 5000, programsActive: 12, volunteersActive: 150, fundsRaised: 250000, communitiesReached: 8, successRate: 92 } })
+    return c.json({ stats: stats || { peopleServed: 5000, programsActive: 12, householdsSupported: 150, fundsRaised: 250000, communitiesReached: 8, successRate: 92 } })
   } catch (error) {
     console.error('Error fetching impact stats:', error)
     return c.json({ error: 'Failed to fetch impact stats', details: String(error) }, 500)
@@ -3715,12 +3379,12 @@ app.delete('/make-server-2a4be611/admin/reports/:id', requireAdmin, async (c) =>
 // Opportunities Settings (empty state & inquiries notice)
 const DEFAULT_OPP_SETTINGS = {
   emptyTitle: "No current opportunities",
-  emptyMessage: "We do not currently have any open opportunities. Please check back later for new positions, internships, volunteer opportunities, and other ways to get involved with RESTI.",
+  emptyMessage: "We do not currently have any open opportunities. Please check back later for new positions, internships, partner openings, and other ways to get involved with RESTI.",
   emptyButtonText: "Contact RESTI",
   emptyButtonLink: "/contact",
   showInquiriesBox: true,
   inquiriesTitle: "Don't see a role that matches your skills?",
-  inquiriesDescription: "RESTI thrives on passionate changemakers, researchers, and volunteers from all walks of life. Send us your profile or proposal, and let us explore how we can collaborate together to build self-reliant refugee and host communities.",
+  inquiriesDescription: "RESTI thrives on passionate changemakers, researchers, and community advocates from all walks of life. Send us your profile or proposal, and let us explore how we can collaborate together to build self-reliant refugee and host communities.",
   inquiriesEmail: "careers@resticbo.org",
   inquiriesSubject: "General Inquiry / Partnership Proposal"
 };
@@ -4300,7 +3964,7 @@ app.post('/make-server-2a4be611/initialize', async (c) => {
         since: '2021'
       })
 
-      // Add sample volunteer opportunities
+      // Add sample opportunities
       await kv.set('opportunity:1', {
         title: 'Education Mentor',
         description: 'Help students with homework, reading, and academic support. Make a lasting impact on a child\'s educational journey.',
@@ -4313,7 +3977,7 @@ app.post('/make-server-2a4be611/initialize', async (c) => {
       })
 
       await kv.set('opportunity:2', {
-        title: 'Community Health Volunteer',
+        title: 'Community Health Outreach Associate',
         description: 'Assist with health education, first aid, and connecting community members with healthcare services.',
         requirements: ['Basic health knowledge (training provided)', 'Good communication skills', 'Minimum 6-month commitment'],
         timeCommitment: '4-6 hours per week',
@@ -4331,13 +3995,6 @@ app.post('/make-server-2a4be611/initialize', async (c) => {
         order: 1
       })
 
-      await kv.set('faq:2', {
-        question: 'Can I volunteer if I don\'t live in Kiryandongo?',
-        answer: 'Yes! We welcome remote volunteers for tasks like social media management, fundraising, grant writing, and online tutoring. We also have opportunities for short-term volunteers who can visit for a few weeks.',
-        category: 'volunteering',
-        order: 2
-      })
-
       await kv.set('faq:3', {
         question: 'What programs do you offer?',
         answer: 'We offer programs in education support, healthcare access, community development, skills training, and microfinance. Each program is designed to create sustainable, long-term impact in the Kiryandongo community.',
@@ -4347,8 +4004,8 @@ app.post('/make-server-2a4be611/initialize', async (c) => {
 
       // Add sample resources
       await kv.set('resource:1', {
-        title: 'Volunteer Application Form',
-        description: 'Complete this form to apply for any of our volunteer positions',
+        title: 'Community Program Application Form',
+        description: 'Complete this form to apply for community programs and partnerships',
         fileUrl: '#',
         fileType: 'PDF',
         fileSize: '245 KB',
@@ -4404,7 +4061,7 @@ app.get('/make-server-2a4be611/site-settings', async (c) => {
         },
         header: {
           showAnnouncement: true,
-          announcementText: 'We are looking for volunteers in Kiryandongo',
+          announcementText: 'Join our upcoming community empowerment workshops in Kiryandongo',
           announcementLink: 'contact',
         },
         hero: {
@@ -4417,7 +4074,7 @@ app.get('/make-server-2a4be611/site-settings', async (c) => {
           stats: [
             { value: '500+', label: 'Families Supported' },
             { value: '10+', label: 'Active Programs' },
-            { value: '50+', label: 'Volunteers' }
+            { value: '50+', label: 'Communities Reached' }
           ]
         },
         about: {
@@ -4441,7 +4098,7 @@ app.get('/make-server-2a4be611/site-settings', async (c) => {
         },
         contact: {
           title: 'Get Involved',
-          subtitle: 'Join us in making a difference! Whether you want to volunteer, donate, or simply learn more about our work, we\'d love to hear from you.',
+          subtitle: 'Join us in making a difference! Whether you want to partner, donate, or simply learn more about our work, we\'d love to hear from you.',
           address: 'Kiryandongo District, Uganda',
           email: 'info@restikirya.org',
           phone: '+256 XXX XXX XXX',
@@ -4452,7 +4109,7 @@ app.get('/make-server-2a4be611/site-settings', async (c) => {
             instagram: '#'
           },
           supportItems: [
-            'Volunteer your time and skills',
+            'Support our community programs',
             'Make a donation to support our programs',
             'Partner with us on community initiatives',
             'Spread the word about our work'
@@ -4510,8 +4167,8 @@ app.get('/make-server-2a4be611/site-settings', async (c) => {
             description: 'Access our reports, publications, and educational materials to learn more about our work and impact.'
           },
           opportunities: {
-            title: 'Volunteer Opportunities',
-            description: 'Make a difference by volunteering with us. Explore available positions and find the perfect fit for your skills.'
+            title: 'Opportunities',
+            description: 'Explore career openings, consultancies, and collaborative opportunities to make a difference with us.'
           },
           impact: {
             title: 'Impact Dashboard',
@@ -4574,7 +4231,7 @@ app.post('/make-server-2a4be611/site-settings/initialize', async (c) => {
         stats: [
           { value: '500+', label: 'Families Supported' },
           { value: '10+', label: 'Active Programs' },
-          { value: '50+', label: 'Volunteers' }
+          { value: '50+', label: 'Communities Reached' }
         ]
       },
       about: {
@@ -4598,7 +4255,7 @@ app.post('/make-server-2a4be611/site-settings/initialize', async (c) => {
       },
       contact: {
         title: 'Get Involved',
-        subtitle: 'Join us in making a difference! Whether you want to volunteer, donate, or simply learn more about our work, we\'d love to hear from you.',
+        subtitle: 'Join us in making a difference! Whether you want to partner, donate, or simply learn more about our work, we\'d love to hear from you.',
         address: 'Kiryandongo District, Uganda',
         email: 'info@restikirya.org',
         phone: '+256 XXX XXX XXX',
@@ -4608,7 +4265,7 @@ app.post('/make-server-2a4be611/site-settings/initialize', async (c) => {
           instagram: '#'
         },
         supportItems: [
-          'Volunteer your time and skills',
+          'Support our community programs',
           'Make a donation to support our programs',
           'Partner with us on community initiatives',
           'Spread the word about our work'
@@ -4657,8 +4314,8 @@ app.post('/make-server-2a4be611/site-settings/initialize', async (c) => {
           description: 'Access our reports, publications, and educational materials to learn more about our work and impact.'
         },
         opportunities: {
-          title: 'Volunteer Opportunities',
-          description: 'Make a difference by volunteering with us. Explore available positions and find the perfect fit for your skills.'
+          title: 'Opportunities',
+          description: 'Explore career openings, consultancies, and collaborative opportunities to make a difference with us.'
         },
         impact: {
           title: 'Impact Dashboard',

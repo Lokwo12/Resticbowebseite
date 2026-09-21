@@ -97,7 +97,7 @@ export function OpportunitiesPage() {
           return {
             id: item.key || item.id || val.id || `opp-${Math.random()}`,
             title: val.title || 'Untitled Opportunity',
-            category: val.category || 'Volunteer Opportunities',
+            category: val.category || 'Jobs',
             type: val.type || 'Full-Time',
             workArrangement: val.workArrangement || 'Field-Based',
             location: val.location || 'Kiryandongo District',
@@ -589,7 +589,7 @@ export function OpportunitiesPage() {
                   {oppSettings.emptyTitle || 'No current opportunities'}
                 </h3>
                 <p className="text-slate-600 text-sm md:text-base leading-relaxed mb-6 max-w-xl mx-auto whitespace-pre-line">
-                  {oppSettings.emptyMessage || 'We do not currently have any open opportunities. Please check back later for new positions, internships, volunteer opportunities, and other ways to get involved with RESTI.'}
+                  {oppSettings.emptyMessage || 'We do not currently have any open opportunities. Please check back later for new positions, internships, consultancy tenders, and other ways to get involved with RESTI.'}
                 </p>
                 <div>
                   {oppSettings.emptyButtonLink && (oppSettings.emptyButtonLink.startsWith('http') || oppSettings.emptyButtonLink.startsWith('mailto:')) ? (
@@ -625,7 +625,7 @@ export function OpportunitiesPage() {
                 {oppSettings.inquiriesTitle || "Don't see a role that matches your skills?"}
               </h3>
               <p className="text-emerald-100/90 text-sm sm:text-base leading-relaxed mb-6 whitespace-pre-line">
-                {oppSettings.inquiriesDescription || "RESTI thrives on passionate changemakers, researchers, and volunteers from all walks of life. Send us your profile or proposal, and let us explore how we can collaborate together to build self-reliant refugee and host communities."}
+                {oppSettings.inquiriesDescription || "RESTI thrives on passionate changemakers, researchers, and community partners from all walks of life. Send us your profile or proposal, and let us explore how we can collaborate together to build self-reliant refugee and host communities."}
               </p>
               <div className="flex flex-wrap items-center gap-4">
                 <Link

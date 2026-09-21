@@ -16,7 +16,7 @@ export function FAQ() {
   const [openIds, setOpenIds] = useState<Set<string>>(new Set(['faq-about-1']));
   const [sectionSettings, setSectionSettings] = useState({ 
     title: 'Frequently Asked Questions', 
-    description: 'Find answers to common questions about RESTI, our programs, donations, volunteering, partnerships, and how you can get involved.' 
+    description: 'Find answers to common questions about RESTI, our programs, donations, partnerships, and how you can get involved.' 
   });
 
   useEffect(() => {

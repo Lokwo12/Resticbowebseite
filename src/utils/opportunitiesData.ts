@@ -1,7 +1,6 @@
 export type OpportunityCategory = 
   | 'Jobs'
   | 'Internships'
-  | 'Volunteer Opportunities'
   | 'Consultancy'
   | 'Fellowships'
   | 'Other Opportunities'
@@ -61,7 +60,6 @@ export interface CandidateApplication {
 export const OPPORTUNITY_CATEGORIES: OpportunityCategory[] = [
   'Jobs',
   'Internships',
-  'Volunteer Opportunities',
   'Consultancy',
   'Fellowships',
   'Other Opportunities'
@@ -115,44 +113,6 @@ export const INITIAL_OPPORTUNITIES: OpportunityItem[] = [
     applicationInstructions: 'Submit your CV (max 3 pages) and a 1-page cover letter detailing your experience with farmer producer groups.',
     createdAt: '2026-09-01T08:00:00.000Z',
     updatedAt: '2026-09-01T08:00:00.000Z'
-  },
-  {
-    id: 'opp-community-health-volunteer',
-    key: 'opportunity:opp-community-health-volunteer',
-    title: 'Community Health & Hygiene Volunteer',
-    category: 'Volunteer Opportunities',
-    type: 'Volunteer',
-    workArrangement: 'Field-Based',
-    location: 'Kiryandongo District',
-    duration: '6 Months (Flexible)',
-    shortDescription: 'Support community health awareness, WASH sensitization, and mobile immunization mobilization campaigns in collaboration with local health centres.',
-    description: 'Join RESTI as a Community Health & Hygiene Volunteer to support frontline health education, maternal and child wellness campaigns, and clean water sensitization. Volunteers work hand-in-hand with village health teams (VHTs) and settlement leaders to ensure vital health information reaches every household.',
-    responsibilities: [
-      'Assist with door-to-door community health surveys and health promotion dialogues.',
-      'Support handwashing and water safety demonstrations at school and community water points.',
-      'Mobilize community members for periodic immunization drives and antenatal care visits.',
-      'Document community health observations and communicate emerging health concerns to supervisors.'
-    ],
-    requirements: [
-      'Passion for community well-being, public health, and humanitarian service.',
-      'Strong communication and interpersonal skills within multicultural environments.',
-      'Completed secondary education (health-related certification is a welcome plus).',
-      'Resident of Kiryandongo District or neighboring sub-counties.'
-    ],
-    benefits: [
-      'Official Certificate of Volunteer Service upon completion.',
-      'Field transport and meal stipends during organized outreach activities.',
-      'Comprehensive orientation and training from certified public health professionals.'
-    ],
-    isOngoing: true,
-    deadline: 'Ongoing',
-    status: 'Ongoing',
-    applicationMethod: 'internal',
-    applicationEmail: 'volunteer@resticbo.org',
-    applicationUrl: '',
-    applicationInstructions: 'Fill out our online volunteer application form with your background and area of interest.',
-    createdAt: '2026-09-05T09:00:00.000Z',
-    updatedAt: '2026-09-05T09:00:00.000Z'
   },
   {
     id: 'opp-comms-intern',
@@ -297,6 +257,9 @@ export function computeOpportunityStatus(opp: OpportunityItem): OpportunityStatu
 }
 
 export function isOpportunityPubliclyActive(opp: OpportunityItem): boolean {
+  if (opp.category?.toLowerCase().includes('volunteer') || opp.type?.toLowerCase().includes('volunteer')) {
+    return false;
+  }
   const liveStatus = computeOpportunityStatus(opp);
   return liveStatus === 'Open' || liveStatus === 'Closing Soon' || liveStatus === 'Ongoing';
 }
@@ -308,9 +271,6 @@ export function getCategoryBadgeClasses(category: string): string {
   }
   if (cat.includes('intern')) {
     return 'bg-violet-50 text-violet-700 border-violet-200';
-  }
-  if (cat.includes('volunteer')) {
-    return 'bg-sky-50 text-sky-700 border-sky-200';
   }
   if (cat.includes('consult')) {
     return 'bg-amber-50 text-amber-800 border-amber-200';
@@ -354,12 +314,12 @@ export interface OpportunitiesSettings {
 
 export const DEFAULT_OPPORTUNITIES_SETTINGS: OpportunitiesSettings = {
   emptyTitle: 'No current opportunities',
-  emptyMessage: 'We do not currently have any open opportunities. Please check back later for new positions, internships, volunteer opportunities, and other ways to get involved with RESTI.',
+  emptyMessage: 'We do not currently have any open opportunities. Please check back later for new positions, internships, consultancy tenders, and other ways to get involved with RESTI.',
   emptyButtonText: 'Contact RESTI',
   emptyButtonLink: '/contact',
   showInquiriesBox: true,
   inquiriesTitle: "Don't see a role that matches your skills?",
-  inquiriesDescription: "RESTI thrives on passionate changemakers, researchers, and volunteers from all walks of life. Send us your profile or proposal, and let us explore how we can collaborate together to build self-reliant refugee and host communities.",
+  inquiriesDescription: "RESTI thrives on passionate changemakers, researchers, and community partners from all walks of life. Send us your profile or proposal, and let us explore how we can collaborate together to build self-reliant refugee and host communities.",
   inquiriesEmail: 'careers@resticbo.org',
   inquiriesSubject: 'General Inquiry / Partnership Proposal',
 };

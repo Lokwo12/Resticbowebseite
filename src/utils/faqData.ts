@@ -26,7 +26,6 @@ export const FAQ_CATEGORIES: FAQCategoryConfig[] = [
   { id: 'About RESTI', label: 'About RESTI', description: 'Mission, vision, history, and target communities' },
   { id: 'Programs', label: 'Programs', description: 'Livelihoods, education, healthcare, and peacebuilding' },
   { id: 'Donations', label: 'Donations', description: 'Giving options, payment methods, and financial stewardship' },
-  { id: 'Volunteering', label: 'Volunteering', description: 'Remote and field volunteer opportunities' },
   { id: 'Partnerships', label: 'Partnerships', description: 'Organizational, corporate, and institutional collaboration' },
   { id: 'Opportunities', label: 'Opportunities', description: 'Jobs, tenders, fellowships, and internships' },
 ];
@@ -162,36 +161,6 @@ export const DEFAULT_FAQS: FAQItem[] = [
     published: true,
   },
 
-  // ── Volunteering ──
-  {
-    id: 'faq-vol-1',
-    key: 'faq:vol-1',
-    question: 'Can I volunteer if I don\'t live in Kiryandongo?',
-    answer: 'Yes! We welcome remote volunteers who can assist with grant writing, research, digital communications, curriculum design, and technical mentorship. We also host short-term and project-based volunteers visiting Kiryandongo District.',
-    category: 'Volunteering',
-    order: 14,
-    published: true,
-    featured: true,
-  },
-  {
-    id: 'faq-vol-2',
-    key: 'faq:vol-2',
-    question: 'What volunteer opportunities are available?',
-    answer: 'Available volunteer roles include community outreach facilitators, ICT and literacy trainers, agricultural extension aides, and event coordinators. Current openings are posted on our Opportunities page.',
-    category: 'Volunteering',
-    order: 15,
-    published: true,
-  },
-  {
-    id: 'faq-vol-3',
-    key: 'faq:vol-3',
-    question: 'How can I apply to volunteer?',
-    answer: 'You can apply by visiting the Opportunities section of our website or by submitting a volunteer inquiry through our Contact page with your background and areas of interest.',
-    category: 'Volunteering',
-    order: 16,
-    published: true,
-  },
-
   // ── Partnerships ──
   {
     id: 'faq-part-1',
@@ -199,7 +168,7 @@ export const DEFAULT_FAQS: FAQItem[] = [
     question: 'How can an organization partner with RESTI?',
     answer: 'Organizations can partner with RESTI through project co-implementation, institutional grants, technical advisory, or joint research initiatives. Interested organizations can initiate discussions through our Contact form or by emailing info@resticbo.org.',
     category: 'Partnerships',
-    order: 17,
+    order: 14,
     published: true,
   },
   {
@@ -208,7 +177,7 @@ export const DEFAULT_FAQS: FAQItem[] = [
     question: 'Can businesses or institutions support RESTI programs?',
     answer: 'Yes. We welcome corporate partnerships, academic research collaborations, and social enterprise sponsorships that align with our mission of community empowerment and sustainable development.',
     category: 'Partnerships',
-    order: 18,
+    order: 15,
     published: true,
   },
   {
@@ -217,7 +186,7 @@ export const DEFAULT_FAQS: FAQItem[] = [
     question: 'How can I collaborate with RESTI?',
     answer: 'Reach out via our Contact page with a brief description of your organization and collaborative ideas. Our leadership team will arrange an introductory discussion to explore shared objectives.',
     category: 'Partnerships',
-    order: 19,
+    order: 16,
     published: true,
   },
 
@@ -228,7 +197,7 @@ export const DEFAULT_FAQS: FAQItem[] = [
     question: 'Where can I find current RESTI job opportunities?',
     answer: 'All open employment positions, consultancy tenders, and internship opportunities are published on our dedicated Opportunities page at resticbo.org/opportunities.',
     category: 'Opportunities',
-    order: 20,
+    order: 17,
     published: true,
   },
   {
@@ -237,16 +206,16 @@ export const DEFAULT_FAQS: FAQItem[] = [
     question: 'Does RESTI offer internships?',
     answer: 'Yes. RESTI offers internship placements for university students and recent graduates looking for hands-on experience in community development, humanitarian programs, and non-profit administration.',
     category: 'Opportunities',
-    order: 21,
+    order: 18,
     published: true,
   },
   {
     id: 'faq-opp-3',
     key: 'faq:opp-3',
-    question: 'Does RESTI accept consultants or volunteers?',
-    answer: 'Yes. We periodically engage technical consultants for specialized evaluations and assessments, and we continuously welcome passionate volunteers across our ongoing community projects.',
+    question: 'Does RESTI accept external consultants and experts?',
+    answer: 'Yes. We periodically engage technical consultants, research specialists, and thematic advisors for baseline surveys, program evaluations, curriculum development, and institutional capacity-building assessments.',
     category: 'Opportunities',
-    order: 22,
+    order: 19,
     published: true,
   }
 ];
@@ -275,7 +244,7 @@ export function normalizeFaqList(rawList: any[]): FAQItem[] {
     return DEFAULT_FAQS;
   }
 
-  const mapped: FAQItem[] = rawList.map((item: any) => {
+  let mapped: FAQItem[] = rawList.map((item: any) => {
     const rawId = item.id || item.key || '';
     const cleanId = rawId.replace(/^faq:/, '').trim();
     const val = item.value || item;
@@ -289,8 +258,6 @@ export function normalizeFaqList(rawList: any[]): FAQItem[] {
       category = 'Programs';
     } else if (catLower === 'donations' || catLower === 'donation' || catLower === 'finance') {
       category = 'Donations';
-    } else if (catLower === 'volunteering' || catLower === 'volunteer') {
-      category = 'Volunteering';
     } else if (catLower === 'partnerships' || catLower === 'partnership' || catLower === 'partners') {
       category = 'Partnerships';
     } else if (catLower === 'opportunities' || catLower === 'opportunity' || catLower === 'careers' || catLower === 'jobs') {
@@ -301,8 +268,6 @@ export function normalizeFaqList(rawList: any[]): FAQItem[] {
     let question = (val.question || '').trim();
     if (question.toLowerCase() === 'how can i donate to resti kiryandongo cbo?' || question.toLowerCase() === 'how can i donate to the organization?') {
       question = 'How can I donate to RESTI Kiryandongo CBO?';
-    } else if (question.toLowerCase() === "can i volunteer if i don't live in kiryandongo?") {
-      question = "Can I volunteer if I don't live in Kiryandongo?";
     } else if (question.toLowerCase() === 'what programs do you offer?' || question.toLowerCase() === 'what programs does resti offer?') {
       question = 'What programs does RESTI offer?';
     }
@@ -321,7 +286,15 @@ export function normalizeFaqList(rawList: any[]): FAQItem[] {
     };
   });
 
-  // If Supabase only has the 3 initial sample items, complement with the full structured set
+  // Filter out any volunteer FAQs completely
+  mapped = mapped.filter(item => {
+    const q = item.question.toLowerCase();
+    const a = item.answer.toLowerCase();
+    const c = item.category.toLowerCase();
+    return !c.includes('volunteer') && !q.includes('volunteer') && !a.includes('volunteer');
+  });
+
+  // If Supabase only has the initial sample items, complement with the full structured set
   if (mapped.length <= 3) {
     const existingQuestions = new Set(mapped.map(m => m.question.toLowerCase().trim()));
     const additional = DEFAULT_FAQS.filter(d => !existingQuestions.has(d.question.toLowerCase().trim()));

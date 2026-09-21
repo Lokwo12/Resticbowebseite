@@ -374,7 +374,7 @@ We combine protection with micro-livelihood training, ensuring that women gain t
     description: 'Fostering peaceful co-existence, digital literacy, sports leagues, and creative arts mentorship to build confidence and social cohesion among young people.',
     content: `Young people constitute over 60% of the population in Kiryandongo District. Without constructive opportunities for personal development and recreation, youth can experience frustration, isolation, and social friction.
 
-RESTI’s Youth Development program harnesses the universal language of sports, creative arts, debate, and civic volunteerism to bridge ethnic divides and nurture community leadership.
+RESTI’s Youth Development program harnesses the universal language of sports, creative arts, debate, and civic leadership to bridge ethnic divides and nurture community leadership.
 
 Through Sports for Peace tournaments and leadership academies, we equip young people with the skills and confidence to lead constructive change in their communities.`,
     image: 'https://images.unsplash.com/photo-1641569707854-c80945fb4719?w=1200&q=80',
@@ -402,7 +402,7 @@ Through Sports for Peace tournaments and leadership academies, we equip young pe
       },
       {
         title: 'Youth Leadership Academy',
-        desc: 'Conducting workshops on project planning, public speaking, conflict mediation, and community volunteerism.'
+        desc: 'Conducting workshops on project planning, public speaking, conflict mediation, and community initiative leadership.'
       },
       {
         title: 'Peer Mentorship Networks',

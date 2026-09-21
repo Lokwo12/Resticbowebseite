@@ -11,12 +11,12 @@ const fallbacks: Record<string, string> = {
 Last Updated: January 2025
 
 1. Introduction
-RESTI ("we," "our," or "the Organization") is dedicated to safeguarding the privacy and personal data of our donors, volunteers, community beneficiaries, and website visitors. This Privacy Policy outlines how we collect, utilize, protect, and handle your information in accordance with international data privacy best practices and the laws of the Republic of Uganda.
+RESTI ("we," "our," or "the Organization") is dedicated to safeguarding the privacy and personal data of our donors, partners, community beneficiaries, and website visitors. This Privacy Policy outlines how we collect, utilize, protect, and handle your information in accordance with international data privacy best practices and the laws of the Republic of Uganda.
 
 2. Information We Collect
 We collect information that you voluntarily provide to us when you:
 • Make a donation or pledge support (donor name, email address, phone number, billing address, and transaction amount).
-• Submit volunteer or partnership applications.
+• Submit candidate or partnership applications.
 • Contact us through our website contact forms, email, or live communication channels.
 • Subscribe to our newsletters or impact reports.
 
@@ -26,7 +26,7 @@ Note on Payment Data: When you make a financial contribution through our platfor
 We use your information strictly for legitimate organizational purposes:
 • Processing donations and issuing verifiable digital receipts and certificates.
 • Communicating direct updates regarding the programs and impact funded by your contributions.
-• Responding to your questions, volunteer inquiries, and partnership requests.
+• Responding to your questions, community inquiries, and partnership requests.
 • Complying with statutory reporting, accounting, and nonprofit audit requirements.
 
 4. Donor Privacy Commitment
@@ -113,7 +113,7 @@ Cookies are small text files that are stored on your computer, tablet, or mobile
 RESTI uses cookies and similar storage technologies exclusively for legitimate purposes:
 • Essential Cookies: Necessary for security, maintaining donor session authentication, routing, and processing secure transactions without interruption.
 • Functional Cookies: Remember user preferences such as selected donation frequency, preferred display currency (USD / UGX), and language selection.
-• Analytics Cookies: Help us understand how visitors interact with our platform (such as most viewed programs and volunteer inquiries) so we can enhance clarity and accessibility. Analytics data is aggregated and anonymized.
+• Analytics Cookies: Help us understand how visitors interact with our platform (such as most viewed programs and popular reports) so we can enhance clarity and accessibility. Analytics data is aggregated and anonymized.
 
 3. Third-Party Cookies
 When you engage with external services embedded on our site (such as Stripe for PCI-compliant credit card processing, Google Analytics, or YouTube videos documenting our field projects), these services may deploy their own third-party cookies subject to their respective privacy policies.

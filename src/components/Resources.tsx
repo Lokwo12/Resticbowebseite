@@ -205,7 +205,7 @@ export function Resources() {
             </div>
             <h4 className="text-gray-900 mb-2">Application Forms</h4>
             <p className="text-sm text-gray-600">
-              Volunteer applications, program enrollment forms, and more
+              Community applications, program enrollment forms, and documents
             </p>
           </Card>
 

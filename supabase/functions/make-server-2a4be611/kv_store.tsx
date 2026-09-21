@@ -9,7 +9,6 @@ const client = () => createClient(
 const getTableInfo = (key: string) => {
   if (key.startsWith('admin_user:')) return { table: 'admin_users', id: key.split(':')[1] || key };
   if (key.startsWith('contact:')) return { table: 'contacts', id: key.split(':')[1] || key };
-  if (key.startsWith('volunteer:')) return { table: 'volunteers', id: key.split(':')[1] || key };
   if (key.startsWith('newsletter:')) return { table: 'newsletters', id: key.split(':')[1] || key };
   if (key.startsWith('team:')) return { table: 'team', id: key.split(':')[1] || key };
   if (key.startsWith('event:')) return { table: 'events', id: key.split(':')[1] || key };

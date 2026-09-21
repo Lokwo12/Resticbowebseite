@@ -636,7 +636,7 @@ export function OpportunitiesManager({
                 {refreshing && <RefreshCw size={18} className="animate-spin text-purple-600" />}
               </div>
               <p className="text-slate-600 text-sm mt-1 max-w-2xl leading-relaxed">
-                Manage jobs, internships, volunteer roles, consultancies, fellowships, and review incoming candidate applications.
+                Manage jobs, internships, consultancies, fellowships, and review incoming candidate applications.
               </p>
             </div>
           </div>
@@ -1175,7 +1175,7 @@ export function OpportunitiesManager({
                         rows={3}
                         value={emptySettings.inquiriesDescription}
                         onChange={(e) => setEmptySettings({ ...emptySettings, inquiriesDescription: e.target.value })}
-                        placeholder="Invitation for general collaboration, volunteering, or proposals..."
+                        placeholder="Invitation for general collaboration, proposals, or inquiries..."
                         className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-800 focus:ring-2 focus:ring-purple-500 focus:outline-none"
                       />
                     </div>

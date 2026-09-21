@@ -17,7 +17,7 @@ export interface NavItemConfig {
   headerBg: string;
   accentBg: string;
   description: string;
-  badgeKey?: 'liveChat' | 'contacts' | 'volunteers' | 'donations';
+  badgeKey?: 'liveChat' | 'contacts' | 'donations';
 }
 
 export interface NavGroupConfig {
@@ -64,7 +64,6 @@ export const NAVIGATION_GROUPS: NavGroupConfig[] = [
     title: 'Audience & Inquiries',
     items: [
       { id: 'donations', label: 'Donations Portal', icon: Heart, color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496', description: 'Donor records & contributions', badgeKey: 'donations' },
-      { id: 'volunteers', label: 'Volunteers', icon: Heart, color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496', description: 'Volunteer applications', badgeKey: 'volunteers' },
       { id: 'contacts', label: 'Messages', icon: Mail, color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496', description: 'Contact form messages', badgeKey: 'contacts' },
       { id: 'subscribers', label: 'Subscribers', icon: Send, color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496', description: 'Newsletter subscribers' },
       { id: 'team', label: 'Team Members', icon: Users, color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496', description: 'Staff & leadership team' },
