@@ -3712,7 +3712,7 @@ app.delete('/make-server-2a4be611/admin/reports/:id', requireAdmin, async (c) =>
   }
 })
 
-// Volunteer Opportunities routes
+// Opportunities & Recruitment routes
 app.get('/make-server-2a4be611/opportunities', async (c) => {
   try {
     const limit = parseInt(c.req.query('limit') || '100');
@@ -3720,7 +3720,7 @@ app.get('/make-server-2a4be611/opportunities', async (c) => {
     
     if (c.req.query('limit') !== undefined) {
       const { data, count } = await kv.getPaginatedByPrefix('opportunity:', limit, offset);
-      data.sort((a, b) => new Date(b.value?.timestamp || b.value?.created_at || 0).getTime() - new Date(a.value?.timestamp || a.value?.created_at || 0).getTime());
+      data.sort((a, b) => new Date(b.value?.timestamp || b.value?.created_at || b.value?.createdAt || 0).getTime() - new Date(a.value?.timestamp || a.value?.created_at || a.value?.createdAt || 0).getTime());
       return c.json({ opportunities: data, count, limit, offset });
     }
     
@@ -3735,10 +3735,35 @@ app.get('/make-server-2a4be611/opportunities', async (c) => {
 app.post('/make-server-2a4be611/admin/opportunities', requireAdmin, async (c) => {
   try {
     const body = await c.req.json()
-    const { title, description, requirements, timeCommitment, location, category, openPositions, benefits } = body
-    const opportunityId = `opportunity:${crypto.randomUUID()}`
-    await kv.set(opportunityId, { title, description, requirements: requirements || [], timeCommitment, location, category: category || 'general', openPositions: openPositions || 1, benefits: benefits || [] })
-    return c.json({ success: true, message: 'Opportunity added successfully', id: opportunityId })
+    const rawId = crypto.randomUUID()
+    const opportunityId = `opportunity:${rawId}`
+    const now = new Date().toISOString()
+    const opportunity = {
+      id: rawId,
+      key: opportunityId,
+      title: body.title || 'Untitled Opportunity',
+      category: body.category || 'Jobs',
+      type: body.type || 'Full-Time',
+      workArrangement: body.workArrangement || 'Field-Based',
+      location: body.location || 'Kiryandongo District',
+      duration: body.duration || 'Ongoing',
+      shortDescription: body.shortDescription || body.description || '',
+      description: body.description || '',
+      responsibilities: Array.isArray(body.responsibilities) ? body.responsibilities : [],
+      requirements: Array.isArray(body.requirements) ? body.requirements : [],
+      benefits: Array.isArray(body.benefits) ? body.benefits : [],
+      isOngoing: Boolean(body.isOngoing),
+      deadline: body.deadline || '',
+      status: body.status || 'Open',
+      applicationMethod: body.applicationMethod || 'internal',
+      applicationEmail: body.applicationEmail || 'careers@resticbo.org',
+      applicationUrl: body.applicationUrl || '',
+      applicationInstructions: body.applicationInstructions || '',
+      createdAt: now,
+      updatedAt: now
+    }
+    await kv.set(opportunityId, opportunity)
+    return c.json({ success: true, message: 'Opportunity added successfully', id: opportunityId, opportunity })
   } catch (error) {
     console.error('Error creating opportunity:', error)
     return c.json({ error: 'Failed to create opportunity', details: String(error) }, 500)
@@ -3749,10 +3774,16 @@ app.put('/make-server-2a4be611/admin/opportunities/:id', requireAdmin, async (c)
   try {
     const id = normalizeContentKey('opportunity', c.req.param('id'))
     const body = await c.req.json()
-    const existing = await kv.get(id)
-    if (!existing) return c.json({ error: 'Opportunity not found' }, 404)
-    await kv.set(id, { ...existing, ...body, updatedAt: new Date().toISOString() })
-    return c.json({ success: true, message: 'Opportunity updated successfully' })
+    const existing = await kv.get(id) || {}
+    const updated = {
+      ...existing,
+      ...body,
+      id: id.replace(/^opportunity:/, ''),
+      key: id,
+      updatedAt: new Date().toISOString()
+    }
+    await kv.set(id, updated)
+    return c.json({ success: true, message: 'Opportunity updated successfully', opportunity: updated })
   } catch (error) {
     console.error('Error updating opportunity:', error)
     return c.json({ error: 'Failed to update opportunity', details: String(error) }, 500)
@@ -3767,6 +3798,130 @@ app.delete('/make-server-2a4be611/admin/opportunities/:id', requireAdmin, async 
   } catch (error) {
     console.error('Error deleting opportunity:', error)
     return c.json({ error: 'Failed to delete opportunity', details: String(error) }, 500)
+  }
+})
+
+// Public Application Submission Endpoint
+app.post('/make-server-2a4be611/opportunities/apply', async (c) => {
+  try {
+    const body = await c.req.json()
+    const { opportunityId, opportunityTitle, fullName, email, phone, resumeUrl, resumeName, coverLetter, consent } = body
+    if (!fullName || !email || !coverLetter) {
+      return c.json({ error: 'Full name, email, and cover letter are required' }, 400)
+    }
+    const rawId = crypto.randomUUID()
+    const appId = `opportunity_app:${rawId}`
+    const application = {
+      id: rawId,
+      key: appId,
+      opportunityId: opportunityId || '',
+      opportunityTitle: opportunityTitle || 'General Application',
+      fullName: fullName.trim(),
+      email: email.trim(),
+      phone: (phone || '').trim(),
+      resumeUrl: resumeUrl || '',
+      resumeName: resumeName || '',
+      coverLetter: coverLetter.trim(),
+      consent: Boolean(consent),
+      status: 'pending',
+      appliedAt: new Date().toISOString(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    }
+    await kv.set(appId, application)
+    return c.json({ success: true, message: 'Application submitted successfully', id: appId })
+  } catch (error) {
+    console.error('Error submitting application:', error)
+    return c.json({ error: 'Failed to submit application', details: String(error) }, 500)
+  }
+})
+
+// Admin Opportunity Applications Endpoints
+app.get('/make-server-2a4be611/admin/opportunity-applications', requireAdmin, async (c) => {
+  try {
+    const apps = await kv.getByPrefix('opportunity_app:')
+    const parsed = apps.map(a => ({ ...a.value, id: a.key.replace(/^opportunity_app:/, ''), key: a.key }))
+    parsed.sort((a, b) => new Date(b.appliedAt || b.createdAt || 0).getTime() - new Date(a.appliedAt || a.createdAt || 0).getTime())
+    return c.json({ applications: parsed })
+  } catch (error) {
+    console.error('Error fetching applications:', error)
+    return c.json({ error: 'Failed to fetch applications', details: String(error) }, 500)
+  }
+})
+
+app.patch('/make-server-2a4be611/admin/opportunity-applications/:id/status', requireAdmin, async (c) => {
+  try {
+    const id = normalizeContentKey('opportunity_app', c.req.param('id'))
+    const body = await c.req.json()
+    const existing = await kv.get(id)
+    if (!existing) return c.json({ error: 'Application not found' }, 404)
+    const updated = {
+      ...existing,
+      status: body.status || existing.status,
+      notes: body.notes !== undefined ? body.notes : existing.notes,
+      updatedAt: new Date().toISOString()
+    }
+    await kv.set(id, updated)
+    return c.json({ success: true, message: 'Application status updated successfully' })
+  } catch (error) {
+    console.error('Error updating application status:', error)
+    return c.json({ error: 'Failed to update application status', details: String(error) }, 500)
+  }
+})
+
+app.delete('/make-server-2a4be611/admin/opportunity-applications/:id', requireAdmin, async (c) => {
+  try {
+    const id = normalizeContentKey('opportunity_app', c.req.param('id'))
+    await kv.del(id)
+    return c.json({ success: true, message: 'Application deleted successfully' })
+  } catch (error) {
+    console.error('Error deleting application:', error)
+    return c.json({ error: 'Failed to delete application', details: String(error) }, 500)
+  }
+})
+
+// Document upload for candidate CV/Resume files
+app.post('/make-server-2a4be611/upload-application-doc', async (c) => {
+  try {
+    const body = await c.req.parseBody()
+    const file = body['file']
+    if (!file || !(file instanceof File)) {
+      return c.json({ error: 'No valid file uploaded' }, 400)
+    }
+    const maxBytes = 10 * 1024 * 1024 // 10MB
+    if (file.size > maxBytes) {
+      return c.json({ error: 'File exceeds 10MB limit' }, 400)
+    }
+    const allowedExtensions = ['.pdf', '.doc', '.docx', '.rtf', '.txt']
+    const fileExt = ('.' + file.name.split('.').pop()).toLowerCase()
+    if (!allowedExtensions.includes(fileExt)) {
+      return c.json({ error: 'Only PDF, DOC, DOCX, RTF, or TXT documents are allowed' }, 400)
+    }
+    const bucketName = 'make-2a4be611-uploads'
+    const fileName = `applications/${crypto.randomUUID()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`
+    const arrayBuffer = await file.arrayBuffer()
+    const uint8Array = new Uint8Array(arrayBuffer)
+    const { error: uploadError } = await supabase.storage
+      .from(bucketName)
+      .upload(fileName, uint8Array, {
+        contentType: file.type || 'application/octet-stream',
+        upsert: true
+      })
+    if (uploadError) {
+      return c.json({ error: 'Failed to store resume', details: uploadError.message }, 500)
+    }
+    const { data: publicUrlData } = supabase.storage
+      .from(bucketName)
+      .getPublicUrl(fileName)
+    return c.json({
+      success: true,
+      url: publicUrlData.publicUrl,
+      fileName: file.name,
+      size: file.size
+    })
+  } catch (error) {
+    console.error('Error uploading application document:', error)
+    return c.json({ error: 'Failed to upload document', details: String(error) }, 500)
   }
 })
 

@@ -15,7 +15,7 @@ const getTableInfo = (key: string) => {
   if (key.startsWith('event:')) return { table: 'events', id: key.split(':')[1] || key };
   if (key.startsWith('partner:')) return { table: 'partners', id: key.split(':')[1] || key };
   if (key.startsWith('report:')) return { table: 'reports', id: key.split(':')[1] || key };
-  if (key.startsWith('opportunity:')) return { table: 'opportunities', id: key.split(':')[1] || key };
+  if (key.startsWith('opportunity:') || key.startsWith('opportunity_app:')) return { table: 'kv_store_2a4be611', id: key };
   if (key.startsWith('faq:')) return { table: 'faqs', id: key.split(':')[1] || key };
   if (key.startsWith('resource:')) return { table: 'resources', id: key.split(':')[1] || key };
   if (key.startsWith('program:')) return { table: 'programs', id: key.split(':')[1] || key };
