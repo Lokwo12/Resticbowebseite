@@ -4,7 +4,6 @@ import { Newspaper, Calendar, Tag, ArrowRight, Clock } from 'lucide-react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { Card } from './ui/card';
 import { Badge } from './ui/badge';
-import { LoadingScreen } from './LoadingScreen';
 
 interface NewsArticle {
   id: string;
@@ -22,7 +21,7 @@ interface NewsArticle {
 
 export function NewsArchive() {
   const [newsArticles, setNewsArticles] = useState<NewsArticle[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [sectionSettings, setSectionSettings] = useState({
     title: 'Latest News & Updates',
@@ -58,7 +57,6 @@ export function NewsArchive() {
 
   const loadNewsData = async () => {
     try {
-      setLoading(true);
       const response = await fetch(
         `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/news`,
         {
@@ -122,8 +120,6 @@ export function NewsArchive() {
     if (plainText.length <= maxLength) return plainText;
     return plainText.substring(0, maxLength) + '...';
   };
-
-  if (loading) return <LoadingScreen />;
 
   return (
     <div className="bg-gray-50 min-h-screen">

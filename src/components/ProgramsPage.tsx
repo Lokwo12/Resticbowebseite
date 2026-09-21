@@ -7,7 +7,6 @@ import {
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { createClient } from '@supabase/supabase-js';
 import { SEO } from './SEO';
-import { LoadingScreen } from './LoadingScreen';
 import { useDonationModal } from './DonationModalContext';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
@@ -64,7 +63,7 @@ export function ProgramsPage() {
     const deleted = getDeletedProgramIdsSync();
     return FALLBACK_PROGRAMS.filter(p => !deleted.has((p.value?.id || p.key || '').replace(/^program:/, '').toLowerCase()));
   });
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [previewProgram, setPreviewProgram] = useState<any | null>(null);
@@ -75,7 +74,6 @@ export function ProgramsPage() {
 
   const fetchPrograms = async () => {
     try {
-      setLoading(true);
       let fetched: Program[] = [];
       try {
         const response = await fetch(
@@ -183,8 +181,6 @@ export function ProgramsPage() {
     const contentMatch = (program.value.content || '').toLowerCase().includes(searchQuery.toLowerCase());
     return categoryMatch && (titleMatch || descMatch || contentMatch);
   });
-
-  if (loading) return <LoadingScreen />;
 
   return (
     <div className="bg-slate-50 min-h-screen pb-24" style={{ paddingTop: '120px' }}>

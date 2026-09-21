@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
-import { LoadingScreen } from './LoadingScreen';
 import { Handshake, ExternalLink, Globe, Heart } from 'lucide-react';
 import { useDonationModal } from './DonationModalContext';
 import { Button } from './ui/button';
@@ -14,10 +13,36 @@ interface Partner {
   type?: string;
 }
 
+const fallbackPartners: Partner[] = [
+  {
+    id: '1',
+    name: 'Global Giving Foundation',
+    description: 'Supporting community-led initiatives worldwide with funding and resources.',
+    logo: 'https://images.unsplash.com/photo-1599305445671-ac291c9509c7?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&h=200&q=80',
+    website: 'https://globalgiving.org',
+    type: 'International NGO'
+  },
+  {
+    id: '2',
+    name: 'Kiryandongo District Local Government',
+    description: 'Working together to deliver social services and support to the local community.',
+    logo: 'https://images.unsplash.com/photo-1599305445671-ac291c9509c7?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&h=200&q=80',
+    website: '#',
+    type: 'Government'
+  },
+  {
+    id: '3',
+    name: 'Youth Action Network',
+    description: 'Partnering on youth leadership and skills development programs.',
+    logo: 'https://images.unsplash.com/photo-1599305445671-ac291c9509c7?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&h=200&q=80',
+    website: '#',
+    type: 'Local CBO'
+  }
+];
+
 export function PartnersPage() {
   const { open: openDonationModal } = useDonationModal();
-  const [partners, setPartners] = useState<Partner[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [partners, setPartners] = useState<Partner[]>(fallbackPartners);
   const [sectionSettings, setSectionSettings] = useState({ 
     title: 'Our Valued Partners', 
     description: 'We are proud to work with organizations that share our vision for a better, more empowered community.',
@@ -49,17 +74,18 @@ export function PartnersPage() {
           type: item.value?.type || item.type || 'Partner',
         }));
         
-        setPartners(mappedPartners.filter((p: Partner) => 
+        const valid = mappedPartners.filter((p: Partner) => 
           p.name && 
           !p.name.toLowerCase().includes('ghi') && 
           !p.name.toLowerCase().includes('udf') &&
           !p.name.toLowerCase().includes('global health') &&
           !p.name.toLowerCase().includes('uganda development')
-        ));
+        );
+        if (valid.length > 0) {
+          setPartners(valid);
+        }
       } catch (err) {
         console.error('Error fetching partners:', err);
-      } finally {
-        setLoading(false);
       }
     };
     const fetchSettings = async () => {
@@ -85,33 +111,6 @@ export function PartnersPage() {
     fetchPartners();
     fetchSettings();
   }, []);
-
-  const fallbackPartners: Partner[] = [
-    {
-      id: '1',
-      name: 'Global Giving Foundation',
-      description: 'Supporting community-led initiatives worldwide with funding and resources.',
-      logo: 'https://images.unsplash.com/photo-1599305445671-ac291c9509c7?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&h=200&q=80',
-      website: 'https://globalgiving.org',
-      type: 'International NGO'
-    },
-    {
-      id: '2',
-      name: 'Kiryandongo District Local Government',
-      description: 'Working together to deliver social services and support to the local community.',
-      logo: 'https://images.unsplash.com/photo-1599305445671-ac291c9509c7?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&h=200&q=80',
-      website: '#',
-      type: 'Government'
-    },
-    {
-      id: '3',
-      name: 'Youth Action Network',
-      description: 'Partnering on youth leadership and skills development programs.',
-      logo: 'https://images.unsplash.com/photo-1599305445671-ac291c9509c7?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&h=200&q=80',
-      website: '#',
-      type: 'Local CBO'
-    }
-  ];
 
   const displayPartners = partners.length > 0 ? partners : fallbackPartners;
 

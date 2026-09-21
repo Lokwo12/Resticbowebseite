@@ -3,7 +3,6 @@ import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, Calendar, Tag, User, Clock, Heart, Image as ImageIcon } from 'lucide-react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { SEO } from './SEO';
-import { LoadingScreen } from './LoadingScreen';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import { useDonationModal } from './DonationModalContext';
@@ -37,7 +36,6 @@ export function NewsDetail() {
     const fetchArticle = async () => {
       if (!id) return;
       try {
-        setLoading(true);
 
         // 1. Try fetching directly via single article endpoint (supports ID or slug)
         try {
@@ -151,9 +149,22 @@ export function NewsDetail() {
     return Math.max(1, Math.ceil(words / 200));
   };
 
-  if (loading) return <LoadingScreen />;
-
   if (!article) {
+    if (loading) {
+      return (
+        <div className="bg-gray-50 min-h-screen pt-28 sm:pt-36 pb-24">
+          <div className="container mx-auto px-4 max-w-4xl animate-pulse space-y-6">
+            <div className="h-8 bg-slate-200 rounded-xl w-3/4" />
+            <div className="h-64 bg-slate-200 rounded-2xl w-full" />
+            <div className="space-y-3">
+              <div className="h-4 bg-slate-200 rounded w-full" />
+              <div className="h-4 bg-slate-200 rounded w-5/6" />
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="bg-gray-50 min-h-screen pt-28 sm:pt-36 pb-24">
         <div className="container mx-auto px-4 text-center">

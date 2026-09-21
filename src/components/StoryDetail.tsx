@@ -4,7 +4,6 @@ import { ArrowLeft, Calendar, Tag, Heart, Quote } from 'lucide-react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { supabase } from '../utils/supabase/client';
 import { SEO } from './SEO';
-import { LoadingScreen } from './LoadingScreen';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import { useDonationModal } from './DonationModalContext';
@@ -30,7 +29,6 @@ export function StoryDetail() {
   useEffect(() => {
     const fetchStory = async () => {
       try {
-        setLoading(true);
         let stories: any[] = [];
         try {
           const response = await fetch(
@@ -115,9 +113,18 @@ export function StoryDetail() {
     });
   };
 
-  if (loading) return <LoadingScreen />;
-
   if (!storyData) {
+    if (loading) {
+      return (
+        <div className="bg-gray-50 min-h-screen pt-28 sm:pt-36 pb-24">
+          <div className="container mx-auto px-4 max-w-4xl animate-pulse space-y-6">
+            <div className="h-8 bg-slate-200 rounded-xl w-3/4" />
+            <div className="h-64 bg-slate-200 rounded-2xl w-full" />
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="bg-gray-50 min-h-screen pt-28 sm:pt-36 pb-24">
         <div className="container mx-auto px-4 text-center">

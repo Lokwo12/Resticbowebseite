@@ -5,7 +5,6 @@ import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { supabase } from '../utils/supabase/client';
 import { Card } from './ui/card';
 import { Badge } from './ui/badge';
-import { LoadingScreen } from './LoadingScreen';
 import { stripHtml } from '../utils/textUtils';
 
 interface Story {
@@ -21,7 +20,7 @@ interface Story {
 
 export function StoriesArchive() {
   const [stories, setStories] = useState<Story[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [sectionSettings, setSectionSettings] = useState({ title: 'Impact Stories', description: 'Read inspiring stories from the lives we\'ve touched and the communities we\'ve transformed.' });
 
@@ -108,8 +107,6 @@ export function StoriesArchive() {
   const filteredStories = selectedCategory === 'all' 
     ? stories 
     : stories.filter(s => s.category === selectedCategory);
-
-  if (loading) return <LoadingScreen />;
 
   return (
     <div className="bg-gray-50 min-h-screen">

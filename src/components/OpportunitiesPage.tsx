@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
-import { LoadingScreen } from './LoadingScreen';
 import { Target, Calendar, MapPin, Briefcase, ArrowRight } from 'lucide-react';
 
 interface Opportunity {
@@ -14,9 +13,38 @@ interface Opportunity {
   link?: string;
 }
 
+const fallbackOpportunities: Opportunity[] = [
+  {
+    id: '1',
+    title: 'Youth Program Coordinator',
+    description: 'We are looking for a passionate individual to lead our youth empowerment initiatives. You will design and implement training programs.',
+    type: 'Full-Time',
+    location: 'Kiryandongo Office',
+    deadline: '2026-06-30',
+    link: '#'
+  },
+  {
+    id: '2',
+    title: 'Social Media Intern',
+    description: 'Help us share our stories with the world! We need a creative intern to manage our social media channels and create content.',
+    type: 'Internship',
+    location: 'Remote / Flexible',
+    deadline: '2026-05-20',
+    link: '#'
+  },
+  {
+    id: '3',
+    title: 'Community Health Volunteer',
+    description: 'Join our team to support health sensitization campaigns in the community. Medical background is a plus but not required.',
+    type: 'Volunteer',
+    location: 'Field Based',
+    deadline: 'Ongoing',
+    link: '#'
+  }
+];
+
 export function OpportunitiesPage() {
-  const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [opportunities, setOpportunities] = useState<Opportunity[]>(fallbackOpportunities);
 
   useEffect(() => {
     const fetchOpportunities = async () => {
@@ -43,45 +71,15 @@ export function OpportunitiesPage() {
           link: item.value?.link || item.link || '#',
         }));
         
-        setOpportunities(mappedOpps);
+        if (mappedOpps.length > 0) {
+          setOpportunities(mappedOpps);
+        }
       } catch (err) {
         console.error('Error fetching opportunities:', err);
-      } finally {
-        setLoading(false);
       }
     };
     fetchOpportunities();
   }, []);
-
-  const fallbackOpportunities: Opportunity[] = [
-    {
-      id: '1',
-      title: 'Youth Program Coordinator',
-      description: 'We are looking for a passionate individual to lead our youth empowerment initiatives. You will design and implement training programs.',
-      type: 'Full-Time',
-      location: 'Kiryandongo Office',
-      deadline: '2026-06-30',
-      link: '#'
-    },
-    {
-      id: '2',
-      title: 'Social Media Intern',
-      description: 'Help us share our stories with the world! We need a creative intern to manage our social media channels and create content.',
-      type: 'Internship',
-      location: 'Remote / Flexible',
-      deadline: '2026-05-20',
-      link: '#'
-    },
-    {
-      id: '3',
-      title: 'Community Health Volunteer',
-      description: 'Join our team to support health sensitization campaigns in the community. Medical background is a plus but not required.',
-      type: 'Volunteer',
-      location: 'Field Based',
-      deadline: 'Ongoing',
-      link: '#'
-    }
-  ];
 
   const displayOpportunities = opportunities.length > 0 ? opportunities : fallbackOpportunities;
 
@@ -95,8 +93,6 @@ export function OpportunitiesPage() {
       day: 'numeric' 
     });
   };
-
-  if (loading) return <LoadingScreen />;
 
   return (
     <div className="bg-gray-50 min-h-screen">

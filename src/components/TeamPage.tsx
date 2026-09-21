@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
-import { LoadingScreen } from './LoadingScreen';
 import { Users, Mail, Linkedin, Twitter, ArrowRight } from 'lucide-react';
 import { FALLBACK_TEAM } from './Team';
 
@@ -17,8 +16,7 @@ interface TeamMember {
 }
 
 export function TeamPage() {
-  const [team, setTeam] = useState<TeamMember[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [team, setTeam] = useState<TeamMember[]>(() => (FALLBACK_TEAM as TeamMember[]) || []);
 
   useEffect(() => {
     const fetchTeam = async () => {
@@ -46,20 +44,17 @@ export function TeamPage() {
         }));
 
         const valid = mappedTeam.filter((member: TeamMember) => member.name);
-        setTeam(valid.length > 0 ? valid : (FALLBACK_TEAM as TeamMember[]));
+        if (valid.length > 0) {
+          setTeam(valid);
+        }
       } catch (err) {
         console.error('Error fetching team:', err);
-        setTeam(FALLBACK_TEAM as TeamMember[]);
-      } finally {
-        setLoading(false);
       }
     };
     fetchTeam();
   }, []);
 
   const displayTeam = team.length > 0 ? team : (FALLBACK_TEAM as TeamMember[]);
-
-  if (loading) return <LoadingScreen />;
 
   return (
     <div className="bg-gray-50 min-h-screen">

@@ -6,7 +6,6 @@ import {
 } from 'lucide-react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { SEO } from './SEO';
-import { LoadingScreen } from './LoadingScreen';
 import { toast } from 'sonner';
 import { useDonationModal } from './DonationModalContext';
 
@@ -68,9 +67,17 @@ export function TeamMemberDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { open: openDonationModal } = useDonationModal();
-  const [member, setMember] = useState<TeamMember | null>(null);
+
+  const getInitialMember = (): TeamMember | null => {
+    const cleanId = (id || '').replace(/^team:/, '').trim().toLowerCase();
+    return FALLBACK_TEAM.find(m => 
+      m.id.toLowerCase() === cleanId ||
+      m.name.toLowerCase().replace(/[^a-z0-9]+/g, '-') === cleanId
+    ) || null;
+  };
+
+  const [member, setMember] = useState<TeamMember | null>(getInitialMember);
   const [allMembers, setAllMembers] = useState<TeamMember[]>([]);
-  const [loading, setLoading] = useState(true);
   const [copiedEmail, setCopiedEmail] = useState(false);
 
   useEffect(() => {
@@ -89,7 +96,6 @@ export function TeamMemberDetail() {
 
   const fetchMember = async () => {
     try {
-      setLoading(true);
       const cleanId = (id || '').replace(/^team:/, '').trim().toLowerCase();
 
       // Check fallback first
@@ -141,11 +147,11 @@ export function TeamMemberDetail() {
         }
       }
 
-      setMember(matched);
+      if (matched) {
+        setMember(matched);
+      }
     } catch (err) {
       console.warn('Could not fetch team member from API, using fallback data.', err);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -155,8 +161,6 @@ export function TeamMemberDetail() {
     toast.success('Email copied to clipboard!');
     setTimeout(() => setCopiedEmail(false), 2500);
   };
-
-  if (loading) return <LoadingScreen />;
 
   if (!member) {
     return (

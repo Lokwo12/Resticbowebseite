@@ -1,61 +1,13 @@
 import { useState, useEffect } from 'react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
-import { LoadingScreen } from './LoadingScreen';
 import { Shield, Lock, FileText, Scale, Cookie } from 'lucide-react';
 
 interface LegalPageProps {
   type: 'privacy' | 'terms' | 'refund' | 'cookies';
 }
 
-export function LegalPage({ type }: LegalPageProps) {
-  const [content, setContent] = useState('');
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchSettings = async () => {
-      try {
-        const response = await fetch(
-          `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/site-settings`,
-          {
-            headers: {
-              Authorization: `Bearer ${publicAnonKey}`,
-            },
-          }
-        );
-        const data = await response.json();
-        const legal = data.settings?.legal;
-        
-        if (legal) {
-          if (type === 'privacy') setContent(legal.privacyPolicy || '');
-          else if (type === 'terms') setContent(legal.termsOfService || '');
-          else if (type === 'refund') setContent(legal.refundPolicy || '');
-          else if (type === 'cookies') setContent(legal.cookiesPolicy || '');
-        }
-      } catch (err) {
-        console.error('Error fetching legal settings:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchSettings();
-  }, [type]);
-
-  const titles = {
-    privacy: 'Privacy Policy',
-    terms: 'Terms of Service',
-    refund: 'Refund Policy',
-    cookies: 'Cookies Policy'
-  };
-
-  const icons = {
-    privacy: <Lock className="text-white" size={32} />,
-    terms: <FileText className="text-white" size={32} />,
-    refund: <Scale className="text-white" size={32} />,
-    cookies: <Cookie className="text-white" size={32} />
-  };
-
-  const fallbacks = {
-    privacy: `RESTI (Refugee Empowerment For Sustainable Transformation Initiative) Privacy Policy
+const fallbacks: Record<string, string> = {
+  privacy: `RESTI (Refugee Empowerment For Sustainable Transformation Initiative) Privacy Policy
 Last Updated: January 2025
 
 1. Introduction
@@ -95,7 +47,7 @@ Kiryandongo District, Uganda
 Email: info@resticbo.org
 Website: https://resticbo.org`,
 
-    terms: `RESTI (Refugee Empowerment For Sustainable Transformation Initiative) Terms of Service
+  terms: `RESTI (Refugee Empowerment For Sustainable Transformation Initiative) Terms of Service
 Last Updated: January 2025
 
 1. Acceptance of Terms
@@ -127,7 +79,7 @@ For inquiries regarding our terms of service, please contact:
 RESTI (Refugee Empowerment For Sustainable Transformation Initiative)
 Email: info@resticbo.org`,
 
-    refund: `RESTI (Refugee Empowerment For Sustainable Transformation Initiative) Donation Refund Policy
+  refund: `RESTI (Refugee Empowerment For Sustainable Transformation Initiative) Donation Refund Policy
 Last Updated: January 2025
 
 1. Policy Overview
@@ -151,7 +103,7 @@ If you need to request a donation refund or correction:
 5. Review and Processing
 Our finance and administrative team will review your request within 3 to 5 business days. If approved, refunds are credited back to the exact original payment method used (the originating credit card or Mobile Money account). Please allow 5 to 10 banking business days for the funds to reflect on your statement, depending on your financial institution's processing cycles.`,
 
-    cookies: `RESTI (Refugee Empowerment For Sustainable Transformation Initiative) Cookies Policy
+  cookies: `RESTI (Refugee Empowerment For Sustainable Transformation Initiative) Cookies Policy
 Last Updated: January 2025
 
 1. What Are Cookies
@@ -175,9 +127,55 @@ RESTI (Refugee Empowerment For Sustainable Transformation Initiative)
 Kiryandongo District, Uganda
 Email: info@resticbo.org
 Website: https://resticbo.org`
+};
+
+export function LegalPage({ type }: LegalPageProps) {
+  const [content, setContent] = useState<string>(() => fallbacks[type] || '');
+
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const response = await fetch(
+          `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/site-settings`,
+          {
+            headers: {
+              Authorization: `Bearer ${publicAnonKey}`,
+            },
+          }
+        );
+        const data = await response.json();
+        const legal = data.settings?.legal;
+        
+        if (legal) {
+          let updatedContent = '';
+          if (type === 'privacy') updatedContent = legal.privacyPolicy || '';
+          else if (type === 'terms') updatedContent = legal.termsOfService || '';
+          else if (type === 'refund') updatedContent = legal.refundPolicy || '';
+          else if (type === 'cookies') updatedContent = legal.cookiesPolicy || '';
+          if (updatedContent) {
+            setContent(updatedContent);
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching legal settings:', err);
+      }
+    };
+    fetchSettings();
+  }, [type]);
+
+  const titles = {
+    privacy: 'Privacy Policy',
+    terms: 'Terms of Service',
+    refund: 'Refund Policy',
+    cookies: 'Cookies Policy'
   };
 
-  if (loading) return <LoadingScreen />;
+  const icons = {
+    privacy: <Lock className="text-white" size={32} />,
+    terms: <FileText className="text-white" size={32} />,
+    refund: <Scale className="text-white" size={32} />,
+    cookies: <Cookie className="text-white" size={32} />
+  };
 
   return (
     <div className="bg-gray-50 min-h-screen">

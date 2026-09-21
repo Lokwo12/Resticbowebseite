@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
-import { LoadingScreen } from './LoadingScreen';
 import { HelpCircle, ChevronDown, ChevronUp, Search } from 'lucide-react';
 
 interface FAQ {
@@ -10,9 +9,35 @@ interface FAQ {
   category?: string;
 }
 
+const fallbackFaqs: FAQ[] = [
+  {
+    id: '1',
+    question: 'What is RESTI?',
+    answer: 'RESTI (Refugee Empowerment For Sustainable Transformation Initiative) is a community-based organization dedicated to empowering refugees and host communities in Kiryandongo District, Uganda through education, sustainable livelihoods, and peacebuilding.',
+    category: 'General'
+  },
+  {
+    id: '2',
+    question: 'How can I donate to the organization?',
+    answer: 'You can donate via our secure online donation form using credit/debit cards (via Stripe) or Mobile Money (MTN & Airtel). Visit the Donate section on our homepage.',
+    category: 'Donations'
+  },
+  {
+    id: '3',
+    question: 'Are my donations acknowledged with receipts?',
+    answer: 'Yes. Every donation generates an instant digital confirmation. If you require formal receipts or documentation for tax or institutional accounting, contact us at info@resticbo.org.',
+    category: 'Donations'
+  },
+  {
+    id: '4',
+    question: 'How can I become a volunteer or partner?',
+    answer: 'You can reach out through our Contact page or email info@resticbo.org. We welcome partnerships and volunteers in education, agriculture, health, and tech skills.',
+    category: 'Volunteering'
+  }
+];
+
 export function FAQPage() {
-  const [faqs, setFaqs] = useState<FAQ[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [faqs, setFaqs] = useState<FAQ[]>(fallbackFaqs);
   const [openId, setOpenId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -38,42 +63,15 @@ export function FAQPage() {
           category: item.value?.category || item.category || 'General',
         }));
         
-        setFaqs(mappedFaqs);
+        if (mappedFaqs.length > 0) {
+          setFaqs(mappedFaqs);
+        }
       } catch (err) {
         console.error('Error fetching faqs:', err);
-      } finally {
-        setLoading(false);
       }
     };
     fetchFaqs();
   }, []);
-
-  const fallbackFaqs: FAQ[] = [
-    {
-      id: '1',
-      question: 'What is RESTI?',
-      answer: 'RESTI (Refugee Empowerment For Sustainable Transformation Initiative) is a community-based organization dedicated to empowering refugees and host communities in Kiryandongo District, Uganda through education, sustainable livelihoods, and peacebuilding.',
-      category: 'General'
-    },
-    {
-      id: '2',
-      question: 'How can I donate to the organization?',
-      answer: 'You can donate via our secure online donation form using credit/debit cards (via Stripe) or Mobile Money (MTN & Airtel). Visit the Donate section on our homepage.',
-      category: 'Donations'
-    },
-    {
-      id: '3',
-      question: 'Are my donations acknowledged with receipts?',
-      answer: 'Yes. Every donation generates an instant digital confirmation. If you require formal receipts or documentation for tax or institutional accounting, contact us at info@resticbo.org.',
-      category: 'Donations'
-    },
-    {
-      id: '4',
-      question: 'How can I become a volunteer or partner?',
-      answer: 'You can reach out through our Contact page or email info@resticbo.org. We welcome partnerships and volunteers in education, agriculture, health, and tech skills.',
-      category: 'Volunteering'
-    }
-  ];
 
   const displayFaqs = faqs.length > 0 ? faqs : fallbackFaqs;
 
@@ -85,8 +83,6 @@ export function FAQPage() {
   const toggleAccordion = (id: string) => {
     setOpenId(openId === id ? null : id);
   };
-
-  if (loading) return <LoadingScreen />;
 
   return (
     <div className="bg-gray-50 min-h-screen">

@@ -9,7 +9,6 @@ import {
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { createClient } from '@supabase/supabase-js';
 import { SEO } from './SEO';
-import { LoadingScreen } from './LoadingScreen';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { toast } from 'sonner';
@@ -428,8 +427,9 @@ Through Sports for Peace tournaments and leadership academies, we equip young pe
 export function ProgramDetail() {
   const { open: openDonationModal } = useDonationModal();
   const { id } = useParams<{ id: string }>();
-  const [program, setProgram] = useState<Program | null>(null);
-  const [loading, setLoading] = useState(true);
+  const cleanId = (id || '').replace(/^program:/, '').trim().toLowerCase();
+  const [program, setProgram] = useState<Program | null>(() => DETAILED_FALLBACK_PROGRAMS[cleanId] || null);
+  const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
   const [relatedNews, setRelatedNews] = useState<NewsArticleSummary[]>([]);
   const [newsLoading, setNewsLoading] = useState(false);
@@ -437,7 +437,6 @@ export function ProgramDetail() {
   useEffect(() => {
     const fetchProgram = async () => {
       try {
-        setLoading(true);
         const cleanId = (id || '').replace(/^program:/, '').trim().toLowerCase();
         
         // Check deletion registry
@@ -760,8 +759,6 @@ export function ProgramDetail() {
         );
     }
   };
-
-  if (loading) return <LoadingScreen />;
 
   if (!program) {
     return (

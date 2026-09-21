@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, Calendar } from 'lucide-react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
-import { LoadingScreen } from './LoadingScreen';
 import { Button } from './ui/button';
 
 interface PageData {
@@ -23,7 +22,6 @@ export function CustomPage() {
   useEffect(() => {
     const fetchPage = async () => {
       try {
-        setLoading(true);
         const response = await fetch(
           `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/pages/${slug}`,
           {
@@ -56,7 +54,24 @@ export function CustomPage() {
     }
   }, [slug]);
 
-  if (loading) return <LoadingScreen />;
+  if (loading) {
+    return (
+      <div className="bg-gray-50 min-h-screen pb-24" style={{ paddingTop: '120px' }}>
+        <div className="max-w-4xl mx-auto px-4">
+          <div className="h-6 w-32 bg-slate-200 rounded animate-pulse mb-8" />
+          <div className="bg-white rounded-2xl shadow-sm overflow-hidden border border-gray-100 p-8 md:p-12 space-y-6">
+            <div className="h-10 w-3/4 bg-slate-200 rounded animate-pulse" />
+            <div className="h-4 w-1/3 bg-slate-100 rounded animate-pulse" />
+            <div className="space-y-3 pt-6">
+              <div className="h-4 bg-slate-100 rounded animate-pulse" />
+              <div className="h-4 bg-slate-100 rounded animate-pulse" />
+              <div className="h-4 w-5/6 bg-slate-100 rounded animate-pulse" />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (!page) {
     return (
