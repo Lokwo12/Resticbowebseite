@@ -475,6 +475,17 @@ export function Header() {
                 }`}>
                   <div className="bg-white rounded-xl shadow-xl border border-slate-100 overflow-hidden py-1.5 ring-1 ring-black/5">
                     <Link 
+                      to="/get-involved" 
+                      onClick={() => setActiveDropdown(null)}
+                      className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-700 transition-colors"
+                    >
+                      <HandHeart size={16} className="text-emerald-600 shrink-0" />
+                      <div>
+                        <div className="font-semibold text-[15px] text-gray-900 leading-tight">Get Involved</div>
+                        <div className="text-[11px] text-gray-500">Ways to support & contribute</div>
+                      </div>
+                    </Link>
+                    <Link 
                       to="/opportunities" 
                       onClick={() => setActiveDropdown(null)}
                       className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-700 transition-colors"
@@ -737,6 +748,9 @@ export function Header() {
 
                 {mobileSectionOpen === 'involved' && (
                   <div className="pl-7 pr-3 py-1.5 flex flex-col space-y-1 animate-in fade-in duration-150">
+                    <Link to="/get-involved" onClick={() => setMobileMenuOpen(false)} className="py-1.5 text-sm text-emerald-800 font-medium hover:text-emerald-600 flex items-center gap-2">
+                      <span>Get Involved</span>
+                    </Link>
                     <Link to="/opportunities" onClick={() => setMobileMenuOpen(false)} className="py-1.5 text-sm text-gray-700 hover:text-emerald-600 flex items-center gap-2">
                       <span>Careers & Opportunities</span>
                     </Link>

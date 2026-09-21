@@ -1,63 +1,63 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
-import { Mail, Phone, MapPin, Send, Loader2, MessageCircle, Clock, User, MessageSquare, AlertCircle, FileText } from 'lucide-react';
-import { toast } from 'sonner';
-import { useScrollAnimation, getStaggerDelay } from '../utils/animations';
-import { Card } from './ui/card';
-import { z } from 'zod';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
+import {
+  Mail,
+  Phone,
+  MapPin,
+  Send,
+  Loader2,
+  MessageCircle,
+  Clock,
+  User,
+  AlertCircle,
+  CheckCircle2,
+  Heart,
+  Users,
+  HandHeart,
+  BookOpen,
+  ArrowRight,
+  ExternalLink,
+  Facebook,
+  Twitter,
+  Instagram,
+  Linkedin,
+  Youtube,
+  Navigation,
+  ShieldCheck,
+} from 'lucide-react';
+import {
+  GET_INVOLVED_STRINGS,
+  DEFAULT_CONTACT_SETTINGS,
+  normalizeContactSettings,
+  ContactSettings,
+} from '../utils/contactData';
 
-const formSchema = z.object({
-  name: z.string().min(2, 'Name is required'),
-  email: z.string().email('Invalid email address'),
-  phone: z.string().optional().or(z.literal('')),
-  subject: z.string().min(1, 'Subject / Topic is required'),
-  message: z.string().min(10, 'Message must be at least 10 characters'),
-});
-
-type FormData = z.infer<typeof formSchema>;
-
-interface ContactSettings {
-  title: string;
-  subtitle: string;
-  address: string;
-  email: string;
-  phone: string;
-  whatsappNumber?: string;
-  socialLinks: {
-    facebook: string;
-    twitter: string;
-    instagram: string;
-  };
-  supportItems: string[];
-  locations?: {
-    name: string;
-    address: string;
-    mapUrl: string;
-  }[];
-  workingHours?: string;
-  departments?: {
-    name: string;
-    email: string;
-  }[];
-}
+const TOPIC_OPTIONS = [
+  'General Inquiry',
+  'Partnerships & Collaboration',
+  'Donation & Financial Support',
+  'Opportunities & Volunteering',
+  'Programs & Community Initiatives',
+  'Research & Media Inquiries',
+];
 
 export function Contact() {
-  const [settings, setSettings] = useState<ContactSettings | null>(null);
+  const [settings, setSettings] = useState<ContactSettings>(DEFAULT_CONTACT_SETTINGS);
   const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
 
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<FormData>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      name: '',
-      email: '',
-      phone: '',
-      subject: '',
-      message: '',
-    }
+  // Form State
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    subject: TOPIC_OPTIONS[0],
+    message: '',
   });
+  const [submitting, setSubmitting] = useState(false);
+  const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [statusMessage, setStatusMessage] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     fetchSettings();
@@ -74,73 +74,70 @@ export function Contact() {
         }
       );
 
-      if (!response.ok) {
-        throw new Error('Failed to fetch settings');
-      }
-
-      const data = await response.json();
-      if (data?.settings?.contact) {
-        const cSettings = data.settings.contact;
-        const safeEmail = cSettings.email && !cSettings.email.toLowerCase().includes('gmail.com') ? cSettings.email : 'info@resticbo.org';
-        setSettings({
-          ...cSettings,
-          email: safeEmail,
-          subtitle: (cSettings.subtitle || '').replace(/volunteer,?/gi, 'partner with us,').trim(),
-          supportItems: (cSettings.supportItems || []).filter((item: string) => !item.toLowerCase().includes('volunteer')),
-          departments: (cSettings.departments || []).filter((dept: any) => !dept.name?.toLowerCase().includes('volunteer') && !dept.email?.toLowerCase().includes('volunteer')),
-        });
+      if (response.ok) {
+        const data = await response.json();
+        const normalized = normalizeContactSettings(data?.settings?.contact);
+        setSettings(normalized);
       } else {
-        throw new Error('Contact settings not found in database');
+        setSettings(DEFAULT_CONTACT_SETTINGS);
       }
     } catch (error) {
-      console.error('Error fetching contact settings:', error);
-      // Set default settings if fetch fails
-      setSettings({
-        title: 'Contact Us',
-        subtitle: 'Join us in making a lasting difference! Whether you want to partner with us, support our initiatives, or learn more about our work, we\'d love to hear from you.',
-        address: 'Kiryandongo District, Uganda',
-        email: 'info@resticbo.org',
-        phone: '+256 700 000 000',
-        socialLinks: {
-          facebook: 'https://www.facebook.com/resticbo',
-          twitter: 'https://x.com/resticbo',
-          instagram: 'https://www.instagram.com/resticbo'
-        },
-        supportItems: [
-          'Partner with us on community initiatives',
-          'Make a donation to support our programs',
-          'Collaborate on local livelihood projects',
-          'Spread the word about our mission'
-        ],
-        locations: [
-          {
-            name: 'Main Office',
-            address: 'Kiryandongo District, Uganda',
-            mapUrl: 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d15951.23456789!2d32.0!3d2.0!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMsKwMDAnMDAsLjAiTiAzMsKwMDAnMDAsLjAiRQ!5e0!3m2!1sen!2sug!4v1234567890'
-          }
-        ],
-        workingHours: 'Monday - Friday: 8:00 AM - 5:00 PM',
-        departments: [
-          { name: 'General Inquiries', email: 'info@resticbo.org' },
-          { name: 'Partnerships & Grants', email: 'partners@resticbo.org' },
-          { name: 'Community Programs', email: 'programs@resticbo.org' }
-        ]
-      });
+      console.warn('Using default contact settings on homepage:', error);
+      setSettings(DEFAULT_CONTACT_SETTINGS);
     } finally {
       setLoading(false);
     }
   };
 
-  const onSubmit = async (data: FormData) => {
+  const primaryLocation = useMemo(() => {
+    const publishedLocations = (settings.locations || []).filter((loc) => loc.published !== false);
+    return publishedLocations.find((loc) => loc.isPrimary) || publishedLocations[0] || null;
+  }, [settings.locations]);
+
+  const publishedPersons = useMemo(() => {
+    return (settings.contactPersons || [])
+      .filter((p) => p.published !== false)
+      .sort((a, b) => (a.order || 99) - (b.order || 99));
+  }, [settings.contactPersons]);
+
+  const validate = (): boolean => {
+    const errors: Record<string, string> = {};
+    if (!formData.name.trim()) {
+      errors.name = 'Please provide your full name.';
+    }
+    if (!formData.email.trim()) {
+      errors.email = 'Please provide your email address.';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(formData.email.trim())) {
+      errors.email = 'Please enter a valid email address.';
+    }
+    if (!formData.subject.trim()) {
+      errors.subject = 'Please select or enter a subject.';
+    }
+    if (!formData.message.trim()) {
+      errors.message = 'Please enter your message.';
+    } else if (formData.message.trim().length < 10) {
+      errors.message = 'Message must be at least 10 characters.';
+    }
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!validate()) return;
+
     setSubmitting(true);
+    setSubmitStatus('idle');
+    setStatusMessage('');
 
     try {
       const payload = {
-        name: data.name,
-        email: data.email,
-        phone: data.phone || null,
-        subject: data.subject || 'General Inquiry',
-        message: data.message,
+        name: formData.name.trim(),
+        email: formData.email.trim(),
+        phone: formData.phone.trim() || undefined,
+        subject: formData.subject.trim(),
+        topic: formData.subject.trim(),
+        message: formData.message.trim(),
       };
 
       const response = await fetch(
@@ -155,28 +152,43 @@ export function Contact() {
         }
       );
 
+      const result = await response.json().catch(() => ({}));
+
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to submit form');
+        throw new Error(result.error || GET_INVOLVED_STRINGS.formErrorMessage);
       }
 
-      toast.success('Message sent successfully! Our team will get back to you soon.');
-      reset();
-    } catch (err) {
-      console.error('Error submitting form:', err);
-      toast.error(err instanceof Error ? err.message : 'Failed to submit form. Please try again.');
+      setSubmitStatus('success');
+      setStatusMessage(GET_INVOLVED_STRINGS.formSuccessMessage);
+      setFormData({
+        name: '',
+        email: '',
+        phone: '',
+        subject: TOPIC_OPTIONS[0],
+        message: '',
+      });
+      setFieldErrors({});
+    } catch (err: any) {
+      console.error('Error submitting contact form on homepage:', err);
+      setSubmitStatus('error');
+      setStatusMessage(
+        err.message ||
+          `${GET_INVOLVED_STRINGS.formErrorMessage} (${settings.email || GET_INVOLVED_STRINGS.defaultEmail})`
+      );
     } finally {
       setSubmitting(false);
     }
   };
 
-  if (loading || !settings) {
+  const whatsappCleanNumber = (settings.whatsappNumber || '').replace(/\D/g, '');
+
+  if (loading) {
     return (
-      <section id="contact" className="py-20 bg-gradient-to-br from-emerald-50 to-teal-50">
+      <section id="contact" className="py-20 bg-slate-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="animate-pulse">
-            <div className="h-12 bg-gray-200 rounded w-1/2 mx-auto mb-8"></div>
-            <div className="h-6 bg-gray-200 rounded w-full mb-4"></div>
+          <div className="animate-pulse space-y-4">
+            <div className="h-10 bg-slate-200 rounded w-1/3 mx-auto mb-4"></div>
+            <div className="h-4 bg-slate-200 rounded w-2/3 mx-auto"></div>
           </div>
         </div>
       </section>
@@ -184,286 +196,512 @@ export function Contact() {
   }
 
   return (
-    <section id="contact" className="py-20 bg-gradient-to-br from-emerald-50 to-teal-50">
+    <section id="contact" className="py-20 sm:py-28 bg-gradient-to-b from-slate-50 via-white to-slate-50 scroll-mt-20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
+        
+        {/* Section Header */}
         <div className="max-w-3xl mx-auto text-center mb-16">
-          <h2 className="text-[28px] sm:text-[30px] lg:text-[36px] font-bold font-heading text-gray-900 mb-6 leading-[1.2]">
-            {settings.title}
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-100/80 text-emerald-800 text-xs font-bold uppercase tracking-wider mb-4 border border-emerald-200/60">
+            <span className="w-2 h-2 rounded-full bg-emerald-600 animate-pulse"></span>
+            Get Involved
+          </div>
+          <h2 className="text-3xl sm:text-4xl md:text-[40px] font-extrabold font-heading text-slate-900 tracking-tight leading-[1.15] mb-4">
+            Get Involved & Contact RESTI
           </h2>
-          <p className="text-[17px] font-normal leading-[1.6] text-gray-600">
-            {settings.subtitle}
+          <p className="text-base sm:text-lg md:text-[18px] text-slate-600 font-normal leading-[1.6]">
+            {GET_INVOLVED_STRINGS.intro}
           </p>
         </div>
 
-        <div className="grid lg:grid-cols-2 gap-12">
-          {/* Contact Info */}
-          <div className="space-y-8">
+        {/* 4 Action Cards for Ways to Support */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
+          {/* Donate */}
+          <div className="p-6 rounded-2xl bg-white border border-slate-200/80 shadow-sm hover:shadow-md hover:border-emerald-300 transition-all flex flex-col justify-between group">
             <div>
-              <h3 className="text-[22px] lg:text-[24px] font-semibold font-heading text-gray-900 mb-6 leading-[1.3]">Contact Information</h3>
-              <div className="space-y-4">
-                <div className="flex items-start gap-4">
-                  <div className="flex-shrink-0 w-12 h-12 bg-emerald-100 rounded-lg flex items-center justify-center">
-                    <MapPin className="text-emerald-600" size={24} />
-                  </div>
-                  <div>
-                    <div className="text-gray-900">Location</div>
-                    <div className="text-gray-600">{settings.address}</div>
-                  </div>
-                </div>
-                <div className="flex items-start gap-4">
-                  <div className="flex-shrink-0 w-12 h-12 bg-emerald-100 rounded-lg flex items-center justify-center">
-                    <Mail className="text-emerald-600" size={24} />
-                  </div>
-                  <div>
-                    <div className="text-gray-900">Email</div>
-                    <div className="text-gray-600">{settings.email}</div>
-                  </div>
-                </div>
-                <div className="flex items-start gap-4">
-                  <div className="flex-shrink-0 w-12 h-12 bg-emerald-100 rounded-lg flex items-center justify-center">
-                    <Phone className="text-emerald-600" size={24} />
-                  </div>
-                  <div>
-                    <div className="text-gray-900">Phone</div>
-                    <div className="text-gray-600">{settings.phone}</div>
-                  </div>
-                </div>
+              <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center mb-4 group-hover:bg-emerald-600 group-hover:text-white transition-colors">
+                <Heart className="w-6 h-6" />
               </div>
+              <h3 className="text-xl font-bold font-heading text-slate-900 mb-2">Donate</h3>
+              <p className="text-slate-600 text-sm leading-relaxed mb-6">
+                Support our community programs, education initiatives, and emergency relief efforts in Kiryandongo.
+              </p>
             </div>
-
-            {/* WhatsApp quick connect */}
-            <a
-              href={`https://wa.me/${(settings.whatsappNumber || settings.phone).replace(/\D/g, '')}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="whatsapp-btn"
+            <Link
+              to="/donate"
+              className="inline-flex items-center justify-center gap-2 w-full py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm transition-colors shadow-sm"
             >
-              <MessageCircle size={18} />
-              Chat with us on WhatsApp
-            </a>
-
-            <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
-              <h3 className="text-xl text-gray-900 mb-4">Ways to Support</h3>
-              <ul className="space-y-3 text-gray-700 mb-6">
-                {(settings.supportItems || []).map((item, index) => (
-                  <li key={index} className="flex items-start gap-2">
-                    <span className="text-emerald-600 mt-1">✓</span>
-                    <span>{item}</span>
-                  </li>
-                ))}
-              </ul>
-
-              {settings.workingHours && (
-                <div className="pt-6 border-t border-gray-100">
-                  <h4 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-3">Office Hours</h4>
-                  <div className="flex items-center gap-3 text-gray-600 bg-gray-50 p-3 rounded-lg">
-                    <div className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600">
-                      <Clock size={16} />
-                    </div>
-                    <span className="text-sm">{settings.workingHours}</span>
-                  </div>
-                </div>
-              )}
-
-              {settings.departments && settings.departments.length > 0 && (
-                <div className="pt-6 mt-6 border-t border-gray-100">
-                  <h4 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-3">Direct Contacts</h4>
-                  <div className="space-y-3">
-                    {settings.departments.map((dept, idx) => (
-                      <div key={idx} className="flex flex-col">
-                        <span className="text-xs text-gray-500">{dept.name}</span>
-                        <a href={`mailto:${dept.email}`} className="text-sm text-emerald-600 hover:underline font-medium">
-                          {dept.email}
-                        </a>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-              {settings.socialLinks && (
-                <div className="pt-6 mt-6 border-t border-gray-100">
-                  <h4 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-3">Follow Us</h4>
-                  <div className="flex gap-3">
-                    {settings.socialLinks.facebook && (
-                      <a href={settings.socialLinks.facebook} target="_blank" rel="noopener noreferrer" className="w-10 h-10 bg-gray-50 rounded-lg flex items-center justify-center text-gray-600 hover:bg-emerald-100 hover:text-emerald-600 transition-all">
-                        <span className="sr-only">Facebook</span>
-                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
-                      </a>
-                    )}
-                    {settings.socialLinks.twitter && (
-                      <a href={settings.socialLinks.twitter} target="_blank" rel="noopener noreferrer" className="w-10 h-10 bg-gray-50 rounded-lg flex items-center justify-center text-gray-600 hover:bg-emerald-100 hover:text-emerald-600 transition-all">
-                        <span className="sr-only">Twitter</span>
-                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.84 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/></svg>
-                      </a>
-                    )}
-                    {settings.socialLinks.instagram && (
-                      <a href={settings.socialLinks.instagram} target="_blank" rel="noopener noreferrer" className="w-10 h-10 bg-gray-50 rounded-lg flex items-center justify-center text-gray-600 hover:bg-emerald-100 hover:text-emerald-600 transition-all">
-                        <span className="sr-only">Instagram</span>
-                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
-                      </a>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
+              <span>Make a Donation</span>
+              <ArrowRight className="w-4 h-4" />
+            </Link>
           </div>
 
-          {/* Contact Form */}
-          <div className="bg-white p-8 rounded-2xl shadow-lg">
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-              <div>
-                <label htmlFor="name" className="text-xs font-bold text-slate-500 mb-2 ml-1 block uppercase tracking-wider">
-                  Full Name <span className="text-emerald-500">*</span>
-                </label>
-                <div className={`relative flex items-center group rounded-xl border ${errors.name ? 'border-red-300 bg-red-50/40' : 'border-slate-200 bg-slate-50/40 hover:bg-slate-50/80 focus-within:bg-white focus-within:border-emerald-500'} focus-within:ring-4 focus-within:ring-emerald-500/10 transition-all duration-300 shadow-sm`}>
-                  <div className="absolute left-4 text-slate-400 group-focus-within:text-emerald-600 transition-colors duration-300 pointer-events-none">
-                    <User size={20} />
-                  </div>
-                  <input
-                    type="text"
-                    id="name"
-                    {...register('name')}
-                    className="w-full pl-12 pr-5 py-2.5 bg-transparent outline-none text-slate-800 font-medium placeholder:text-slate-400/70 text-sm"
-                    placeholder="Your name"
-                  />
-                </div>
-                {errors.name && <p className="text-red-500 text-xs mt-1 flex items-center"><AlertCircle size={12} className="mr-1"/>{errors.name.message}</p>}
+          {/* Volunteer */}
+          <div className="p-6 rounded-2xl bg-white border border-slate-200/80 shadow-sm hover:shadow-md hover:border-emerald-300 transition-all flex flex-col justify-between group">
+            <div>
+              <div className="w-12 h-12 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center mb-4 group-hover:bg-teal-600 group-hover:text-white transition-colors">
+                <HandHeart className="w-6 h-6" />
               </div>
+              <h3 className="text-xl font-bold font-heading text-slate-900 mb-2">Volunteer</h3>
+              <p className="text-slate-600 text-sm leading-relaxed mb-6">
+                Join our grassroots initiatives and make an impact on the ground with community-driven projects.
+              </p>
+            </div>
+            <Link
+              to="/opportunities"
+              className="inline-flex items-center justify-center gap-2 w-full py-2.5 px-4 rounded-xl bg-slate-900 hover:bg-emerald-800 text-white font-semibold text-sm transition-colors shadow-sm"
+            >
+              <span>Explore Opportunities</span>
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
 
-              <div className="grid md:grid-cols-2 gap-6">
-                <div>
-                  <label htmlFor="email" className="text-xs font-bold text-slate-500 mb-2 ml-1 block uppercase tracking-wider">
-                    Email Address <span className="text-emerald-500">*</span>
-                  </label>
-                  <div className={`relative flex items-center group rounded-xl border ${errors.email ? 'border-red-300 bg-red-50/40' : 'border-slate-200 bg-slate-50/40 hover:bg-slate-50/80 focus-within:bg-white focus-within:border-emerald-500'} focus-within:ring-4 focus-within:ring-emerald-500/10 transition-all duration-300 shadow-sm`}>
-                    <div className="absolute left-4 text-slate-400 group-focus-within:text-emerald-600 transition-colors duration-300 pointer-events-none">
-                      <Mail size={20} />
-                    </div>
-                    <input
-                      type="email"
-                      id="email"
-                      {...register('email')}
-                      className="w-full pl-12 pr-5 py-2.5 bg-transparent outline-none text-slate-800 font-medium placeholder:text-slate-400/70 text-sm"
-                      placeholder="your@email.com"
-                    />
-                  </div>
-                  {errors.email && <p className="text-red-500 text-xs mt-1 flex items-center"><AlertCircle size={12} className="mr-1"/>{errors.email.message}</p>}
-                </div>
-
-                <div>
-                  <label htmlFor="phone" className="text-xs font-bold text-slate-500 mb-2 ml-1 block uppercase tracking-wider">
-                    Phone Number
-                  </label>
-                  <div className={`relative flex items-center group rounded-xl border ${errors.phone ? 'border-red-300 bg-red-50/40' : 'border-slate-200 bg-slate-50/40 hover:bg-slate-50/80 focus-within:bg-white focus-within:border-emerald-500'} focus-within:ring-4 focus-within:ring-emerald-500/10 transition-all duration-300 shadow-sm`}>
-                    <div className="absolute left-4 text-slate-400 group-focus-within:text-emerald-600 transition-colors duration-300 pointer-events-none">
-                      <Phone size={20} />
-                    </div>
-                    <input
-                      type="tel"
-                      id="phone"
-                      {...register('phone')}
-                      className="w-full pl-12 pr-5 py-2.5 bg-transparent outline-none text-slate-800 font-medium placeholder:text-slate-400/70 text-sm"
-                      placeholder="+256 ..."
-                    />
-                  </div>
-                  {errors.phone && <p className="text-red-500 text-xs mt-1 flex items-center"><AlertCircle size={12} className="mr-1"/>{errors.phone.message}</p>}
-                </div>
+          {/* Partner With Us */}
+          <div className="p-6 rounded-2xl bg-white border border-slate-200/80 shadow-sm hover:shadow-md hover:border-emerald-300 transition-all flex flex-col justify-between group">
+            <div>
+              <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center mb-4 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                <Users className="w-6 h-6" />
               </div>
+              <h3 className="text-xl font-bold font-heading text-slate-900 mb-2">Partner With Us</h3>
+              <p className="text-slate-600 text-sm leading-relaxed mb-6">
+                Collaborate with RESTI to drive sustainable community development, grant programs, and research.
+              </p>
+            </div>
+            <Link
+              to="/partners"
+              className="inline-flex items-center justify-center gap-2 w-full py-2.5 px-4 rounded-xl bg-slate-900 hover:bg-emerald-800 text-white font-semibold text-sm transition-colors shadow-sm"
+            >
+              <span>Become a Partner</span>
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
 
-              <div>
-                <label htmlFor="subject" className="text-xs font-bold text-slate-500 mb-2 ml-1 block uppercase tracking-wider">
-                  Subject / Topic
-                </label>
-                <div className="relative flex items-center group rounded-xl border border-slate-200 bg-slate-50/40 hover:bg-slate-50/80 focus-within:bg-white focus-within:border-emerald-500 focus-within:ring-4 focus-within:ring-emerald-500/10 transition-all duration-300 shadow-sm">
-                  <div className="absolute left-4 text-slate-400 group-focus-within:text-emerald-600 transition-colors duration-300 pointer-events-none">
-                    <FileText size={20} />
-                  </div>
-                  <input
-                    type="text"
-                    id="subject"
-                    {...register('subject')}
-                    className="w-full pl-12 pr-5 py-2.5 bg-transparent outline-none text-slate-800 font-medium placeholder:text-slate-400/70 text-sm"
-                    placeholder="General Inquiry, Partnership, Program Collaboration..."
-                  />
-                </div>
+          {/* Learn More */}
+          <div className="p-6 rounded-2xl bg-white border border-slate-200/80 shadow-sm hover:shadow-md hover:border-emerald-300 transition-all flex flex-col justify-between group">
+            <div>
+              <div className="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center mb-4 group-hover:bg-amber-600 group-hover:text-white transition-colors">
+                <BookOpen className="w-6 h-6" />
               </div>
-
-              <div>
-                <label htmlFor="message" className="text-xs font-bold text-slate-500 mb-2 ml-1 block uppercase tracking-wider">
-                  Message <span className="text-emerald-500">*</span>
-                </label>
-                <div className={`relative flex items-start group rounded-xl border ${errors.message ? 'border-red-300 bg-red-50/40' : 'border-slate-200 bg-slate-50/40 hover:bg-slate-50/80 focus-within:bg-white focus-within:border-emerald-500'} focus-within:ring-4 focus-within:ring-emerald-500/10 transition-all duration-300 shadow-sm`}>
-                  <div className="absolute left-4 top-4 text-slate-400 group-focus-within:text-emerald-600 transition-colors duration-300 pointer-events-none">
-                    <MessageSquare size={20} />
-                  </div>
-                  <textarea
-                    id="message"
-                    rows={5}
-                    {...register('message')}
-                    className="w-full pl-12 pr-5 py-2.5 bg-transparent outline-none text-slate-800 font-medium placeholder:text-slate-400/70 text-sm resize-none"
-                    placeholder="How can we assist you or collaborate with your organization?"
-                  />
-                </div>
-                {errors.message && <p className="text-red-500 text-xs mt-1 flex items-center"><AlertCircle size={12} className="mr-1"/>{errors.message.message}</p>}
-              </div>
-
-              <button
-                type="submit"
-                disabled={submitting}
-                className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-[15px] sm:text-[16px] font-semibold py-4 px-6 rounded-xl shadow-lg shadow-emerald-600/15 hover:shadow-xl hover:shadow-emerald-600/25 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.99] transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
-              >
-                {submitting ? (
-                  <>
-                    <Loader2 className="animate-spin" size={20} />
-                    Submitting...
-                  </>
-                ) : (
-                  <>
-                    <Send size={16} />
-                    <span>Send Message</span>
-                  </>
-                )}
-              </button>
-            </form>
+              <h3 className="text-xl font-bold font-heading text-slate-900 mb-2">Learn More</h3>
+              <p className="text-slate-600 text-sm leading-relaxed mb-6">
+                Explore our programs, community impact stories, active projects, and annual financial disclosures.
+              </p>
+            </div>
+            <Link
+              to="/programs"
+              className="inline-flex items-center justify-center gap-2 w-full py-2.5 px-4 rounded-xl bg-slate-900 hover:bg-emerald-800 text-white font-semibold text-sm transition-colors shadow-sm"
+            >
+              <span>Explore Our Work</span>
+              <ArrowRight className="w-4 h-4" />
+            </Link>
           </div>
         </div>
 
-        {/* Map Section */}
-        {settings.locations && settings.locations.length > 0 && (
-          <div className="mt-16 animate-[fadeInUp_0.8s_ease-out_0.6s_both]">
-            <div className="text-center mb-10">
-              <h3 className="text-2xl text-gray-900 mb-2">Our Locations</h3>
-              <p className="text-gray-600">Visit us at any of our branches</p>
+        {/* 2-Column Main Section: Contact Info + Form */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start mb-16">
+          
+          {/* Left Column: Official Contact Channels */}
+          <div className="lg:col-span-5 space-y-6">
+            <div className="p-6 sm:p-8 rounded-2xl bg-white border border-slate-200/80 shadow-sm space-y-6">
+              <div>
+                <h3 className="text-2xl font-bold font-heading text-slate-900 mb-1">
+                  {GET_INVOLVED_STRINGS.contactSectionHeading}
+                </h3>
+                <p className="text-sm text-slate-500">
+                  Direct official communications desk for Kiryandongo District.
+                </p>
+              </div>
+
+              {/* Direct Info List */}
+              <div className="space-y-4">
+                {/* Location */}
+                <div className="flex items-start gap-3.5">
+                  <div className="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center flex-shrink-0">
+                    <MapPin className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 block">Location</span>
+                    <span className="text-sm font-semibold text-slate-900 leading-snug">
+                      {settings.district ? `${settings.district}, ${settings.country}` : settings.address}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Email */}
+                <div className="flex items-start gap-3.5">
+                  <div className="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center flex-shrink-0">
+                    <Mail className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 block">Official Email</span>
+                    <a
+                      href={`mailto:${settings.email || GET_INVOLVED_STRINGS.defaultEmail}`}
+                      className="text-sm font-semibold text-emerald-700 hover:text-emerald-800 hover:underline break-all"
+                    >
+                      {settings.email || GET_INVOLVED_STRINGS.defaultEmail}
+                    </a>
+                  </div>
+                </div>
+
+                {/* Phone */}
+                <div className="flex items-start gap-3.5">
+                  <div className="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center flex-shrink-0">
+                    <Phone className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 block">Phone</span>
+                    <a
+                      href={`tel:${(settings.phone || GET_INVOLVED_STRINGS.defaultPhone).replace(/\s+/g, '')}`}
+                      className="text-sm font-semibold text-slate-900 hover:text-emerald-700 transition-colors"
+                    >
+                      {settings.phone || GET_INVOLVED_STRINGS.defaultPhone}
+                    </a>
+                  </div>
+                </div>
+
+                {/* Working Hours */}
+                <div className="flex items-start gap-3.5">
+                  <div className="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center flex-shrink-0">
+                    <Clock className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 block">Office Hours</span>
+                    <span className="text-sm font-semibold text-slate-900">
+                      {settings.workingHours || 'Mon – Fri: 8:30 AM – 5:00 PM'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* WhatsApp Quick Connect */}
+              {whatsappCleanNumber && (
+                <a
+                  href={`https://wa.me/${whatsappCleanNumber}?text=${encodeURIComponent('Hello RESTI CBO, I would like to inquire about...')}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full inline-flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm shadow-md shadow-emerald-600/20 transition-all"
+                >
+                  <MessageCircle className="w-4 h-4" />
+                  <span>Chat with us on WhatsApp</span>
+                </a>
+              )}
+
+              {/* Direct Contacts Preview */}
+              {publishedPersons.length > 0 && (
+                <div className="pt-5 border-t border-slate-100">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800 mb-3">
+                    Departmental Contacts
+                  </h4>
+                  <div className="space-y-2.5">
+                    {publishedPersons.slice(0, 3).map((person) => {
+                      const displayEmail =
+                        person.email && !person.email.toLowerCase().includes('gmail.com')
+                          ? person.email
+                          : 'info@resticbo.org';
+                      return (
+                        <div key={person.id} className="flex items-center justify-between text-xs">
+                          <span className="font-semibold text-slate-800 truncate max-w-[150px]">{person.name}</span>
+                          <a href={`mailto:${displayEmail}`} className="text-emerald-700 hover:underline font-medium">
+                            {displayEmail}
+                          </a>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Social Media Links with Lucide icons */}
+              <div className="pt-5 border-t border-slate-100">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800 mb-3">
+                  Follow RESTI
+                </h4>
+                <div className="flex gap-2">
+                  {settings.socialLinks.facebook && (
+                    <a
+                      href={settings.socialLinks.facebook}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-9 h-9 rounded-lg bg-slate-100 text-slate-600 hover:bg-blue-600 hover:text-white flex items-center justify-center transition-colors"
+                      aria-label="Facebook"
+                    >
+                      <Facebook className="w-4 h-4" />
+                    </a>
+                  )}
+                  {settings.socialLinks.twitter && (
+                    <a
+                      href={settings.socialLinks.twitter}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-9 h-9 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-900 hover:text-white flex items-center justify-center transition-colors"
+                      aria-label="Twitter"
+                    >
+                      <Twitter className="w-4 h-4" />
+                    </a>
+                  )}
+                  {settings.socialLinks.instagram && (
+                    <a
+                      href={settings.socialLinks.instagram}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-9 h-9 rounded-lg bg-slate-100 text-slate-600 hover:bg-pink-600 hover:text-white flex items-center justify-center transition-colors"
+                      aria-label="Instagram"
+                    >
+                      <Instagram className="w-4 h-4" />
+                    </a>
+                  )}
+                  {settings.socialLinks.linkedin && (
+                    <a
+                      href={settings.socialLinks.linkedin}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-9 h-9 rounded-lg bg-slate-100 text-slate-600 hover:bg-blue-700 hover:text-white flex items-center justify-center transition-colors"
+                      aria-label="LinkedIn"
+                    >
+                      <Linkedin className="w-4 h-4" />
+                    </a>
+                  )}
+                  {settings.socialLinks.youtube && (
+                    <a
+                      href={settings.socialLinks.youtube}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-9 h-9 rounded-lg bg-slate-100 text-slate-600 hover:bg-red-600 hover:text-white flex items-center justify-center transition-colors"
+                      aria-label="YouTube"
+                    >
+                      <Youtube className="w-4 h-4" />
+                    </a>
+                  )}
+                </div>
+              </div>
             </div>
-            
-            <div className="grid lg:grid-cols-2 gap-8">
-              {settings.locations.map((loc, idx) => (
-                <Card key={idx} className="overflow-hidden border-0 shadow-xl group">
-                  <div className="p-4 bg-emerald-50 border-b border-emerald-100 flex items-center justify-between">
-                    <div>
-                      <h4 className="font-bold text-emerald-900">{loc.name}</h4>
-                      <p className="text-xs text-emerald-700 flex items-center gap-1">
-                        <MapPin size={12} /> {loc.address}
+
+            {/* Link to Dedicated Get Involved Page */}
+            <div className="p-4 rounded-xl bg-emerald-950 text-white flex items-center justify-between gap-4">
+              <div className="text-xs text-emerald-100 leading-snug">
+                <span className="font-semibold text-white block">Dedicated "Get Involved" Hub</span>
+                View detailed program coordination, leadership direct contacts, and field resources.
+              </div>
+              <Link
+                to="/get-involved"
+                className="shrink-0 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs transition-colors flex items-center gap-1"
+              >
+                <span>Explore Hub</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
+          </div>
+
+          {/* Right Column: Contact Us Form */}
+          <div className="lg:col-span-7">
+            <div className="p-6 sm:p-8 md:p-10 rounded-2xl bg-white border border-slate-200/80 shadow-sm">
+              <div className="mb-6">
+                <span className="text-xs font-bold uppercase tracking-wider text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full">
+                  Direct Inquiry
+                </span>
+                <h3 className="text-2xl font-bold font-heading text-slate-900 mt-2">
+                  {GET_INVOLVED_STRINGS.contactFormHeading}
+                </h3>
+                <p className="text-sm text-slate-500 mt-0.5">
+                  Send us a message and our team will get back to you promptly.
+                </p>
+              </div>
+
+              {submitStatus === 'success' && (
+                <div className="mb-6 p-4 rounded-xl bg-emerald-50 border border-emerald-200 flex items-start gap-3 text-emerald-900">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
+                  <div className="text-sm">
+                    <div className="font-bold text-emerald-800">{GET_INVOLVED_STRINGS.formSuccessTitle}</div>
+                    <p className="mt-0.5 text-emerald-700">{statusMessage}</p>
+                  </div>
+                </div>
+              )}
+
+              {submitStatus === 'error' && (
+                <div className="mb-6 p-4 rounded-xl bg-red-50 border border-red-200 flex items-start gap-3 text-red-900">
+                  <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                  <div className="text-sm">
+                    <div className="font-bold text-red-800">{GET_INVOLVED_STRINGS.formErrorTitle}</div>
+                    <p className="mt-0.5 text-red-700">{statusMessage}</p>
+                  </div>
+                </div>
+              )}
+
+              <form onSubmit={handleSubmit} className="space-y-4">
+                {/* Full Name */}
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
+                    Full Name <span className="text-emerald-600">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    placeholder="e.g. Grace Akello"
+                    className={`w-full px-4 py-2.5 rounded-xl border ${
+                      fieldErrors.name ? 'border-red-400 bg-red-50/20' : 'border-slate-200 bg-slate-50/50'
+                    } text-slate-900 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all`}
+                  />
+                  {fieldErrors.name && (
+                    <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
+                      <AlertCircle className="w-3 h-3" />
+                      {fieldErrors.name}
+                    </p>
+                  )}
+                </div>
+
+                {/* Email Address & Phone Number */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
+                      Email Address <span className="text-emerald-600">*</span>
+                    </label>
+                    <input
+                      type="email"
+                      required
+                      value={formData.email}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      placeholder="e.g. grace@example.com"
+                      className={`w-full px-4 py-2.5 rounded-xl border ${
+                        fieldErrors.email ? 'border-red-400 bg-red-50/20' : 'border-slate-200 bg-slate-50/50'
+                      } text-slate-900 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all`}
+                    />
+                    {fieldErrors.email && (
+                      <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
+                        <AlertCircle className="w-3 h-3" />
+                        {fieldErrors.email}
                       </p>
-                    </div>
+                    )}
                   </div>
-                  <div className="h-[350px] relative">
-                    <iframe
-                      src={loc.mapUrl && loc.mapUrl.includes('embed') ? loc.mapUrl : `https://maps.google.com/maps?q=${encodeURIComponent(loc.address)}&t=&z=14&ie=UTF8&iwloc=&output=embed`}
-                      className="w-full h-full grayscale-[0.2] contrast-[1.1] hover:grayscale-0 transition-all duration-700"
-                      style={{ border: 0 }}
-                      allowFullScreen={true}
-                      loading="lazy"
-                      referrerPolicy="no-referrer-when-downgrade"
-                    ></iframe>
+
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
+                      Phone Number <span className="text-slate-400 text-[10px] font-normal">(Optional)</span>
+                    </label>
+                    <input
+                      type="tel"
+                      value={formData.phone}
+                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                      placeholder="+256 700 000 000"
+                      className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50/50 text-slate-900 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+                    />
                   </div>
-                </Card>
-              ))}
+                </div>
+
+                {/* Subject / Topic */}
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
+                    Subject / Topic <span className="text-emerald-600">*</span>
+                  </label>
+                  <select
+                    value={formData.subject}
+                    onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50/50 text-slate-900 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all cursor-pointer"
+                  >
+                    {TOPIC_OPTIONS.map((topic) => (
+                      <option key={topic} value={topic}>
+                        {topic}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Message */}
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
+                    Message <span className="text-emerald-600">*</span>
+                  </label>
+                  <textarea
+                    required
+                    rows={4}
+                    value={formData.message}
+                    onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                    placeholder="How can we collaborate or assist you?"
+                    className={`w-full px-4 py-2.5 rounded-xl border ${
+                      fieldErrors.message ? 'border-red-400 bg-red-50/20' : 'border-slate-200 bg-slate-50/50'
+                    } text-slate-900 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all resize-y`}
+                  />
+                  {fieldErrors.message && (
+                    <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
+                      <AlertCircle className="w-3 h-3" />
+                      {fieldErrors.message}
+                    </p>
+                  )}
+                </div>
+
+                {/* Submit Button */}
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="w-full py-3 px-6 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-semibold text-sm shadow-md shadow-emerald-600/20 hover:shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {submitting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Sending message...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-4 h-4" />
+                      <span>Send Message</span>
+                    </>
+                  )}
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        {/* Contained Single Office Map */}
+        {primaryLocation && (
+          <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-sm">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+              <div>
+                <span className="text-xs font-bold uppercase tracking-wider text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full">
+                  Field Location
+                </span>
+                <h3 className="text-xl sm:text-2xl font-bold font-heading text-slate-900 mt-2">
+                  {GET_INVOLVED_STRINGS.findOfficeHeading}
+                </h3>
+                <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
+                  {GET_INVOLVED_STRINGS.findOfficeSubtitle}
+                </p>
+              </div>
+              <a
+                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                  primaryLocation.address || 'Kiryandongo Refugee Settlement Uganda'
+                )}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-100 hover:bg-emerald-50 text-slate-800 hover:text-emerald-700 text-xs font-bold transition-colors border border-slate-200/60 shrink-0"
+              >
+                <Navigation className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Get Directions on Google Maps</span>
+                <ExternalLink className="w-3 h-3" />
+              </a>
+            </div>
+
+            <div className="h-[360px] sm:h-[420px] rounded-2xl overflow-hidden border border-slate-200">
+              <iframe
+                src={
+                  primaryLocation.mapUrl && primaryLocation.mapUrl.includes('embed')
+                    ? primaryLocation.mapUrl
+                    : `https://maps.google.com/maps?q=${encodeURIComponent(
+                        primaryLocation.address || 'Kiryandongo Refugee Settlement, Kiryandongo District, Uganda'
+                      )}&t=&z=13&ie=UTF8&iwloc=&output=embed`
+                }
+                className="w-full h-full border-0"
+                allowFullScreen
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+                title={primaryLocation.name || 'RESTI CBO Headquarters'}
+              />
             </div>
           </div>
         )}
+
       </div>
     </section>
   );
 }
+export default Contact;
