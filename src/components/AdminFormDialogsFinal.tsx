@@ -387,11 +387,13 @@ export function FAQFormDialog({ show, onClose, editingItem, onSuccess, userRole,
                 onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                 className="w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none"
               >
-                <option value="general">General</option>
+                <option value="about-resti">About RESTI</option>
+                <option value="programs">Programs</option>
                 <option value="donations">Donations</option>
                 <option value="volunteering">Volunteering</option>
-                <option value="programs">Programs</option>
-                <option value="partnership">Partnership</option>
+                <option value="partnerships">Partnerships</option>
+                <option value="opportunities">Opportunities</option>
+                <option value="general">General</option>
               </select>
             </div>
             <div>

@@ -1,36 +1,23 @@
-import { useState, useEffect } from 'react';
-import { HelpCircle, Search } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { HelpCircle, Search, Plus, Minus, ArrowRight, Mail } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from './ui/accordion';
-import { Card } from './ui/card';
-import { Badge } from './ui/badge';
+import { 
+  FAQItem, 
+  DEFAULT_FAQS, 
+  normalizeFaqList 
+} from '../utils/faqData';
 
-interface FAQItem {
-  id: string;
-  question: string;
-  answer: string;
-  category: string;
-  order: number;
-}
-
-const FALLBACK_FAQS = [
-  { id: 'faq1', question: 'How can I donate to RESTI?', answer: 'You can donate securely through our online donation system using Credit/Debit cards via Stripe, Mobile Money via MTN and Airtel, or direct bank transfer. All contributions directly empower refugees and host community families.', category: 'donations', order: 1 },
-  { id: 'faq2', question: 'Can organizations partner with RESTI from outside Uganda?', answer: 'Yes! We welcome institutional donors, technical partners, and collaborative organizations worldwide for program funding, research, and technical exchange.', category: 'partnerships', order: 2 },
-  { id: 'faq3', question: 'What programs does RESTI implement?', answer: 'RESTI focuses on core pillars: Quality Education & Digital Inclusion, Healthcare & WASH, Sustainable Agriculture & Livelihoods, and Peacebuilding & Social Cohesion.', category: 'programs', order: 3 },
-  { id: 'faq4', question: 'How do organizations explore a formal partnership?', answer: 'You can submit an inquiry through our Contact page or reach out directly to info@resticbo.org or partners@resticbo.org with your collaboration proposal.', category: 'partnerships', order: 4 },
-  { id: 'faq5', question: 'What is RESTI and is it officially registered?', answer: 'RESTI stands for Refugee Empowerment For Sustainable Transformation Initiative. We are a formally registered Community-Based Organization (CBO) operating with district and national authorization in Kiryandongo, Uganda.', category: 'general', order: 5 },
-];
 export function FAQ() {
-  const [faqs, setFaqs] = useState<FAQItem[]>(FALLBACK_FAQS as any);
+  const [faqs, setFaqs] = useState<FAQItem[]>(DEFAULT_FAQS);
   const [loading, setLoading] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [sectionSettings, setSectionSettings] = useState({ title: 'Frequently Asked Questions', description: 'Find answers to common questions about our organization, programs, and how you can get involved.' });
+  const [openIds, setOpenIds] = useState<Set<string>>(new Set(['faq-about-1']));
+  const [sectionSettings, setSectionSettings] = useState({ 
+    title: 'Frequently Asked Questions', 
+    description: 'Find answers to common questions about RESTI, our programs, donations, volunteering, partnerships, and how you can get involved.' 
+  });
 
   useEffect(() => {
     fetchFAQs();
@@ -61,6 +48,7 @@ export function FAQ() {
 
   const fetchFAQs = async () => {
     try {
+      setLoading(true);
       const response = await fetch(
         `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/faqs`,
         {
@@ -72,7 +60,12 @@ export function FAQ() {
       
       if (response.ok) {
         const data = await response.json();
-        setFaqs(data.faqs || []);
+        const rawList = Array.isArray(data.faqs) ? data.faqs : [];
+        const normalized = normalizeFaqList(rawList);
+        setFaqs(normalized);
+        if (normalized.length > 0) {
+          setOpenIds(new Set([normalized[0].id]));
+        }
       }
     } catch (error) {
       console.error('Error fetching FAQs:', error);
@@ -81,22 +74,49 @@ export function FAQ() {
     }
   };
 
-  const categories = ['all', ...Array.from(new Set(faqs.map(f => f.category)))];
-  
-  const filteredFaqs = faqs.filter(faq => {
-    const matchesCategory = selectedCategory === 'all' || faq.category === selectedCategory;
-    const matchesSearch = searchQuery === '' || 
-      faq.question.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      faq.answer.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCategory && matchesSearch;
-  });
+  const toggleAccordion = (id: string) => {
+    setOpenIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
 
-  if (loading) {
+  const publishedFaqs = useMemo(() => {
+    return faqs.filter(f => f.published !== false);
+  }, [faqs]);
+
+  // Extract categories
+  const categories = useMemo(() => {
+    const set = new Set<string>();
+    publishedFaqs.forEach(f => {
+      if (f.category) set.add(f.category);
+    });
+    return ['all', ...Array.from(set)];
+  }, [publishedFaqs]);
+  
+  const filteredFaqs = useMemo(() => {
+    const q = searchQuery.toLowerCase().trim();
+    return publishedFaqs.filter(faq => {
+      const matchesCategory = selectedCategory === 'all' || 
+        faq.category.toLowerCase().trim() === selectedCategory.toLowerCase().trim();
+      const matchesSearch = !q || 
+        faq.question.toLowerCase().includes(q) ||
+        faq.answer.toLowerCase().includes(q);
+      return matchesCategory && matchesSearch;
+    });
+  }, [publishedFaqs, selectedCategory, searchQuery]);
+
+  if (loading && faqs.length === 0) {
     return (
-      <section id="faq" className="py-16 bg-white">
+      <section id="faq" className="py-20 bg-slate-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
-            <div className="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto" />
+            <div className="w-12 h-12 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin mx-auto" />
           </div>
         </div>
       </section>
@@ -104,47 +124,49 @@ export function FAQ() {
   }
 
   return (
-    <section id="faq" className="py-16 bg-white">
+    <section id="faq" className="py-20 bg-slate-50">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="text-center mb-12">
-          <div className="flex items-center justify-center gap-2 mb-4">
-            <HelpCircle className="text-emerald-600" size={32} />
-            <h2 className="text-[28px] sm:text-[30px] lg:text-[36px] font-bold font-heading text-emerald-600 mb-4 leading-[1.2] text-center">{sectionSettings.title}</h2>
+          <div className="inline-flex items-center justify-center w-14 h-14 bg-emerald-100 rounded-2xl mb-4 text-emerald-700">
+            <HelpCircle size={28} />
           </div>
-          <p className="text-[17px] font-normal leading-[1.6] text-gray-600 max-w-3xl mx-auto text-center">
+          <h2 className="text-[28px] sm:text-[32px] lg:text-[36px] font-bold font-heading text-slate-900 mb-3 leading-[1.2]">
+            {sectionSettings.title}
+          </h2>
+          <p className="text-[16px] sm:text-[17px] text-slate-600 max-w-2xl mx-auto leading-[1.6]">
             {sectionSettings.description}
           </p>
         </div>
 
         {/* Search Bar */}
-        <div className="mb-8">
+        <div className="mb-6">
           <div className="relative">
-            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400" size={18} />
             <input
               type="text"
-              placeholder="Search questions..."
+              placeholder="Search questions or keywords..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+              className="w-full pl-11 pr-4 py-3 bg-white border border-slate-200 rounded-xl text-[15px] text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-xs"
             />
           </div>
         </div>
 
         {/* Category Filter */}
-        {categories.length > 1 && (
-          <div className="flex flex-wrap justify-center gap-3 mb-8">
+        {categories.length > 2 && (
+          <div className="flex flex-wrap items-center justify-center gap-2 mb-8">
             {categories.map((category) => (
               <button
                 key={category}
                 onClick={() => setSelectedCategory(category)}
-                className={`px-6 py-2 rounded-full transition-all ${
+                className={`px-4 py-1.5 rounded-full text-[13px] sm:text-[14px] font-semibold transition-all ${
                   selectedCategory === category
-                    ? 'bg-emerald-600 text-white shadow-lg'
-                    : 'bg-gray-100 text-gray-700 hover:bg-emerald-50 border border-gray-200'
+                    ? 'bg-emerald-700 text-white shadow-sm'
+                    : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
                 }`}
               >
-                {category.charAt(0).toUpperCase() + category.slice(1)}
+                {category === 'all' ? 'All Questions' : category}
               </button>
             ))}
           </div>
@@ -152,49 +174,89 @@ export function FAQ() {
 
         {/* FAQ Accordion */}
         {filteredFaqs.length > 0 ? (
-          <Card className="p-6">
-            <Accordion type="single" collapsible className="w-full">
-              {filteredFaqs.map((faq, index) => (
-                <AccordionItem key={faq.id} value={`item-${index}`}>
-                  <AccordionTrigger className="text-left text-xl">
-                    <div className="flex items-start gap-3">
-                      <Badge variant="outline" className="mt-1 flex-shrink-0">
+          <div className="space-y-3.5 mb-10">
+            {filteredFaqs.slice(0, 8).map((faq, index) => {
+              const isOpen = openIds.has(faq.id);
+              const answerId = `home-faq-ans-${faq.id}`;
+              const btnId = `home-faq-btn-${faq.id}`;
+
+              return (
+                <div
+                  key={faq.id || index}
+                  className={`bg-white rounded-2xl border transition-all duration-200 overflow-hidden ${
+                    isOpen 
+                      ? 'border-emerald-300 shadow-sm ring-1 ring-emerald-200/50' 
+                      : 'border-slate-200/90 shadow-xs hover:border-slate-300'
+                  }`}
+                >
+                  <button
+                    type="button"
+                    id={btnId}
+                    aria-expanded={isOpen}
+                    aria-controls={answerId}
+                    onClick={() => toggleAccordion(faq.id)}
+                    className="w-full flex items-start justify-between gap-4 p-5 sm:p-6 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                  >
+                    <div className="flex-1 pr-2">
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md mb-2 inline-block">
                         {faq.category}
-                      </Badge>
-                      <span>{faq.question}</span>
+                      </span>
+                      <h3 className="text-[16px] sm:text-[17px] font-bold text-slate-900 leading-snug">
+                        {faq.question}
+                      </h3>
                     </div>
-                  </AccordionTrigger>
-                  <AccordionContent>
-                    <div className="pl-20 text-gray-600 leading-relaxed text-lg">
-                      {faq.answer}
+
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors ${
+                      isOpen ? 'bg-emerald-700 text-white' : 'bg-slate-100 text-slate-600'
+                    }`}>
+                      {isOpen ? <Minus size={16} strokeWidth={2.5} /> : <Plus size={16} strokeWidth={2.5} />}
                     </div>
-                  </AccordionContent>
-                </AccordionItem>
-              ))}
-            </Accordion>
-          </Card>
+                  </button>
+
+                  {isOpen && (
+                    <div
+                      id={answerId}
+                      role="region"
+                      aria-labelledby={btnId}
+                      className="px-5 sm:px-6 pb-5 pt-1 border-t border-slate-100 bg-slate-50/50"
+                    >
+                      <p className="text-[14px] sm:text-[15px] leading-[1.65] text-slate-700">
+                        {faq.answer}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         ) : (
-          <Card className="p-6 sm:p-12 text-center bg-gray-50">
-            <HelpCircle className="mx-auto text-gray-300 mb-4" size={48} />
-            <p className="text-gray-500 text-lg">
+          <div className="bg-white rounded-2xl p-10 text-center border border-slate-200 mb-8">
+            <HelpCircle className="mx-auto text-slate-300 mb-3" size={40} />
+            <p className="text-slate-600 text-[15px]">
               {searchQuery ? 'No questions match your search.' : 'No FAQs available in this category.'}
             </p>
-          </Card>
+          </div>
         )}
 
-        {/* Still Have Questions CTA */}
-        <div className="mt-12 bg-gradient-to-r from-emerald-600 to-emerald-700 rounded-2xl p-8 text-center text-white">
-          <h3 className="mb-4">Still Have Questions?</h3>
-          <p className="mb-6 text-emerald-50 text-xl">
-            Can't find the answer you're looking for? Our team is here to help!
-          </p>
-          <button
-            onClick={() => document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' })}
-            className="bg-white text-emerald-600 px-8 py-3 rounded-lg hover:bg-emerald-50 transition-colors"
+        {/* View All FAQs CTA */}
+        <div className="text-center pt-4 flex flex-wrap items-center justify-center gap-4">
+          <Link
+            to="/faqs"
+            className="inline-flex items-center gap-2 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-[15px] py-3 px-6 rounded-xl shadow-sm transition-all"
           >
-            Contact Us
-          </button>
+            <span>View All Frequently Asked Questions</span>
+            <ArrowRight size={16} />
+          </Link>
+
+          <Link
+            to="/contact"
+            className="inline-flex items-center gap-2 bg-white hover:bg-slate-100 text-slate-700 font-bold text-[15px] py-3 px-6 rounded-xl border border-slate-200 transition-all"
+          >
+            <Mail size={16} />
+            <span>Contact RESTI</span>
+          </Link>
         </div>
+
       </div>
     </section>
   );
