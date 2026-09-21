@@ -8,60 +8,12 @@ import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { SEO } from './SEO';
 import { toast } from 'sonner';
 import { useDonationModal } from './DonationModalContext';
-
-interface TeamMember {
-  id: string;
-  name: string;
-  role: string;
-  department: string;
-  bio: string;
-  image: string;
-  email?: string;
-  linkedin?: string;
-  twitter?: string;
-  order?: number;
-  key?: string;
-}
-
-// Fallback team members for instant presentation & fallback safety
-const FALLBACK_TEAM: TeamMember[] = [
-  {
-    id: 'kwaya-daniel-loborach',
-    name: 'Mr. Kwaya Daniel Loborach',
-    role: 'Co-Founder',
-    department: 'Executive & Finance',
-    bio: "Kwaya Daniel Loborach is Co-Founder of RESTI Uganda, bringing a strong background in Business Administration and Management. He holds a Bachelor's degree in the field and applies his expertise in strategic planning, operational efficiency, and sustainable organizational growth to strengthen RESTI's systems and impact.\n\nDaniel is deeply committed to economic empowerment and environmental sustainability. He trains youth in beekeeping—combining ecological stewardship with entrepreneurial skills—and uses his restaurant to create employment opportunities for young people.\n\nAt RESTI, he focuses on building a resilient organizational framework that supports sustainable livelihoods, local enterprise, and lasting socio-economic change.",
-    image: 'https://mxffqgefsufcdgnhjjsw.supabase.co/storage/v1/object/public/make-2a4be611-uploads/c4735251-21ab-43c3-aeef-61aa5429b5c1-Screenshot_2026-09-11_011312.png',
-    email: 'info@resticbo.org',
-  },
-  {
-    id: 'anek-immaculate',
-    name: 'Anek Immaculate',
-    role: 'Co-Founder | Research, Livelihoods & Community Engagement',
-    department: 'Programs & Operations',
-    bio: "Anek Immaculate is Co-Founder of RESTI Uganda, bringing a strong background in development studies and community programming. She holds a Bachelor's degree in Developmental Studies and applies her expertise in research support, community mobilization, and participatory approaches to strengthen RESTI's field programmes.\n\nAnek is deeply committed to meaningful community engagement and self-reliance. She has worked with ZOA Uganda as a Research Assistant, contributing to data collection, field surveys, and evidence generation for livelihoods, WASH, and community-based initiatives, and has volunteered with the Lutheran World Federation (LWF) Uganda, supporting community engagement, protection messaging, and programme activities in refugee-hosting areas.\n\nAt RESTI, she focuses on designing interventions that are grounded in local realities, responsive to community priorities, and aligned with humanitarian and development standards, helping communities lead their own pathways to sustainable transformation.",
-    image: 'https://mxffqgefsufcdgnhjjsw.supabase.co/storage/v1/object/public/make-2a4be611-uploads/f8d23b1b-e4ae-44dc-9ad1-b2ec7fd7d667-WhatsApp_Image_2026-09-13_at_1.57.38_AM.jpeg',
-    email: 'info@resticbo.org',
-  },
-  {
-    id: 'otim-jackson',
-    name: 'Otim Jackson',
-    role: 'Co-Founder | Agriculture, Livelihoods & Community Extension',
-    department: 'Community Extension',
-    bio: "Otim Jackson is Co-Founder of RESTI Uganda, bringing a strong background in agriculture and livestock development. He holds a National Diploma in Animal Production and Management from Bukalasa Agricultural College and applies his expertise in farmer extension, livestock production, and market support to strengthen RESTI's livelihoods programming.\n\nOtim is deeply committed to practical, skills-based economic empowerment. Since 2016, he has worked as a private field veterinary extension worker in Kiryandongo District and has supported World Food Programme (WFP) assignments as an enumerator, distribution team member, and contributor to market surveys, Post-Distribution Monitoring, financial literacy surveys, and the Agriculture and Market Support programme in Kiryandongo Refugee Settlement and host communities.\n\nAt RESTI, he focuses on developing livelihood solutions that respond to local economic realities, build greater self-reliance among refugees and host communities, and turn people's productive capacity into lasting income and resilience.",
-    image: 'https://mxffqgefsufcdgnhjjsw.supabase.co/storage/v1/object/public/make-2a4be611-uploads/cce2a529-08ff-4a8f-91a0-fbdc38e14ced-WhatsApp_Image_2026-09-08_at_5.34.23_PM.jpeg',
-    email: 'otimjackson82@gmail.com',
-  },
-  {
-    id: 'mr-lokwo-denis',
-    name: 'Mr. Lokwo Denis',
-    role: 'Co-Founder | Technology, Digital Systems & Innovation',
-    department: 'Technology & Innovation',
-    bio: "Lokwo Denis is Co-Founder of RESTI Uganda, specializing in technology, digital systems, and innovation. He holds a BSc in Information Technology from Nkumba University and is pursuing an MSc in Computer Science at the University of L'Aquila, Italy, focusing on AI, Complex Networks, and Data Analysis.\n\nWith experience as an IT Support Assistant at Windle International Uganda (2020–2022) and as an ICT Trainer, Lokwo has supported ICT operations, delivered computer literacy training, and developed digital skills among students and communities.\n\nHis technical expertise spans Python, Java, web technologies, REST APIs, Linux, Docker, databases, and AI. At RESTI, he leads efforts to leverage technology for program strengthening, improved service access, and scalable digital solutions that empower refugees and host communities toward self-reliance and resilience.",
-    image: 'https://mxffqgefsufcdgnhjjsw.supabase.co/storage/v1/object/public/make-2a4be611-uploads/e40b6cae-de18-4580-a1c7-758e6f16a541-IMG-20250908-WA0042_1_.jpg',
-    email: 'lokwodenis@gmail.com',
-  }
-];
+import { 
+  TeamMember, 
+  FALLBACK_TEAM, 
+  cleanBio, 
+  cleanMemberId 
+} from '../utils/teamUtils';
 
 export function TeamMemberDetail() {
   const { id } = useParams<{ id: string }>();
@@ -69,30 +21,21 @@ export function TeamMemberDetail() {
   const { open: openDonationModal } = useDonationModal();
 
   const getInitialMember = (): TeamMember | null => {
-    const cleanId = (id || '').replace(/^team:/, '').trim().toLowerCase();
+    const cleanId = cleanMemberId(id).toLowerCase();
     return FALLBACK_TEAM.find(m => 
-      m.id.toLowerCase() === cleanId ||
+      cleanMemberId(m.id).toLowerCase() === cleanId ||
+      cleanMemberId(m.key).toLowerCase() === cleanId ||
       m.name.toLowerCase().replace(/[^a-z0-9]+/g, '-') === cleanId
     ) || null;
   };
 
   const [member, setMember] = useState<TeamMember | null>(getInitialMember);
-  const [allMembers, setAllMembers] = useState<TeamMember[]>([]);
+  const [allMembers, setAllMembers] = useState<TeamMember[]>(() => FALLBACK_TEAM);
   const [copiedEmail, setCopiedEmail] = useState(false);
 
   useEffect(() => {
     fetchMember();
   }, [id]);
-
-  const cleanBio = (text?: string) => {
-    if (!text) return '';
-    return text
-      .replace(/\?\?/g, "'")
-      .replace(/\uFFFD/g, "'")
-      .replace(/â€™/g, "'")
-      .replace(/â€"/g, "—")
-      .trim();
-  };
 
   const fetchMember = async () => {
     try {
@@ -138,7 +81,7 @@ export function TeamMemberDetail() {
             name: found.name || '',
             role: found.role || '',
             department: found.department || 'Leadership',
-            bio: cleanBio(found.bio),
+            bio: cleanBio(found.bio, found.role),
             image: found.image || '',
             email: found.email || '',
             linkedin: found.linkedin || '',
