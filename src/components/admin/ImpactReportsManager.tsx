@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { 
   FileText, ShieldCheck, Download, Plus, Trash2, Save, 
   Eye, Compass, CheckCircle2, DollarSign, Activity, Users, 
-  Globe, ExternalLink, Sparkles, HelpCircle, ArrowRight, ChevronRight
+  Globe, ExternalLink, Sparkles, HelpCircle, ArrowRight, ChevronRight,
+  Upload, ArrowUp, ArrowDown, Loader2, FolderOpen
 } from 'lucide-react';
 import { Button } from '../ui/button';
 import { toast } from 'sonner';
@@ -104,52 +105,7 @@ export const DEFAULT_IMPACT_REPORTS_DATA: FullImpactReportsData = {
 
   publicationsTitle: 'Publications',
   publicationsSubtitle: 'Official organizational and programmatic documentation.',
-  publications: [
-    {
-      id: 'pub-annual-2025',
-      title: 'Annual Report 2025',
-      category: 'Annual Reports',
-      subCategory: '2025 | RESTI CBO',
-      year: '2025',
-      description: "RESTI's annual organizational report covering its establishment, organizational development, activities, partnerships, program areas, and key developments during 2025.",
-      fileUrl: '#',
-      fileSize: '3.8 MB',
-      actionText: 'Download Report →'
-    },
-    {
-      id: 'pub-beekeeping',
-      title: 'Beekeeping Skills Training Report',
-      category: 'Program Reports & Evaluations',
-      subCategory: '2025–2026 | Livelihoods Program',
-      year: '2025-2026',
-      description: "A program report documenting RESTI's beekeeping skills training, including participant engagement, practical training activities, skills developed, lessons learned, and areas for future livelihood support.",
-      fileUrl: '#',
-      fileSize: '2.9 MB',
-      actionText: 'Download Report →'
-    },
-    {
-      id: 'pub-community-dev',
-      title: 'Community Development & Social Cohesion Activities',
-      category: 'Program Reports & Evaluations',
-      subCategory: '2025–2026',
-      year: '2025-2026',
-      description: "A summary of RESTI's community-based activities supporting participation, dialogue, peaceful coexistence, community cooperation, and locally led development.",
-      fileUrl: '#',
-      fileSize: '3.1 MB',
-      actionText: 'Download Report →'
-    },
-    {
-      id: 'pub-wash-health',
-      title: 'WASH & Community Health Activities',
-      category: 'Program Reports & Evaluations',
-      subCategory: '2025–2026',
-      year: '2025-2026',
-      description: "Documentation of RESTI's activities and community engagement related to water, sanitation, hygiene, and community health.",
-      fileUrl: '#',
-      fileSize: '2.7 MB',
-      actionText: 'Download Report →'
-    }
-  ],
+  publications: [],
 
   needsAssessmentTitle: 'Community Needs & Assessments',
   needsAssessmentDescription: 'RESTI uses community consultation and available evidence to understand local priorities and inform program design. Where formal needs assessments are conducted, relevant findings will be published here.',
@@ -195,9 +151,7 @@ export function normalizeImpactReportsData(raw: any): FullImpactReportsData {
 
     publicationsTitle: raw.publicationsTitle || DEFAULT_IMPACT_REPORTS_DATA.publicationsTitle,
     publicationsSubtitle: raw.publicationsSubtitle || DEFAULT_IMPACT_REPORTS_DATA.publicationsSubtitle,
-    publications: Array.isArray(raw.publications) && raw.publications.length > 0
-      ? raw.publications
-      : DEFAULT_IMPACT_REPORTS_DATA.publications,
+    publications: Array.isArray(raw.publications) ? raw.publications : [],
 
     needsAssessmentTitle: raw.needsAssessmentTitle || DEFAULT_IMPACT_REPORTS_DATA.needsAssessmentTitle,
     needsAssessmentDescription: raw.needsAssessmentDescription || DEFAULT_IMPACT_REPORTS_DATA.needsAssessmentDescription,
@@ -315,20 +269,23 @@ export function ImpactReportsManager({ initialData, onUpdate, accessToken, userR
     });
   };
 
+  const [uploadingIndex, setUploadingIndex] = useState<number | null>(null);
+
   const handleAddPub = () => {
+    const currentYear = new Date().getFullYear();
     setFormData(prev => ({
       ...prev,
       publications: [
         ...prev.publications,
         {
           id: 'pub-' + Date.now(),
-          title: 'New Document / Report Title',
-          category: 'Program Reports & Evaluations',
-          subCategory: '2025–2026',
-          year: '2025-2026',
-          description: 'Overview of the document or report contents and scope.',
-          fileUrl: '#',
-          fileSize: '3.0 MB',
+          title: '',
+          category: 'Annual Reports',
+          subCategory: `${currentYear} | RESTI CBO`,
+          year: String(currentYear),
+          description: '',
+          fileUrl: '',
+          fileSize: '',
           actionText: 'Download Report →'
         }
       ]
@@ -340,6 +297,55 @@ export function ImpactReportsManager({ initialData, onUpdate, accessToken, userR
       ...prev,
       publications: prev.publications.filter((_, i) => i !== index)
     }));
+  };
+
+  const handleMovePub = (index: number, direction: 'up' | 'down') => {
+    setFormData(prev => {
+      const copy = [...prev.publications];
+      const targetIndex = direction === 'up' ? index - 1 : index + 1;
+      if (targetIndex < 0 || targetIndex >= copy.length) return prev;
+      const temp = copy[index];
+      copy[index] = copy[targetIndex];
+      copy[targetIndex] = temp;
+      return { ...prev, publications: copy };
+    });
+  };
+
+  const handleUploadPubFile = async (index: number, file: File) => {
+    try {
+      setUploadingIndex(index);
+      toast.info('Uploading document to storage...');
+      const formDataUpload = new FormData();
+      formDataUpload.append('file', file);
+
+      const res = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/upload-application-doc`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${publicAnonKey}` },
+        body: formDataUpload
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        const sizeMb = (file.size / (1024 * 1024)).toFixed(1) + ' MB';
+        setFormData(prev => {
+          const copy = [...prev.publications];
+          copy[index] = {
+            ...copy[index],
+            fileUrl: data.url || copy[index].fileUrl,
+            fileSize: sizeMb
+          };
+          return { ...prev, publications: copy };
+        });
+        toast.success('Document uploaded successfully!');
+      } else {
+        toast.error('Upload failed. You can paste a direct download URL.');
+      }
+    } catch (err) {
+      console.error('File upload error:', err);
+      toast.error('Network error during document upload');
+    } finally {
+      setUploadingIndex(null);
+    }
   };
 
   // Commitment handlers
@@ -557,15 +563,31 @@ export function ImpactReportsManager({ initialData, onUpdate, accessToken, userR
       {/* ── SUB-TAB 3: PUBLICATIONS ── */}
       {activeSubTab === 'publications' && (
         <div className="space-y-6">
-          <div className="bg-white rounded-3xl p-6 md:p-8 border border-slate-200 shadow-sm space-y-4">
-            <div className="border-b border-slate-100 pb-4">
-              <h3 className="text-lg font-bold text-slate-900">Publications Header Settings</h3>
-              <p className="text-xs text-slate-500 mt-0.5">
-                Annual reports, program documents, evaluations, and field studies.
-              </p>
+          <div className="bg-white rounded-3xl p-6 md:p-8 border border-slate-200 shadow-sm space-y-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+              <div>
+                <div className="flex items-center gap-2.5">
+                  <h3 className="text-lg font-bold text-slate-900">Publications ({formData.publications.length})</h3>
+                  <span className="text-xs bg-emerald-50 text-emerald-700 font-semibold px-2.5 py-0.5 rounded-full border border-emerald-200">
+                    {formData.publications.length} Published
+                  </span>
+                </div>
+                <p className="text-xs text-slate-500 mt-1">
+                  Manage official organizational reports, program evaluations, assessments, and policy documentation.
+                </p>
+              </div>
+
+              <Button
+                type="button"
+                onClick={handleAddPub}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs px-4 py-2.5 rounded-xl shadow-sm flex items-center gap-1.5 self-start sm:self-auto"
+              >
+                <Plus size={15} />
+                Add Publication
+              </Button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-1">
               <div>
                 <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
                   Section Title
@@ -574,6 +596,7 @@ export function ImpactReportsManager({ initialData, onUpdate, accessToken, userR
                   type="text"
                   value={formData.publicationsTitle}
                   onChange={e => setFormData({ ...formData, publicationsTitle: e.target.value })}
+                  placeholder="Publications"
                   className="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm font-medium"
                 />
               </div>
@@ -586,141 +609,213 @@ export function ImpactReportsManager({ initialData, onUpdate, accessToken, userR
                   type="text"
                   value={formData.publicationsSubtitle}
                   onChange={e => setFormData({ ...formData, publicationsSubtitle: e.target.value })}
+                  placeholder="Official organizational and programmatic documentation."
                   className="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm font-medium"
                 />
               </div>
             </div>
           </div>
 
-          <div className="space-y-4">
-            {formData.publications.map((pub, idx) => (
-              <div key={pub.id || idx} className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm hover:border-emerald-300 transition-all space-y-4">
-                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                  <div className="flex items-center gap-3">
-                    <span className="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-800 font-bold text-xs flex items-center justify-center">
-                      {idx + 1}
-                    </span>
-                    <h4 className="font-bold text-slate-900 text-base">{pub.title || 'Untitled Publication'}</h4>
-                    <span className="text-xs bg-slate-100 text-slate-600 px-2.5 py-0.5 rounded-full font-medium">
-                      {pub.category}
-                    </span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => handleRemovePub(idx)}
-                    className="text-red-500 hover:text-red-700 p-2 hover:bg-red-50 rounded-xl transition-all"
-                    title="Remove Publication"
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-600 mb-1">
-                      Publication Title
-                    </label>
-                    <input
-                      type="text"
-                      value={pub.title}
-                      onChange={e => handleUpdatePub(idx, 'title', e.target.value)}
-                      className="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm font-medium"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-600 mb-1">
-                      Category
-                    </label>
-                    <select
-                      value={pub.category}
-                      onChange={e => handleUpdatePub(idx, 'category', e.target.value)}
-                      className="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm font-medium bg-white"
-                    >
-                      <option value="Annual Reports">Annual Reports</option>
-                      <option value="Program Reports & Evaluations">Program Reports & Evaluations</option>
-                      <option value="Needs Assessments">Needs Assessments</option>
-                      <option value="Financial Reports">Financial Reports</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-600 mb-1">
-                      Sub-label (e.g. 2025 | RESTI CBO)
-                    </label>
-                    <input
-                      type="text"
-                      value={pub.subCategory}
-                      onChange={e => handleUpdatePub(idx, 'subCategory', e.target.value)}
-                      className="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm font-medium"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1">
-                    Description / Scope
-                  </label>
-                  <textarea
-                    rows={2}
-                    value={pub.description}
-                    onChange={e => handleUpdatePub(idx, 'description', e.target.value)}
-                    className="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm font-medium leading-relaxed"
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-600 mb-1">
-                      File / Download URL
-                    </label>
-                    <input
-                      type="text"
-                      value={pub.fileUrl}
-                      onChange={e => handleUpdatePub(idx, 'fileUrl', e.target.value)}
-                      className="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm font-medium"
-                      placeholder="https://... or #"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-600 mb-1">
-                      File Size Display
-                    </label>
-                    <input
-                      type="text"
-                      value={pub.fileSize || ''}
-                      onChange={e => handleUpdatePub(idx, 'fileSize', e.target.value)}
-                      className="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm font-medium"
-                      placeholder="e.g. 3.8 MB"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-600 mb-1">
-                      Button / Action Text
-                    </label>
-                    <input
-                      type="text"
-                      value={pub.actionText || 'Download Report →'}
-                      onChange={e => handleUpdatePub(idx, 'actionText', e.target.value)}
-                      className="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm font-medium"
-                    />
-                  </div>
-                </div>
+          {/* Empty State when 0 publications exist */}
+          {formData.publications.length === 0 ? (
+            <div className="bg-white rounded-3xl p-10 md:p-14 border-2 border-dashed border-slate-200 text-center space-y-4">
+              <div className="w-16 h-16 rounded-3xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto mb-2">
+                <FileText size={30} />
               </div>
-            ))}
+              <h4 className="text-lg font-bold text-slate-900">No Publications Added Yet</h4>
+              <p className="text-xs sm:text-sm text-slate-500 max-w-md mx-auto leading-relaxed">
+                Publications are currently empty and waiting to be added from this admin dashboard. Click below to add your first official publication or upload a document.
+              </p>
+              <div className="pt-2">
+                <Button
+                  type="button"
+                  onClick={handleAddPub}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs sm:text-sm px-6 py-3 rounded-xl shadow-md inline-flex items-center gap-2"
+                >
+                  <Plus size={16} />
+                  Add First Publication
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {formData.publications.map((pub, idx) => (
+                <div key={pub.id || idx} className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm hover:border-emerald-300 transition-all space-y-4">
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <div className="flex items-center gap-3">
+                      <span className="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-800 font-bold text-xs flex items-center justify-center">
+                        {idx + 1}
+                      </span>
+                      <h4 className="font-bold text-slate-900 text-base">{pub.title || 'Untitled Publication'}</h4>
+                      <span className="text-xs bg-slate-100 text-slate-600 px-2.5 py-0.5 rounded-full font-medium">
+                        {pub.category || 'Annual Reports'}
+                      </span>
+                    </div>
 
-            <Button
-              type="button"
-              onClick={handleAddPub}
-              variant="outline"
-              className="w-full py-4 border-2 border-dashed border-emerald-300 hover:border-emerald-500 text-emerald-700 bg-emerald-50/50 hover:bg-emerald-50 font-bold rounded-2xl flex items-center justify-center gap-2 transition-all"
-            >
-              <Plus size={18} />
-              Add Another Publication
-            </Button>
-          </div>
+                    <div className="flex items-center gap-1">
+                      {/* Reordering */}
+                      <button
+                        type="button"
+                        disabled={idx === 0}
+                        onClick={() => handleMovePub(idx, 'up')}
+                        className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg disabled:opacity-30 disabled:hover:bg-transparent"
+                        title="Move Up"
+                      >
+                        <ArrowUp size={15} />
+                      </button>
+                      <button
+                        type="button"
+                        disabled={idx === formData.publications.length - 1}
+                        onClick={() => handleMovePub(idx, 'down')}
+                        className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg disabled:opacity-30 disabled:hover:bg-transparent"
+                        title="Move Down"
+                      >
+                        <ArrowDown size={15} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleRemovePub(idx)}
+                        className="text-red-500 hover:text-red-700 p-1.5 hover:bg-red-50 rounded-lg transition-all ml-1"
+                        title="Remove Publication"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-600 mb-1">
+                        Publication Title <span className="text-rose-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={pub.title}
+                        onChange={e => handleUpdatePub(idx, 'title', e.target.value)}
+                        placeholder="e.g. Annual Activity Report 2026"
+                        className="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm font-medium"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-600 mb-1">
+                        Category
+                      </label>
+                      <select
+                        value={pub.category}
+                        onChange={e => handleUpdatePub(idx, 'category', e.target.value)}
+                        className="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm font-medium bg-white"
+                      >
+                        <option value="Annual Reports">Annual Reports</option>
+                        <option value="Program Reports & Evaluations">Program Reports & Evaluations</option>
+                        <option value="Needs Assessments & Research">Needs Assessments & Research</option>
+                        <option value="Governance & Policies">Governance & Policies</option>
+                        <option value="Financial Reports & Audits">Financial Reports & Audits</option>
+                        <option value="Strategic Plans">Strategic Plans</option>
+                        <option value="Community Assessments">Community Assessments</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-600 mb-1">
+                        Sub-label / Meta Tag (e.g. 2026 | RESTI CBO)
+                      </label>
+                      <input
+                        type="text"
+                        value={pub.subCategory}
+                        onChange={e => handleUpdatePub(idx, 'subCategory', e.target.value)}
+                        placeholder="2026 | RESTI CBO"
+                        className="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm font-medium"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-600 mb-1">
+                      Description / Scope
+                    </label>
+                    <textarea
+                      rows={2}
+                      value={pub.description}
+                      onChange={e => handleUpdatePub(idx, 'description', e.target.value)}
+                      placeholder="Summary of what is documented in this publication..."
+                      className="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm font-medium leading-relaxed"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="text-xs font-semibold text-slate-600">
+                          File / Download URL
+                        </label>
+                        <label
+                          htmlFor={`file-upload-${idx}`}
+                          className="text-[11px] text-emerald-700 hover:text-emerald-800 font-bold cursor-pointer inline-flex items-center gap-1"
+                        >
+                          <Upload size={12} />
+                          {uploadingIndex === idx ? 'Uploading...' : 'Upload PDF'}
+                        </label>
+                        <input
+                          type="file"
+                          id={`file-upload-${idx}`}
+                          accept=".pdf,.doc,.docx"
+                          className="hidden"
+                          onChange={e => {
+                            if (e.target.files && e.target.files[0]) {
+                              handleUploadPubFile(idx, e.target.files[0]);
+                            }
+                          }}
+                        />
+                      </div>
+                      <input
+                        type="text"
+                        value={pub.fileUrl}
+                        onChange={e => handleUpdatePub(idx, 'fileUrl', e.target.value)}
+                        className="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm font-medium"
+                        placeholder="https://... or click Upload PDF above"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-600 mb-1">
+                        File Size Display
+                      </label>
+                      <input
+                        type="text"
+                        value={pub.fileSize || ''}
+                        onChange={e => handleUpdatePub(idx, 'fileSize', e.target.value)}
+                        className="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm font-medium"
+                        placeholder="e.g. 2.5 MB"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-600 mb-1">
+                        Button / Action Text
+                      </label>
+                      <input
+                        type="text"
+                        value={pub.actionText || 'Download Report →'}
+                        onChange={e => handleUpdatePub(idx, 'actionText', e.target.value)}
+                        className="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm font-medium"
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
+
+              <Button
+                type="button"
+                onClick={handleAddPub}
+                variant="outline"
+                className="w-full py-4 border-2 border-dashed border-emerald-300 hover:border-emerald-500 text-emerald-700 bg-emerald-50/50 hover:bg-emerald-50 font-bold rounded-2xl flex items-center justify-center gap-2 transition-all"
+              >
+                <Plus size={18} />
+                Add Another Publication
+              </Button>
+            </div>
+          )}
         </div>
       )}
 

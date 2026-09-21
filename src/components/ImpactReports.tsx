@@ -62,15 +62,11 @@ export function ImpactReports() {
             actionText: 'Download Report →'
           }));
 
-          // Merge custom reports with verified default publications
-          setData(prev => {
-            const existingTitles = new Set(customPubs.map(p => p.title.toLowerCase().trim()));
-            const uniqueDefaults = prev.publications.filter(p => !existingTitles.has(p.title.toLowerCase().trim()));
-            return {
-              ...prev,
-              publications: [...customPubs, ...uniqueDefaults]
-            };
-          });
+          // Set custom reports directly without reviving mock defaults
+          setData(prev => ({
+            ...prev,
+            publications: customPubs
+          }));
         }
       }
     } catch (err) {
@@ -204,28 +200,30 @@ export function ImpactReports() {
             </div>
 
             {/* Search */}
-            <div className="relative w-full md:w-72">
-              <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                placeholder="Search publications..."
-                className="w-full pl-10 pr-8 py-2.5 bg-white border border-slate-300 rounded-xl text-xs sm:text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-              />
-              {searchQuery && (
-                <button
-                  onClick={() => setSearchQuery('')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                >
-                  <X size={14} />
-                </button>
-              )}
-            </div>
+            {data.publications.length > 0 && (
+              <div className="relative w-full md:w-72">
+                <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  placeholder="Search publications..."
+                  className="w-full pl-10 pr-8 py-2.5 bg-white border border-slate-300 rounded-xl text-xs sm:text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                  >
+                    <X size={14} />
+                  </button>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Category Filter Pills */}
-          {categories.length > 2 && (
+          {data.publications.length > 0 && categories.length > 2 && (
             <div className="flex items-center gap-2 overflow-x-auto pb-4 mb-6">
               {categories.map(cat => (
                 <button
@@ -243,62 +241,95 @@ export function ImpactReports() {
             </div>
           )}
 
-          {/* Publications Cards Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {filteredPublications.map((pub, idx) => (
-              <div
-                key={pub.id || idx}
-                className="bg-white rounded-3xl p-7 border border-slate-200/90 shadow-sm hover:shadow-xl hover:border-emerald-300 transition-all duration-300 flex flex-col justify-between"
-              >
-                <div>
-                  <div className="flex items-center justify-between mb-4">
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-800 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-full">
-                      {pub.category}
-                    </span>
-                    {pub.subCategory && (
-                      <span className="text-xs font-semibold text-slate-500">
-                        {pub.subCategory}
-                      </span>
-                    )}
-                  </div>
-
-                  <h3 className="text-xl font-bold text-slate-900 mb-2.5">
-                    {pub.title}
-                  </h3>
-
-                  <p className="text-slate-600 text-sm leading-relaxed mb-6 font-normal">
-                    {pub.description}
-                  </p>
-                </div>
-
-                <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
-                  <span className="text-xs font-medium text-slate-400">
-                    PDF Document • {pub.fileSize || 'Available'}
-                  </span>
-
-                  <button
-                    type="button"
-                    onClick={() => handleDownload(pub)}
-                    className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm py-2.5 px-5 rounded-xl shadow-sm transition-all"
+          {/* Publications Content or Empty State */}
+          {data.publications.length === 0 ? (
+            <div className="bg-white rounded-3xl p-10 sm:p-14 text-center border border-slate-200/90 shadow-sm max-w-2xl mx-auto">
+              <div className="w-16 h-16 bg-slate-100 text-slate-400 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <FileText size={32} />
+              </div>
+              <h3 className="text-xl font-bold text-slate-800 mb-2">
+                No Publications Published Yet
+              </h3>
+              <p className="text-slate-600 text-sm max-w-md mx-auto mb-6 leading-relaxed">
+                Official reports, policy briefs, and programmatic evaluations are currently being prepared and reviewed. They will be published here as soon as approved for public release.
+              </p>
+              <div className="flex flex-wrap items-center justify-center gap-3">
+                <Link
+                  to="/contact"
+                  className="inline-flex items-center gap-2 bg-[#1a2540] hover:bg-[#233256] text-white font-semibold text-xs sm:text-sm py-2.5 px-5 rounded-xl transition-all shadow-sm"
+                >
+                  <Mail size={15} />
+                  <span>Request Document / Inquire</span>
+                </Link>
+                <Link
+                  to="/financials"
+                  className="inline-flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs sm:text-sm py-2.5 px-5 rounded-xl transition-all"
+                >
+                  <span>Financial Accountability</span>
+                  <ArrowRight size={14} />
+                </Link>
+              </div>
+            </div>
+          ) : (
+            <>
+              {/* Publications Cards Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {filteredPublications.map((pub, idx) => (
+                  <div
+                    key={pub.id || idx}
+                    className="bg-white rounded-3xl p-7 border border-slate-200/90 shadow-sm hover:shadow-xl hover:border-emerald-300 transition-all duration-300 flex flex-col justify-between"
                   >
-                    <span>{pub.actionText || 'Download Report →'}</span>
-                    <Download size={14} />
+                    <div>
+                      <div className="flex items-center justify-between mb-4">
+                        <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-800 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-full">
+                          {pub.category}
+                        </span>
+                        {pub.subCategory && (
+                          <span className="text-xs font-semibold text-slate-500">
+                            {pub.subCategory}
+                          </span>
+                        )}
+                      </div>
+
+                      <h3 className="text-xl font-bold text-slate-900 mb-2.5">
+                        {pub.title}
+                      </h3>
+
+                      <p className="text-slate-600 text-sm leading-relaxed mb-6 font-normal">
+                        {pub.description}
+                      </p>
+                    </div>
+
+                    <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
+                      <span className="text-xs font-medium text-slate-400">
+                        PDF Document • {pub.fileSize || 'Available'}
+                      </span>
+
+                      <button
+                        type="button"
+                        onClick={() => handleDownload(pub)}
+                        className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm py-2.5 px-5 rounded-xl shadow-sm transition-all"
+                      >
+                        <span>{pub.actionText || 'Download Report →'}</span>
+                        <Download size={14} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {filteredPublications.length === 0 && (
+                <div className="bg-white rounded-3xl p-12 text-center border border-dashed border-slate-300">
+                  <p className="text-slate-500 text-sm">No publications match your search query.</p>
+                  <button
+                    onClick={() => { setSelectedCategory('All'); setSearchQuery(''); }}
+                    className="mt-3 text-xs font-bold text-emerald-700 hover:underline"
+                  >
+                    Clear filters
                   </button>
                 </div>
-              </div>
-            ))}
-          </div>
-
-          {filteredPublications.length === 0 && (
-            <div className="bg-white rounded-3xl p-12 text-center border border-dashed border-slate-300">
-              <p className="text-slate-500 text-sm">No publications match your search query.</p>
-              <button
-                onClick={() => { setSelectedCategory('All'); setSearchQuery(''); }}
-                className="mt-3 text-xs font-bold text-emerald-700 hover:underline"
-              >
-                Clear filters
-              </button>
-            </div>
+              )}
+            </>
           )}
         </div>
       </section>
