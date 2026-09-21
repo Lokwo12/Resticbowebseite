@@ -3712,6 +3712,47 @@ app.delete('/make-server-2a4be611/admin/reports/:id', requireAdmin, async (c) =>
   }
 })
 
+// Opportunities Settings (empty state & inquiries notice)
+const DEFAULT_OPP_SETTINGS = {
+  emptyTitle: "No current opportunities",
+  emptyMessage: "We do not currently have any open opportunities. Please check back later for new positions, internships, volunteer opportunities, and other ways to get involved with RESTI.",
+  emptyButtonText: "Contact RESTI",
+  emptyButtonLink: "/contact",
+  showInquiriesBox: true,
+  inquiriesTitle: "Don't see a role that matches your skills?",
+  inquiriesDescription: "RESTI thrives on passionate changemakers, researchers, and volunteers from all walks of life. Send us your profile or proposal, and let us explore how we can collaborate together to build self-reliant refugee and host communities.",
+  inquiriesEmail: "careers@resticbo.org",
+  inquiriesSubject: "General Inquiry / Partnership Proposal"
+};
+
+app.get('/make-server-2a4be611/opportunities/settings', async (c) => {
+  try {
+    const custom = await kv.get('opportunities_settings') || {}
+    return c.json({ settings: { ...DEFAULT_OPP_SETTINGS, ...custom } })
+  } catch (error) {
+    console.error('Error fetching opportunities settings:', error)
+    return c.json({ settings: DEFAULT_OPP_SETTINGS })
+  }
+});
+
+app.put('/make-server-2a4be611/admin/opportunities/settings', requireAdmin, async (c) => {
+  try {
+    const body = await c.req.json()
+    const current = await kv.get('opportunities_settings') || {}
+    const updated = {
+      ...DEFAULT_OPP_SETTINGS,
+      ...current,
+      ...(body.settings || body),
+      updatedAt: new Date().toISOString()
+    }
+    await kv.set('opportunities_settings', updated)
+    return c.json({ success: true, message: 'Opportunities settings saved successfully', settings: updated })
+  } catch (error) {
+    console.error('Error updating opportunities settings:', error)
+    return c.json({ error: 'Failed to update opportunities settings', details: String(error) }, 500)
+  }
+});
+
 // Opportunities & Recruitment routes
 app.get('/make-server-2a4be611/opportunities', async (c) => {
   try {

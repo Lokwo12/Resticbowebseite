@@ -25,9 +25,10 @@ import {
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { 
   OpportunityItem, 
+  OpportunitiesSettings,
+  DEFAULT_OPPORTUNITIES_SETTINGS,
   OPPORTUNITY_CATEGORIES, 
   WORK_ARRANGEMENTS, 
-  INITIAL_OPPORTUNITIES,
   computeOpportunityStatus,
   isOpportunityPubliclyActive,
   getCategoryBadgeClasses,
@@ -37,6 +38,7 @@ import { toast } from 'sonner';
 
 export function OpportunitiesPage() {
   const [rawOpportunities, setRawOpportunities] = useState<OpportunityItem[]>([]);
+  const [oppSettings, setOppSettings] = useState<OpportunitiesSettings>(DEFAULT_OPPORTUNITIES_SETTINGS);
   const [loading, setLoading] = useState<boolean>(true);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
@@ -56,6 +58,26 @@ export function OpportunitiesPage() {
   const [applicantConsent, setApplicantConsent] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submissionSuccess, setSubmissionSuccess] = useState(false);
+
+  // Fetch opportunities settings (empty state & inquiries notice)
+  const fetchSettings = async () => {
+    try {
+      const res = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/opportunities/settings`, {
+        headers: {
+          Authorization: `Bearer ${publicAnonKey}`,
+        },
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.settings) {
+          setOppSettings(prev => ({ ...prev, ...data.settings }));
+        }
+      }
+    } catch (err) {
+      console.warn('Could not fetch custom opportunity settings, using defaults.', err);
+    }
+  };
 
   // Fetch opportunities from Supabase edge function
   const fetchOpportunities = async () => {
@@ -96,17 +118,14 @@ export function OpportunitiesPage() {
           };
         });
 
-        if (parsed.length > 0) {
-          setRawOpportunities(parsed);
-        } else {
-          setRawOpportunities(INITIAL_OPPORTUNITIES);
-        }
+        // Set live parsed items (or empty list if no active opportunities in DB)
+        setRawOpportunities(parsed);
       } else {
-        setRawOpportunities(INITIAL_OPPORTUNITIES);
+        setRawOpportunities([]);
       }
     } catch (err) {
       console.error('Failed to fetch opportunities:', err);
-      setRawOpportunities(INITIAL_OPPORTUNITIES);
+      setRawOpportunities([]);
     } finally {
       setLoading(false);
     }
@@ -114,6 +133,7 @@ export function OpportunitiesPage() {
 
   useEffect(() => {
     fetchOpportunities();
+    fetchSettings();
   }, []);
 
   // Compute live active opportunities (automatically exclude expired unless ongoing)
@@ -538,65 +558,96 @@ export function OpportunitiesPage() {
             })}
           </div>
         ) : (
-          /* Empty State */
+          /* ================= EDITABLE EMPTY STATE ================= */
           <div className="bg-white rounded-3xl shadow-lg border border-slate-200/80 p-12 md:p-16 text-center max-w-2xl mx-auto">
             <div className="w-16 h-16 rounded-3xl bg-slate-100 border border-slate-200 flex items-center justify-center mx-auto mb-5 text-slate-400">
               <Briefcase size={30} />
             </div>
-            <h3 className="text-xl font-bold text-slate-900 mb-2">No current opportunities</h3>
-            <p className="text-slate-600 text-sm md:text-base leading-relaxed mb-6">
-              We do not currently have any open opportunities matching your filter criteria. Please check back later for new positions, internships, volunteer opportunities, and other ways to get involved with RESTI.
-            </p>
-            <div className="flex flex-wrap items-center justify-center gap-3">
-              {(selectedCategory !== 'All' || selectedArrangement !== 'All' || searchQuery) && (
+
+            {/* If filters produced no matches, show filter reset message */}
+            {activeOpportunities.length > 0 && (selectedCategory !== 'All' || selectedArrangement !== 'All' || searchQuery) ? (
+              <>
+                <h3 className="text-xl font-bold text-slate-900 mb-2">No matching opportunities</h3>
+                <p className="text-slate-600 text-sm md:text-base leading-relaxed mb-6">
+                  No opportunities match your current search or filter criteria. Try resetting filters to see all available roles.
+                </p>
                 <button
                   onClick={() => {
                     setSelectedCategory('All');
                     setSelectedArrangement('All');
                     setSearchQuery('');
                   }}
-                  className="px-5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold transition-colors"
+                  className="px-6 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold transition-colors"
                 >
                   Reset Filters
                 </button>
-              )}
-              <Link
-                to="/contact"
-                className="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold shadow-md transition-all"
-              >
-                Contact RESTI
-              </Link>
-            </div>
+              </>
+            ) : (
+              /* If no active opportunities published in system, render admin-configured empty state */
+              <>
+                <h3 className="text-2xl font-bold text-slate-900 mb-3 font-heading">
+                  {oppSettings.emptyTitle || 'No current opportunities'}
+                </h3>
+                <p className="text-slate-600 text-sm md:text-base leading-relaxed mb-6 max-w-xl mx-auto whitespace-pre-line">
+                  {oppSettings.emptyMessage || 'We do not currently have any open opportunities. Please check back later for new positions, internships, volunteer opportunities, and other ways to get involved with RESTI.'}
+                </p>
+                <div>
+                  {oppSettings.emptyButtonLink && (oppSettings.emptyButtonLink.startsWith('http') || oppSettings.emptyButtonLink.startsWith('mailto:')) ? (
+                    <a
+                      href={oppSettings.emptyButtonLink}
+                      target={oppSettings.emptyButtonLink.startsWith('http') ? '_blank' : undefined}
+                      rel={oppSettings.emptyButtonLink.startsWith('http') ? 'noopener noreferrer' : undefined}
+                      className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold shadow-md transition-all"
+                    >
+                      {oppSettings.emptyButtonText || 'Contact RESTI'}
+                      <ArrowRight size={16} />
+                    </a>
+                  ) : (
+                    <Link
+                      to={oppSettings.emptyButtonLink || '/contact'}
+                      className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold shadow-md transition-all"
+                    >
+                      {oppSettings.emptyButtonText || 'Contact RESTI'}
+                      <ArrowRight size={16} />
+                    </Link>
+                  )}
+                </div>
+              </>
+            )}
           </div>
         )}
 
-        {/* General Inquiry / Volunteering Callout */}
-        <div className="mt-16 bg-gradient-to-r from-emerald-800 to-teal-900 rounded-3xl p-8 md:p-12 text-white shadow-xl relative overflow-hidden">
-          <div className="max-w-3xl relative z-10">
-            <h3 className="text-2xl sm:text-3xl font-bold font-heading mb-3">
-              Don't see a role that matches your skills?
-            </h3>
-            <p className="text-emerald-100/90 text-sm sm:text-base leading-relaxed mb-6">
-              RESTI thrives on passionate changemakers, researchers, and volunteers from all walks of life. Send us your profile or proposal, and let us explore how we can collaborate together to build self-reliant refugee and host communities.
-            </p>
-            <div className="flex flex-wrap items-center gap-4">
-              <Link
-                to="/contact"
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-white text-emerald-800 hover:bg-emerald-50 text-sm font-bold shadow-md transition-all"
-              >
-                Reach Out to Us
-                <ArrowRight size={16} />
-              </Link>
-              <a
-                href="mailto:careers@resticbo.org?subject=General%20Inquiry%20/%20Partnership%20Proposal"
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-emerald-700/50 hover:bg-emerald-700/70 border border-emerald-500/40 text-white text-sm font-semibold transition-all"
-              >
-                <Mail size={16} />
-                careers@resticbo.org
-              </a>
+        {/* ================= EDITABLE GENERAL INQUIRY CALLOUT ================= */}
+        {oppSettings.showInquiriesBox && (
+          <div className="mt-16 bg-gradient-to-r from-emerald-800 to-teal-900 rounded-3xl p-8 md:p-12 text-white shadow-xl relative overflow-hidden">
+            <div className="max-w-3xl relative z-10">
+              <h3 className="text-2xl sm:text-3xl font-bold font-heading mb-3">
+                {oppSettings.inquiriesTitle || "Don't see a role that matches your skills?"}
+              </h3>
+              <p className="text-emerald-100/90 text-sm sm:text-base leading-relaxed mb-6 whitespace-pre-line">
+                {oppSettings.inquiriesDescription || "RESTI thrives on passionate changemakers, researchers, and volunteers from all walks of life. Send us your profile or proposal, and let us explore how we can collaborate together to build self-reliant refugee and host communities."}
+              </p>
+              <div className="flex flex-wrap items-center gap-4">
+                <Link
+                  to="/contact"
+                  className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-white text-emerald-800 hover:bg-emerald-50 text-sm font-bold shadow-md transition-all"
+                >
+                  Reach Out to Us
+                  <ArrowRight size={16} />
+                </Link>
+                {oppSettings.inquiriesEmail && (
+                  <a
+                    href={`mailto:${oppSettings.inquiriesEmail}?subject=${encodeURIComponent(oppSettings.inquiriesSubject || 'General Inquiry / Partnership Proposal')}`}
+                    className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-emerald-700/50 hover:bg-emerald-700/70 border border-emerald-500/40 text-white text-sm font-semibold transition-all"
+                  >
+                    <Mail size={16} />
+                    {oppSettings.inquiriesEmail}
+                  </a>
+                )}
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </section>
 
       {/* ========================================================================= */}
@@ -772,7 +823,7 @@ export function OpportunitiesPage() {
       {/* ========================================================================= */}
       {applyModalOpportunity && (
         <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-200">
-          <div className="bg-white rounded-3xl shadow-2xl max-w-xl w-full flex flex-col overflow-hidden border border-slate-100">
+          <div className="bg-white rounded-3xl shadow-2xl max-xl w-full flex flex-col overflow-hidden border border-slate-100 max-w-xl">
             {/* Header */}
             <div className="p-6 bg-gradient-to-r from-emerald-800 to-emerald-700 text-white relative">
               <button
@@ -962,4 +1013,4 @@ export function OpportunitiesPage() {
       )}
     </div>
   );
-}
+};

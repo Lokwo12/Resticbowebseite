@@ -339,3 +339,28 @@ export function getStatusBadgeClasses(status: OpportunityStatus): string {
       return 'bg-slate-100 text-slate-700 border-slate-200';
   }
 }
+
+export interface OpportunitiesSettings {
+  emptyTitle: string;
+  emptyMessage: string;
+  emptyButtonText: string;
+  emptyButtonLink: string;
+  showInquiriesBox: boolean;
+  inquiriesTitle: string;
+  inquiriesDescription: string;
+  inquiriesEmail: string;
+  inquiriesSubject: string;
+}
+
+export const DEFAULT_OPPORTUNITIES_SETTINGS: OpportunitiesSettings = {
+  emptyTitle: 'No current opportunities',
+  emptyMessage: 'We do not currently have any open opportunities. Please check back later for new positions, internships, volunteer opportunities, and other ways to get involved with RESTI.',
+  emptyButtonText: 'Contact RESTI',
+  emptyButtonLink: '/contact',
+  showInquiriesBox: true,
+  inquiriesTitle: "Don't see a role that matches your skills?",
+  inquiriesDescription: "RESTI thrives on passionate changemakers, researchers, and volunteers from all walks of life. Send us your profile or proposal, and let us explore how we can collaborate together to build self-reliant refugee and host communities.",
+  inquiriesEmail: 'careers@resticbo.org',
+  inquiriesSubject: 'General Inquiry / Partnership Proposal',
+};
+
