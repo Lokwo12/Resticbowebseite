@@ -3238,63 +3238,256 @@ app.delete('/make-server-2a4be611/admin/events/:id', requireAdmin, async (c) => 
   }
 })
 
-// Partners routes
+// Partners routes (Public - only published partners)
 app.get('/make-server-2a4be611/partners', async (c) => {
   try {
+    const isPublic = c.req.query('all') !== 'true';
     const limit = parseInt(c.req.query('limit') || '100');
     const offset = parseInt(c.req.query('offset') || '0');
     
+    const partners = await kv.getByPrefix('partner:');
+    let list = partners.map(p => {
+      const val = p.value || {};
+      const cleanId = (p.key || '').replace(/^partner:/, '');
+      const isPublished = val.is_published !== undefined ? Boolean(val.is_published) : (val.published !== undefined ? Boolean(val.published) : true);
+      const displayOrder = typeof val.display_order === 'number' ? val.display_order : (typeof val.order === 'number' ? val.order : 1);
+      return {
+        ...val,
+        id: cleanId,
+        key: p.key,
+        logo: val.logo_url || val.logo || '',
+        logo_url: val.logo_url || val.logo || '',
+        website: val.website_url || val.website || '',
+        website_url: val.website_url || val.website || '',
+        partner_type: val.partner_type || val.category || 'Community Partner',
+        category: val.partner_type || val.category || 'Community Partner',
+        display_order: displayOrder,
+        order: displayOrder,
+        is_published: isPublished,
+        published: isPublished
+      };
+    });
+
+    // Exclude any legacy sample names if any exist in storage
+    list = list.filter(p => {
+      const n = (p.name || '').toLowerCase();
+      return n && 
+        !n.includes('global giving') && 
+        !n.includes('kiryandongo district local government') &&
+        !n.includes('youth action network') &&
+        !n.includes('uganda development foundation') &&
+        !n.includes('global health initiative') &&
+        !n.includes('community water alliance');
+    });
+
+    if (isPublic) {
+      list = list.filter(p => p.is_published);
+    }
+
+    // Sort by display_order ascending, then created_at descending
+    list.sort((a, b) => {
+      if (a.display_order !== b.display_order) return a.display_order - b.display_order;
+      const tA = new Date(a.created_at || a.createdAt || 0).getTime();
+      const tB = new Date(b.created_at || b.createdAt || 0).getTime();
+      return tB - tA;
+    });
+
     if (c.req.query('limit') !== undefined) {
-      const { data, count } = await kv.getPaginatedByPrefix('partner:', limit, offset);
-      data.sort((a, b) => new Date(b.value?.timestamp || b.value?.created_at || 0).getTime() - new Date(a.value?.timestamp || a.value?.created_at || 0).getTime());
-      return c.json({ partners: data, count, limit, offset });
+      const count = list.length;
+      const paginated = list.slice(offset, offset + limit);
+      return c.json({ partners: paginated, count, limit, offset });
     }
     
-    const partners = await kv.getByPrefix('partner:')
-    return c.json({ partners: partners.map(p => ({ ...p.value, id: p.key, key: p.key })) })
+    return c.json({ partners: list });
   } catch (error) {
-    console.error('Error fetching partners:', error)
-    return c.json({ error: 'Failed to fetch partners', details: String(error) }, 500)
+    console.error('Error fetching partners:', error);
+    return c.json({ error: 'Failed to fetch partners', details: String(error) }, 500);
   }
-})
+});
+
+// Admin get all partners (including unpublished)
+app.get('/make-server-2a4be611/admin/partners', requireAdmin, async (c) => {
+  try {
+    const partners = await kv.getByPrefix('partner:');
+    let list = partners.map(p => {
+      const val = p.value || {};
+      const cleanId = (p.key || '').replace(/^partner:/, '');
+      const isPublished = val.is_published !== undefined ? Boolean(val.is_published) : (val.published !== undefined ? Boolean(val.published) : true);
+      const displayOrder = typeof val.display_order === 'number' ? val.display_order : (typeof val.order === 'number' ? val.order : 1);
+      return {
+        ...val,
+        id: cleanId,
+        key: p.key,
+        logo: val.logo_url || val.logo || '',
+        logo_url: val.logo_url || val.logo || '',
+        website: val.website_url || val.website || '',
+        website_url: val.website_url || val.website || '',
+        partner_type: val.partner_type || val.category || 'Community Partner',
+        category: val.partner_type || val.category || 'Community Partner',
+        display_order: displayOrder,
+        order: displayOrder,
+        is_published: isPublished,
+        published: isPublished
+      };
+    });
+
+    list.sort((a, b) => {
+      if (a.display_order !== b.display_order) return a.display_order - b.display_order;
+      const tA = new Date(a.created_at || a.createdAt || 0).getTime();
+      const tB = new Date(b.created_at || b.createdAt || 0).getTime();
+      return tB - tA;
+    });
+
+    return c.json({ partners: list, count: list.length });
+  } catch (error) {
+    console.error('Error fetching admin partners:', error);
+    return c.json({ error: 'Failed to fetch admin partners', details: String(error) }, 500);
+  }
+});
 
 app.post('/make-server-2a4be611/admin/partners', requireAdmin, async (c) => {
   try {
-    const body = await c.req.json()
-    const { name, description, logo, website, category, since } = body
-    const partnerId = `partner:${crypto.randomUUID()}`
-    await kv.set(partnerId, { name, description, logo: logo || '', website, category: category || 'general', since: since || new Date().getFullYear().toString() })
-    return c.json({ success: true, message: 'Partner added successfully', id: partnerId })
+    const body = await c.req.json();
+    const { 
+      name, 
+      description, 
+      logo, 
+      logo_url, 
+      website, 
+      website_url, 
+      category, 
+      partner_type, 
+      since, 
+      display_order, 
+      order, 
+      is_published, 
+      published 
+    } = body;
+
+    if (!name || !name.trim()) {
+      return c.json({ error: 'Partner organization name is required' }, 400);
+    }
+
+    const rawId = crypto.randomUUID();
+    const partnerId = "partner:" + rawId;
+    const nowIso = new Date().toISOString();
+    const effectiveLogo = logo_url || logo || '';
+    const effectiveWebsite = website_url || website || '';
+    const effectiveType = partner_type || category || 'Community Partner';
+    const effectiveOrder = typeof display_order === 'number' ? display_order : (typeof order === 'number' ? order : 1);
+    const effectivePublished = is_published !== undefined ? Boolean(is_published) : (published !== undefined ? Boolean(published) : true);
+
+    const partnerRecord = {
+      id: rawId,
+      name: name.trim(),
+      description: description ? description.trim() : '',
+      logo: effectiveLogo,
+      logo_url: effectiveLogo,
+      website: effectiveWebsite,
+      website_url: effectiveWebsite,
+      category: effectiveType,
+      partner_type: effectiveType,
+      since: since ? since.trim() : new Date().getFullYear().toString(),
+      display_order: effectiveOrder,
+      order: effectiveOrder,
+      is_published: effectivePublished,
+      published: effectivePublished,
+      created_at: nowIso,
+      updated_at: nowIso
+    };
+
+    await kv.set(partnerId, partnerRecord);
+    console.log("Partner created successfully: " + partnerId + " (" + partnerRecord.name + ")");
+    return c.json({ success: true, message: 'Partner added successfully', id: partnerId, partner: partnerRecord });
   } catch (error) {
-    console.error('Error creating partner:', error)
-    return c.json({ error: 'Failed to create partner', details: String(error) }, 500)
+    console.error('Error creating partner:', error);
+    return c.json({ error: 'Failed to create partner', details: String(error) }, 500);
   }
-})
+});
 
 app.put('/make-server-2a4be611/admin/partners/:id', requireAdmin, async (c) => {
   try {
-    const id = normalizeContentKey('partner', c.req.param('id'))
-    const body = await c.req.json()
-    const existing = await kv.get(id)
-    if (!existing) return c.json({ error: 'Partner not found' }, 404)
-    await kv.set(id, { ...existing, ...body, updatedAt: new Date().toISOString() })
-    return c.json({ success: true, message: 'Partner updated successfully' })
+    const id = normalizeContentKey('partner', c.req.param('id'));
+    const body = await c.req.json();
+    const existing = await kv.get(id);
+    if (!existing) return c.json({ error: 'Partner not found' }, 404);
+
+    const nowIso = new Date().toISOString();
+    const effectiveLogo = body.logo_url !== undefined ? body.logo_url : (body.logo !== undefined ? body.logo : (existing.logo_url || existing.logo || ''));
+    const effectiveWebsite = body.website_url !== undefined ? body.website_url : (body.website !== undefined ? body.website : (existing.website_url || existing.website || ''));
+    const effectiveType = body.partner_type || body.category || existing.partner_type || existing.category || 'Community Partner';
+    const effectiveOrder = body.display_order !== undefined ? Number(body.display_order) : (body.order !== undefined ? Number(body.order) : (existing.display_order || existing.order || 1));
+    const effectivePublished = body.is_published !== undefined ? Boolean(body.is_published) : (body.published !== undefined ? Boolean(body.published) : (existing.is_published !== undefined ? Boolean(existing.is_published) : true));
+
+    const updatedRecord = {
+      ...existing,
+      ...body,
+      id: existing.id || id.replace(/^partner:/, ''),
+      name: (body.name !== undefined ? body.name : existing.name).trim(),
+      description: body.description !== undefined ? body.description.trim() : (existing.description || ''),
+      logo: effectiveLogo,
+      logo_url: effectiveLogo,
+      website: effectiveWebsite,
+      website_url: effectiveWebsite,
+      category: effectiveType,
+      partner_type: effectiveType,
+      since: body.since !== undefined ? body.since : (existing.since || ''),
+      display_order: effectiveOrder,
+      order: effectiveOrder,
+      is_published: effectivePublished,
+      published: effectivePublished,
+      updated_at: nowIso,
+      updatedAt: nowIso
+    };
+
+    await kv.set(id, updatedRecord);
+    console.log("Partner updated successfully: " + id);
+    return c.json({ success: true, message: 'Partner updated successfully', partner: updatedRecord });
   } catch (error) {
-    console.error('Error updating partner:', error)
-    return c.json({ error: 'Failed to update partner', details: String(error) }, 500)
+    console.error('Error updating partner:', error);
+    return c.json({ error: 'Failed to update partner', details: String(error) }, 500);
   }
-})
+});
+
+// Quick toggle publish status
+app.patch('/make-server-2a4be611/admin/partners/:id/toggle-publish', requireAdmin, async (c) => {
+  try {
+    const id = normalizeContentKey('partner', c.req.param('id'));
+    const existing = await kv.get(id);
+    if (!existing) return c.json({ error: 'Partner not found' }, 404);
+
+    const currentPublished = existing.is_published !== undefined ? Boolean(existing.is_published) : (existing.published !== undefined ? Boolean(existing.published) : true);
+    const newPublished = !currentPublished;
+    const nowIso = new Date().toISOString();
+
+    const updatedRecord = {
+      ...existing,
+      is_published: newPublished,
+      published: newPublished,
+      updated_at: nowIso,
+      updatedAt: nowIso
+    };
+
+    await kv.set(id, updatedRecord);
+    console.log("Partner " + id + " publish toggled to: " + newPublished);
+    return c.json({ success: true, message: newPublished ? 'Partner published' : 'Partner unpublished', is_published: newPublished, partner: updatedRecord });
+  } catch (error) {
+    console.error('Error toggling partner publish status:', error);
+    return c.json({ error: 'Failed to toggle publish status', details: String(error) }, 500);
+  }
+});
 
 app.delete('/make-server-2a4be611/admin/partners/:id', requireAdmin, async (c) => {
   try {
-    const id = normalizeContentKey('partner', c.req.param('id'))
-    await kv.del(id)
-    return c.json({ success: true, message: 'Partner deleted successfully' })
+    const id = normalizeContentKey('partner', c.req.param('id'));
+    await kv.del(id);
+    console.log("Partner deleted: " + id);
+    return c.json({ success: true, message: 'Partner deleted successfully' });
   } catch (error) {
-    console.error('Error deleting partner:', error)
-    return c.json({ error: 'Failed to delete partner', details: String(error) }, 500)
+    console.error('Error deleting partner:', error);
+    return c.json({ error: 'Failed to delete partner', details: String(error) }, 500);
   }
-})
+});
 
 // Impact Dashboard routes
 app.get('/make-server-2a4be611/impact-stats', async (c) => {
@@ -3944,24 +4137,6 @@ app.post('/make-server-2a4be611/initialize', async (c) => {
         capacity: 50,
         registered: 32,
         status: 'upcoming'
-      })
-
-      // Add sample partners
-      await kv.set('partner:1', {
-        name: 'Uganda Development Foundation',
-        description: 'Strategic partner providing funding and technical support for our education programs',
-        logo: '',
-        website: 'https://example.com',
-        category: 'funding',
-        since: '2020'
-      })
-
-      await kv.set('partner:2', {
-        name: 'Global Health Initiative',
-        description: 'Supporting our healthcare outreach programs with medical supplies and expertise',
-        logo: '',
-        category: 'healthcare',
-        since: '2021'
       })
 
       // Add sample opportunities
