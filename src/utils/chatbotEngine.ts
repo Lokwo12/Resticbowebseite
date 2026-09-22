@@ -7,145 +7,234 @@ export interface BotReply {
   };
 }
 
-export const INITIAL_QUICK_REPLIES = [
-  '💚 How to Donate',
-  '📚 Our Programs',
-  '🌟 Opportunities',
-  '📍 Location & Contact',
-  '📊 Impact & Reports',
-  '🙋 Speak to Staff'
+export const INITIAL_QUICK_ACTIONS = [
+  'About RESTI',
+  'Our Programs',
+  'Resources',
+  'Donate',
+  'Events',
+  'Contact Us'
 ];
+
+export const WELCOME_MESSAGE_TEXT = 
+  "Hello! 👋 I'm the RESTI Assistant.\n\n" +
+  "I can help you learn about RESTI, our programs, resources, events, donations, and how to get in touch with us.\n\n" +
+  "How can I help you today?";
 
 export function generateBotReply(rawMessage: string): BotReply {
   const msg = rawMessage.toLowerCase().trim();
 
-  // 1. GREETINGS
-  if (/^(hi|hello|hey|good morning|good afternoon|good evening|greetings|hola|jambo)/i.test(msg) || msg === 'hi' || msg === 'hello') {
+  // 1. MAIN MENU / RESTART
+  if (
+    msg === 'main menu' || msg === 'menu' || msg === 'start over' || 
+    msg === 'home' || msg === 'restart' || msg === 'back'
+  ) {
     return {
-      text: "Hello and welcome to RESTI CBO! 👋 We are a community-based organization serving refugees and host families in Kiryandongo District, Uganda. How can I assist you today?",
-      quickReplies: ['💚 How to Donate', '📚 Our Programs', '🌟 Opportunities', '📍 Where We Work']
+      text: "Here are the main topics I can help you with:",
+      quickReplies: INITIAL_QUICK_ACTIONS
     };
   }
 
-  // 2. DONATION / GIVING
+  // 2. GREETINGS
+  if (
+    /^(hi|hello|hey|good morning|good afternoon|good evening|greetings|jambo|habari)/i.test(msg) ||
+    msg === 'hi' || msg === 'hello' || msg === 'hey'
+  ) {
+    return {
+      text: "Hello! 👋 Welcome to RESTI CBO Kiryandongo. How can I help you today?",
+      quickReplies: INITIAL_QUICK_ACTIONS
+    };
+  }
+
+  // 3. ABOUT RESTI
+  if (
+    msg.includes('about resti') || msg.includes('who are you') || msg.includes('what is resti') ||
+    msg.includes('about us') || msg.includes('who we are') || msg.includes('mission') ||
+    msg.includes('vision') || msg.includes('registered') || msg.includes('cbo') ||
+    msg.includes('organization') || msg.includes('history')
+  ) {
+    return {
+      text: "RESTI (Refugee Empowerment For Sustainable Transformation Initiative) is a registered Community-Based Organization in Kiryandongo District, Uganda.\n\nWe build resilience, sustainable livelihoods, and social cohesion among refugees and host communities.",
+      link: { text: 'Read Our Story →', url: '/about' },
+      quickReplies: ['Our Programs', 'Resources', 'Contact Us', 'Main Menu']
+    };
+  }
+
+  // 4. SPECIFIC PROGRAM: WASH
+  if (
+    msg.includes('wash') || msg.includes('clean water') || msg.includes('borehole') || 
+    msg.includes('sanitation') || msg.includes('hygiene') || msg.includes('water well')
+  ) {
+    return {
+      text: "💧 Clean Water & WASH:\n\nRESTI restores deep community boreholes, constructs dignified sanitation facilities, and trains local community water management committees across Kiryandongo.",
+      link: { text: 'Explore WASH Initiatives →', url: '/programs' },
+      quickReplies: ['Livelihoods', 'Environment', 'Our Programs', 'Main Menu']
+    };
+  }
+
+  // 5. SPECIFIC PROGRAM: LIVELIHOODS
+  if (
+    msg.includes('livelihood') || msg.includes('skills') || 
+    msg.includes('vsla') || msg.includes('savings') || msg.includes('agriculture') || 
+    msg.includes('farming') || msg.includes('beekeeping') || msg.includes('enterprise')
+  ) {
+    return {
+      text: "🌱 Livelihoods & Skills Development:\n\nWe support Village Savings and Loan Associations (VSLA), climate-resilient farming, modern beekeeping, and vocational skills training to foster sustainable self-reliance.",
+      link: { text: 'Explore Livelihood Programs →', url: '/programs' },
+      quickReplies: ['WASH', 'Environment', 'Our Programs', 'Main Menu']
+    };
+  }
+
+  // 6. SPECIFIC PROGRAM: ENVIRONMENT & CLIMATE
+  if (
+    msg.includes('environment') || msg.includes('climate') || 
+    msg.includes('tree') || msg.includes('conservation') || msg.includes('energy') || 
+    msg.includes('forestry')
+  ) {
+    return {
+      text: "🌍 Environmental Sustainability & Climate Resilience:\n\nRESTI manages indigenous tree nurseries, leads community reforestation campaigns, and promotes energy-saving cookstoves to protect local ecosystems.",
+      link: { text: 'Explore Environmental Work →', url: '/programs' },
+      quickReplies: ['WASH', 'Livelihoods', 'Our Programs', 'Main Menu']
+    };
+  }
+
+  // 7. SPECIFIC PROGRAM: COMMUNITY DEVELOPMENT / SOCIAL COHESION
+  if (
+    msg.includes('community development') || msg === 'community' || msg.includes('social cohesion') || 
+    msg.includes('peacebuilding') || msg.includes('peace') || msg.includes('coexistence')
+  ) {
+    return {
+      text: "🤝 Community Development & Social Cohesion:\n\nWe facilitate community dialogue, joint livelihood initiatives, and leadership forums that bridge refugee and host communities to cultivate long-term peace and cooperation.",
+      link: { text: 'Explore Community Initiatives →', url: '/programs' },
+      quickReplies: ['Our Programs', 'Contact Us', 'Main Menu']
+    };
+  }
+
+  // 8. GENERAL PROGRAMS
+  if (
+    msg.includes('program') || msg.includes('what do you do') || msg.includes('what does resti do') || 
+    msg.includes('activities') || msg.includes('initiatives') || msg.includes('our programs') ||
+    msg.includes('projects')
+  ) {
+    return {
+      text: "RESTI works across 4 core program areas in Kiryandongo District:\n\n🌱 Livelihoods & Skills Development\n💧 Clean Water & WASH\n🌍 Environmental Sustainability & Climate Resilience\n🤝 Community Development & Social Cohesion\n\nWhich area would you like to explore?",
+      link: { text: 'View All Programs →', url: '/programs' },
+      quickReplies: ['Livelihoods', 'WASH', 'Environment', 'Community Development', 'Main Menu']
+    };
+  }
+
+  // 9. DONATIONS / GIVING
   if (
     msg.includes('donate') || msg.includes('donation') || msg.includes('giving') || 
-    msg.includes('contribute') || msg.includes('momo') || msg.includes('mtn') || 
-    msg.includes('airtel') || msg.includes('mobile money') || msg.includes('card') || 
-    msg.includes('paypal') || msg.includes('tax') || msg.includes('receipt') ||
-    msg.includes('give') || msg.includes('support us') || msg.includes('sponsor')
+    msg.includes('support') || msg.includes('contribute') || msg.includes('momo') || 
+    msg.includes('mobile money') || msg.includes('mtn') || msg.includes('airtel') || 
+    msg.includes('paypal') || msg.includes('card') || msg.includes('give') ||
+    msg.includes('fund')
   ) {
     return {
-      text: "Thank you for your generosity! 💚 Every contribution directly empowers vulnerable refugee and host families in Kiryandongo.\n\nWays to donate:\n• 📱 Mobile Money: Direct MTN MoMo & Airtel Money in Uganda\n• 💳 Online Card & PayPal: Secure international card payments\n• 🏦 Bank Wire: Available for institutional grants and larger gifts\n\nOver 90% of all contributions go directly into field projects.",
-      link: { text: 'Make a Secure Donation →', url: '/donate' },
-      quickReplies: ['📊 How Funds Are Used', '📚 View Programs', '🙋 Speak to Staff']
+      text: "Thank you for supporting RESTI! 💚\n\nYou can make a direct, secure donation to support community programs in Kiryandongo:\n\n• MTN MoMo & Airtel Money (Uganda)\n• International Cards & PayPal\n• Direct Bank Transfer",
+      link: { text: 'Donate to RESTI →', url: '/donate' },
+      quickReplies: ['About RESTI', 'Our Programs', 'Contact Us', 'Main Menu']
     };
   }
 
-  // 3. PROGRAMS & FOCUS AREAS
+  // 10. RESOURCES & DOWNLOADS
   if (
-    msg.includes('program') || msg.includes('project') || msg.includes('livelihood') || 
-    msg.includes('wash') || msg.includes('water') || msg.includes('borehole') || 
-    msg.includes('education') || msg.includes('school') || msg.includes('health') || 
-    msg.includes('tailoring') || msg.includes('vsla') || msg.includes('savings') || 
-    msg.includes('youth') || msg.includes('women') || msg.includes('what do you do') ||
-    msg.includes('activities') || msg.includes('work')
+    msg.includes('resource') || msg.includes('report') || msg.includes('download') || 
+    msg.includes('document') || msg.includes('audit') || msg.includes('financial') || 
+    msg.includes('publication') || msg.includes('policy') || msg.includes('form')
   ) {
     return {
-      text: "RESTI operates 6 community-led flagship programs in Kiryandongo District:\n\n1. 🌾 Sustainable Livelihoods & VSLA: Micro-capital, seed funds & climate agriculture\n2. 🎓 Education & Youth Literacy: School bursaries, scholastic materials & digital lab\n3. 💧 Clean Water & WASH: Restoring deep community boreholes & hygiene stations\n4. 🩺 Healthcare & Outreach: Mobile clinic days and maternal health guidance\n5. 🛡️ Protection & Peacebuilding: Psychosocial counseling & coexistence dialogues\n6. ⚽ Youth Leadership & Sports: Vocational toolkits & peace leagues",
-      link: { text: 'Explore All Programs →', url: '/programs' },
-      quickReplies: ['💧 Water & Boreholes', '🌾 VSLA Savings', '💚 Support a Program']
+      text: "You can freely access and download our verified publications, audited financial statements, annual reports, and organizational policies on our Resources page.",
+      link: { text: 'View Resources & Downloads →', url: '/resources' },
+      quickReplies: ['Our Programs', 'Donate', 'Contact Us', 'Main Menu']
     };
   }
 
-  // 4. PARTNERSHIPS & COLLABORATION
+  // 11. EVENTS & ACTIVITIES
   if (
-    msg.includes('partner') || msg.includes('join') || msg.includes('collaborate') || 
-    msg.includes('work with') || msg.includes('support') || msg.includes('opportunity')
+    msg.includes('event') || msg.includes('activity') || msg.includes('activities') || 
+    msg.includes('workshop') || msg.includes('training') || msg.includes('schedule') || 
+    msg.includes('upcoming') || msg.includes('calendar')
   ) {
     return {
-      text: "We would love to collaborate with you! 🤝 We welcome community partners, institutional donors, and collaborative organizations.\n\nKey areas of engagement:\n• 👥 Community Programs & Direct Livelihood Initiatives\n• 🌾 Climate Agriculture & Sustainable Beekeeping\n• 💧 WASH & Community Water Infrastructure\n• 📋 Monitoring, Evaluation & Strategic Research",
-      link: { text: 'Contact Our Team →', url: '/contact' },
-      quickReplies: ['📍 Our Locations', '📚 Our Programs', '💬 Speak to Staff']
+      text: "Follow RESTI's upcoming community events, training sessions, stakeholder workshops, and past activity highlights on our Events page.",
+      link: { text: 'View Events & Activities →', url: '/events' },
+      quickReplies: ['Our Programs', 'Resources', 'Contact Us', 'Main Menu']
     };
   }
 
-  // 5. LOCATION, OFFICES & CONTACT
+  // 12. LOCATION & OFFICE
   if (
     msg.includes('where') || msg.includes('location') || msg.includes('office') || 
     msg.includes('address') || msg.includes('kiryandongo') || msg.includes('bweyale') || 
-    msg.includes('phone') || msg.includes('call') || msg.includes('email') || 
-    msg.includes('whatsapp') || msg.includes('hours') || msg.includes('contact') ||
-    msg.includes('reach you') || msg.includes('located')
+    msg.includes('located') || msg.includes('find you')
   ) {
     return {
-      text: "Here is how you can reach or visit RESTI CBO:\n\n📍 Headquarters: Bweyale Town, Kiryandongo District, Uganda\n🌍 Field Clusters: Ranch 1, Ranch 37, Bweyale Host Communities & Panyadoli Hills\n📞 Phone: +256 772 123 456\n📧 Email: info@resticbo.org\n⏰ Hours: Monday to Friday, 8:30 AM – 5:00 PM EAT",
-      link: { text: 'Get in Touch →', url: '/about' },
-      quickReplies: ['💬 Leave a Message', '📚 Our Programs', '💚 Support Us']
+      text: "📍 RESTI CBO Office:\nKiryandongo Refugee Settlement & Bweyale Town, Kiryandongo District, Uganda.\n\n🕒 Hours: Monday – Friday, 8:30 AM – 5:00 PM (EAT).",
+      link: { text: 'View Map & Directions →', url: '/contact' },
+      quickReplies: ['Contact Us', 'Our Programs', 'Main Menu']
     };
   }
 
-  // 6. IMPACT, AUDITS & ANNUAL REPORTS
+  // 13. CONTACT US
   if (
-    msg.includes('impact') || msg.includes('report') || msg.includes('audit') || 
-    msg.includes('numbers') || msg.includes('stats') || msg.includes('financial') || 
-    msg.includes('transparency') || msg.includes('how many') || msg.includes('results') ||
-    msg.includes('annual report') || msg.includes('cpa')
+    msg.includes('contact') || msg.includes('email') || msg.includes('phone') || 
+    msg.includes('call') || msg.includes('whatsapp') || msg.includes('reach') || 
+    msg.includes('message') || msg.includes('touch')
   ) {
     return {
-      text: "Radical transparency is our core commitment! 📊\n\n• 24,850+ People directly empowered\n• 6 Core flagship programs operational\n• 145+ Active community leaders on the ground\n• 18 Settlement zones and villages served\n• 90% Program spend efficiency\n\nAll annual reports and external CPA audits are 100% public for download.",
-      link: { text: 'View Impact Dashboard →', url: '/impact-dashboard' },
-      quickReplies: ['📄 Download Annual Reports', '💚 Make a Donation', '📍 Settlement Zones']
+      text: "You can reach the RESTI team through our official channels:\n\n📧 Email: info@resticbo.org\n📞 Phone: +256 700 000 000\n📍 Kiryandongo District, Uganda",
+      link: { text: 'Contact Us →', url: '/contact' },
+      quickReplies: ['Speak to Staff', 'About RESTI', 'Main Menu']
     };
   }
 
-  // 7. WHO WE ARE / ABOUT / REGISTRATION
+  // 14. PARTNERSHIPS & OPPORTUNITIES / VOLUNTEERING
   if (
-    msg.includes('who are you') || msg.includes('what is resti') || msg.includes('about') || 
-    msg.includes('cbo') || msg.includes('ngo') || msg.includes('registered') || 
-    msg.includes('mission') || msg.includes('vision') || msg.includes('founded') ||
-    msg.includes('history')
+    msg.includes('partner') || msg.includes('collaborate') || msg.includes('volunteer') || 
+    msg.includes('job') || msg.includes('career') || msg.includes('tender') || 
+    msg.includes('opportunity') || msg.includes('opportunities') || msg.includes('join')
   ) {
     return {
-      text: "Refugee Empowerment For Sustainable Transformation Initiative (RESTI) is a registered Community-Based Organization certified under the Uganda NGO Bureau. 🏛️\n\nFounded by local community leaders and refugees, we build self-reliance, economic resilience, and peaceful coexistence across Kiryandongo District.",
-      link: { text: 'Read Our Story →', url: '/about' },
-      quickReplies: ['📚 Our Programs', '📊 Verified Impact', '🤝 Partner With Us']
+      text: "We welcome partners, volunteers, and collaboration on community-led solutions in Kiryandongo. Explore current vacancies, tenders, and partnership avenues:",
+      link: { text: 'View Opportunities →', url: '/opportunities' },
+      quickReplies: ['Contact Us', 'Our Programs', 'Main Menu']
     };
   }
 
-  // 8. TALK TO HUMAN / STAFF
+  // 15. HUMAN ASSISTANCE / SPEAK TO STAFF
   if (
     msg.includes('human') || msg.includes('person') || msg.includes('agent') || 
     msg.includes('staff') || msg.includes('representative') || msg.includes('speak to') || 
-    msg.includes('talk to') || msg.includes('leave a message')
+    msg.includes('talk to')
   ) {
     return {
-      text: "I would be happy to connect you with our field team in Kiryandongo! 🙋\n\nPlease type your email address or phone number and a short summary of your inquiry. Our team will review your message and reply back within 24 hours.",
-      quickReplies: ['📍 Office Location', '📧 info@resticbo.org', '📞 Call Now']
+      text: "I would be glad to connect you with our field team! 🙋\n\nPlease enter your email address or phone number, along with your inquiry. Our team will review your message and reply promptly.",
+      link: { text: 'Send Message Directly →', url: '/contact' },
+      quickReplies: ['Contact Us', 'Main Menu']
     };
   }
 
-  // 9. GRATITUDE / FAREWELL
+  // 16. GRATITUDE & FAREWELL
   if (
     msg.includes('thank') || msg.includes('thanks') || msg.includes('bye') || 
-    msg.includes('goodbye') || msg.includes('cheers') || msg.includes('awesome') || 
-    msg.includes('great') || msg.includes('ok') || msg.includes('cool')
+    msg.includes('goodbye') || msg.includes('great') || msg.includes('awesome')
   ) {
     return {
-      text: "You are most welcome! 💚 Thank you for being interested in our work at RESTI CBO. Together we are transforming lives in Kiryandongo. Reach out anytime!",
-      quickReplies: ['💚 Donate', '📚 Explore Programs', '👋 Start New Chat']
+      text: "You're very welcome! 💚 Thank you for connecting with RESTI CBO. Feel free to reach out anytime.",
+      quickReplies: ['Our Programs', 'Donate', 'Main Menu']
     };
   }
 
-  // 10. DEFAULT HELPFUL FALLBACK
+  // 17. FRIENDLY FALLBACK (Unknown questions)
   return {
-    text: "Thank you for your message! To help you best, here are quick shortcuts, or you can leave your email and question so our team can follow up with you directly. 🤝",
+    text: "I'm not sure I understood that. I can help you with RESTI's programs, resources, donations, events, or contact information.",
     quickReplies: [
-      '💚 How to Donate',
-      '📚 Our Programs',
-      '🤝 Partner With Us',
-      '📍 Location & Contact',
-      '📊 Impact & Reports'
+      'Our Programs',
+      'Resources',
+      'Donate',
+      'Contact Us'
     ]
   };
 }
