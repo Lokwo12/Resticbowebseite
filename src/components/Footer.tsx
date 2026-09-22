@@ -131,23 +131,23 @@ export function Footer() {
   };
 
   if (!footerSettings || !generalSettings || !contactSettings) {
-    return <footer className="text-white py-12" style={{ backgroundColor: "#084C24" }}></footer>;
+    return <footer className="text-white py-12" style={{ background: 'linear-gradient(135deg, #0A192F 0%, #112240 50%, #0A192F 100%)' }}></footer>;
   }
 
   return (
     <>
-    <footer className="text-white relative overflow-hidden" style={{ backgroundColor: "#084C24" }}>
-      <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-emerald-400/40 to-transparent"></div>
+    <footer className="text-white relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #0A192F 0%, #112240 50%, #0A192F 100%)' }}>
+      <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-emerald-500/50 to-transparent"></div>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-8 mb-8">
           {/* About */}
           <div className="col-span-2 sm:col-span-3 lg:col-span-2">
             <div className="mb-4">
-              <img src={getLogoUrl()} alt={`${generalSettings.siteName} Logo`} className="h-40 w-40 rounded-full object-cover shadow-md border-2 border-emerald-700/50 mb-2" />
+              <img src={getLogoUrl()} alt={`${generalSettings.siteName} Logo`} className="h-40 w-40 rounded-full object-cover shadow-md border-2 border-slate-700 mb-2" />
               <h3 className="text-[22px] lg:text-[24px] font-semibold font-heading text-white mb-1 leading-[1.3]">{generalSettings.siteName}</h3>
-              <p className="text-base text-emerald-100/80 mb-3">{generalSettings.tagline}</p>
+              <p className="text-base text-gray-400 mb-3">{generalSettings.tagline}</p>
             </div>
-            <p className="text-emerald-100/80 text-[14px] leading-[1.6] font-normal">
+            <p className="text-gray-400 text-[14px] leading-[1.6] font-normal">
               {footerSettings.description}
             </p>
           </div>
@@ -155,43 +155,43 @@ export function Footer() {
           {/* Quick Links */}
           <div>
             <h4 className="text-[16px] font-semibold text-white mb-4 tracking-wide">Quick Links</h4>
-            <ul className="space-y-3 text-base text-emerald-100/80">
-              <li><Link to="/#home" className="block hover:text-resti-gold hover:translate-x-1 transition-all duration-300">Home</Link></li>
-              <li><Link to="/about" className="block hover:text-resti-gold hover:translate-x-1 transition-all duration-300">About Us</Link></li>
-              <li><Link to="/#programs" className="block hover:text-resti-gold hover:translate-x-1 transition-all duration-300">Programs</Link></li>
-              <li><Link to="/team" className="block hover:text-resti-gold hover:translate-x-1 transition-all duration-300">Our Team</Link></li>
-              <li><Link to="/stories" className="block hover:text-resti-gold hover:translate-x-1 transition-all duration-300">Impact Stories</Link></li>
-              <li><Link to="/events" className="block hover:text-resti-gold hover:translate-x-1 transition-all duration-300">Events</Link></li>
+            <ul className="space-y-3 text-base text-gray-400">
+              <li><Link to="/#home" className="block hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Home</Link></li>
+              <li><Link to="/about" className="block hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">About Us</Link></li>
+              <li><Link to="/#programs" className="block hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Programs</Link></li>
+              <li><Link to="/team" className="block hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Our Team</Link></li>
+              <li><Link to="/stories" className="block hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Impact Stories</Link></li>
+              <li><Link to="/events" className="block hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Events</Link></li>
             </ul>
           </div>
 
           {/* Get Involved */}
           <div>
             <h4 className="text-[16px] font-semibold text-white mb-4 tracking-wide">Get Involved</h4>
-            <ul className="space-y-3 text-base text-emerald-100/80">
-              <li><Link to="/get-involved" className="block hover:text-resti-gold hover:translate-x-1 transition-all duration-300">Get Involved</Link></li>
-              <li><button onClick={openDonationModal} className="block text-left hover:text-resti-gold hover:translate-x-1 transition-all duration-300">Donate</button></li>
-              <li><Link to="/partners" className="block hover:text-resti-gold hover:translate-x-1 transition-all duration-300">Become a Partner</Link></li>
-              <li><Link to="/opportunities" className="block hover:text-resti-gold hover:translate-x-1 transition-all duration-300">Opportunities</Link></li>
-              <li><Link to="/#newsletter" className="block hover:text-resti-gold hover:translate-x-1 transition-all duration-300">Newsletter</Link></li>
-              <li><Link to="/donor-portal" className="block hover:text-resti-gold hover:translate-x-1 transition-all duration-300 font-semibold text-resti-gold font-semibold">Donor Portal</Link></li>
+            <ul className="space-y-3 text-base text-gray-400">
+              <li><Link to="/get-involved" className="block hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Get Involved</Link></li>
+              <li><button onClick={openDonationModal} className="block text-left hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Donate</button></li>
+              <li><Link to="/partners" className="block hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Become a Partner</Link></li>
+              <li><Link to="/opportunities" className="block hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Opportunities</Link></li>
+              <li><Link to="/#newsletter" className="block hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Newsletter</Link></li>
+              <li><Link to="/donor-portal" className="block hover:text-emerald-400 hover:translate-x-1 transition-all duration-300 font-semibold text-emerald-400">Donor Portal</Link></li>
             </ul>
           </div>
 
           {/* Resources */}
           <div>
             <h4 className="text-[16px] font-semibold text-white mb-4 tracking-wide">Resources</h4>
-            <ul className="space-y-3 text-base text-emerald-100/80">
-              <li><Link to="/#gallery" className="block hover:text-resti-gold hover:translate-x-1 transition-all duration-300">Gallery</Link></li>
-              <li><Link to="/news" className="block hover:text-resti-gold hover:translate-x-1 transition-all duration-300">News</Link></li>
-              <li><Link to="/faqs" className="block hover:text-resti-gold hover:translate-x-1 transition-all duration-300">FAQ</Link></li>
-              <li><Link to="/reports" className="block hover:text-resti-gold hover:translate-x-1 transition-all duration-300">Impact Reports</Link></li>
-              <li><Link to="/financials" className="block hover:text-resti-gold hover:translate-x-1 transition-all duration-300">Financials</Link></li>
-              <li><Link to="/impact-dashboard" className="block hover:text-resti-gold hover:translate-x-1 transition-all duration-300">Impact Dashboard</Link></li>
-              <li><Link to="/resources" className="block hover:text-resti-gold hover:translate-x-1 transition-all duration-300">Resources & Downloads</Link></li>
+            <ul className="space-y-3 text-base text-gray-400">
+              <li><Link to="/#gallery" className="block hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Gallery</Link></li>
+              <li><Link to="/news" className="block hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">News</Link></li>
+              <li><Link to="/faqs" className="block hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">FAQ</Link></li>
+              <li><Link to="/reports" className="block hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Impact Reports</Link></li>
+              <li><Link to="/financials" className="block hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Financials</Link></li>
+              <li><Link to="/impact-dashboard" className="block hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Impact Dashboard</Link></li>
+              <li><Link to="/resources" className="block hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Resources & Downloads</Link></li>
               {customPages.map(page => (
                 <li key={page.slug}>
-                  <Link to={`/pages/${page.slug}`} className="block hover:text-resti-gold hover:translate-x-1 transition-all duration-300">
+                  <Link to={`/pages/${page.slug}`} className="block hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">
                     {page.title}
                   </Link>
                 </li>
@@ -202,10 +202,10 @@ export function Footer() {
           {/* Contact */}
           <div>
             <h4 className="text-[16px] font-semibold text-white mb-4 tracking-wide">Contact</h4>
-            <ul className="space-y-3 text-base text-emerald-100/80">
+            <ul className="space-y-3 text-base text-gray-400">
               <li>{contactSettings.address}</li>
               <li>
-                <a href={`mailto:${contactSettings.email}`} className="hover:text-resti-gold transition-colors">
+                <a href={`mailto:${contactSettings.email}`} className="hover:text-emerald-400 transition-colors">
                   {contactSettings.email}
                 </a>
               </li>
@@ -219,7 +219,7 @@ export function Footer() {
             <div className="flex gap-3">
               <a
                 href={contactSettings.socialLinks.facebook}
-                className="w-10 h-10 bg-white/10 rounded-lg backdrop-blur-sm flex items-center justify-center hover:bg-resti-green hover:scale-110 hover:-translate-y-1 transition-all duration-300"
+                className="w-10 h-10 bg-white/10 rounded-lg backdrop-blur-sm flex items-center justify-center hover:bg-emerald-600 hover:scale-110 hover:-translate-y-1 transition-all duration-300"
                 aria-label="Facebook"
                 target="_blank"
                 rel="noopener noreferrer"
@@ -228,7 +228,7 @@ export function Footer() {
               </a>
               <a
                 href={contactSettings.socialLinks.twitter}
-                className="w-10 h-10 bg-white/10 rounded-lg backdrop-blur-sm flex items-center justify-center hover:bg-resti-green hover:scale-110 hover:-translate-y-1 transition-all duration-300"
+                className="w-10 h-10 bg-white/10 rounded-lg backdrop-blur-sm flex items-center justify-center hover:bg-emerald-600 hover:scale-110 hover:-translate-y-1 transition-all duration-300"
                 aria-label="Twitter"
                 target="_blank"
                 rel="noopener noreferrer"
@@ -237,7 +237,7 @@ export function Footer() {
               </a>
               <a
                 href={contactSettings.socialLinks.instagram}
-                className="w-10 h-10 bg-white/10 rounded-lg backdrop-blur-sm flex items-center justify-center hover:bg-resti-green hover:scale-110 hover:-translate-y-1 transition-all duration-300"
+                className="w-10 h-10 bg-white/10 rounded-lg backdrop-blur-sm flex items-center justify-center hover:bg-emerald-600 hover:scale-110 hover:-translate-y-1 transition-all duration-300"
                 aria-label="Instagram"
                 target="_blank"
                 rel="noopener noreferrer"
@@ -246,7 +246,7 @@ export function Footer() {
               </a>
               <a
                 href={`mailto:${contactSettings.email}`}
-                className="w-10 h-10 bg-white/10 rounded-lg backdrop-blur-sm flex items-center justify-center hover:bg-resti-green transition-colors"
+                className="w-10 h-10 bg-white/10 rounded-lg backdrop-blur-sm flex items-center justify-center hover:bg-emerald-600 transition-colors"
                 aria-label="Email"
               >
                 <Mail size={20} />
@@ -256,9 +256,9 @@ export function Footer() {
         </div>
 
         {/* Bottom bar */}
-        <div className="border-t border-emerald-800/60 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
+        <div className="border-t border-white/10 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
           <div className="flex items-center gap-3">
-            <p className="text-base text-emerald-100/80">
+            <p className="text-base text-gray-400">
               © {new Date().getFullYear()} {footerSettings.copyrightText}
             </p>
             <div className="ngo-badge hidden md:inline-flex">
@@ -267,14 +267,14 @@ export function Footer() {
           </div>
           
           {/* Legal Links */}
-          <div className="flex flex-wrap gap-4 text-base text-emerald-100/80">
-            <Link to="/privacy" className="hover:text-resti-gold transition-colors">Privacy Policy</Link>
-            <Link to="/cookies" className="hover:text-resti-gold transition-colors">Cookies Policy</Link>
-            <Link to="/terms" className="hover:text-resti-gold transition-colors">Terms of Service</Link>
-            <Link to="/refund" className="hover:text-resti-gold transition-colors">Refund Policy</Link>
+          <div className="flex flex-wrap gap-4 text-base text-gray-400">
+            <Link to="/privacy" className="hover:text-emerald-400 transition-colors">Privacy Policy</Link>
+            <Link to="/cookies" className="hover:text-emerald-400 transition-colors">Cookies Policy</Link>
+            <Link to="/terms" className="hover:text-emerald-400 transition-colors">Terms of Service</Link>
+            <Link to="/refund" className="hover:text-emerald-400 transition-colors">Refund Policy</Link>
           </div>
 
-          <p className="text-base text-emerald-100/80 flex items-center gap-1">
+          <p className="text-base text-gray-400 flex items-center gap-1">
             {footerSettings.taglineBottom.includes('❤️') ? (
               <>
                 Made with <Heart size={16} className="text-red-500" /> for our community
