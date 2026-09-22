@@ -4649,7 +4649,7 @@ app.get('/make-server-2a4be611/site-settings', async (c) => {
           phone: '+256 700 000 000',
           whatsappNumber: '+256700000000',
           socialLinks: {
-            facebook: '#',
+            facebook: 'https://www.facebook.com/resticbo',
             twitter: '#',
             instagram: '#'
           },
@@ -4805,7 +4805,7 @@ app.post('/make-server-2a4be611/site-settings/initialize', async (c) => {
         email: 'info@resticbo.org',
         phone: '+256 700 000 000',
         socialLinks: {
-          facebook: '#',
+          facebook: 'https://www.facebook.com/resticbo',
           twitter: '#',
           instagram: '#'
         },
