@@ -323,7 +323,7 @@ export function Resources() {
                   {hasActiveFilters && (
                     <button
                       onClick={handleResetFilters}
-                      className="text-emerald-700 hover:text-emerald-800 font-semibold underline ml-auto"
+                      className="text-resti-green hover:text-resti-green-dark font-semibold underline ml-auto"
                     >
                       Reset all filters
                     </button>
@@ -395,7 +395,7 @@ export function Resources() {
                           target="_blank"
                           rel="noopener noreferrer"
                           download={resource.file_name || resource.title}
-                          className="ml-auto inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-sm transition-colors"
+                          className="ml-auto inline-flex items-center justify-center gap-2 px-4 py-2 rounded-[10px] bg-resti-blue hover:bg-resti-blue-dark text-white text-xs font-bold shadow-sm transition-colors"
                           aria-label={`Download ${resource.title} (${resource.file_type})`}
                         >
                           <Download size={14} />

@@ -918,7 +918,7 @@ export function DonationModal() {
                     toast.error('Minimum donation is $1');
                   }
                 }}
-                className="w-full bg-gradient-to-r from-amber-400 via-amber-500 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-slate-950 font-bold rounded-xl text-sm transition-all duration-200 shadow-lg shadow-amber-500/25 flex items-center justify-center gap-2 hover:shadow-xl hover:scale-[1.01] active:scale-[0.99]"
+                className="w-full bg-resti-green hover:bg-resti-green-dark text-white font-bold rounded-[10px] text-sm transition-all duration-200 shadow-sm flex items-center justify-center gap-2 hover:shadow-md active:scale-[0.99]"
                 style={btnStyle}
               >
                 Continue to Payment <ChevronRight size={15} />
@@ -1080,7 +1080,7 @@ export function DonationModal() {
                     if (!method) { toast.error('Please select a payment method'); return; }
                     setStep(3);
                   }}
-                  className="w-2/3 bg-gradient-to-r from-amber-400 via-amber-500 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-slate-950 font-bold rounded-xl text-sm transition-all duration-200 shadow-lg shadow-amber-500/25 flex items-center justify-center gap-2 hover:shadow-xl hover:scale-[1.01] active:scale-[0.99]"
+                  className="w-2/3 bg-resti-green hover:bg-resti-green-dark text-white font-bold rounded-[10px] text-sm transition-all duration-200 shadow-sm flex items-center justify-center gap-2 hover:shadow-md active:scale-[0.99]"
                   style={btnStyle}
                 >
                   Continue <ChevronRight size={15} />

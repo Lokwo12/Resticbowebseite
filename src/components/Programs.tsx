@@ -191,7 +191,7 @@ export function Programs() {
             <motion.div
               key={program.key}
               variants={{ hidden: { opacity: 0, y: 40 }, visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease: "easeOut" } } }}
-              className="card-lift group bg-slate-50 border border-slate-100 rounded-3xl overflow-hidden shadow-sm hover:shadow-premium-soft transition-all duration-300"
+              className="card-lift group bg-white border border-resti-neutral-border rounded-2xl overflow-hidden shadow-xs hover:shadow-md hover:border-resti-green/30 transition-all duration-300"
             >
               {program.value.image && (
                 <div className="relative aspect-video overflow-hidden bg-slate-100 border-b border-slate-100 flex items-center justify-center">
@@ -203,12 +203,15 @@ export function Programs() {
                 </div>
               )}
               <div className="p-6">
-                <div className={`category-chip mb-3 ${
-                  program.value.category?.toLowerCase().includes('health') ? 'chip-health' :
-                  program.value.category?.toLowerCase().includes('educ') ? 'chip-education' :
-                  program.value.category?.toLowerCase().includes('livelihood') || program.value.category?.toLowerCase().includes('agri') ? 'chip-livelihood' :
-                  'chip-community'
-                }`}>
+                <div className={`mb-3 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+    program.value.category?.toLowerCase().includes('health') || program.value.category?.toLowerCase().includes('wash') || program.value.category?.toLowerCase().includes('water')
+      ? 'bg-resti-blue-light text-resti-blue-dark border border-resti-blue/20'
+      : program.value.category?.toLowerCase().includes('livelihood') || program.value.category?.toLowerCase().includes('agri')
+      ? 'bg-resti-gold-light text-resti-gold-dark border border-resti-gold/30'
+      : program.value.category?.toLowerCase().includes('environment') || program.value.category?.toLowerCase().includes('climate')
+      ? 'bg-resti-green-light text-resti-green-dark border border-resti-green/20'
+      : 'bg-resti-orange-light text-resti-orange-dark border border-resti-orange/30'
+  }`}>
                   {program.value.category}
                 </div>
                 <h3 className="text-[22px] lg:text-[24px] font-semibold font-heading text-gray-900 mb-3 leading-[1.3] group-hover:text-emerald-600 transition-colors duration-300">
@@ -233,7 +236,7 @@ export function Programs() {
         <div className="mt-12 text-center">
           <Link
             to="/programs"
-            className="inline-flex items-center gap-2.5 bg-gradient-to-r from-sky-600 via-teal-600 to-emerald-600 hover:from-sky-700 hover:via-teal-700 hover:to-emerald-700 text-white font-bold px-8 py-4 rounded-xl shadow-md shadow-sky-950/10 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 text-base"
+            className="inline-flex items-center gap-2.5 bg-resti-green hover:bg-resti-green-dark text-white font-bold px-8 py-3.5 sm:py-4 rounded-[10px] shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 text-base"
           >
             <span>Explore All Programs</span>
             <span>→</span>

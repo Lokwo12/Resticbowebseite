@@ -3119,7 +3119,7 @@ export function EnhancedAdminDashboard() {
               <div className="space-y-6">
                 {/* Stats Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-                  <div className="bg-gradient-to-br from-blue-500 to-blue-700 rounded-2xl p-6 hover:shadow-xl hover:shadow-blue-300/50 hover:-translate-y-2 hover:shadow-2xl transition-all duration-200 group">
+                  <div className="bg-gradient-to-br from-[#16803A] to-[#0F5C2A] rounded-2xl p-6 hover:shadow-xl hover:shadow-[#16803A]/25 hover:-translate-y-1.5 transition-all duration-200 group">
                     <div className="flex items-center justify-between mb-5">
                       <div className="p-3 rounded-xl bg-white/20 group-hover:scale-105 transition-transform duration-200">
                         <FileText size={20} className="text-white" />
@@ -3134,7 +3134,7 @@ export function EnhancedAdminDashboard() {
                     </div>
                   </div>
 
-                  <div className="bg-gradient-to-br from-violet-500 to-purple-700 rounded-2xl p-6 hover:shadow-xl hover:shadow-violet-300/50 hover:-translate-y-2 hover:shadow-2xl transition-all duration-200 group">
+                  <div className="bg-gradient-to-br from-[#1976A8] to-[#125A7A] rounded-2xl p-6 hover:shadow-xl hover:shadow-[#1976A8]/25 hover:-translate-y-1.5 transition-all duration-200 group">
                     <div className="flex items-center justify-between mb-5">
                       <div className="p-3 rounded-xl bg-white/20 group-hover:scale-105 transition-transform duration-200">
                         <Newspaper size={20} className="text-white" />
@@ -3149,7 +3149,7 @@ export function EnhancedAdminDashboard() {
                     </div>
                   </div>
 
-                  <div className="bg-gradient-to-br from-indigo-500 to-purple-700 rounded-2xl p-6 hover:shadow-xl hover:shadow-indigo-300/50 hover:-translate-y-2 hover:shadow-2xl transition-all duration-200 group">
+                  <div className="bg-gradient-to-br from-[#E98A3A] to-[#C86B1F] rounded-2xl p-6 hover:shadow-xl hover:shadow-[#E98A3A]/25 hover:-translate-y-1.5 transition-all duration-200 group">
                     <div className="flex items-center justify-between mb-5">
                       <div className="p-3 rounded-xl bg-white/20 group-hover:scale-105 transition-transform duration-200">
                         <Target size={20} className="text-white" />
@@ -3164,7 +3164,7 @@ export function EnhancedAdminDashboard() {
                     </div>
                   </div>
 
-                  <div className="bg-gradient-to-br from-emerald-500 to-teal-700 rounded-2xl p-6 hover:shadow-xl hover:shadow-emerald-300/50 hover:-translate-y-2 hover:shadow-2xl transition-all duration-200 group">
+                  <div className="bg-gradient-to-br from-[#B88916] to-[#8E650D] rounded-2xl p-6 hover:shadow-xl hover:shadow-[#B88916]/25 hover:-translate-y-1.5 transition-all duration-200 group">
                     <div className="flex items-center justify-between mb-5">
                       <div className="p-3 rounded-xl bg-white/20 group-hover:scale-105 transition-transform duration-200">
                         <TrendingUp size={20} className="text-white" />

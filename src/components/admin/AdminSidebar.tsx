@@ -31,52 +31,52 @@ export const NAVIGATION_GROUPS: NavGroupConfig[] = [
     id: 'overview-group',
     title: 'Overview & Activity',
     items: [
-      { id: 'overview', label: 'Dashboard', icon: LayoutDashboard, color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496', description: 'Metrics & quick actions' },
-      { id: 'live-chat', label: 'Live Chat', icon: MessageCircle, color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496', description: 'Real-time visitor chats', badgeKey: 'liveChat' },
-      { id: 'activity-log', label: 'Activity Log', icon: Clock, color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496', description: 'System audit trails' },
+      { id: 'overview', label: 'Dashboard', icon: LayoutDashboard, color: 'text-slate-400', headerBg: '#084C24', accentBg: '#16803A', description: 'Metrics & quick actions' },
+      { id: 'live-chat', label: 'Live Chat', icon: MessageCircle, color: 'text-slate-400', headerBg: '#084C24', accentBg: '#16803A', description: 'Real-time visitor chats', badgeKey: 'liveChat' },
+      { id: 'activity-log', label: 'Activity Log', icon: Clock, color: 'text-slate-400', headerBg: '#084C24', accentBg: '#16803A', description: 'System audit trails' },
     ],
   },
   {
     id: 'programs-group',
     title: 'Programs & Impact',
     items: [
-      { id: 'programs', label: 'Programs', icon: FileText, color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496', description: 'Core initiative projects' },
-      { id: 'impact', label: 'Impact Stats', icon: TrendingUp, color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496', description: 'Key performance indicators' },
-      { id: 'stories', label: 'Stories & Voices', icon: MessageSquare, color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496', description: 'Beneficiary testimonials' },
-      { id: 'reports', label: 'Publications & Reports', icon: Download, color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496', description: 'Institutional publications, reports & accountability' },
-      { id: 'financials', label: 'Financial Transparency', icon: PieChart, color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496', description: 'Fund allocations, annual figures & audits' },
-      { id: 'map', label: 'Map Locations', icon: MapPin, color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496', description: 'Field hubs & activity sites' },
+      { id: 'programs', label: 'Programs', icon: FileText, color: 'text-slate-400', headerBg: '#084C24', accentBg: '#16803A', description: 'Core initiative projects' },
+      { id: 'impact', label: 'Impact Stats', icon: TrendingUp, color: 'text-slate-400', headerBg: '#084C24', accentBg: '#16803A', description: 'Key performance indicators' },
+      { id: 'stories', label: 'Stories & Voices', icon: MessageSquare, color: 'text-slate-400', headerBg: '#084C24', accentBg: '#16803A', description: 'Beneficiary testimonials' },
+      { id: 'reports', label: 'Publications & Reports', icon: Download, color: 'text-slate-400', headerBg: '#084C24', accentBg: '#16803A', description: 'Institutional publications, reports & accountability' },
+      { id: 'financials', label: 'Financial Transparency', icon: PieChart, color: 'text-slate-400', headerBg: '#084C24', accentBg: '#16803A', description: 'Fund allocations, annual figures & audits' },
+      { id: 'map', label: 'Map Locations', icon: MapPin, color: 'text-slate-400', headerBg: '#084C24', accentBg: '#16803A', description: 'Field hubs & activity sites' },
     ],
   },
   {
     id: 'content-group',
     title: 'Content & Media',
     items: [
-      { id: 'news', label: 'News & Press', icon: Newspaper, color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496', description: 'Articles & press releases' },
-      { id: 'events', label: 'Events & Calendar', icon: Calendar, color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496', description: 'Workshops & community events' },
-      { id: 'gallery', label: 'Photo Gallery', icon: ImageIcon, color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496', description: 'Field photos & albums' },
-      { id: 'partners', label: 'Partners & Donors', icon: Handshake, color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496', description: 'Partner organizations' },
-      { id: 'opportunities', label: 'Opportunities', icon: Target, color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496', description: 'Jobs, tenders & internships' },
+      { id: 'news', label: 'News & Press', icon: Newspaper, color: 'text-slate-400', headerBg: '#084C24', accentBg: '#16803A', description: 'Articles & press releases' },
+      { id: 'events', label: 'Events & Calendar', icon: Calendar, color: 'text-slate-400', headerBg: '#084C24', accentBg: '#16803A', description: 'Workshops & community events' },
+      { id: 'gallery', label: 'Photo Gallery', icon: ImageIcon, color: 'text-slate-400', headerBg: '#084C24', accentBg: '#16803A', description: 'Field photos & albums' },
+      { id: 'partners', label: 'Partners & Donors', icon: Handshake, color: 'text-slate-400', headerBg: '#084C24', accentBg: '#16803A', description: 'Partner organizations' },
+      { id: 'opportunities', label: 'Opportunities', icon: Target, color: 'text-slate-400', headerBg: '#084C24', accentBg: '#16803A', description: 'Jobs, tenders & internships' },
     ],
   },
   {
     id: 'audience-group',
     title: 'Audience & Inquiries',
     items: [
-      { id: 'donations', label: 'Donations Portal', icon: Heart, color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496', description: 'Donor records & contributions', badgeKey: 'donations' },
-      { id: 'contacts', label: 'Messages', icon: Mail, color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496', description: 'Contact form messages', badgeKey: 'contacts' },
-      { id: 'subscribers', label: 'Subscribers', icon: Send, color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496', description: 'Newsletter subscribers' },
-      { id: 'team', label: 'Team Members', icon: Users, color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496', description: 'Staff & leadership team' },
+      { id: 'donations', label: 'Donations Portal', icon: Heart, color: 'text-slate-400', headerBg: '#084C24', accentBg: '#16803A', description: 'Donor records & contributions', badgeKey: 'donations' },
+      { id: 'contacts', label: 'Messages', icon: Mail, color: 'text-slate-400', headerBg: '#084C24', accentBg: '#16803A', description: 'Contact form messages', badgeKey: 'contacts' },
+      { id: 'subscribers', label: 'Subscribers', icon: Send, color: 'text-slate-400', headerBg: '#084C24', accentBg: '#16803A', description: 'Newsletter subscribers' },
+      { id: 'team', label: 'Team Members', icon: Users, color: 'text-slate-400', headerBg: '#084C24', accentBg: '#16803A', description: 'Staff & leadership team' },
     ],
   },
   {
     id: 'settings-group',
     title: 'Site Management',
     items: [
-      { id: 'settings', label: 'Site Customizer', icon: Settings, color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496', description: 'Hero, financials, theme' },
-      { id: 'pages', label: 'Static Pages', icon: Globe, color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496', description: 'Static pages copy' },
-      { id: 'resources', label: 'Resources & Docs', icon: BookOpen, color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496', description: 'Public downloadable docs' },
-      { id: 'faqs', label: 'FAQs & Help', icon: HelpCircle, color: 'text-slate-400', headerBg: '#1a2540', accentBg: '#2f5496', description: 'Frequently asked questions' },
+      { id: 'settings', label: 'Site Customizer', icon: Settings, color: 'text-slate-400', headerBg: '#084C24', accentBg: '#16803A', description: 'Hero, financials, theme' },
+      { id: 'pages', label: 'Static Pages', icon: Globe, color: 'text-slate-400', headerBg: '#084C24', accentBg: '#16803A', description: 'Static pages copy' },
+      { id: 'resources', label: 'Resources & Docs', icon: BookOpen, color: 'text-slate-400', headerBg: '#084C24', accentBg: '#16803A', description: 'Public downloadable docs' },
+      { id: 'faqs', label: 'FAQs & Help', icon: HelpCircle, color: 'text-slate-400', headerBg: '#084C24', accentBg: '#16803A', description: 'Frequently asked questions' },
     ],
   },
 ];
@@ -338,7 +338,7 @@ export function AdminSidebar({
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
         className={`
-          admin-sidebar-nav fixed top-16 bottom-0 left-0 z-40 bg-slate-900 border-r border-slate-800/90 flex flex-col shadow-2xl
+          admin-sidebar-nav fixed top-16 bottom-0 left-0 z-40 bg-[#084C24] border-r border-[#0F5C2A] flex flex-col shadow-2xl
           ${isDragging ? 'select-none' : ''}
           ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
           transition-[transform,width] ease-in-out
@@ -350,7 +350,7 @@ export function AdminSidebar({
         aria-label="Admin Navigation"
       >
         {/* Top Control Bar: Quick Collapse, Pin/Unpin, Search */}
-        <div className="p-2.5 border-b border-slate-800/80 bg-slate-900/95 flex items-center justify-between gap-1.5 shrink-0">
+        <div className="p-2.5 border-b border-[#0F5C2A] bg-[#084C24] flex items-center justify-between gap-1.5 shrink-0">
           {!isEffectiveCollapsed ? (
             <>
               {/* Search or Quick Filter */}
@@ -361,7 +361,7 @@ export function AdminSidebar({
                   value={sidebarSearch}
                   onChange={(e) => setSidebarSearch(e.target.value)}
                   placeholder="Filter menu..."
-                  className="w-full pl-8 pr-7 py-1 bg-slate-800/90 text-slate-200 placeholder-slate-500 text-xs rounded-lg border border-slate-700/60 focus:outline-none focus:border-emerald-500/60 focus:ring-1 focus:ring-emerald-500/30 transition"
+                  className="w-full pl-8 pr-7 py-1 bg-[#063B1C] text-white placeholder-emerald-200/60 text-xs rounded-lg border border-[#0F5C2A] focus:outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400/40 transition"
                 />
                 {sidebarSearch && (
                   <button
@@ -381,7 +381,7 @@ export function AdminSidebar({
                 className={`p-1.5 rounded-lg border transition-all duration-150 shrink-0 cursor-pointer ${
                   isPinned
                     ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/30'
-                    : 'bg-slate-800 text-slate-400 border-slate-700/70 hover:text-slate-200 hover:bg-slate-700'
+                    : 'bg-[#063B1C] text-emerald-200/80 border-[#0F5C2A] hover:text-white hover:bg-[#0F5C2A]'
                 }`}
                 title={isPinned ? 'Sidebar Pinned (Docked into layout) — Click to Unpin' : 'Sidebar Unpinned (Floating hover mode) — Click to Pin'}
                 aria-label={isPinned ? 'Unpin sidebar' : 'Pin sidebar'}
@@ -409,7 +409,7 @@ export function AdminSidebar({
                   setIsCollapsed(false);
                   setIsPinned(true);
                 }}
-                className="p-2 rounded-xl bg-slate-800/90 text-slate-300 hover:text-emerald-400 hover:bg-slate-700 border border-slate-700/70 transition cursor-pointer"
+                className="p-2 rounded-xl bg-[#063B1C] text-emerald-200/80 hover:text-white hover:bg-[#0F5C2A] border border-[#0F5C2A] transition cursor-pointer"
                 title="Expand sidebar (Ctrl+B)"
                 aria-label="Expand sidebar"
               >
@@ -421,8 +421,8 @@ export function AdminSidebar({
 
         {/* Categories Header controls when expanded */}
         {!isEffectiveCollapsed && (
-          <div className="px-3 pt-2 pb-1.5 flex items-center justify-between text-[11px] uppercase tracking-wider text-slate-400 border-b border-slate-800/60 shrink-0">
-            <span className="font-bold text-slate-400">Navigation</span>
+          <div className="px-3 pt-2 pb-1.5 flex items-center justify-between text-[11px] uppercase tracking-wider text-emerald-200/70 border-b border-[#0F5C2A] shrink-0">
+            <span className="font-bold text-emerald-100">Navigation</span>
             <div className="flex items-center gap-2 text-[10px]">
               <button
                 type="button"
@@ -513,7 +513,7 @@ export function AdminSidebar({
                       className={
                         isEffectiveCollapsed
                           ? 'space-y-1'
-                          : 'space-y-0.5 pl-2.5 border-l border-slate-800 ml-3.5 my-1 transition-all duration-200'
+                          : 'space-y-0.5 pl-2.5 border-l border-[#0F5C2A] ml-3.5 my-1 transition-all duration-200'
                       }
                       role="menu"
                     >
@@ -552,7 +552,7 @@ export function AdminSidebar({
                               } rounded-xl transition-all duration-150 relative text-left cursor-pointer focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:outline-none ${
                                 isActive
                                   ? 'text-white font-semibold shadow-md'
-                                  : 'text-slate-400 hover:bg-slate-800/80 hover:text-slate-200'
+                                  : 'text-emerald-100/80 hover:bg-[#0F5C2A] hover:text-white'
                               }`}
                               style={
                                 isActive
@@ -610,7 +610,7 @@ export function AdminSidebar({
 
           {/* Super Admin Users Tab */}
           {userRole === 'super-admin' && (
-            <div className="space-y-1 pt-2 border-t border-slate-800/80">
+            <div className="space-y-1 pt-2 border-t border-[#0F5C2A]/80">
               {!isEffectiveCollapsed && (
                 <div className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">
                   Access & Security
@@ -626,8 +626,8 @@ export function AdminSidebar({
                   isEffectiveCollapsed ? 'justify-center p-2.5' : 'justify-between px-3 py-2'
                 } rounded-xl transition-all duration-150 relative text-left cursor-pointer focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:outline-none ${
                   activeTab === 'users'
-                    ? 'text-white font-semibold shadow-md bg-[#2f5496]'
-                    : 'text-slate-400 hover:bg-slate-800/80 hover:text-slate-200'
+                    ? 'text-white font-semibold shadow-md bg-[#16803A]'
+                    : 'text-emerald-100/80 hover:bg-[#0F5C2A] hover:text-white'
                 }`}
                 title={isEffectiveCollapsed ? 'System Users (Super Admin)' : undefined}
                 aria-current={activeTab === 'users' ? 'page' : undefined}
@@ -655,7 +655,7 @@ export function AdminSidebar({
         </div>
 
         {/* User Profile & Quick Action Footer */}
-        <div className="p-2.5 bg-slate-900 border-t border-slate-800/90 flex flex-col gap-2 shrink-0">
+        <div className="p-2.5 bg-slate-900 border-t border-[#0F5C2A]/90 flex flex-col gap-2 shrink-0">
           {!isEffectiveCollapsed ? (
             <>
               <a

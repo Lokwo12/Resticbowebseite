@@ -162,7 +162,7 @@ export function Header() {
       {/* Main Navbar Bar */}
       <div className={`transition-all duration-300 ${
         isSolid 
-          ? 'bg-white/95 backdrop-blur-md shadow-sm border-b border-slate-200/80' 
+          ? 'bg-white/95 backdrop-blur-md shadow-xs border-b border-resti-neutral-border' 
           : 'bg-emerald-950/60 backdrop-blur-md border-b border-white/10'
       }`}>
         <nav className="max-w-7xl mx-auto px-3 sm:px-5 lg:px-6 xl:px-8">
@@ -232,8 +232,8 @@ export function Header() {
                 to="/"
                 className={`px-2 xl:px-2.5 py-2 rounded-lg text-[15px] xl:text-[16px] font-medium transition-colors whitespace-nowrap ${
                   isActive('/') && !location.hash
-                    ? isSolid ? 'text-emerald-600 font-bold bg-emerald-50/80' : 'text-white font-bold bg-white/15'
-                    : isSolid ? 'text-gray-700 hover:text-emerald-600 hover:bg-slate-50' : 'text-white/90 hover:text-white hover:bg-white/10'
+                    ? isSolid ? 'text-resti-green font-bold bg-resti-green-light/90' : 'text-white font-bold bg-white/15'
+                    : isSolid ? 'text-resti-neutral-dark hover:text-resti-green hover:bg-resti-neutral-offwhite' : 'text-white/90 hover:text-white hover:bg-white/10'
                 }`}
               >
                 Home
@@ -249,8 +249,8 @@ export function Header() {
                   onClick={() => setActiveDropdown(activeDropdown === 'about' ? null : 'about')}
                   className={`px-2 xl:px-2.5 py-2 rounded-lg text-[15px] xl:text-[16px] font-medium transition-colors flex items-center gap-1 whitespace-nowrap ${
                     isActive('/about') || isActive('/team') || isActive('/financials') || isActive('/faqs')
-                      ? isSolid ? 'text-emerald-600 font-bold bg-emerald-50/80' : 'text-white font-bold bg-white/15'
-                      : isSolid ? 'text-gray-700 hover:text-emerald-600 hover:bg-slate-50' : 'text-white/90 hover:text-white hover:bg-white/10'
+                      ? isSolid ? 'text-resti-green font-bold bg-resti-green-light/90' : 'text-white font-bold bg-white/15'
+                      : isSolid ? 'text-resti-neutral-dark hover:text-resti-green hover:bg-resti-neutral-offwhite' : 'text-white/90 hover:text-white hover:bg-white/10'
                   }`}
                 >
                   About Us <ChevronDown size={14} className={`transition-transform duration-200 ${activeDropdown === 'about' ? 'rotate-180' : ''}`} />
@@ -313,8 +313,8 @@ export function Header() {
                 to="/programs"
                 className={`px-2 xl:px-2.5 py-2 rounded-lg text-[15px] xl:text-[16px] font-medium transition-colors whitespace-nowrap ${
                   isActive('/programs')
-                    ? isSolid ? 'text-emerald-600 font-bold bg-emerald-50/80' : 'text-white font-bold bg-white/15'
-                    : isSolid ? 'text-gray-700 hover:text-emerald-600 hover:bg-slate-50' : 'text-white/90 hover:text-white hover:bg-white/10'
+                    ? isSolid ? 'text-resti-green font-bold bg-resti-green-light/90' : 'text-white font-bold bg-white/15'
+                    : isSolid ? 'text-resti-neutral-dark hover:text-resti-green hover:bg-resti-neutral-offwhite' : 'text-white/90 hover:text-white hover:bg-white/10'
                 }`}
               >
                 Programs
@@ -330,8 +330,8 @@ export function Header() {
                   onClick={() => setActiveDropdown(activeDropdown === 'impact' ? null : 'impact')}
                   className={`px-2 xl:px-2.5 py-2 rounded-lg text-[15px] xl:text-[16px] font-medium transition-colors flex items-center gap-1 whitespace-nowrap ${
                     isActive('/stories') || isActive('/reports') || isActive('/impact-dashboard')
-                      ? isSolid ? 'text-emerald-600 font-bold bg-emerald-50/80' : 'text-white font-bold bg-white/15'
-                      : isSolid ? 'text-gray-700 hover:text-emerald-600 hover:bg-slate-50' : 'text-white/90 hover:text-white hover:bg-white/10'
+                      ? isSolid ? 'text-resti-green font-bold bg-resti-green-light/90' : 'text-white font-bold bg-white/15'
+                      : isSolid ? 'text-resti-neutral-dark hover:text-resti-green hover:bg-resti-neutral-offwhite' : 'text-white/90 hover:text-white hover:bg-white/10'
                   }`}
                 >
                   Impact <ChevronDown size={14} className={`transition-transform duration-200 ${activeDropdown === 'impact' ? 'rotate-180' : ''}`} />
@@ -388,8 +388,8 @@ export function Header() {
                   onClick={() => setActiveDropdown(activeDropdown === 'resources' ? null : 'resources')}
                   className={`px-2 xl:px-2.5 py-2 rounded-lg text-[15px] xl:text-[16px] font-medium transition-colors flex items-center gap-1 whitespace-nowrap ${
                     isActive('/news') || isActive('/events') || isActive('/resources')
-                      ? isSolid ? 'text-emerald-600 font-bold bg-emerald-50/80' : 'text-white font-bold bg-white/15'
-                      : isSolid ? 'text-gray-700 hover:text-emerald-600 hover:bg-slate-50' : 'text-white/90 hover:text-white hover:bg-white/10'
+                      ? isSolid ? 'text-resti-green font-bold bg-resti-green-light/90' : 'text-white font-bold bg-white/15'
+                      : isSolid ? 'text-resti-neutral-dark hover:text-resti-green hover:bg-resti-neutral-offwhite' : 'text-white/90 hover:text-white hover:bg-white/10'
                   }`}
                 >
                   News & Events <ChevronDown size={14} className={`transition-transform duration-200 ${activeDropdown === 'resources' ? 'rotate-180' : ''}`} />
@@ -463,8 +463,8 @@ export function Header() {
                   onClick={() => setActiveDropdown(activeDropdown === 'involved' ? null : 'involved')}
                   className={`px-2 xl:px-2.5 py-2 rounded-lg text-[15px] xl:text-[16px] font-medium transition-colors flex items-center gap-1 whitespace-nowrap ${
                     isActive('/opportunities') || isActive('/partners') || isActive('/donor')
-                      ? isSolid ? 'text-emerald-600 font-bold bg-emerald-50/80' : 'text-white font-bold bg-white/15'
-                      : isSolid ? 'text-gray-700 hover:text-emerald-600 hover:bg-slate-50' : 'text-white/90 hover:text-white hover:bg-white/10'
+                      ? isSolid ? 'text-resti-green font-bold bg-resti-green-light/90' : 'text-white font-bold bg-white/15'
+                      : isSolid ? 'text-resti-neutral-dark hover:text-resti-green hover:bg-resti-neutral-offwhite' : 'text-white/90 hover:text-white hover:bg-white/10'
                   }`}
                 >
                   Get Involved <ChevronDown size={14} className={`transition-transform duration-200 ${activeDropdown === 'involved' ? 'rotate-180' : ''}`} />
@@ -516,8 +516,8 @@ export function Header() {
                 to="/contact"
                 className={`px-2 xl:px-2.5 py-2 rounded-lg text-[15px] xl:text-[16px] font-medium transition-colors whitespace-nowrap ${
                   isActive('/contact')
-                    ? isSolid ? 'text-emerald-600 font-bold bg-emerald-50/80' : 'text-white font-bold bg-white/15'
-                    : isSolid ? 'text-gray-700 hover:text-emerald-600 hover:bg-slate-50' : 'text-white/90 hover:text-white hover:bg-white/10'
+                    ? isSolid ? 'text-resti-green font-bold bg-resti-green-light/90' : 'text-white font-bold bg-white/15'
+                    : isSolid ? 'text-resti-neutral-dark hover:text-resti-green hover:bg-resti-neutral-offwhite' : 'text-white/90 hover:text-white hover:bg-white/10'
                 }`}
               >
                 Contact
@@ -547,9 +547,9 @@ export function Header() {
               {/* Donate Button */}
               <button
                 onClick={() => { setActiveDropdown(null); openDonationModal(); }}
-                className="flex items-center gap-1.5 px-3.5 xl:px-4.5 py-1.5 xl:py-2 rounded-xl font-semibold text-[15px] text-slate-950 bg-gradient-to-r from-amber-400 via-amber-500 to-amber-400 hover:from-amber-500 hover:to-amber-600 shadow-md shadow-amber-500/25 active:scale-98 transition-all shrink-0 cursor-pointer"
+                className="btn-resti-donate text-[15px] cursor-pointer"
               >
-                <Heart size={14} fill="currentColor" className="text-slate-950" />
+                <Heart size={14} fill="currentColor" className="text-white" />
                 <span>Donate</span>
               </button>
             </div>
@@ -592,9 +592,9 @@ export function Header() {
             <div>
               <button 
                 onClick={() => { setMobileMenuOpen(false); openDonationModal(); }} 
-                className="w-full flex items-center justify-center gap-1.5 bg-gradient-to-r from-amber-400 via-amber-500 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-slate-950 py-3 rounded-xl font-semibold shadow-md shadow-amber-500/20 transition-all text-[15px] sm:text-[16px]"
+                className="w-full flex items-center justify-center gap-1.5 bg-resti-green hover:bg-resti-green-dark text-white py-3 rounded-[10px] font-bold shadow-md shadow-resti-green/20 transition-all text-[15px] sm:text-[16px]"
               >
-                <Heart size={16} fill="currentColor" className="text-slate-950" />
+                <Heart size={16} fill="currentColor" className="text-white" />
                 Donate Now
               </button>
             </div>

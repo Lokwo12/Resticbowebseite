@@ -328,9 +328,7 @@ export function Contact() {
 
                 {/* Email */}
                 <div className="flex items-start gap-3.5">
-                  <div className="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center flex-shrink-0">
-                    <Mail className="w-5 h-5" />
-                  </div>
+                  <div className="w-10 h-10 rounded-lg bg-resti-blue-light text-resti-blue flex items-center justify-center flex-shrink-0"><Mail className="w-5 h-5" /></div>
                   <div>
                     <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 block">Official Email</span>
                     <a
@@ -344,9 +342,7 @@ export function Contact() {
 
                 {/* Phone */}
                 <div className="flex items-start gap-3.5">
-                  <div className="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center flex-shrink-0">
-                    <Phone className="w-5 h-5" />
-                  </div>
+                  <div className="w-10 h-10 rounded-lg bg-resti-orange-light text-resti-orange flex items-center justify-center flex-shrink-0"><Phone className="w-5 h-5" /></div>
                   <div>
                     <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 block">Phone</span>
                     <a
@@ -360,9 +356,7 @@ export function Contact() {
 
                 {/* Working Hours */}
                 <div className="flex items-start gap-3.5">
-                  <div className="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center flex-shrink-0">
-                    <Clock className="w-5 h-5" />
-                  </div>
+                  <div className="w-10 h-10 rounded-lg bg-resti-gold-light text-resti-gold flex items-center justify-center flex-shrink-0"><Clock className="w-5 h-5" /></div>
                   <div>
                     <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 block">Office Hours</span>
                     <span className="text-sm font-semibold text-slate-900">

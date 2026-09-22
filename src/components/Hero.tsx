@@ -445,7 +445,7 @@ export function Hero() {
             >
               <button
                 onClick={openDonationModal}
-                className="w-full sm:w-auto group bg-gradient-to-r from-amber-400 via-amber-500 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-slate-950 text-[15px] sm:text-[16px] font-semibold px-8 py-3.5 sm:py-4 rounded-xl transition-all duration-300 flex items-center justify-center gap-2.5 shadow-lg shadow-amber-500/25 hover:shadow-amber-500/40 hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
+                className="w-full sm:w-auto group bg-resti-green hover:bg-resti-green-dark text-white text-[15px] sm:text-[16px] font-bold px-8 py-3.5 sm:py-4 rounded-[10px] transition-all duration-300 flex items-center justify-center gap-2.5 shadow-lg shadow-resti-green/25 hover:shadow-resti-green/40 hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
               >
                 <span>{settings.primaryButtonText}</span>
                 <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform duration-300 text-slate-950" />

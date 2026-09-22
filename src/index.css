@@ -44,43 +44,69 @@ body {
 @layer base {
 :root {
   --font-size: 16px;
-  --background: #fff;
-  --foreground: oklch(.145 0 0);
-  --card: #fff;
-  --card-foreground: oklch(.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(.145 0 0);
-  --primary: #030213;
-  --primary-foreground: oklch(1 0 0);
-  --secondary: oklch(.95 .0058 264.53);
-  --secondary-foreground: #030213;
-  --muted: #ececf0;
-  --muted-foreground: #717182;
-  --accent: #e9ebef;
-  --accent-foreground: #030213;
+  --background: #FFFFFF;
+  --foreground: #26332B;
+  --card: #FFFFFF;
+  --card-foreground: #26332B;
+  --popover: #FFFFFF;
+  --popover-foreground: #26332B;
+  --primary: #16803A;
+  --primary-foreground: #FFFFFF;
+  --secondary: #EAF6EE;
+  --secondary-foreground: #0F5C2A;
+  --muted: #F1F4F2;
+  --muted-foreground: #6B7770;
+  --accent: #E8F5FA;
+  --accent-foreground: #125A7A;
   --destructive: #d4183d;
-  --destructive-foreground: #fff;
-  --border: #0000001a;
-  --input: transparent;
-  --input-background: #f3f3f5;
-  --switch-background: #cbced4;
+  --destructive-foreground: #FFFFFF;
+  --border: #DCE4DF;
+  --input: #DCE4DF;
+  --input-background: #F8FAF9;
+  --switch-background: #DCE4DF;
   --font-weight-medium: 500;
   --font-weight-normal: 400;
-  --ring: oklch(.708 0 0);
-  --chart-1: oklch(.646 .222 41.116);
-  --chart-2: oklch(.6 .118 184.704);
-  --chart-3: oklch(.398 .07 227.392);
-  --chart-4: oklch(.828 .189 84.429);
-  --chart-5: oklch(.769 .188 70.08);
-  --radius: .625rem;
-  --sidebar: oklch(.985 0 0);
-  --sidebar-foreground: oklch(.145 0 0);
-  --sidebar-primary: #030213;
-  --sidebar-primary-foreground: oklch(.985 0 0);
-  --sidebar-accent: oklch(.97 0 0);
-  --sidebar-accent-foreground: oklch(.205 0 0);
-  --sidebar-border: oklch(.922 0 0);
-  --sidebar-ring: oklch(.708 0 0);
+  --ring: #16803A;
+  --radius: 0.625rem;
+  --sidebar: #084C24;
+  --sidebar-foreground: #FFFFFF;
+  --sidebar-primary: #16803A;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #0F5C2A;
+  --sidebar-accent-foreground: #FFFFFF;
+  --sidebar-border: #0F5C2A;
+  --sidebar-ring: #16803A;
+
+  /* RESTI Design System Tokens */
+  --resti-green: #16803A;
+  --resti-green-dark: #0F5C2A;
+  --resti-green-deep: #084C24;
+  --resti-green-medium: #2E8B57;
+  --resti-green-light: #EAF6EE;
+  --resti-green-vlight: #F3FAF5;
+
+  --resti-blue: #1976A8;
+  --resti-blue-dark: #125A7A;
+  --resti-blue-light: #E8F5FA;
+  --resti-blue-soft: #D8EFF7;
+  --resti-blue-vlight: #F3FAFC;
+
+  --resti-gold: #E9B949;
+  --resti-gold-dark: #B88916;
+  --resti-gold-light: #FFF6D8;
+
+  --resti-orange: #E98A3A;
+  --resti-orange-dark: #C86B1F;
+  --resti-orange-light: #FFF0E4;
+
+  --resti-neutral-white: #FFFFFF;
+  --resti-neutral-offwhite: #F8FAF9;
+  --resti-neutral-light: #F1F4F2;
+  --resti-neutral-border: #DCE4DF;
+  --resti-neutral-muted: #6B7770;
+  --resti-neutral-dark: #39453E;
+  --resti-neutral-text: #26332B;
+  --resti-neutral-black: #172019;
 }
 .dark {
   --background: oklch(.145 0 0);
@@ -1166,3 +1192,185 @@ p, .prose p, .content p, .body-text, article p, section p {
 }
 
 
+
+/* ============================================================
+   RESTI CBO - Design System Standard Classes & Utilities
+   ============================================================ */
+
+/* Primary Button: #16803A, radius 10px, WCAG AA */
+.btn-resti-primary {
+  background-color: #16803A;
+  color: #FFFFFF !important;
+  border-radius: 10px;
+  font-weight: 600;
+  padding: 0.625rem 1.25rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.05);
+}
+.btn-resti-primary:hover {
+  background-color: #0F5C2A;
+  box-shadow: 0 4px 14px rgba(22, 128, 58, 0.25);
+  transform: translateY(-1px);
+}
+.btn-resti-primary:active {
+  transform: translateY(0);
+}
+
+/* Secondary Button: Outline #16803A, Light Green Hover */
+.btn-resti-secondary {
+  background-color: transparent;
+  color: #16803A !important;
+  border: 1.5px solid #16803A;
+  border-radius: 10px;
+  font-weight: 600;
+  padding: 0.55rem 1.2rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: all 0.2s ease;
+}
+.btn-resti-secondary:hover {
+  background-color: #EAF6EE;
+  color: #0F5C2A !important;
+  border-color: #0F5C2A;
+}
+
+/* Blue Action Button (Downloads, WASH, Information) */
+.btn-resti-blue {
+  background-color: #1976A8;
+  color: #FFFFFF !important;
+  border-radius: 10px;
+  font-weight: 600;
+  padding: 0.625rem 1.25rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.05);
+}
+.btn-resti-blue:hover {
+  background-color: #125A7A;
+  box-shadow: 0 4px 14px rgba(25, 118, 168, 0.25);
+  transform: translateY(-1px);
+}
+
+/* Donate Button: Green #16803A with Heart icon */
+.btn-resti-donate {
+  background-color: #16803A;
+  color: #FFFFFF !important;
+  border-radius: 10px;
+  font-weight: 600;
+  padding: 0.55rem 1.25rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 2px 8px rgba(22, 128, 58, 0.25);
+}
+.btn-resti-donate:hover {
+  background-color: #0F5C2A;
+  box-shadow: 0 6px 16px rgba(22, 128, 58, 0.35);
+  transform: translateY(-1px);
+}
+
+/* Standardized Card */
+.card-resti {
+  background-color: #FFFFFF;
+  border: 1px solid #DCE4DF;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+}
+.card-resti:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
+  border-color: #C2D5C8;
+}
+
+/* Semantic Badges */
+.badge-resti-green {
+  background-color: #EAF6EE;
+  color: #0F5C2A;
+  border: 1px solid rgba(22, 128, 58, 0.2);
+  border-radius: 9999px;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.badge-resti-blue {
+  background-color: #E8F5FA;
+  color: #125A7A;
+  border: 1px solid rgba(25, 118, 168, 0.2);
+  border-radius: 9999px;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.badge-resti-gold {
+  background-color: #FFF6D8;
+  color: #B88916;
+  border: 1px solid rgba(233, 185, 73, 0.3);
+  border-radius: 9999px;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.badge-resti-orange {
+  background-color: #FFF0E4;
+  color: #C86B1F;
+  border: 1px solid rgba(233, 138, 58, 0.3);
+  border-radius: 9999px;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+/* Alternating Section Backgrounds */
+.bg-resti-section-offwhite {
+  background-color: #F8FAF9;
+}
+.bg-resti-section-soft-green {
+  background-color: #F3FAF5;
+}
+.bg-resti-section-soft-blue {
+  background-color: #F3FAFC;
+}
+.bg-resti-section-deep-green {
+  background-color: #084C24;
+}
+
+/* Category Accent Borders */
+.border-l-resti-green {
+  border-left: 4px solid #16803A;
+}
+.border-l-resti-blue {
+  border-left: 4px solid #1976A8;
+}
+.border-l-resti-gold {
+  border-left: 4px solid #E9B949;
+}
+.border-l-resti-orange {
+  border-left: 4px solid #E98A3A;
+}

@@ -484,7 +484,7 @@ export function Donation() {
                         toast.error('Minimum donation is $1');
                       }
                     }}
-                    className="w-full bg-gradient-to-r from-amber-400 via-amber-500 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-slate-950 font-extrabold rounded-xl text-base flex items-center justify-center gap-2 shadow-lg shadow-amber-500/25 hover:shadow-xl hover:scale-[1.01] active:scale-[0.99] transition-all duration-200"
+                    className="w-full bg-gradient-to-r bg-resti-green hover:bg-resti-green-dark text-white font-extrabold rounded-xl text-base flex items-center justify-center gap-2 shadow-lg shadow-amber-500/25 hover:shadow-xl hover:scale-[1.01] active:scale-[0.99] transition-all duration-200"
                     style={btnStyle}>
                     <Heart size={18} fill="currentColor" />
                     Continue{finalAmount > 0 ? ` — ${formatAmt(finalAmount)}` : ''}
@@ -644,7 +644,7 @@ export function Donation() {
                             </p>
                           </div>
 
-                          <button type="submit" disabled={submitting} className="w-full bg-gradient-to-r from-amber-400 via-amber-500 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-slate-950 font-extrabold rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-amber-500/25 hover:shadow-xl hover:scale-[1.01] active:scale-[0.99] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer" style={btnStyle}>
+                          <button type="submit" disabled={submitting} className="w-full bg-gradient-to-r bg-resti-green hover:bg-resti-green-dark text-white font-extrabold rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-amber-500/25 hover:shadow-xl hover:scale-[1.01] active:scale-[0.99] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer" style={btnStyle}>
                             {submitting ? <span className="animate-spin w-5 h-5 border-2 border-white border-t-transparent rounded-full" /> : <><Phone size={18} /> Pay {formatAmt(finalAmount)}</>}
                           </button>
                         </form>

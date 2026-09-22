@@ -62,10 +62,10 @@ const DEFAULT_ABOUT_SETTINGS: AboutSettings = {
 };
 
 const TRUST_BADGE_COLOR_THEMES = [
-  { bg: 'bg-sky-50/90', border: 'border-sky-200/90 hover:border-sky-300', label: 'text-sky-900', sub: 'text-sky-700' },
-  { bg: 'bg-emerald-50/90', border: 'border-emerald-200/90 hover:border-emerald-300', label: 'text-emerald-900', sub: 'text-emerald-700' },
-  { bg: 'bg-amber-50/90', border: 'border-amber-200/90 hover:border-amber-300', label: 'text-amber-950', sub: 'text-amber-700' },
-  { bg: 'bg-cyan-50/90', border: 'border-cyan-200/90 hover:border-cyan-300', label: 'text-cyan-950', sub: 'text-cyan-700' },
+  { bg: 'bg-resti-blue-light', border: 'border-resti-blue/20 hover:border-resti-blue/40', label: 'text-resti-blue-dark', sub: 'text-resti-blue' },
+  { bg: 'bg-resti-green-light', border: 'border-resti-green/20 hover:border-resti-green/40', label: 'text-resti-green-dark', sub: 'text-resti-green' },
+  { bg: 'bg-resti-gold-light', border: 'border-resti-gold/30 hover:border-resti-gold/50', label: 'text-resti-gold-dark', sub: 'text-resti-gold-dark' },
+  { bg: 'bg-resti-orange-light', border: 'border-resti-orange/30 hover:border-resti-orange/50', label: 'text-resti-orange-dark', sub: 'text-resti-orange' },
 ];
 
 export function About() {
@@ -156,7 +156,7 @@ export function About() {
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true, amount: 0.2 }}
             transition={{ duration: 0.8, ease: "easeOut" }}
-            className="group bg-gradient-to-br from-emerald-50 to-teal-50 p-8 rounded-2xl shadow-sm hover:shadow-premium-soft hover:-translate-y-1 transition-all duration-300"
+            className="group bg-resti-green-vlight p-8 rounded-2xl border border-resti-neutral-border border-l-4 border-l-resti-green shadow-xs hover:shadow-sm hover:-translate-y-0.5 transition-all duration-300"
           >
             <h3 className="text-[22px] lg:text-[24px] font-semibold font-heading text-gray-900 mb-4 leading-[1.3] group-hover:text-emerald-600 transition-colors">Our Mission</h3>
             <p className="text-[17px] text-gray-700 leading-[1.6] font-normal">
@@ -168,7 +168,7 @@ export function About() {
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true, amount: 0.2 }}
             transition={{ duration: 0.8, ease: "easeOut", delay: 0.2 }}
-            className="group bg-gradient-to-br from-blue-50 to-indigo-50 p-8 rounded-2xl shadow-sm hover:shadow-premium-soft hover:-translate-y-1 transition-all duration-300"
+            className="group bg-resti-blue-vlight p-8 rounded-2xl border border-resti-neutral-border border-l-4 border-l-resti-blue shadow-xs hover:shadow-sm hover:-translate-y-0.5 transition-all duration-300"
           >
             <h3 className="text-[22px] lg:text-[24px] font-semibold font-heading text-gray-900 mb-4 leading-[1.3] group-hover:text-blue-600 transition-colors">Our Vision</h3>
             <p className="text-[17px] text-gray-700 leading-[1.6] font-normal">

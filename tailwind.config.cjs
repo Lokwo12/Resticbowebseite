@@ -17,7 +17,44 @@ module.exports = {
       },
     },
     extend: {
-      colors: {
+            colors: {
+        resti: {
+          green: {
+            DEFAULT: '#16803A',
+            dark: '#0F5C2A',
+            deep: '#084C24',
+            medium: '#2E8B57',
+            light: '#EAF6EE',
+            vlight: '#F3FAF5',
+          },
+          blue: {
+            DEFAULT: '#1976A8',
+            dark: '#125A7A',
+            light: '#E8F5FA',
+            soft: '#D8EFF7',
+            vlight: '#F3FAFC',
+          },
+          gold: {
+            DEFAULT: '#E9B949',
+            dark: '#B88916',
+            light: '#FFF6D8',
+          },
+          orange: {
+            DEFAULT: '#E98A3A',
+            dark: '#C86B1F',
+            light: '#FFF0E4',
+          },
+          neutral: {
+            white: '#FFFFFF',
+            offwhite: '#F8FAF9',
+            light: '#F1F4F2',
+            border: '#DCE4DF',
+            muted: '#6B7770',
+            dark: '#39453E',
+            text: '#26332B',
+            black: '#172019',
+          },
+        },
         border: "var(--border)",
         input: "var(--input)",
         ring: "var(--ring)",
