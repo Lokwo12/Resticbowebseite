@@ -12,6 +12,7 @@ import { ImpactStories } from './components/ImpactStories';
 import { ImpactDashboard } from './components/ImpactDashboard';
 
 import { Events } from './components/Events';
+import { EventDetail } from './components/EventDetail';
 import { Gallery } from './components/Gallery';
 import { Partners } from './components/Partners';
 
@@ -93,13 +94,14 @@ function PageTitleManager() {
       '/get-involved': 'Get Involved | RESTI CBO',
       '/financials': 'Financial Transparency | RESTI',
       '/about': 'About Us | RESTI',
-      '/events': 'Events Calendar | RESTI',
+      '/events': 'Events & Activities | RESTI CBO',
       '/resources': 'Resources & Downloads | RESTI',
       '/programs': 'Our Programs | RESTI',
     };
 
     let title = titleMap[pathname] || 'RESTI';
-    if (pathname.startsWith('/news/')) title = 'News Article | RESTI CBO';
+    if (pathname.startsWith('/events/')) title = 'Event Details | RESTI CBO';
+    else if (pathname.startsWith('/news/')) title = 'News Article | RESTI CBO';
     else if (pathname.startsWith('/programs/')) title = 'Program Details | RESTI CBO';
     else if (pathname.startsWith('/team/')) title = 'Team Member | RESTI CBO';
     else if (pathname.startsWith('/pages/')) title = 'Page | RESTI CBO';
@@ -259,6 +261,7 @@ export default function App() {
         <Route path="/reports" element={<MainLayout><ImpactReports /></MainLayout>} />
         <Route path="/impact-dashboard" element={<MainLayout><ImpactDashboard /></MainLayout>} />
         <Route path="/events" element={<MainLayout><Events /></MainLayout>} />
+        <Route path="/events/:slug" element={<MainLayout><EventDetail /></MainLayout>} />
         <Route path="/resources" element={<MainLayout><Resources /></MainLayout>} />
         <Route path="/faqs" element={<MainLayout><FAQPage /></MainLayout>} />
         <Route path="/partners" element={<MainLayout><PartnersPage /></MainLayout>} />

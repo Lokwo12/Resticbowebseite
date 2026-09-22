@@ -3192,54 +3192,219 @@ app.delete('/make-server-2a4be611/admin/team/:id', requireAdmin, async (c) => {
   }
 })
 
-// Events routes
+// Events routes (Public & Admin)
 app.get('/make-server-2a4be611/events', async (c) => {
   try {
-    const limit = parseInt(c.req.query('limit') || '100');
-    const offset = parseInt(c.req.query('offset') || '0');
+    const isPublic = c.req.query('all') !== 'true'
+    const limit = parseInt(c.req.query('limit') || '100')
+    const offset = parseInt(c.req.query('offset') || '0')
     
-    if (c.req.query('limit') !== undefined) {
-      const { data, count } = await kv.getPaginatedByPrefix('event:', limit, offset);
-      data.sort((a, b) => new Date(b.value?.timestamp || b.value?.created_at || 0).getTime() - new Date(a.value?.timestamp || a.value?.created_at || 0).getTime());
-      return c.json({ events: data, count, limit, offset });
+    const rawEvents = await kv.getByPrefix('event:')
+    let mapped = rawEvents.map(e => {
+      const val = e.value || {}
+      const cleanId = (e.key || '').replace(/^event:/, '')
+      const title = val.title || 'Untitled Event'
+      const slug = val.slug || title.toLowerCase().replace(/[\s\W-]+/g, '-').replace(/^-+|-+$/g, '') || cleanId
+      return {
+        ...val,
+        id: cleanId,
+        key: e.key,
+        title,
+        slug,
+        is_published: val.is_published !== undefined ? Boolean(val.is_published) : val.published !== undefined ? Boolean(val.published) : val.status !== 'draft' && val.status !== 'archived',
+        is_featured: Boolean(val.is_featured ?? val.featured),
+        start_date: val.start_date || val.date || '',
+        start_time: val.start_time || val.time || '',
+        event_type: val.event_type || val.category || 'Community Activity',
+        featured_image: val.featured_image || val.image || '',
+        gallery: Array.isArray(val.gallery) ? val.gallery : []
+      }
+    })
+
+    if (isPublic) {
+      mapped = mapped.filter(e => e.is_published && e.status !== 'draft' && e.status !== 'archived')
     }
-    
-    const events = await kv.getByPrefix('event:')
-    events.sort((a, b) => new Date(b.value.date).getTime() - new Date(a.value.date).getTime())
-    return c.json({ events: events.map(e => ({ ...e.value, id: e.key, key: e.key })) })
+
+    // Sort: upcoming events first (earliest to latest), completed/past events (latest to earliest)
+    mapped.sort((a, b) => {
+      const dateA = new Date(a.start_date || a.date || 0).getTime()
+      const dateB = new Date(b.start_date || b.date || 0).getTime()
+      return dateB - dateA
+    })
+
+    const count = mapped.length
+    const paginated = mapped.slice(offset, offset + limit)
+
+    return c.json({ events: paginated, count, limit, offset })
   } catch (error) {
     console.error('Error fetching events:', error)
     return c.json({ error: 'Failed to fetch events', details: String(error) }, 500)
   }
 })
 
+// Get single event by slug or ID
+app.get('/make-server-2a4be611/events/:slugOrId', async (c) => {
+  try {
+    const slugOrId = c.req.param('slugOrId')
+    const key = slugOrId.startsWith('event:') ? slugOrId : `event:${slugOrId}`
+    
+    // First attempt direct key lookup
+    let found = await kv.get(key)
+    let cleanId = slugOrId.replace(/^event:/, '')
+
+    // If not found by direct key, search by slug or id
+    if (!found) {
+      const allEvents = await kv.getByPrefix('event:')
+      const match = allEvents.find(e => {
+        const val = e.value || {}
+        const cid = (e.key || '').replace(/^event:/, '')
+        const title = val.title || ''
+        const slug = val.slug || title.toLowerCase().replace(/[\s\W-]+/g, '-').replace(/^-+|-+$/g, '') || cid
+        return slug === slugOrId || cid === slugOrId
+      })
+      if (match) {
+        found = match.value
+        cleanId = (match.key || '').replace(/^event:/, '')
+      }
+    }
+
+    if (!found) {
+      return c.json({ error: 'Event not found' }, 404)
+    }
+
+    const title = found.title || 'Untitled Event'
+    const slug = found.slug || title.toLowerCase().replace(/[\s\W-]+/g, '-').replace(/^-+|-+$/g, '') || cleanId
+
+    return c.json({
+      event: {
+        ...found,
+        id: cleanId,
+        key: `event:${cleanId}`,
+        title,
+        slug,
+        is_published: found.is_published !== undefined ? Boolean(found.is_published) : found.published !== undefined ? Boolean(found.published) : found.status !== 'draft',
+        is_featured: Boolean(found.is_featured ?? found.featured),
+        start_date: found.start_date || found.date || '',
+        start_time: found.start_time || found.time || '',
+        event_type: found.event_type || found.category || 'Community Activity',
+        featured_image: found.featured_image || found.image || '',
+        gallery: Array.isArray(found.gallery) ? found.gallery : []
+      }
+    })
+  } catch (error) {
+    console.error('Error fetching event by slugOrId:', error)
+    return c.json({ error: 'Failed to fetch event', details: String(error) }, 500)
+  }
+})
+
+// Create event (admin)
 app.post('/make-server-2a4be611/admin/events', requireAdmin, async (c) => {
   try {
     const body = await c.req.json()
-    const { title, description, date, time, location, image, category, capacity, status } = body
-    const eventId = `event:${crypto.randomUUID()}`
-    await kv.set(eventId, { title, description, date, time, location, image: image || '', category: category || 'general', capacity, registered: 0, status: status || 'upcoming' })
-    return c.json({ success: true, message: 'Event added successfully', id: eventId })
+    const rawId = crypto.randomUUID()
+    const eventId = `event:${rawId}`
+    const nowIso = new Date().toISOString()
+    const title = (body.title || '').trim()
+    const slug = (body.slug || title.toLowerCase().replace(/[\s\W-]+/g, '-').replace(/^-+|-+$/g, '') || rawId).trim()
+
+    const eventData = {
+      id: rawId,
+      title,
+      slug,
+      short_description: body.short_description || body.shortDescription || '',
+      description: body.description || '',
+      event_type: body.event_type || body.category || 'Community Activity',
+      featured_image: body.featured_image || body.image || '',
+      gallery: Array.isArray(body.gallery) ? body.gallery : [],
+      start_date: body.start_date || body.date || '',
+      end_date: body.end_date || '',
+      start_time: body.start_time || body.time || '',
+      end_time: body.end_time || '',
+      location: body.location || 'Kiryandongo Refugee Settlement, Kiryandongo District, Uganda',
+      address: body.address || '',
+      organizer: body.organizer || 'RESTI Kiryandongo CBO',
+      registration_required: Boolean(body.registration_required ?? body.registrationRequired),
+      registration_url: body.registration_url || body.registrationUrl || '',
+      registration_deadline: body.registration_deadline || body.registrationDeadline || '',
+      contact_email: body.contact_email || body.contactEmail || 'info@resticbo.org',
+      contact_phone: body.contact_phone || body.contactPhone || '+256 700 000 000',
+      status: body.status || 'published',
+      is_featured: Boolean(body.is_featured ?? body.isFeatured),
+      is_published: body.is_published !== undefined ? Boolean(body.is_published) : true,
+      summary: body.summary || '',
+      outcomes: body.outcomes || '',
+      related_program: body.related_program || body.relatedProgram || '',
+      display_order: typeof body.display_order === 'number' ? body.display_order : 1,
+      capacity: body.capacity || undefined,
+      registered: body.registered || 0,
+      created_at: nowIso,
+      updated_at: nowIso
+    }
+
+    await kv.set(eventId, eventData)
+    return c.json({ success: true, message: 'Event added successfully', id: rawId, slug })
   } catch (error) {
     console.error('Error creating event:', error)
     return c.json({ error: 'Failed to create event', details: String(error) }, 500)
   }
 })
 
+// Update event (admin)
 app.put('/make-server-2a4be611/admin/events/:id', requireAdmin, async (c) => {
   try {
     const id = normalizeContentKey('event', c.req.param('id'))
     const body = await c.req.json()
     const existing = await kv.get(id)
     if (!existing) return c.json({ error: 'Event not found' }, 404)
-    await kv.set(id, { ...existing, ...body, updatedAt: new Date().toISOString() })
-    return c.json({ success: true, message: 'Event updated successfully' })
+
+    const title = (body.title || existing.title || '').trim()
+    const slug = (body.slug || existing.slug || title.toLowerCase().replace(/[\s\W-]+/g, '-').replace(/^-+|-+$/g, '')).trim()
+    const nowIso = new Date().toISOString()
+
+    const updatedData = {
+      ...existing,
+      ...body,
+      title,
+      slug,
+      short_description: body.short_description !== undefined ? body.short_description : (existing.short_description || existing.shortDescription || ''),
+      description: body.description !== undefined ? body.description : existing.description,
+      event_type: body.event_type || body.category || existing.event_type || existing.category || 'Community Activity',
+      featured_image: body.featured_image !== undefined ? body.featured_image : (body.image !== undefined ? body.image : (existing.featured_image || existing.image || '')),
+      gallery: Array.isArray(body.gallery) ? body.gallery : (existing.gallery || []),
+      start_date: body.start_date || body.date || existing.start_date || existing.date || '',
+      end_date: body.end_date !== undefined ? body.end_date : (existing.end_date || ''),
+      start_time: body.start_time || body.time || existing.start_time || existing.time || '',
+      end_time: body.end_time !== undefined ? body.end_time : (existing.end_time || ''),
+      location: body.location || existing.location || 'Kiryandongo Refugee Settlement, Kiryandongo District, Uganda',
+      address: body.address !== undefined ? body.address : (existing.address || ''),
+      organizer: body.organizer || existing.organizer || 'RESTI Kiryandongo CBO',
+      registration_required: body.registration_required !== undefined ? Boolean(body.registration_required) : Boolean(existing.registration_required),
+      registration_url: body.registration_url !== undefined ? body.registration_url : (existing.registration_url || ''),
+      registration_deadline: body.registration_deadline !== undefined ? body.registration_deadline : (existing.registration_deadline || ''),
+      contact_email: body.contact_email || existing.contact_email || 'info@resticbo.org',
+      contact_phone: body.contact_phone || existing.contact_phone || '+256 700 000 000',
+      status: body.status || existing.status || 'published',
+      is_featured: body.is_featured !== undefined ? Boolean(body.is_featured) : Boolean(existing.is_featured),
+      is_published: body.is_published !== undefined ? Boolean(body.is_published) : (existing.is_published !== undefined ? Boolean(existing.is_published) : true),
+      summary: body.summary !== undefined ? body.summary : (existing.summary || ''),
+      outcomes: body.outcomes !== undefined ? body.outcomes : (existing.outcomes || ''),
+      related_program: body.related_program !== undefined ? body.related_program : (existing.related_program || ''),
+      display_order: body.display_order !== undefined ? body.display_order : (existing.display_order || 1),
+      capacity: body.capacity !== undefined ? body.capacity : existing.capacity,
+      registered: body.registered !== undefined ? body.registered : (existing.registered || 0),
+      updated_at: nowIso,
+      updatedAt: nowIso
+    }
+
+    await kv.set(id, updatedData)
+    return c.json({ success: true, message: 'Event updated successfully', slug })
   } catch (error) {
     console.error('Error updating event:', error)
     return c.json({ error: 'Failed to update event', details: String(error) }, 500)
   }
 })
 
+// Delete event (admin)
 app.delete('/make-server-2a4be611/admin/events/:id', requireAdmin, async (c) => {
   try {
     const id = normalizeContentKey('event', c.req.param('id'))
