@@ -77,66 +77,60 @@ interface NewsArticleSummary {
 }
 
 export const DETAILED_FALLBACK_PROGRAMS: Record<string, Program> = {
-  education: {
-    id: 'education',
-    title: 'Education & Literacy Initiative',
-    category: 'Education',
+  environment: {
+    id: 'environment',
+    title: 'Environmental Sustainability & Climate Resilience',
+    category: 'Environment',
     status: 'Active',
-    description: 'Providing quality scholastic materials, remedial literacy tutoring, and girl-child retention support for refugee and host community children in Kiryandongo District.',
-    content: `In displaced and under-resourced communities across Kiryandongo District, access to quality schooling is frequently disrupted by extreme poverty, displacement trauma, and overcrowded classrooms.
+    description: 'Promoting indigenous reforestation, energy-saving cookstoves, communal tree nurseries, and climate resilience practices across Kiryandongo.',
+    content: `Kiryandongo District faces heavy environmental strain and rapid deforestation driven by biomass fuel dependency and agricultural expansion across refugee settlement clusters and host communities.
 
-RESTI's Education & Literacy Initiative directly tackles these disparities by establishing community learning centers, accelerated reading circles, and peer tutoring networks. We partner with local primary and secondary schools to provide essential textbooks, train community instructors, and provide direct scholastic assistance for children at risk of dropping out.
+RESTI’s Environmental Sustainability & Climate Resilience initiative empowers local communities to restore degraded forest cover, establish decentralized community tree nurseries, and transition to fuel-efficient institutional and household cookstoves.
 
-Furthermore, we remove key barriers for adolescent girls by providing menstrual hygiene kits and dignity mentorship—ensuring that young women can attend school consistently and safely.`,
-    image: 'https://images.unsplash.com/photo-1666281269793-da06484657e8?w=1200&q=80',
+By training farmer groups and youth cooperatives in soil enrichment, agroforestry, and indigenous seed protection, we build long-term climate resilience and secure local ecosystems for future generations.`,
+    image: 'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=1200&q=80',
     createdAt: '2026-01-01T00:00:00.000Z',
-    location: 'Kiryandongo Refugee Settlement & Host Community Schools',
-    timeline: 'Ongoing (2024–2026)',
-    beneficiaries: 'Refugee and host community children (ages 5–18) and adolescent girls',
-    verifiedBeneficiaries: '3,450+',
-    whoWeSupport: 'We support vulnerable primary and secondary school children, out-of-school youth seeking literacy catch-up, and adolescent girls in Kiryandongo District who face financial and socio-cultural barriers to completing their education.',
-    whereWeWork: 'Refugee settlement primary schools and neighboring host community education hubs across Kiryandongo District where high student ratios strain existing classroom resources.',
+    location: 'Kiryandongo District Settlement Zones & Agro-ecological Belts',
+    timeline: 'Ongoing Climate Action (2024–2026)',
+    beneficiaries: 'Smallholder farmers, refugee households, and local forest protection committees',
+    verifiedBeneficiaries: '6,200+',
+    whoWeSupport: 'Smallholder farmers, youth tree nursery managers, and displaced households in Kiryandongo who bear the brunt of soil depletion and wood-fuel scarcity.',
+    whereWeWork: 'Community woodlots, degraded riverine zones, and refugee settlement clusters across Kiryandongo District.',
     objectives: [
-      'Improve primary and secondary school retention rates among marginalized children.',
-      'Eliminate functional illiteracy through daily after-school remedial reading clinics.',
-      'Equip community learning hubs with solar study lighting, textbook libraries, and basic supplies.',
-      'Train community instructors and mentors in child protection and positive classroom discipline.'
+      'Promote communal reforestation through indigenous tree nurseries and woodlot planting.',
+      'Reduce biomass fuel consumption through the fabrication and adoption of fuel-efficient cookstoves.',
+      'Train community farmer cooperatives in climate-smart soil regeneration and agroforestry.',
+      'Strengthen local natural resource governance and environmental bylaws.'
     ],
     keyActivities: [
       {
-        title: 'Scholastic Kit Distribution',
-        desc: 'Supplying exercise books, pens, pencils, mathematical sets, and bags so children attend class equipped to learn.'
+        title: 'Community Tree Nurseries',
+        desc: 'Establishing decentralized nurseries raising indigenous fruit, shade, and agroforestry seedlings for distribution.'
       },
       {
-        title: 'After-School Remedial Hubs',
-        desc: 'Operating daily reading and arithmetic clinics for grades 1 through 7 focusing on foundational phonics and English fluency.'
+        title: 'Clean Energy & Fuel-Efficient Cookstoves',
+        desc: 'Training women and youth to produce fuel-efficient clay stoves, cutting household firewood needs by over 50%.'
       },
       {
-        title: 'Girl-Child Retention & Dignity Kits',
-        desc: 'Distributing menstrual hygiene supplies and hosting girl-led mentorship circles so adolescent girls remain in class with dignity.'
+        title: 'Watershed & Riverine Buffer Planting',
+        desc: 'Planting bamboo and deep-rooted native grasses along local drainage channels to prevent topsoil erosion.'
       },
       {
-        title: 'Community Teacher Support',
-        desc: 'Collaborating with certified district educators to deliver continuous pedagogy training and positive psychosocial support.'
+        title: 'Climate Adaptation Farmer Field Schools',
+        desc: 'Demonstrating mulching, organic composting, and drought-tolerant intercropping to maintain reliable harvest yields.'
       }
     ],
     impactMetrics: [
-      { label: 'Students Supported', value: '3,450+', reportingPeriod: '2024–2025 Academic Cycle' },
-      { label: 'Partner Schools Reached', value: '8 Schools', reportingPeriod: '2025' },
-      { label: 'Dignity Kits Distributed', value: '1,200+', reportingPeriod: '2024–2025' }
+      { label: 'Trees Planted & Raised', value: '45,000+', reportingPeriod: '2024–2025' },
+      { label: 'Energy-Saving Stoves Adopted', value: '1,800+', reportingPeriod: '2025' },
+      { label: 'Community Nurseries Managed', value: '6 Nurseries', reportingPeriod: '2024–2025' }
     ],
     gallery: [
       {
-        url: 'https://images.unsplash.com/photo-1497633762265-9d179a990aa6?w=800&q=80',
-        caption: 'Students receiving exercise books and scholastic materials in Kiryandongo',
+        url: 'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800&q=80',
+        caption: 'Community members managing indigenous tree nursery in Kiryandongo',
         date: '2025',
-        location: 'Kiryandongo Settlement'
-      },
-      {
-        url: 'https://images.unsplash.com/photo-1509062522246-3755977927d7?w=800&q=80',
-        caption: 'Remedial reading circle in session at community learning center',
-        date: '2025',
-        location: 'Ranch 18'
+        location: 'Kiryandongo District'
       }
     ]
   },
@@ -1250,45 +1244,6 @@ export function ProgramDetail() {
               </div>
             </div>
 
-            {/* Other Programs Navigation */}
-            <div className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-xs space-y-3">
-              <h4 className="font-bold text-slate-900 text-sm font-heading uppercase tracking-wider text-slate-400">
-                Other Initiatives
-              </h4>
-              <div className="space-y-2 text-sm">
-                {Object.keys(DETAILED_FALLBACK_PROGRAMS)
-                  .filter(k => k !== program.id)
-                  .slice(0, 4)
-                  .map((key) => {
-                    const otherP = DETAILED_FALLBACK_PROGRAMS[key];
-                    return (
-                      <Link
-                        key={key}
-                        to={`/programs/${otherP.id}`}
-                        className="block p-2.5 rounded-xl hover:bg-slate-50 transition-colors group"
-                      >
-                        <p className="font-bold text-slate-800 group-hover:text-emerald-700 transition-colors truncate">
-                          {otherP.title}
-                        </p>
-                        <p className="text-[11px] text-slate-400 uppercase tracking-wider mt-0.5">
-                          {otherP.category}
-                        </p>
-                      </Link>
-                    );
-                  })}
-              </div>
-
-              <div className="pt-2 border-t border-slate-100">
-                <Link 
-                  to="/programs" 
-                  className="text-xs font-bold text-emerald-700 hover:text-emerald-800 flex items-center justify-between"
-                >
-                  <span>View All Programs</span>
-                  <span>→</span>
-                </Link>
-              </div>
-            </div>
-
           </div>
 
         </div>
@@ -1302,7 +1257,7 @@ export function ProgramDetail() {
               Support This Program in Kiryandongo
             </h2>
             <p className="text-emerald-100 text-sm sm:text-base leading-relaxed">
-              Your charitable contributions and institutional partnerships help RESTI deliver grassroots education, healthcare, clean water, and self-reliance initiatives across refugee and host communities.
+              Your charitable contributions and institutional partnerships help RESTI deliver grassroots livelihoods, environmental sustainability, clean water, and self-reliance initiatives across refugee and host communities.
             </p>
             <div className="flex flex-wrap items-center justify-center gap-4 pt-4">
               <Button
