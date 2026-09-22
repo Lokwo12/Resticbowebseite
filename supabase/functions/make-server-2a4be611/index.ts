@@ -42,8 +42,7 @@ app.use('*', cors({
 }))
 app.use('*', logger())
 
-// ── requireAdmin middleware ───────────────────────────────────────────────────
-// Verifies the Bearer JWT, then checks the admin_users table for active status and role.
+// ── Tiered Role Authorization Middlewares ─────────────────────────────────────
 function normalizeAdminRole(role: string | null | undefined) {
   return role === 'super_admin' ? 'super-admin' : role
 }
@@ -53,53 +52,91 @@ function normalizeContentKey(prefix: string, id: string) {
   return decodedId.startsWith(`${prefix}:`) ? decodedId : `${prefix}:${decodedId}`
 }
 
-async function requireAdmin(c: Context, next: Next) {
+async function getAuthenticatedAdmin(c: Context): Promise<{ error?: string; status?: number; adminUser?: any }> {
   const authHeader = c.req.header('Authorization')
   const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null
   
   if (!token) {
-    return c.json({ error: 'Unauthorized – authentication required' }, 401)
+    return { error: 'Unauthorized – authentication required', status: 401 }
   }
   
   const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
   if (serviceRoleKey && token === serviceRoleKey) {
-    c.set('adminUser', { id: 'service-role', email: 'admin@resticbo.org', role: 'super-admin' })
-    await next()
-    return
+    return { adminUser: { id: 'service-role', email: 'admin@resticbo.org', role: 'super-admin' } }
   }
 
   const { data: { user }, error } = await supabase.auth.getUser(token)
   if (error || !user) {
-    return c.json({ error: 'Unauthorized – invalid or expired token' }, 401)
+    return { error: 'Unauthorized – invalid or expired token', status: 401 }
   }
   
+  if (user.email === 'lokwodenis0@gmail.com' || user.email === 'lokwodenis@gmail.com') {
+    return { adminUser: { id: user.id, email: user.email, role: 'super-admin' } }
+  }
+
   const { data: admin, error: adminError } = await supabase
     .from('admin_users')
     .select('role, status')
     .eq('id', user.id)
     .single()
 
-  const role = normalizeAdminRole(admin?.role)
-  if (
-    adminError ||
-    !admin ||
-    admin.status !== 'active' ||
-    !['admin', 'super-admin'].includes(role || '')
-  ) {
-    if (user.email === 'lokwodenis0@gmail.com' || user.email === 'lokwodenis@gmail.com') {
-      c.set('adminUser', { id: user.id, email: user.email, role: 'super-admin' })
-      await next()
-      return
+  const role = normalizeAdminRole(admin?.role) || normalizeAdminRole(user.user_metadata?.role) || 'viewer'
+  if (adminError || !admin || admin.status !== 'active') {
+    if (admin?.status === 'inactive' || admin?.status === 'suspended') {
+      return { error: 'Forbidden – account is inactive or suspended', status: 403 }
     }
-    return c.json({ error: 'Forbidden – administrator role required' }, 403)
   }
 
-  // Make the authenticated user available to route handlers
-  c.set('adminUser', {
-    id: user.id,
-    email: user.email,
-    role,
-  })
+  return {
+    adminUser: {
+      id: user.id,
+      email: user.email,
+      role: role || 'viewer',
+    }
+  }
+}
+
+// 1. Any authenticated active role (super-admin, admin, editor, viewer) - for viewing dashboard data
+async function requireAuthUser(c: Context, next: Next) {
+  const res = await getAuthenticatedAdmin(c)
+  if (res.error) return c.json({ error: res.error }, res.status as any)
+  c.set('adminUser', res.adminUser)
+  await next()
+}
+
+// 2. Editor or higher (editor, admin, super-admin) - for creating & editing content
+async function requireEditor(c: Context, next: Next) {
+  const res = await getAuthenticatedAdmin(c)
+  if (res.error) return c.json({ error: res.error }, res.status as any)
+  const role = res.adminUser.role
+  if (!['editor', 'admin', 'super-admin'].includes(role)) {
+    return c.json({ error: 'Forbidden – editor privileges required (read-only mode)' }, 403)
+  }
+  c.set('adminUser', res.adminUser)
+  await next()
+}
+
+// 3. Admin or higher (admin, super-admin) - for deleting content, site settings, broadcasts
+async function requireAdmin(c: Context, next: Next) {
+  const res = await getAuthenticatedAdmin(c)
+  if (res.error) return c.json({ error: res.error }, res.status as any)
+  const role = res.adminUser.role
+  if (!['admin', 'super-admin'].includes(role)) {
+    return c.json({ error: 'Forbidden – administrator privileges required' }, 403)
+  }
+  c.set('adminUser', res.adminUser)
+  await next()
+}
+
+// 4. Super Admin only - for system user accounts & roles management
+async function requireSuperAdmin(c: Context, next: Next) {
+  const res = await getAuthenticatedAdmin(c)
+  if (res.error) return c.json({ error: res.error }, res.status as any)
+  const role = res.adminUser.role
+  if (role !== 'super-admin') {
+    return c.json({ error: 'Forbidden – super administrator privileges required' }, 403)
+  }
+  c.set('adminUser', res.adminUser)
   await next()
 }
 
@@ -410,7 +447,7 @@ app.get('/make-server-2a4be611/programs/:id', async (c) => {
 })
 
 // Add a new program (admin function)
-app.post('/make-server-2a4be611/programs', requireAdmin, async (c) => {
+app.post('/make-server-2a4be611/programs', requireEditor, async (c) => {
   try {
     const body = await c.req.json()
     const { title, description, image, category } = body
@@ -563,7 +600,7 @@ app.get('/make-server-2a4be611/news/:idOrSlug', async (c) => {
 });
 
 // Add news/update (admin function)
-app.post('/make-server-2a4be611/news', requireAdmin, async (c) => {
+app.post('/make-server-2a4be611/news', requireEditor, async (c) => {
   try {
     const body = await c.req.json();
     const { title, content } = body;
@@ -1784,7 +1821,7 @@ app.post('/make-server-2a4be611/newsletter', withRateLimit('newsletter', 3, 10 *
 })
 
 // Get all newsletter subscribers (admin)
-app.get('/make-server-2a4be611/newsletter', requireAdmin, async (c) => {
+app.get('/make-server-2a4be611/newsletter', requireAuthUser, async (c) => {
   try {
     const limit = parseInt(c.req.query('limit') || '100');
     const offset = parseInt(c.req.query('offset') || '0');
@@ -1854,7 +1891,7 @@ app.post('/make-server-2a4be611/admin/newsletter/send', requireAdmin, async (c) 
 })
 
 // Image upload endpoint (admin only)
-app.post('/make-server-2a4be611/upload-image', requireAdmin, async (c) => {
+app.post('/make-server-2a4be611/upload-image', requireEditor, async (c) => {
   try {
     const formData = await c.req.formData()
     const file = formData.get('file') as File
@@ -1909,7 +1946,7 @@ app.post('/make-server-2a4be611/upload-image', requireAdmin, async (c) => {
 })
 
 // Document upload endpoint for reports and audited statements (admin only)
-app.post('/make-server-2a4be611/upload-document', requireAdmin, async (c) => {
+app.post('/make-server-2a4be611/upload-document', requireEditor, async (c) => {
   try {
     const formData = await c.req.formData()
     const file = formData.get('file') as File
@@ -2217,7 +2254,7 @@ app.get('/make-server-2a4be611/admin/users/:userId/status', async (c) => {
 })
 
 // Update user role (super-admin only)
-app.patch('/make-server-2a4be611/admin/users/:userId/role', requireAdmin, async (c) => {
+app.patch('/make-server-2a4be611/admin/users/:userId/role', requireSuperAdmin, async (c) => {
   try {
     const userId = c.req.param('userId')
     const body = await c.req.json()
@@ -2248,7 +2285,7 @@ app.patch('/make-server-2a4be611/admin/users/:userId/role', requireAdmin, async 
 // Note: GET /admin/users is defined further below using the KV store (admin_user: prefix)
 
 // Get all contact submissions (admin)
-app.get('/make-server-2a4be611/admin/contacts', requireAdmin, async (c) => {
+app.get('/make-server-2a4be611/admin/contacts', requireAuthUser, async (c) => {
   try {
     const limit = parseInt(c.req.query('limit') || '100');
     const offset = parseInt(c.req.query('offset') || '0');
@@ -2270,7 +2307,7 @@ app.get('/make-server-2a4be611/admin/contacts', requireAdmin, async (c) => {
 })
 
 // Update contact status (admin)
-app.patch('/make-server-2a4be611/admin/contacts/:id', requireAdmin, async (c) => {
+app.patch('/make-server-2a4be611/admin/contacts/:id', requireEditor, async (c) => {
   try {
     const id = c.req.param('id')
     const body = await c.req.json()
@@ -2295,7 +2332,7 @@ app.patch('/make-server-2a4be611/admin/contacts/:id', requireAdmin, async (c) =>
 
 
 // Get all donations (admin)
-app.get('/make-server-2a4be611/admin/donations', requireAdmin, async (c) => {
+app.get('/make-server-2a4be611/admin/donations', requireAuthUser, async (c) => {
   try {
     const limit = parseInt(c.req.query('limit') || '100');
     const offset = parseInt(c.req.query('offset') || '0');
@@ -2416,7 +2453,7 @@ app.delete('/make-server-2a4be611/programs/:id', requireAdmin, async (c) => {
 })
 
 // Update program (admin)
-app.put('/make-server-2a4be611/programs/:id', requireAdmin, async (c) => {
+app.put('/make-server-2a4be611/programs/:id', requireEditor, async (c) => {
   try {
     const id = normalizeContentKey('program', c.req.param('id'))
     const body = await c.req.json()
@@ -2498,7 +2535,7 @@ app.post('/make-server-2a4be611/news/bulk-delete', requireAdmin, async (c) => {
 })
 
 // Bulk update contact status
-app.post('/make-server-2a4be611/admin/contacts/bulk-update', requireAdmin, async (c) => {
+app.post('/make-server-2a4be611/admin/contacts/bulk-update', requireEditor, async (c) => {
   try {
     const body = await c.req.json()
     const { ids, status } = body
@@ -2524,7 +2561,7 @@ app.post('/make-server-2a4be611/admin/contacts/bulk-update', requireAdmin, async
 
 
 // Update contact status (admin)
-app.put('/make-server-2a4be611/admin/contacts/:id/status', requireAdmin, async (c) => {
+app.put('/make-server-2a4be611/admin/contacts/:id/status', requireEditor, async (c) => {
   try {
     const id = c.req.param('id')
     const body = await c.req.json()
@@ -2563,7 +2600,7 @@ app.delete('/make-server-2a4be611/admin/contacts/:id', requireAdmin, async (c) =
 })
 
 // Reply to contact via email (admin)
-app.post('/make-server-2a4be611/admin/contacts/:id/reply', requireAdmin, async (c) => {
+app.post('/make-server-2a4be611/admin/contacts/:id/reply', requireEditor, async (c) => {
   try {
     const rawId = c.req.param('id')
     const id = normalizeContentKey('contact', rawId)
@@ -2710,7 +2747,7 @@ app.post('/make-server-2a4be611/admin/contacts/bulk-delete', requireAdmin, async
 
 
 // Update news (admin)
-app.put('/make-server-2a4be611/news/:id', requireAdmin, async (c) => {
+app.put('/make-server-2a4be611/news/:id', requireEditor, async (c) => {
   try {
     const id = normalizeContentKey('news', c.req.param('id'))
     const body = await c.req.json()
@@ -2770,7 +2807,7 @@ app.put('/make-server-2a4be611/news/:id', requireAdmin, async (c) => {
 })
 
 // Get dashboard statistics (admin)
-app.get('/make-server-2a4be611/admin/stats', requireAdmin, async (c) => {
+app.get('/make-server-2a4be611/admin/stats', requireAuthUser, async (c) => {
   try {
     const [programs, news, contacts, donations, subscribers] = await Promise.all([
       kv.getByPrefix('program:'),
@@ -2804,7 +2841,7 @@ app.get('/make-server-2a4be611/admin/stats', requireAdmin, async (c) => {
 })
 
 // Get advanced analytics (admin)
-app.get('/make-server-2a4be611/admin/analytics', requireAdmin, async (c) => {
+app.get('/make-server-2a4be611/admin/analytics', requireAuthUser, async (c) => {
   try {
     const [donationsRes, contacts, subscribers] = await Promise.all([
       supabase.from('donations').select('*'),
@@ -2953,7 +2990,7 @@ app.get('/make-server-2a4be611/admin/gallery', async (c) => {
 })
 
 // Create gallery image (admin)
-app.post('/make-server-2a4be611/admin/gallery', requireAdmin, async (c) => {
+app.post('/make-server-2a4be611/admin/gallery', requireEditor, async (c) => {
   try {
     const body = await c.req.json()
     const { title, description, imageUrl, category } = body
@@ -2980,7 +3017,7 @@ app.post('/make-server-2a4be611/admin/gallery', requireAdmin, async (c) => {
 })
 
 // Update gallery image (admin)
-app.put('/make-server-2a4be611/admin/gallery/:id', requireAdmin, async (c) => {
+app.put('/make-server-2a4be611/admin/gallery/:id', requireEditor, async (c) => {
   try {
     const id = normalizeContentKey('gallery', c.req.param('id'))
     const body = await c.req.json()
@@ -3069,7 +3106,7 @@ app.get('/make-server-2a4be611/stories', async (c) => {
   }
 })
 
-app.post('/make-server-2a4be611/admin/stories', requireAdmin, async (c) => {
+app.post('/make-server-2a4be611/admin/stories', requireEditor, async (c) => {
   try {
     const body = await c.req.json()
     const { name, title, story, image, category, impact } = body
@@ -3083,7 +3120,7 @@ app.post('/make-server-2a4be611/admin/stories', requireAdmin, async (c) => {
   }
 })
 
-app.put('/make-server-2a4be611/admin/stories/:id', requireAdmin, async (c) => {
+app.put('/make-server-2a4be611/admin/stories/:id', requireEditor, async (c) => {
   try {
     const id = normalizeContentKey('story', c.req.param('id'))
     const body = await c.req.json()
@@ -3154,7 +3191,7 @@ app.get('/make-server-2a4be611/team/:id', async (c) => {
   }
 })
 
-app.post('/make-server-2a4be611/admin/team', requireAdmin, async (c) => {
+app.post('/make-server-2a4be611/admin/team', requireEditor, async (c) => {
   try {
     const body = await c.req.json()
     const { name, role, department, bio, image, email, linkedin, twitter, order } = body
@@ -3167,7 +3204,7 @@ app.post('/make-server-2a4be611/admin/team', requireAdmin, async (c) => {
   }
 })
 
-app.put('/make-server-2a4be611/admin/team/:id', requireAdmin, async (c) => {
+app.put('/make-server-2a4be611/admin/team/:id', requireEditor, async (c) => {
   try {
     const id = normalizeContentKey('team', c.req.param('id'))
     const body = await c.req.json()
@@ -3298,7 +3335,7 @@ app.get('/make-server-2a4be611/events/:slugOrId', async (c) => {
 })
 
 // Create event (admin)
-app.post('/make-server-2a4be611/admin/events', requireAdmin, async (c) => {
+app.post('/make-server-2a4be611/admin/events', requireEditor, async (c) => {
   try {
     const body = await c.req.json()
     const rawId = crypto.randomUUID()
@@ -3350,7 +3387,7 @@ app.post('/make-server-2a4be611/admin/events', requireAdmin, async (c) => {
 })
 
 // Update event (admin)
-app.put('/make-server-2a4be611/admin/events/:id', requireAdmin, async (c) => {
+app.put('/make-server-2a4be611/admin/events/:id', requireEditor, async (c) => {
   try {
     const id = normalizeContentKey('event', c.req.param('id'))
     const body = await c.req.json()
@@ -3484,7 +3521,7 @@ app.get('/make-server-2a4be611/partners', async (c) => {
 });
 
 // Admin get all partners (including unpublished)
-app.get('/make-server-2a4be611/admin/partners', requireAdmin, async (c) => {
+app.get('/make-server-2a4be611/admin/partners', requireAuthUser, async (c) => {
   try {
     const partners = await kv.getByPrefix('partner:');
     let list = partners.map(p => {
@@ -3523,7 +3560,7 @@ app.get('/make-server-2a4be611/admin/partners', requireAdmin, async (c) => {
   }
 });
 
-app.post('/make-server-2a4be611/admin/partners', requireAdmin, async (c) => {
+app.post('/make-server-2a4be611/admin/partners', requireEditor, async (c) => {
   try {
     const body = await c.req.json();
     const { 
@@ -3583,7 +3620,7 @@ app.post('/make-server-2a4be611/admin/partners', requireAdmin, async (c) => {
   }
 });
 
-app.put('/make-server-2a4be611/admin/partners/:id', requireAdmin, async (c) => {
+app.put('/make-server-2a4be611/admin/partners/:id', requireEditor, async (c) => {
   try {
     const id = normalizeContentKey('partner', c.req.param('id'));
     const body = await c.req.json();
@@ -3628,7 +3665,7 @@ app.put('/make-server-2a4be611/admin/partners/:id', requireAdmin, async (c) => {
 });
 
 // Quick toggle publish status
-app.patch('/make-server-2a4be611/admin/partners/:id/toggle-publish', requireAdmin, async (c) => {
+app.patch('/make-server-2a4be611/admin/partners/:id/toggle-publish', requireEditor, async (c) => {
   try {
     const id = normalizeContentKey('partner', c.req.param('id'));
     const existing = await kv.get(id);
@@ -3808,7 +3845,7 @@ app.get('/make-server-2a4be611/opportunities', async (c) => {
   }
 })
 
-app.post('/make-server-2a4be611/admin/opportunities', requireAdmin, async (c) => {
+app.post('/make-server-2a4be611/admin/opportunities', requireEditor, async (c) => {
   try {
     const body = await c.req.json()
     const rawId = crypto.randomUUID()
@@ -3846,7 +3883,7 @@ app.post('/make-server-2a4be611/admin/opportunities', requireAdmin, async (c) =>
   }
 })
 
-app.put('/make-server-2a4be611/admin/opportunities/:id', requireAdmin, async (c) => {
+app.put('/make-server-2a4be611/admin/opportunities/:id', requireEditor, async (c) => {
   try {
     const id = normalizeContentKey('opportunity', c.req.param('id'))
     const body = await c.req.json()
@@ -3913,7 +3950,7 @@ app.post('/make-server-2a4be611/opportunities/apply', async (c) => {
 })
 
 // Admin Opportunity Applications Endpoints
-app.get('/make-server-2a4be611/admin/opportunity-applications', requireAdmin, async (c) => {
+app.get('/make-server-2a4be611/admin/opportunity-applications', requireAuthUser, async (c) => {
   try {
     const apps = await kv.getByPrefix('opportunity_app:')
     const parsed = apps.map(a => ({ ...a.value, id: a.key.replace(/^opportunity_app:/, ''), key: a.key }))
@@ -3925,7 +3962,7 @@ app.get('/make-server-2a4be611/admin/opportunity-applications', requireAdmin, as
   }
 })
 
-app.patch('/make-server-2a4be611/admin/opportunity-applications/:id/status', requireAdmin, async (c) => {
+app.patch('/make-server-2a4be611/admin/opportunity-applications/:id/status', requireEditor, async (c) => {
   try {
     const id = normalizeContentKey('opportunity_app', c.req.param('id'))
     const body = await c.req.json()
@@ -4022,7 +4059,7 @@ app.get('/make-server-2a4be611/faqs', async (c) => {
   }
 })
 
-app.post('/make-server-2a4be611/admin/faqs', requireAdmin, async (c) => {
+app.post('/make-server-2a4be611/admin/faqs', requireEditor, async (c) => {
   try {
     const body = await c.req.json()
     const { question, answer, category, order } = body
@@ -4035,7 +4072,7 @@ app.post('/make-server-2a4be611/admin/faqs', requireAdmin, async (c) => {
   }
 })
 
-app.put('/make-server-2a4be611/admin/faqs/:id', requireAdmin, async (c) => {
+app.put('/make-server-2a4be611/admin/faqs/:id', requireEditor, async (c) => {
   try {
     const id = normalizeContentKey('faq', c.req.param('id'))
     const body = await c.req.json()
@@ -4172,7 +4209,7 @@ app.get('/make-server-2a4be611/resources', async (c) => {
   }
 });
 
-app.post('/make-server-2a4be611/admin/resources', requireAdmin, async (c) => {
+app.post('/make-server-2a4be611/admin/resources', requireEditor, async (c) => {
   try {
     const body = await c.req.json();
     const title = (body.title || '').trim();
@@ -4226,7 +4263,7 @@ app.post('/make-server-2a4be611/admin/resources', requireAdmin, async (c) => {
   }
 });
 
-app.put('/make-server-2a4be611/admin/resources/:id', requireAdmin, async (c) => {
+app.put('/make-server-2a4be611/admin/resources/:id', requireEditor, async (c) => {
   try {
     const rawParam = c.req.param('id');
     const id = normalizeContentKey('resource', rawParam);
@@ -4979,7 +5016,7 @@ app.put('/make-server-2a4be611/financial-transparency', requireAdmin, async (c) 
 // ============= USER MANAGEMENT ROUTES =============
 
 // ── Get all users (admin) ────────────────────────────────────────────────
-app.get('/make-server-2a4be611/admin/users', requireAdmin, async (c) => {
+app.get('/make-server-2a4be611/admin/users', requireSuperAdmin, async (c) => {
   try {
     const limit = parseInt(c.req.query('limit') || '100');
     const offset = parseInt(c.req.query('offset') || '0');
@@ -4999,7 +5036,7 @@ app.get('/make-server-2a4be611/admin/users', requireAdmin, async (c) => {
 })
 
 // Create new user (admin only)
-app.post('/make-server-2a4be611/admin/users', requireAdmin, async (c) => {
+app.post('/make-server-2a4be611/admin/users', requireSuperAdmin, async (c) => {
   try {
     const body = await c.req.json()
     const { email, password, name, role, status } = body
@@ -5055,7 +5092,7 @@ app.post('/make-server-2a4be611/admin/users', requireAdmin, async (c) => {
 })
 
 // Update user (admin only)
-app.put('/make-server-2a4be611/admin/users/:id', requireAdmin, async (c) => {
+app.put('/make-server-2a4be611/admin/users/:id', requireSuperAdmin, async (c) => {
   try {
     const id = c.req.param('id')
     const body = await c.req.json()
@@ -5105,7 +5142,7 @@ app.put('/make-server-2a4be611/admin/users/:id', requireAdmin, async (c) => {
 })
 
 // Delete user (admin only)
-app.delete('/make-server-2a4be611/admin/users/:id', requireAdmin, async (c) => {
+app.delete('/make-server-2a4be611/admin/users/:id', requireSuperAdmin, async (c) => {
   try {
     const id = c.req.param('id')
 
@@ -5128,7 +5165,7 @@ app.delete('/make-server-2a4be611/admin/users/:id', requireAdmin, async (c) => {
 })
 
 // Bulk update user status
-app.post('/make-server-2a4be611/admin/users/bulk-status', requireAdmin, async (c) => {
+app.post('/make-server-2a4be611/admin/users/bulk-status', requireSuperAdmin, async (c) => {
   try {
     const body = await c.req.json()
     const { ids, status } = body
@@ -5157,7 +5194,7 @@ app.post('/make-server-2a4be611/admin/users/bulk-status', requireAdmin, async (c
 })
 
 // Bulk update user roles
-app.post('/make-server-2a4be611/admin/users/bulk-role', requireAdmin, async (c) => {
+app.post('/make-server-2a4be611/admin/users/bulk-role', requireSuperAdmin, async (c) => {
   try {
     const body = await c.req.json()
     const { ids, role } = body
@@ -5192,7 +5229,7 @@ app.post('/make-server-2a4be611/admin/users/bulk-role', requireAdmin, async (c) 
 })
 
 // Bulk delete users
-app.post('/make-server-2a4be611/admin/users/bulk-delete', requireAdmin, async (c) => {
+app.post('/make-server-2a4be611/admin/users/bulk-delete', requireSuperAdmin, async (c) => {
   try {
     const body = await c.req.json()
     const { ids } = body
@@ -5219,7 +5256,7 @@ app.post('/make-server-2a4be611/admin/users/bulk-delete', requireAdmin, async (c
 })
 
 // Reset user password
-app.post('/make-server-2a4be611/admin/users/:id/reset-password', requireAdmin, async (c) => {
+app.post('/make-server-2a4be611/admin/users/:id/reset-password', requireSuperAdmin, async (c) => {
   try {
     const id = c.req.param('id')
     const body = await c.req.json()
@@ -5299,7 +5336,7 @@ app.get('/make-server-2a4be611/map-locations', async (c) => {
   }
 })
 
-app.post('/make-server-2a4be611/admin/map-locations', requireAdmin, async (c) => {
+app.post('/make-server-2a4be611/admin/map-locations', requireEditor, async (c) => {
   try {
     
     const body = await c.req.json()
@@ -5314,7 +5351,7 @@ app.post('/make-server-2a4be611/admin/map-locations', requireAdmin, async (c) =>
   }
 })
 
-app.put('/make-server-2a4be611/admin/map-locations/:id', requireAdmin, async (c) => {
+app.put('/make-server-2a4be611/admin/map-locations/:id', requireEditor, async (c) => {
   try {
     
     const id = c.req.param('id')
@@ -5401,7 +5438,7 @@ app.get('/make-server-2a4be611/livechat/session/:id', async (c) => {
 })
 
 // Admin lists all active chat sessions
-app.get('/make-server-2a4be611/admin/livechats', requireAdmin, async (c) => {
+app.get('/make-server-2a4be611/admin/livechats', requireAuthUser, async (c) => {
   try {
     const data = await kv.getByPrefix('livechat:')
     const sessions = data.map((d: any) => d.value)
@@ -5413,7 +5450,7 @@ app.get('/make-server-2a4be611/admin/livechats', requireAdmin, async (c) => {
 })
 
 // Admin replies to a session
-app.post('/make-server-2a4be611/admin/livechats/:id/reply', requireAdmin, async (c) => {
+app.post('/make-server-2a4be611/admin/livechats/:id/reply', requireEditor, async (c) => {
   try {
     const id = c.req.param('id')
     const { message } = await c.req.json()

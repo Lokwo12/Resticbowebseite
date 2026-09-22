@@ -185,6 +185,7 @@ interface ImpactReportsManagerProps {
 }
 
 export function ImpactReportsManager({ initialData, onUpdate, accessToken, userRole }: ImpactReportsManagerProps) {
+  const isAdmin = userRole === 'admin' || userRole === 'super-admin';
   const [formData, setFormData] = useState<FullImpactReportsData>(() => normalizeImpactReportsData(initialData));
   const [saving, setSaving] = useState(false);
   const [activeSubTab, setActiveSubTab] = useState<'hero' | 'accountability' | 'publications' | 'sections' | 'transparency'>('hero');
@@ -196,8 +197,8 @@ export function ImpactReportsManager({ initialData, onUpdate, accessToken, userR
   }, [initialData]);
 
   const handleSave = async () => {
-    if (userRole === 'viewer') {
-      toast.error('You do not have permission to modify settings.');
+    if (!isAdmin) {
+      toast.error('Only administrators can modify impact report configurations.');
       return;
     }
 
@@ -403,7 +404,7 @@ export function ImpactReportsManager({ initialData, onUpdate, accessToken, userR
 
           <Button
             onClick={handleSave}
-            disabled={saving}
+            disabled={saving || !isAdmin}
             className="bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold px-6 py-2.5 rounded-xl shadow-md flex items-center gap-2 transition-all"
           >
             <Save size={18} />

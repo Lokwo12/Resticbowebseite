@@ -149,6 +149,12 @@ export function EnhancedAdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [accessToken, setAccessToken] = useState('');
   const [userRole, setUserRole] = useState('');
+  const isSuperAdmin = userRole === 'super-admin';
+  const isAdmin = userRole === 'admin' || isSuperAdmin;
+  const isEditor = userRole === 'editor' || isAdmin;
+  const isViewer = userRole === 'viewer';
+  const canEdit = isEditor;
+  const canDelete = isAdmin;
   const [userName, setUserName] = useState('');
   const [userEmail, setUserEmail] = useState('');
   const [stats, setStats] = useState<any>({ programs: 0, news: 0, totalDonations: 0 });
@@ -489,6 +495,10 @@ export function EnhancedAdminDashboard() {
   };
 
   const handleBulkDeleteSubscribers = async (keys: string[]) => {
+    if (!isAdmin) {
+      toast.error('Permission denied: Only Administrators can delete subscribers.');
+      return;
+    }
     try {
       await Promise.all(keys.map(key =>
         fetch(
@@ -505,6 +515,10 @@ export function EnhancedAdminDashboard() {
   };
 
   const handleSendNewsletter = async () => {
+    if (!isAdmin) {
+      toast.error('Permission denied: Only Administrators can send newsletter blasts.');
+      return;
+    }
     if (subscribers.length === 0) {
       toast.error('Cannot send newsletter: You have 0 subscribers currently.');
       return;
@@ -1308,6 +1322,10 @@ export function EnhancedAdminDashboard() {
   };
 
   const handleDeleteProgram = async (id: string) => {
+    if (!isAdmin) {
+      toast.error('Permission denied: Only Administrators can delete programs.');
+      return;
+    }
     if (!(await confirmDialog({ title: 'Confirm Action', message: 'Delete this program?' }))) return;
 
     try {
@@ -1356,6 +1374,10 @@ export function EnhancedAdminDashboard() {
   };
 
   const handleBulkDeletePrograms = async (ids: string[]) => {
+    if (!isAdmin) {
+      toast.error('Permission denied: Only Administrators can delete programs.');
+      return;
+    }
     if (!ids || ids.length === 0) return;
     if (!(await confirmDialog({ title: 'Confirm Action', message: `Delete ${ids.length} programs?` }))) return;
 
@@ -1544,6 +1566,10 @@ export function EnhancedAdminDashboard() {
   };
 
   const handleDeleteGallery = async (id: string) => {
+    if (!isAdmin) {
+      toast.error('Permission denied: Only Administrators can delete gallery items.');
+      return;
+    }
     if (!(await confirmDialog({ title: 'Confirm Action', message: 'Delete this gallery item?' }))) return;
 
     try {
@@ -1567,6 +1593,10 @@ export function EnhancedAdminDashboard() {
   };
 
   const handleBulkDeleteGallery = async (ids: string[]) => {
+    if (!isAdmin) {
+      toast.error('Permission denied: Only Administrators can delete gallery items.');
+      return;
+    }
     if (!(await confirmDialog({ title: 'Confirm Action', message: `Delete ${ids.length} gallery items?` }))) return;
 
     try {
@@ -1816,6 +1846,10 @@ export function EnhancedAdminDashboard() {
   };
 
   const handleDeleteContact = async (id: string) => {
+    if (!isAdmin) {
+      toast.error('Permission denied: Only Administrators can delete contact messages.');
+      return;
+    }
     if (!(await confirmDialog({ title: 'Confirm Action', message: 'Delete this contact message?' }))) return;
 
     try {
@@ -1852,6 +1886,10 @@ export function EnhancedAdminDashboard() {
   };
 
   const handleBulkDeleteContacts = async (ids: string[]) => {
+    if (!isAdmin) {
+      toast.error('Permission denied: Only Administrators can delete contact messages.');
+      return;
+    }
     if (!(await confirmDialog({ title: 'Confirm Action', message: `Delete ${ids.length} contact messages?` }))) return;
 
     try {
@@ -1893,6 +1931,10 @@ export function EnhancedAdminDashboard() {
 
 
   const handleDeleteTeam = async (id: string) => {
+    if (!isAdmin) {
+      toast.error('Permission denied: Only Administrators can delete team members.');
+      return;
+    }
     if (!(await confirmDialog({ title: 'Confirm Action', message: 'Delete this team member?' }))) return;
     try {
       const response = await fetch(
@@ -3482,21 +3524,23 @@ export function EnhancedAdminDashboard() {
                       <p className="text-sm text-blue-100 mt-1.5 opacity-80 font-medium">Manage your community programs</p>
                     </div>
                   </div>
-                  <button
-                    onClick={() => {
-                      setEditingItem(null);
-                      setFormData({ title: '', description: '', content: '', image: '', category: 'general' });
-                      setShowProgramForm(true);
-                    }}
-                    className="flex items-center gap-2 px-4 py-2 md:px-5 md:py-2.5 bg-white text-blue-700 hover:bg-blue-50 shadow-md font-semibold rounded-xl transition-all whitespace-nowrap flex-shrink-0 text-sm"
-                  >
-                    <Plus size={16} />
-                    Add Program
-                  </button>
+                  {canEdit && (
+                    <button
+                      onClick={() => {
+                        setEditingItem(null);
+                        setFormData({ title: '', description: '', content: '', image: '', category: 'general' });
+                        setShowProgramForm(true);
+                      }}
+                      className="flex items-center gap-2 px-4 py-2 md:px-5 md:py-2.5 bg-white text-blue-700 hover:bg-blue-50 shadow-md font-semibold rounded-xl transition-all whitespace-nowrap flex-shrink-0 text-sm"
+                    >
+                      <Plus size={16} />
+                      Add Program
+                    </button>
+                  )}
                 </div>
 
                 {/* Bulk Actions */}
-                {selectedPrograms.length > 0 && (
+                {canDelete && selectedPrograms.length > 0 && (
                   <div className="flex flex-wrap items-center gap-3 p-4 bg-slate-50 border border-slate-200 rounded-2xl">
                     <span className="text-sm text-slate-700 font-medium">{selectedPrograms.length} selected</span>
                     <button
@@ -3572,13 +3616,15 @@ export function EnhancedAdminDashboard() {
                               <Edit size={13} />
                               Edit
                             </button>
-                            <button
-                              onClick={() => handleDeleteProgram(pKey || program.key || progVal.id)}
-                              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-colors"
-                            >
-                              <Trash2 size={13} />
-                              Delete
-                            </button>
+                            {canDelete && (
+                              <button
+                                onClick={() => handleDeleteProgram(pKey || program.key || progVal.id)}
+                                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-colors"
+                              >
+                                <Trash2 size={13} />
+                                Delete
+                              </button>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -3623,21 +3669,23 @@ export function EnhancedAdminDashboard() {
                       <p className="text-sm text-amber-100 mt-1.5 opacity-80 font-medium">Manage images and media</p>
                     </div>
                   </div>
-                  <button
-                    onClick={() => {
-                      setEditingItem(null);
-                      setFormData({ title: '', description: '', content: '', image: '', category: 'general' });
-                      setShowGalleryForm(true);
-                    }}
-                    className="flex items-center gap-2 px-4 py-2 md:px-5 md:py-2.5 bg-white text-amber-700 hover:bg-amber-50 shadow-md font-semibold rounded-xl transition-all whitespace-nowrap flex-shrink-0 text-sm"
-                  >
-                    <Plus size={16} />
-                    Add Image
-                  </button>
+                  {canEdit && (
+                    <button
+                      onClick={() => {
+                        setEditingItem(null);
+                        setFormData({ title: '', description: '', content: '', image: '', category: 'general' });
+                        setShowGalleryForm(true);
+                      }}
+                      className="flex items-center gap-2 px-4 py-2 md:px-5 md:py-2.5 bg-white text-amber-700 hover:bg-amber-50 shadow-md font-semibold rounded-xl transition-all whitespace-nowrap flex-shrink-0 text-sm"
+                    >
+                      <Plus size={16} />
+                      Add Image
+                    </button>
+                  )}
                 </div>
 
                 {/* Bulk Actions */}
-                {selectedGallery.length > 0 && (
+                {canDelete && selectedGallery.length > 0 && (
                   <div className="flex flex-wrap items-center gap-3 p-4 bg-slate-50 border border-slate-200 rounded-2xl">
                     <span className="text-sm text-slate-700 font-medium">{selectedGallery.length} selected</span>
                     <button
@@ -3692,13 +3740,15 @@ export function EnhancedAdminDashboard() {
                             <Edit size={12} />
                             Edit
                           </button>
-                          <button
-                            onClick={() => handleDeleteGallery(item.key)}
-                            className="flex items-center justify-center gap-1 px-2 py-1.5 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-colors"
-                          >
-                            <Trash2 size={12} />
-                            Delete
-                          </button>
+                          {canDelete && (
+                            <button
+                              onClick={() => handleDeleteGallery(item.key)}
+                              className="flex items-center justify-center gap-1 px-2 py-1.5 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-colors"
+                            >
+                              <Trash2 size={12} />
+                              Delete
+                            </button>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -3731,13 +3781,15 @@ export function EnhancedAdminDashboard() {
                       <p className="text-sm text-teal-100 mt-1.5 opacity-80 font-medium">Manage your team</p>
                     </div>
                   </div>
-                  <button
-                    onClick={() => { setEditingItem(null); setShowTeamForm(true); }}
-                    className="flex items-center gap-2 px-4 py-2 md:px-5 md:py-2.5 bg-white text-teal-700 hover:bg-teal-50 shadow-md font-semibold rounded-xl transition-all whitespace-nowrap flex-shrink-0 text-sm"
-                  >
-                    <Plus size={16} />
-                    Add Team Member
-                  </button>
+                  {canEdit && (
+                    <button
+                      onClick={() => { setEditingItem(null); setShowTeamForm(true); }}
+                      className="flex items-center gap-2 px-4 py-2 md:px-5 md:py-2.5 bg-white text-teal-700 hover:bg-teal-50 shadow-md font-semibold rounded-xl transition-all whitespace-nowrap flex-shrink-0 text-sm"
+                    >
+                      <Plus size={16} />
+                      Add Team Member
+                    </button>
+                  )}
                 </div>
 
                 {/* Cards grid */}
@@ -3781,13 +3833,15 @@ export function EnhancedAdminDashboard() {
                           <Edit size={13} />
                           Edit
                         </button>
-                        <button
-                          onClick={() => handleDeleteTeam(member.key || member.id)}
-                          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-colors"
-                        >
-                          <Trash2 size={13} />
-                          Delete
-                        </button>
+                        {canDelete && (
+                          <button
+                            onClick={() => handleDeleteTeam(member.key || member.id)}
+                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-colors"
+                          >
+                            <Trash2 size={13} />
+                            Delete
+                          </button>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -3838,7 +3892,7 @@ export function EnhancedAdminDashboard() {
                   </div>
                 </div>
 
-                {selectedContacts.length > 0 && (
+                {canDelete && selectedContacts.length > 0 && (
                   <div className="flex items-center gap-3 p-4 bg-emerald-50 rounded-lg border border-emerald-200">
                     <span className="text-sm text-slate-700 leading-relaxed">{selectedContacts.length} selected</span>
                     <Button
@@ -3907,12 +3961,14 @@ export function EnhancedAdminDashboard() {
                             <Reply size={13} />
                             Reply
                           </button>
-                          <button
-                            onClick={() => handleDeleteContact(contact.key)}
-                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-colors"
-                          >
-                            <Trash2 size={13} />
-                          </button>
+                          {canDelete && (
+                            <button
+                              onClick={() => handleDeleteContact(contact.key)}
+                              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-colors"
+                            >
+                              <Trash2 size={13} />
+                            </button>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -4066,7 +4122,7 @@ export function EnhancedAdminDashboard() {
                         className="w-full pl-9 pr-4 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 bg-white transition-all"
                       />
                     </div>
-                    {selectedSubscribers.length > 0 && (
+                    {canDelete && selectedSubscribers.length > 0 && (
                       <div className="flex items-center gap-2">
                         <span className="text-sm text-slate-600 font-medium">{selectedSubscribers.length} selected</span>
                         <button

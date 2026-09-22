@@ -41,6 +41,8 @@ export function FAQManager({
   const [statusFilter, setStatusFilter] = useState<'all' | 'published' | 'unpublished'>('all');
 
   // Dialog & Modal State
+  const isReadOnly = userRole === 'viewer';
+  const canDelete = userRole === 'admin' || userRole === 'super-admin';
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingFaq, setEditingFaq] = useState<FAQItem | null>(null);
   const [previewFaq, setPreviewFaq] = useState<FAQItem | null>(null);
@@ -189,8 +191,8 @@ export function FAQManager({
   };
 
   const handleDelete = async (faq: FAQItem) => {
-    if (userRole === 'viewer') {
-      toast.error('You do not have permission to delete FAQs.');
+    if (!canDelete) {
+      toast.error('Only administrators can delete FAQs.');
       return;
     }
 
@@ -534,15 +536,17 @@ export function FAQManager({
                       <span>Edit</span>
                     </button>
 
-                    <button
-                      type="button"
-                      onClick={() => handleDelete(faq)}
-                      className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-red-600 hover:bg-red-50 border border-red-200 rounded-lg transition-colors"
-                      title="Delete FAQ"
-                    >
-                      <Trash2 size={13} />
-                      <span>Delete</span>
-                    </button>
+                    {canDelete && (
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(faq)}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-red-600 hover:bg-red-50 border border-red-200 rounded-lg transition-colors"
+                        title="Delete FAQ"
+                      >
+                        <Trash2 size={13} />
+                        <span>Delete</span>
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>

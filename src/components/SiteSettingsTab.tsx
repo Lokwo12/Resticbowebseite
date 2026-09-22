@@ -224,6 +224,8 @@ interface SiteSettingsTabProps {
 }
 
 export function SiteSettingsTab({ settings: initialSettings, onUpdate, accessToken, userRole }: SiteSettingsTabProps) {
+  const isAdmin = userRole === 'admin' || userRole === 'super-admin';
+  const isReadOnly = !isAdmin;
   const [settings, setSettings] = useState(initialSettings || {});
   const [saving, setSaving] = useState(false);
   const [activeSection, setActiveSection] = useState('general');
@@ -381,6 +383,10 @@ export function SiteSettingsTab({ settings: initialSettings, onUpdate, accessTok
   };
 
   const handleSave = async () => {
+    if (isReadOnly) {
+      toast.error('Permission denied: Only Administrators can modify site settings.');
+      return;
+    }
     setSaving(true);
     try {
       const response = await fetch(

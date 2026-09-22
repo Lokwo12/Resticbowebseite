@@ -110,6 +110,7 @@ interface Props {
 }
 
 export function FinancialTransparencyManager({ initialData, onUpdate, accessToken, userRole }: Props) {
+  const isAdmin = userRole === 'admin' || userRole === 'super-admin';
   const [data, setData] = useState<FinancialTransparencyData>(() => {
     if (initialData) {
       return {
@@ -160,8 +161,8 @@ export function FinancialTransparencyManager({ initialData, onUpdate, accessToke
   const isAllocation100 = Math.round(allocationSum) === 100;
 
   const handleSave = async () => {
-    if (userRole === 'viewer') {
-      toast.error('Viewers do not have permission to modify financial settings.');
+    if (!isAdmin) {
+      toast.error('Only administrators can modify financial transparency settings.');
       return;
     }
 
@@ -372,7 +373,7 @@ export function FinancialTransparencyManager({ initialData, onUpdate, accessToke
           </Button>
           <Button
             onClick={handleSave}
-            disabled={saving || userRole === 'viewer'}
+            disabled={saving || !isAdmin}
             className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold gap-2 shadow-sm"
           >
             <Save size={16} /> {saving ? 'Saving...' : 'Save All Changes'}

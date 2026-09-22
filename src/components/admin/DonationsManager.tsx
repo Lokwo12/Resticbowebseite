@@ -93,6 +93,8 @@ export function DonationsManager({
   const isFetchingRef = useRef(false);
 
   // Data state
+  const isReadOnly = userRole === 'viewer';
+  const canDelete = userRole === 'admin' || userRole === 'super-admin';
   const [donations, setDonations] = useState<AdminDonationRecord[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
@@ -687,6 +689,10 @@ export function DonationsManager({
 
   // [DELETE] Single
   const handleDeleteDonation = async (d: AdminDonationRecord) => {
+    if (!canDelete) {
+      toast.error('Permission denied: Only Administrators can delete donation records.');
+      return;
+    }
     const confirmed = await confirmDialog({
       title: 'Delete Donation Record?',
       message: `Are you sure you want to delete the donation of ${d.currency} ${d.amount} from "${d.donorName}"? This action cannot be undone.`,
@@ -726,6 +732,10 @@ export function DonationsManager({
 
   // [BULK DELETE]
   const handleBulkDelete = async () => {
+    if (!canDelete) {
+      toast.error('Permission denied: Only Administrators can delete donation records.');
+      return;
+    }
     if (selectedIds.size === 0) return;
 
     const confirmed = await confirmDialog({

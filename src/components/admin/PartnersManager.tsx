@@ -61,6 +61,7 @@ export function PartnersManager({
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   const isReadOnly = userRole === 'viewer';
+  const canDelete = userRole === 'admin' || userRole === 'super-admin';
 
   // Load partners from backend
   const fetchPartners = async (showRefreshIndicator = false) => {
@@ -315,8 +316,8 @@ export function PartnersManager({
 
   // Delete Partner
   const handleDeletePartner = async (partnerId: string) => {
-    if (isReadOnly) {
-      toast.error('Permission denied');
+    if (!canDelete) {
+      toast.error('Only administrators can delete partners');
       return;
     }
 
@@ -682,12 +683,14 @@ export function PartnersManager({
                           <Edit size={13} />
                           Edit
                         </button>
-                        <button
-                          onClick={() => setDeleteConfirmId(partner.id)}
-                          className="inline-flex items-center gap-1 text-xs font-semibold text-red-700 bg-red-50 hover:bg-red-100 border border-red-200/80 px-2.5 py-1.5 rounded-lg transition-colors"
-                        >
-                          <Trash2 size={13} />
-                        </button>
+                        {canDelete && (
+                          <button
+                            onClick={() => setDeleteConfirmId(partner.id)}
+                            className="inline-flex items-center gap-1 text-xs font-semibold text-red-700 bg-red-50 hover:bg-red-100 border border-red-200/80 px-2.5 py-1.5 rounded-lg transition-colors"
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        )}
                       </>
                     )}
                   </div>
@@ -699,7 +702,7 @@ export function PartnersManager({
       )}
 
       {/* Delete Confirmation Modal */}
-      {deleteConfirmId && (
+      {canDelete && deleteConfirmId && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 animate-in fade-in zoom-in-95 duration-200">
             <div className="w-12 h-12 rounded-xl bg-red-50 border border-red-100 flex items-center justify-center text-red-600 mb-4">

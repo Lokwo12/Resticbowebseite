@@ -42,6 +42,8 @@ export function OpportunitiesManager({
   userName,
   onUpdate
 }: OpportunitiesManagerProps) {
+  const isReadOnly = userRole === 'viewer';
+  const canDelete = userRole === 'admin' || userRole === 'super-admin';
   const [opportunities, setOpportunities] = useState<OpportunityItem[]>([]);
   const [applications, setApplications] = useState<CandidateApplication[]>([]);
   const [loading, setLoading] = useState(false);
@@ -339,6 +341,10 @@ export function OpportunitiesManager({
 
   // Save opportunity
   const handleSave = async (e: React.FormEvent) => {
+    if (isReadOnly) {
+      toast.error('Permission denied: Viewers cannot create or edit opportunities.');
+      return;
+    }
     e.preventDefault();
     if (!formData.title?.trim()) {
       toast.error('Please enter an opportunity title');

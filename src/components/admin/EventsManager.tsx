@@ -115,6 +115,7 @@ export function EventsManager({
   const [activeFormTab, setActiveFormTab] = useState<'details' | 'schedule' | 'registration' | 'media'>('details');
 
   const isReadOnly = userRole === 'viewer';
+  const canDelete = userRole === 'admin' || userRole === 'super-admin';
 
   // Fetch events from server
   const fetchEvents = async (showRefreshIndicator = false) => {
@@ -424,7 +425,10 @@ export function EventsManager({
 
   // Delete event
   const handleDeleteEvent = async (id: string) => {
-    if (isReadOnly) return;
+    if (!canDelete) {
+      toast.error('Only administrators can delete events');
+      return;
+    }
 
     try {
       const response = await fetch(
@@ -941,13 +945,15 @@ export function EventsManager({
                         Edit
                       </button>
 
-                      <button
+                      {canDelete && (
+                        <button
                         onClick={() => setDeleteConfirmId(evt.id)}
                         className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors border border-transparent hover:border-red-200"
                         title="Delete event"
                       >
                         <Trash2 size={13} />
                       </button>
+                      )}
                     </div>
                   )}
                 </div>
@@ -958,7 +964,7 @@ export function EventsManager({
       )}
 
       {/* Delete Confirmation Modal */}
-      {deleteConfirmId && (
+      {canDelete && deleteConfirmId && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95 duration-150">
             <div className="w-12 h-12 rounded-xl bg-red-100 text-red-600 flex items-center justify-center mb-4">

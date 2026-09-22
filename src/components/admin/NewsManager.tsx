@@ -76,6 +76,8 @@ export function NewsManager({
   userName,
   onUpdate
 }: NewsManagerProps) {
+  const isReadOnly = userRole === 'viewer';
+  const canDelete = userRole === 'admin' || userRole === 'super-admin';
   const [articles, setArticles] = useState<NewsArticleItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -373,6 +375,10 @@ export function NewsManager({
 
   // Save Article (Create or Update)
   const handleSaveArticle = async (e: React.FormEvent) => {
+    if (isReadOnly) {
+      toast.error('Permission denied: Viewers cannot create or modify articles.');
+      return;
+    }
     e.preventDefault();
     if (!formData.title?.trim()) {
       toast.error('Article title is required');
