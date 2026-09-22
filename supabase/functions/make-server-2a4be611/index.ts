@@ -4060,64 +4060,238 @@ app.delete('/make-server-2a4be611/admin/faqs/:id', requireAdmin, async (c) => {
   }
 })
 
-// Resources routes
+// Resources & Downloads routes
 app.get('/make-server-2a4be611/resources', async (c) => {
   try {
-    const limit = parseInt(c.req.query('limit') || '100');
-    const offset = parseInt(c.req.query('offset') || '0');
+    const showAll = c.req.query('all') === 'true';
+    const categoryParam = c.req.query('category');
+    const yearParam = c.req.query('year');
+    const typeParam = c.req.query('type') || c.req.query('file_type');
+    const searchParam = (c.req.query('search') || c.req.query('q') || '').toLowerCase().trim();
+
+    const rawResources = await kv.getByPrefix('resource:');
     
-    if (c.req.query('limit') !== undefined) {
-      const { data, count } = await kv.getPaginatedByPrefix('resource:', limit, offset);
-      data.sort((a, b) => new Date(b.value?.timestamp || b.value?.created_at || 0).getTime() - new Date(a.value?.timestamp || a.value?.created_at || 0).getTime());
-      return c.json({ resources: data, count, limit, offset });
+    let items = rawResources.map(r => {
+      const val = r.value || {};
+      const rawId = r.key.replace(/^resource:/, '');
+      const fileUrl = val.file_url || val.fileUrl || '';
+      const fileName = val.file_name || val.fileName || (fileUrl ? fileUrl.split('/').pop()?.split('?')[0] : 'document');
+      const fileType = (val.file_type || val.fileType || (fileName.includes('.') ? fileName.split('.').pop() : 'FILE') || 'FILE').toUpperCase();
+      const fileSize = val.file_size || val.fileSize || '';
+      const publicationDate = val.publication_date || val.date || val.created_at || '';
+      const year = val.year || (publicationDate ? new Date(publicationDate).getFullYear().toString() : '');
+
+      const isPublished = val.is_published !== undefined
+        ? Boolean(val.is_published)
+        : val.published !== undefined
+        ? Boolean(val.published)
+        : true;
+
+      const isFeatured = val.is_featured !== undefined
+        ? Boolean(val.is_featured)
+        : Boolean(val.featured);
+
+      return {
+        id: rawId,
+        key: r.key,
+        title: (val.title || 'Untitled Document').trim(),
+        description: (val.description || '').trim(),
+        category: val.category || 'Reports & Publications',
+        file_url: fileUrl,
+        fileUrl: fileUrl,
+        file_name: fileName,
+        fileName: fileName,
+        file_type: fileType,
+        fileType: fileType,
+        file_size: fileSize,
+        fileSize: fileSize,
+        thumbnail_url: val.thumbnail_url || val.thumbnailUrl || '',
+        thumbnailUrl: val.thumbnail_url || val.thumbnailUrl || '',
+        year: year,
+        author: (val.author || '').trim(),
+        publication_date: publicationDate,
+        date: publicationDate,
+        display_order: typeof val.display_order === 'number' ? val.display_order : typeof val.order === 'number' ? val.order : 1,
+        order: typeof val.display_order === 'number' ? val.display_order : typeof val.order === 'number' ? val.order : 1,
+        is_featured: isFeatured,
+        isFeatured: isFeatured,
+        is_published: isPublished,
+        isPublished: isPublished,
+        created_at: val.created_at || val.createdAt || new Date().toISOString(),
+        updated_at: val.updated_at || val.updatedAt || new Date().toISOString(),
+      };
+    });
+
+    // Unless 'all=true' is explicitly requested (for admin views), filter to published only
+    if (!showAll) {
+      items = items.filter(item => item.is_published);
     }
-    
-    const resources = await kv.getByPrefix('resource:')
-    resources.sort((a, b) => new Date(b.value.date).getTime() - new Date(a.value.date).getTime())
-    return c.json({ resources: resources.map(r => ({ ...r.value, id: r.key, key: r.key })) })
+
+    // Filter by category
+    if (categoryParam && categoryParam !== 'all') {
+      items = items.filter(item => item.category.toLowerCase() === categoryParam.toLowerCase());
+    }
+
+    // Filter by year
+    if (yearParam && yearParam !== 'all') {
+      items = items.filter(item => item.year === yearParam);
+    }
+
+    // Filter by file type
+    if (typeParam && typeParam !== 'all') {
+      items = items.filter(item => item.file_type.toLowerCase() === typeParam.toLowerCase());
+    }
+
+    // Filter by search query
+    if (searchParam) {
+      items = items.filter(item => {
+        return (
+          item.title.toLowerCase().includes(searchParam) ||
+          item.description.toLowerCase().includes(searchParam) ||
+          item.category.toLowerCase().includes(searchParam) ||
+          (item.author && item.author.toLowerCase().includes(searchParam)) ||
+          item.year.includes(searchParam)
+        );
+      });
+    }
+
+    // Sort: display_order ascending, then publication_date/created_at descending
+    items.sort((a, b) => {
+      const orderA = a.display_order ?? 999;
+      const orderB = b.display_order ?? 999;
+      if (orderA !== orderB) return orderA - orderB;
+      const timeA = new Date(a.publication_date || a.created_at).getTime() || 0;
+      const timeB = new Date(b.publication_date || b.created_at).getTime() || 0;
+      return timeB - timeA;
+    });
+
+    return c.json({ resources: items, count: items.length });
   } catch (error) {
-    console.error('Error fetching resources:', error)
-    return c.json({ error: 'Failed to fetch resources', details: String(error) }, 500)
+    console.error('Error fetching resources:', error);
+    return c.json({ error: 'Failed to fetch resources', details: String(error) }, 500);
   }
-})
+});
 
 app.post('/make-server-2a4be611/admin/resources', requireAdmin, async (c) => {
   try {
-    const body = await c.req.json()
-    const { title, description, fileUrl, fileType, fileSize, category } = body
-    const resourceId = `resource:${crypto.randomUUID()}`
-    await kv.set(resourceId, { title, description, fileUrl, fileType, fileSize, category: category || 'general', date: new Date().toISOString() })
-    return c.json({ success: true, message: 'Resource added successfully', id: resourceId })
+    const body = await c.req.json();
+    const title = (body.title || '').trim();
+    if (!title) {
+      return c.json({ error: 'Resource title is required' }, 400);
+    }
+
+    const fileUrl = body.file_url || body.fileUrl || '';
+    if (!fileUrl) {
+      return c.json({ error: 'Resource file URL is required' }, 400);
+    }
+
+    const cleanId = (body.id || crypto.randomUUID()).toString().replace(/^resource:/, '');
+    const resourceKey = `resource:${cleanId}`;
+    const now = new Date().toISOString();
+
+    const fileName = body.file_name || body.fileName || fileUrl.split('/').pop()?.split('?')[0] || 'document';
+    const fileType = (body.file_type || body.fileType || (fileName.includes('.') ? fileName.split('.').pop() : 'FILE') || 'FILE').toUpperCase();
+
+    const record = {
+      id: cleanId,
+      key: resourceKey,
+      title,
+      description: (body.description || '').trim(),
+      category: (body.category || 'Reports & Publications').trim(),
+      file_url: fileUrl,
+      fileUrl: fileUrl,
+      file_name: fileName,
+      fileName: fileName,
+      file_type: fileType,
+      fileType: fileType,
+      file_size: body.file_size || body.fileSize || '',
+      fileSize: body.file_size || body.fileSize || '',
+      thumbnail_url: body.thumbnail_url || body.thumbnailUrl || '',
+      year: body.year || (body.publication_date ? new Date(body.publication_date).getFullYear().toString() : new Date().getFullYear().toString()),
+      author: (body.author || '').trim(),
+      publication_date: body.publication_date || body.date || now,
+      date: body.publication_date || body.date || now,
+      display_order: typeof body.display_order === 'number' ? body.display_order : 1,
+      is_featured: Boolean(body.is_featured ?? body.isFeatured ?? false),
+      is_published: Boolean(body.is_published ?? body.isPublished ?? true),
+      created_at: now,
+      updated_at: now,
+    };
+
+    await kv.set(resourceKey, record);
+    return c.json({ success: true, message: 'Resource created successfully', resource: record });
   } catch (error) {
-    console.error('Error creating resource:', error)
-    return c.json({ error: 'Failed to create resource', details: String(error) }, 500)
+    console.error('Error creating resource:', error);
+    return c.json({ error: 'Failed to create resource', details: String(error) }, 500);
   }
-})
+});
 
 app.put('/make-server-2a4be611/admin/resources/:id', requireAdmin, async (c) => {
   try {
-    const id = normalizeContentKey('resource', c.req.param('id'))
-    const body = await c.req.json()
-    const existing = await kv.get(id)
-    if (!existing) return c.json({ error: 'Resource not found' }, 404)
-    await kv.set(id, { ...existing, ...body, updatedAt: new Date().toISOString() })
-    return c.json({ success: true, message: 'Resource updated successfully' })
+    const rawParam = c.req.param('id');
+    const id = normalizeContentKey('resource', rawParam);
+    const body = await c.req.json();
+    
+    let existing = await kv.get(id);
+    if (!existing) {
+      const altKey = id.startsWith('resource:') ? id.replace(/^resource:/, '') : `resource:${id}`;
+      existing = await kv.get(altKey);
+      if (!existing) {
+        return c.json({ error: 'Resource not found' }, 404);
+      }
+    }
+
+    const now = new Date().toISOString();
+    const fileUrl = body.file_url || body.fileUrl || existing.file_url || existing.fileUrl || '';
+    const fileName = body.file_name || body.fileName || existing.file_name || existing.fileName || fileUrl.split('/').pop()?.split('?')[0] || 'document';
+    const fileType = (body.file_type || body.fileType || existing.file_type || existing.fileType || (fileName.includes('.') ? fileName.split('.').pop() : 'FILE') || 'FILE').toUpperCase();
+
+    const updated = {
+      ...existing,
+      title: body.title !== undefined ? body.title.trim() : existing.title,
+      description: body.description !== undefined ? body.description.trim() : existing.description,
+      category: body.category !== undefined ? body.category.trim() : existing.category,
+      file_url: fileUrl,
+      fileUrl: fileUrl,
+      file_name: fileName,
+      fileName: fileName,
+      file_type: fileType,
+      fileType: fileType,
+      file_size: body.file_size !== undefined ? body.file_size : (body.fileSize !== undefined ? body.fileSize : existing.file_size),
+      fileSize: body.file_size !== undefined ? body.file_size : (body.fileSize !== undefined ? body.fileSize : existing.file_size),
+      thumbnail_url: body.thumbnail_url !== undefined ? body.thumbnail_url : (body.thumbnailUrl !== undefined ? body.thumbnailUrl : existing.thumbnail_url),
+      year: body.year !== undefined ? body.year : existing.year,
+      author: body.author !== undefined ? body.author.trim() : existing.author,
+      publication_date: body.publication_date !== undefined ? body.publication_date : (body.date !== undefined ? body.date : existing.publication_date),
+      date: body.publication_date !== undefined ? body.publication_date : (body.date !== undefined ? body.date : existing.publication_date),
+      display_order: body.display_order !== undefined ? body.display_order : (body.order !== undefined ? body.order : existing.display_order),
+      is_featured: body.is_featured !== undefined ? Boolean(body.is_featured) : (body.isFeatured !== undefined ? Boolean(body.isFeatured) : existing.is_featured),
+      is_published: body.is_published !== undefined ? Boolean(body.is_published) : (body.isPublished !== undefined ? Boolean(body.isPublished) : existing.is_published),
+      updated_at: now,
+    };
+
+    await kv.set(id, updated);
+    return c.json({ success: true, message: 'Resource updated successfully', resource: updated });
   } catch (error) {
-    console.error('Error updating resource:', error)
-    return c.json({ error: 'Failed to update resource', details: String(error) }, 500)
+    console.error('Error updating resource:', error);
+    return c.json({ error: 'Failed to update resource', details: String(error) }, 500);
   }
-})
+});
 
 app.delete('/make-server-2a4be611/admin/resources/:id', requireAdmin, async (c) => {
   try {
-    const id = normalizeContentKey('resource', c.req.param('id'))
-    await kv.del(id)
-    return c.json({ success: true, message: 'Resource deleted successfully' })
+    const rawParam = c.req.param('id');
+    const id = normalizeContentKey('resource', rawParam);
+    await kv.del(id);
+    const altKey = id.startsWith('resource:') ? id.replace(/^resource:/, '') : `resource:${id}`;
+    await kv.del(altKey);
+
+    return c.json({ success: true, message: 'Resource deleted successfully' });
   } catch (error) {
-    console.error('Error deleting resource:', error)
-    return c.json({ error: 'Failed to delete resource', details: String(error) }, 500)
+    console.error('Error deleting resource:', error);
+    return c.json({ error: 'Failed to delete resource', details: String(error) }, 500);
   }
-})
+});
 
 // Pages routes
 app.get('/make-server-2a4be611/pages', async (c) => {
@@ -4355,26 +4529,7 @@ app.post('/make-server-2a4be611/initialize', async (c) => {
         order: 3
       })
 
-      // Add sample resources
-      await kv.set('resource:1', {
-        title: 'Community Program Application Form',
-        description: 'Complete this form to apply for community programs and partnerships',
-        fileUrl: '#',
-        fileType: 'PDF',
-        fileSize: '245 KB',
-        category: 'forms',
-        date: new Date().toISOString()
-      })
-
-      await kv.set('resource:2', {
-        title: 'Community Impact Guide 2024',
-        description: 'Learn about our programs and how they\'re making a difference',
-        fileUrl: '#',
-        fileType: 'PDF',
-        fileSize: '1.2 MB',
-        category: 'educational',
-        date: new Date().toISOString()
-      })
+      // No fake or mock resources seeded
 
       console.log('Sample data initialized')
     }
@@ -4517,7 +4672,7 @@ app.get('/make-server-2a4be611/site-settings', async (c) => {
           },
           resources: {
             title: 'Resources & Downloads',
-            description: 'Access our reports, publications, and educational materials to learn more about our work and impact.'
+            description: 'Access RESTI’s reports, publications, policies, forms, assessments, program resources, and other documents that provide information about our work and community initiatives.'
           },
           opportunities: {
             title: 'Opportunities',
@@ -4664,7 +4819,7 @@ app.post('/make-server-2a4be611/site-settings/initialize', async (c) => {
         },
         resources: {
           title: 'Resources & Downloads',
-          description: 'Access our reports, publications, and educational materials to learn more about our work and impact.'
+          description: 'Access RESTI’s reports, publications, policies, forms, assessments, program resources, and other documents that provide information about our work and community initiatives.'
         },
         opportunities: {
           title: 'Opportunities',

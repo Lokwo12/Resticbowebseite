@@ -10,6 +10,7 @@ import { OpportunitiesManager } from './admin/OpportunitiesManager';
 import { FAQManager } from './admin/FAQManager';
 import { PartnersManager } from './admin/PartnersManager';
 import { EventsManager } from './admin/EventsManager';
+import { ResourcesManager } from './admin/ResourcesManager';
 const logo = '/logo.png';
 import {
   LayoutDashboard,
@@ -4566,81 +4567,13 @@ export function EnhancedAdminDashboard() {
 
             {/* Resources Management */}
             {activeTab === 'resources' && (
-              <div className="bg-white/95 backdrop-blur-xl rounded-[2rem] shadow-sm border border-slate-100/80 p-8 md:p-10 space-y-8">
-                <div className="flex flex-row items-center justify-between gap-4 bg-gradient-to-r from-green-600 to-green-700 rounded-2xl px-6 py-5 md:px-8 md:py-6 shadow-md">
-                  <div className="flex items-center gap-3">
-                    <div className="p-3 md:p-3.5 rounded-xl bg-white/20 border border-white/30 shadow-sm flex-shrink-0">
-                      <BookOpen size={32} className="text-white" />
-                    </div>
-                    <div>
-                      <h3 className="text-xl md:text-2xl font-bold text-white tracking-tight">Resources <span className="text-sm font-normal text-green-200">({resources.length})</span></h3>
-                      <p className="text-sm text-green-100 mt-1.5 opacity-80 font-medium">Manage downloadable resources</p>
-                    </div>
-                  </div>
-                  <Button
-                    onClick={() => {
-                      setEditingItem(null);
-                      setShowResourceForm(true);
-                    }}
-                    className="bg-white text-green-700 hover:bg-green-50 shadow-md font-semibold px-4 py-2 md:px-5 md:py-2.5 rounded-xl transition-all whitespace-nowrap flex-shrink-0"
-                  >
-                    <Plus size={16} className="mr-2" />
-                    Add Resource
-                  </Button>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
-                  {(resources || []).map((resource) => (
-                    <div key={resource.id} className="bg-white border border-gray-200 border-l-4 border-l-green-500 rounded-2xl p-6 md:p-7 hover:shadow-xl hover:-translate-y-1 hover:border-green-300 transition-all duration-300 shadow-sm cursor-pointer group flex flex-col" onClick={() => {
-                              setEditingItem(resource);
-                              setShowResourceForm(true);
-                            }}>
-                      <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1 flex-wrap">
-                            <h4 className="text-base font-semibold text-slate-800 tracking-tight">{resource.title}</h4>
-                            {resource.fileType && <Badge className="bg-green-50 text-green-700 border-green-100">{resource.fileType}</Badge>}
-                            {resource.fileSize && <span className="px-2 py-0.5 text-xs text-gray-500 bg-gray-50 border border-gray-200 rounded-lg">{resource.fileSize}</span>}
-                          </div>
-                          <p className="text-sm text-slate-600">{resource.description}</p>
-                      </div>
-                      <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-slate-100 relative z-20" onClick={(e) => e.stopPropagation()}>
-                          <button
-                            onClick={() => window.open(resource.fileUrl, '_blank')}
-                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-700 leading-relaxed bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg transition-colors"
-                          >
-                            <Download size={13} />
-                            Download
-                          </button>
-                          <button
-                            onClick={() => {
-                              setEditingItem(resource);
-                              setShowResourceForm(true);
-                            }}
-                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors"
-                          >
-                            <Edit size={13} />
-                            Edit
-                          </button>
-                          <button
-                            onClick={() => handleDeleteResource(resource.key || resource.id)}
-                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-colors"
-                          >
-                            <Trash2 size={13} />
-                          </button>
-                      </div>
-                    </div>
-                  ))}
-                  {resources.length === 0 && (
-                    <div className="text-center py-24">
-                      <div className="w-14 h-14 rounded-2xl bg-green-50 border border-green-100 flex items-center justify-center mx-auto mb-4">
-                        <BookOpen size={26} className="text-green-400" />
-                      </div>
-                      <p className="text-sm font-semibold text-slate-600 mb-1">No resources yet</p>
-                      <p className="text-xs text-gray-400">Add your first downloadable resource!</p>
-                    </div>
-                  )}
-                </div>
-              </div>
+              <ResourcesManager
+                accessToken={accessToken || publicAnonKey}
+                projectId={projectId}
+                userRole={userRole}
+                userName={userName}
+                onUpdate={loadData}
+              />
             )}
 
             {/* Pages Tab */}

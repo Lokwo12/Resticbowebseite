@@ -95,7 +95,7 @@ function PageTitleManager() {
       '/financials': 'Financial Transparency | RESTI',
       '/about': 'About Us | RESTI',
       '/events': 'Events & Activities | RESTI CBO',
-      '/resources': 'Resources & Downloads | RESTI',
+      '/resources': 'Resources & Downloads | RESTI CBO',
       '/programs': 'Our Programs | RESTI',
     };
 
