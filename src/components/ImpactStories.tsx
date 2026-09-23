@@ -1,62 +1,27 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Quote, Heart } from 'lucide-react';
+import { Quote, ArrowRight, Calendar, User, ShieldCheck, Heart } from 'lucide-react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { supabase } from '../utils/supabase/client';
 import { Card } from './ui/card';
 import { Badge } from './ui/badge';
-import { useScrollAnimation, getStaggerDelay } from '../utils/animations';
-import { stripHtml } from '../utils/textUtils';
-
-interface Story {
-  id: string;
-  name: string;
-  title: string;
-  story: string;
-  image: string;
-  category: string;
-  date: string;
-  impact: string;
-}
-
-const FALLBACK_STORIES: Story[] = [
-  {
-    id: 'story-grace',
-    name: 'Grace Akello',
-    title: 'Tailoring Graduate & Micro-Enterprise Owner',
-    story: 'After arriving in Kiryandongo with four children, I had no stable income. Through RESTI\'s vocational training, I learned tailoring, received a starter kit, and now run a small business that pays for my children\'s school fees and healthcare.',
-    image: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=800&auto=format&fit=crop&q=80',
-    category: 'Livelihoods',
-    date: '2024-02-15',
-    impact: 'Self-reliant enterprise supporting a household of 5'
-  },
-  {
-    id: 'story-emmanuel',
-    name: 'Emmanuel Deng',
-    title: 'Digital Literacy & Peace Ambassador',
-    story: 'RESTI\'s youth resource center opened the door to computer skills and peace dialogue. Today, I mentor other refugee youth in digital literacy and help bridge cross-community ties across the settlement.',
-    image: 'https://images.unsplash.com/photo-1531545514256-b1400bc00f31?w=800&auto=format&fit=crop&q=80',
-    category: 'Education',
-    date: '2024-03-10',
-    impact: 'Trained over 40 youth in basic computing and community leadership'
-  },
-  {
-    id: 'story-mariam',
-    name: 'Mariam Nyayan',
-    title: 'VSLA Group Treasurer & Farmer',
-    story: 'Joining RESTI\'s Village Savings and Loan Association gave our women\'s group access to collective micro-credit. We leased land, planted drought-resilient crops, and secured food security for our families.',
-    image: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800&auto=format&fit=crop&q=80',
-    category: 'Women Empowerment',
-    date: '2024-01-22',
-    impact: '25-woman cooperative with 100% micro-loan repayment'
-  }
-];
+import { Button } from './ui/button';
+import { useScrollAnimation } from '../utils/animations';
+import {
+  ImpactStory,
+  RESTI_STORY_CATEGORIES,
+  DEFAULT_PAGE_HEADER,
+  EMPTY_STORIES_STATE,
+  cleanStoryText,
+  formatStoryDate,
+  getBeneficiaryDisplayName,
+  normalizeStory
+} from '../utils/storyData';
 
 export function ImpactStories() {
-  const [stories, setStories] = useState<Story[]>([]);
+  const [stories, setStories] = useState<ImpactStory[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedCategory, setSelectedCategory] = useState('all');
-  const [sectionSettings, setSectionSettings] = useState({ title: 'Impact Stories', description: 'Read inspiring stories from the lives we\'ve touched and the communities we\'ve transformed.' });
+  const [sectionSettings, setSectionSettings] = useState(DEFAULT_PAGE_HEADER);
   const { ref, isVisible } = useScrollAnimation({ startVisible: true });
 
   useEffect(() => {
@@ -78,17 +43,20 @@ export function ImpactStories() {
       if (response.ok) {
         const data = await response.json();
         if (data.settings?.sections?.stories) {
-          setSectionSettings(data.settings.sections.stories);
+          setSectionSettings({
+            title: data.settings.sections.stories.title || DEFAULT_PAGE_HEADER.title,
+            subtitle: data.settings.sections.stories.description || DEFAULT_PAGE_HEADER.subtitle
+          });
         }
       }
     } catch (err) {
-      console.error('Error fetching section settings:', err);
+      console.warn('Error fetching section settings:', err);
     }
   };
 
   const fetchStories = async () => {
     try {
-      let rawStories: Story[] = [];
+      let rawStories: any[] = [];
       try {
         const response = await fetch(
           `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/stories`,
@@ -98,12 +66,13 @@ export function ImpactStories() {
             },
           }
         );
+        
         if (response.ok) {
           const data = await response.json();
           rawStories = data.stories || [];
         }
       } catch (e) {
-        console.warn('API stories fetch error, falling back to Supabase:', e);
+        console.warn('API stories fetch error, trying Supabase fallback:', e);
       }
 
       if (!rawStories || rawStories.length === 0) {
@@ -124,168 +93,194 @@ export function ImpactStories() {
         }
       }
 
-      const validStories = (rawStories || []).filter((s: Story) => 
-        s && (s.name || s.title || s.story)
-      );
-      validStories.sort((a: any, b: any) => new Date(b.date || b.timestamp || b.created_at || 0).getTime() - new Date(a.date || a.timestamp || a.created_at || 0).getTime());
+      // Filter to only verified published stories
+      const published = (rawStories || [])
+        .map(normalizeStory)
+        .filter(s => s.status === 'published' && (s.title || s.story));
 
-      setStories(validStories.length > 0 ? validStories : FALLBACK_STORIES);
+      // Sort: featured first, then display order, then date descending
+      published.sort((a, b) => {
+        if (a.is_featured !== b.is_featured) {
+          return a.is_featured ? -1 : 1;
+        }
+        if (typeof a.display_order === 'number' && typeof b.display_order === 'number' && a.display_order !== b.display_order) {
+          return a.display_order - b.display_order;
+        }
+        return new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime();
+      });
+
+      // Display up to 3 on the homepage
+      setStories(published.slice(0, 3));
     } catch (error) {
-      console.error('Error fetching stories:', error);
-      setStories(FALLBACK_STORIES);
+      console.error('Error fetching stories for homepage:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const displayStories = stories.length > 0 ? stories : FALLBACK_STORIES;
-  const categories = ['all', ...Array.from(new Set(displayStories.map(s => s.category)))];
-  const filteredStories = selectedCategory === 'all' 
-    ? displayStories 
-    : displayStories.filter(s => s.category === selectedCategory);
-
-  if (loading) {
-    return (
-      <section id="impact" className="section-spacing-lg bg-slate-900">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <div className="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto" />
-          </div>
-        </div>
-      </section>
-    );
-  }
-
   return (
-    <section id="impact" ref={ref} className={`relative section-spacing-lg transition-all duration-700 overflow-hidden bg-[#0A192F] ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
-      
-      {/* Dignified Ambient Background with subtle glow */}
-      <div className="absolute inset-0 z-0 pointer-events-none">
-        <div className="absolute -top-40 -left-40 w-96 h-96 bg-emerald-600/20 rounded-full blur-3xl" />
-        <div className="absolute bottom-10 right-10 w-[500px] h-[500px] bg-teal-600/15 rounded-full blur-3xl" />
-        <div className="absolute inset-0 bg-[radial-gradient(#1e293b_1px,transparent_1px)] [background-size:24px_24px] opacity-25" />
-      </div>
+    <section ref={ref} className="py-20 sm:py-28 bg-slate-50 relative overflow-hidden">
+      {/* Decorative background glow */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[500px] bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
 
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
-        <div className="text-center mb-16">
-          <span className="inline-flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm font-semibold px-4 py-1.5 rounded-full mb-6 uppercase tracking-wider">
-            <Heart size={14} fill="currentColor" />
-            Real Impact & Voices
-          </span>
-          <h2 className="text-[28px] sm:text-[30px] lg:text-[36px] font-bold font-heading text-white mb-6 leading-[1.2]">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        {/* Section Header */}
+        <div className={`text-center max-w-3xl mx-auto space-y-4 mb-16 transition-all duration-700 ${
+          isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'
+        }`}>
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-emerald-100/70 text-emerald-800 rounded-full text-xs font-bold uppercase tracking-wider">
+            <ShieldCheck size={14} className="text-emerald-600" />
+            Field Voices & Experiences
+          </div>
+
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-slate-900 tracking-tight">
             {sectionSettings.title}
           </h2>
-          <p className="text-[17px] font-normal leading-[1.6] text-slate-300 max-w-3xl mx-auto">
-            {sectionSettings.description}
+
+          <p className="text-base sm:text-lg text-slate-600 leading-relaxed font-normal">
+            {sectionSettings.subtitle}
           </p>
         </div>
 
-        {/* Category Filter */}
-        {categories.length > 1 && (
-          <div className="flex flex-wrap justify-center gap-3 mb-12">
-            {categories.map((category) => (
-              <button
-                key={category}
-                onClick={() => setSelectedCategory(category)}
-                className={`px-6 py-2 rounded-full transition-all ${
-                  selectedCategory === category
-                    ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/30 transition-all duration-300'
-                    : 'bg-white/10 backdrop-blur-md text-white hover:bg-white/20 border border-white/20'
-                }`}
-              >
-                {category.charAt(0).toUpperCase() + category.slice(1)}
-              </button>
+        {/* Stories Listing */}
+        {loading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm animate-pulse space-y-4">
+                <div className="h-48 bg-slate-200 rounded-2xl" />
+                <div className="h-5 bg-slate-200 rounded-lg w-3/4" />
+                <div className="h-4 bg-slate-200 rounded w-1/2" />
+                <div className="h-16 bg-slate-100 rounded-xl" />
+              </div>
             ))}
           </div>
-        )}
+        ) : stories.length > 0 ? (
+          <div className="space-y-12">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {stories.map((story) => {
+                const displayName = getBeneficiaryDisplayName(story);
+                const categoryObj = RESTI_STORY_CATEGORIES.find(
+                  c => c.id === story.category || c.id === story.category?.toLowerCase()
+                );
+                const categoryLabel = categoryObj ? categoryObj.label : story.category;
 
-        {/* Stories Grid */}
-        {filteredStories.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {filteredStories.map((story) => (
-              <Card key={story.id} className="overflow-hidden hover:shadow-premium-soft hover:-translate-y-1 transition-all duration-300 group flex flex-col border-0 shadow-md rounded-2xl" style={{ transitionDelay: getStaggerDelay(filteredStories.indexOf(story)) }}>
-                <Link to={`/stories/${story.id}`} className="block flex-grow flex flex-col">
-                  {/* Uniform image area */}
-                <div className="relative h-52 overflow-hidden bg-slate-50 border-b border-slate-100 flex-shrink-0 flex items-center justify-center">
-                  {story.image ? (
-                    <img
-                      src={story.image}
-                      alt={story.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                    />
-                  ) : (
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <Quote className="text-white/30" size={64} />
-                    </div>
-                  )}
-                </div>
+                return (
+                  <Card
+                    key={story.id}
+                    className="overflow-hidden hover:shadow-2xl hover:-translate-y-1.5 transition-all duration-300 bg-white border border-slate-200/80 rounded-3xl flex flex-col group"
+                  >
+                    <Link to={`/stories/${story.slug || story.id.replace('story:', '')}`} className="flex flex-col flex-1">
+                      {/* Image / Graphic */}
+                      <div className="relative h-56 bg-slate-100 overflow-hidden flex items-center justify-center border-b border-slate-100 flex-shrink-0">
+                        {story.image && story.permission_photo !== false ? (
+                          <img
+                            src={story.image}
+                            alt={story.title}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                            loading="lazy"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-gradient-to-br from-emerald-700 to-teal-800 flex flex-col items-center justify-center p-6 text-center text-white">
+                            <Quote size={44} className="text-emerald-300/60 mb-2" />
+                            <span className="text-xs font-semibold tracking-wider uppercase text-emerald-200">
+                              Community Narrative
+                            </span>
+                          </div>
+                        )}
 
-                {/* Card content */}
-                <div className="p-6 flex-grow flex flex-col">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex-1 min-w-0 pr-2">
-                      <h3 className="text-[22px] lg:text-[24px] font-semibold font-heading text-gray-900 mb-1 line-clamp-1 leading-[1.3]">{story.name}</h3>
-                      <p className="text-[15px] font-medium text-emerald-600 mb-2">{story.title}</p>
-                    </div>
-                    <Quote className="text-emerald-200 flex-shrink-0" size={28} />
-                  </div>
+                        <div className="absolute top-4 left-4">
+                          <span className="inline-block px-3 py-1 bg-white/95 backdrop-blur-md text-emerald-800 text-xs font-bold rounded-xl shadow-md border border-white/50">
+                            {categoryLabel}
+                          </span>
+                        </div>
+                      </div>
 
-                  <p className="text-gray-600 mb-4 leading-relaxed text-base line-clamp-4 flex-grow">
-                    {stripHtml(story.story)}
-                  </p>
+                      {/* Card Content */}
+                      <div className="p-6 sm:p-7 flex flex-col flex-1 space-y-4">
+                        <h3 className="text-lg sm:text-xl font-bold text-slate-900 group-hover:text-emerald-700 transition-colors line-clamp-2 leading-snug">
+                          {story.title}
+                        </h3>
 
-                  {story.impact && (
-                    <div className="bg-emerald-50 border-l-4 border-emerald-500 p-4 mb-4">
-                      <p className="text-base text-emerald-900">
-                        <strong className="block mb-1">Impact:</strong>
-                        {story.impact}
-                      </p>
-                    </div>
-                  )}
+                        {/* Beneficiary Badge */}
+                        <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-2xl border border-slate-100 text-xs">
+                          <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold flex-shrink-0">
+                            <User size={15} />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="font-bold text-slate-800 truncate">
+                              {displayName}
+                            </div>
+                            {story.role && (
+                              <div className="text-slate-500 text-[11px] truncate">
+                                {story.role}
+                              </div>
+                            )}
+                          </div>
+                        </div>
 
-                    <div className="flex items-center justify-between mt-auto pt-4 border-t border-gray-100">
-                      <Badge variant="secondary">{story.category}</Badge>
-                      <span className="text-emerald-600 font-semibold text-base flex items-center group-hover:text-emerald-700 transition-colors">
-                        Read Story <Heart size={14} className="ml-1" fill="currentColor" />
-                      </span>
-                    </div>
-                  </div>
-                </Link>
-              </Card>
-            ))}
+                        {/* Excerpt */}
+                        <p className="text-xs sm:text-sm text-slate-600 line-clamp-3 leading-relaxed flex-1">
+                          {story.quote ? `“${cleanStoryText(story.quote)}”` : cleanStoryText(story.story)}
+                        </p>
+
+                        {/* Footer */}
+                        <div className="pt-4 border-t border-slate-100 flex items-center justify-between mt-auto text-xs">
+                          <span className="text-slate-400 flex items-center gap-1 font-medium text-[11px]">
+                            <Calendar size={12} />
+                            {formatStoryDate(story.date)}
+                          </span>
+
+                          <span className="font-bold text-emerald-700 group-hover:text-emerald-800 flex items-center gap-1 transition-colors">
+                            Read Story
+                            <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                          </span>
+                        </div>
+                      </div>
+                    </Link>
+                  </Card>
+                );
+              })}
+            </div>
+
+            {/* View All Stories Button */}
+            <div className="text-center pt-4">
+              <Link to="/stories">
+                <Button className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-8 py-3 rounded-2xl shadow-lg shadow-emerald-600/20 transition-all text-sm">
+                  View All Impact Stories
+                  <ArrowRight size={16} className="ml-2" />
+                </Button>
+              </Link>
+            </div>
           </div>
         ) : (
-          <div className="text-center py-12">
-            <p className="text-gray-500 text-lg">No stories available yet. Check back soon!</p>
+          /* Dignified Empty State */
+          <div className="bg-white rounded-3xl p-10 sm:p-14 text-center max-w-2xl mx-auto border border-slate-200/80 shadow-sm space-y-5">
+            <div className="w-14 h-14 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center mx-auto">
+              <Quote size={28} className="text-emerald-600" />
+            </div>
+
+            <div className="space-y-1.5">
+              <h3 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
+                {EMPTY_STORIES_STATE.title}
+              </h3>
+              <p className="text-slate-600 text-sm leading-relaxed max-w-md mx-auto">
+                {EMPTY_STORIES_STATE.message}
+              </p>
+            </div>
+
+            <div className="pt-2">
+              <Link to={EMPTY_STORIES_STATE.buttonLink}>
+                <Button className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-6 py-2.5 rounded-2xl shadow-lg shadow-emerald-600/20 transition-all">
+                  {EMPTY_STORIES_STATE.buttonText}
+                  <ArrowRight size={16} className="ml-2" />
+                </Button>
+              </Link>
+            </div>
           </div>
         )}
-
-        {/* View All Stories Button */}
-        <div className="text-center mt-12">
-          <Link to="/stories">
-            <button className="bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-3.5 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] inline-flex items-center gap-2 font-semibold">
-              <span>View All Stories</span>
-              <Heart size={20} />
-            </button>
-          </Link>
-        </div>
-
-        {/* Call to Action */}
-        <div className="mt-16 bg-gradient-to-r from-emerald-600 to-emerald-700 rounded-2xl p-8 md:p-12 text-center text-white">
-          <h3 className="text-2xl md:text-3xl font-bold font-heading mb-4">Want to Share Your Story?</h3>
-          <p className="mb-6 text-emerald-50 max-w-2xl mx-auto text-lg md:text-xl">
-            Your story could inspire others and show the power of community resilience. 
-            We'd love to hear how RESTI has supported you or your community.
-          </p>
-          <button
-            onClick={() => document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' })}
-            className="bg-white text-emerald-600 px-8 py-3 rounded-lg hover:bg-emerald-50 transition-colors"
-          >
-            Contact Us
-          </button>
-        </div>
       </div>
     </section>
   );
 }
+
+export default ImpactStories;

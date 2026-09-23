@@ -3090,60 +3090,149 @@ app.get('/make-server-2a4be611/stories', async (c) => {
   try {
     const limit = parseInt(c.req.query('limit') || '100');
     const offset = parseInt(c.req.query('offset') || '0');
+    const all = c.req.query('all') === 'true';
+    const statusQuery = c.req.query('status');
+    const categoryQuery = c.req.query('category');
     
-    if (c.req.query('limit') !== undefined) {
+    const sanitizeStory = (item: any) => {
+      const val = item.value || item;
+      const cleanStr = (s?: string) => (s ? s.replace(/\?\?|\?|\?{2,}/g, "'") : '');
+      const id = item.key || item.id || val.id || '';
+      return {
+        ...val,
+        id,
+        key: id,
+        title: cleanStr(val.title),
+        story: cleanStr(val.story),
+        quote: cleanStr(val.quote),
+        impact: cleanStr(val.impact || val.short_description),
+        short_description: cleanStr(val.short_description || val.impact),
+        name: val.permission_name === false ? 'RESTI Program Participant' : cleanStr(val.name),
+        location: cleanStr(val.location || 'Kiryandongo District, Uganda'),
+        role: cleanStr(val.role),
+        status: val.status || (val.is_published === false ? 'draft' : 'published'),
+        is_published: val.status ? val.status === 'published' : val.is_published !== false,
+      };
+    };
+
+    if (c.req.query('limit') !== undefined && !all && !categoryQuery && !statusQuery) {
       const { data, count } = await kv.getPaginatedByPrefix('story:', limit, offset);
-      data.sort((a, b) => new Date(b.value?.date || b.value?.timestamp || b.value?.created_at || 0).getTime() - new Date(a.value?.date || a.value?.timestamp || a.value?.created_at || 0).getTime());
-      return c.json({ stories: data.map(s => ({ ...(s.value || {}), id: s.key, key: s.key })), count, limit, offset });
+      const filtered = data
+        .map(sanitizeStory)
+        .filter(s => s.status === 'published');
+      filtered.sort((a, b) => new Date(b.date || b.timestamp || b.created_at || 0).getTime() - new Date(a.date || a.timestamp || a.created_at || 0).getTime());
+      return c.json({ stories: filtered, count: filtered.length, limit, offset });
     }
     
-    const stories = await kv.getByPrefix('story:')
-    stories.sort((a, b) => new Date(b.value?.date || b.value?.timestamp || b.value?.created_at || 0).getTime() - new Date(a.value?.date || a.value?.timestamp || a.value?.created_at || 0).getTime())
-    return c.json({ stories: stories.map(s => ({ ...(s.value || {}), id: s.key, key: s.key })) })
+    const storiesRaw = await kv.getByPrefix('story:');
+    let stories = storiesRaw.map(sanitizeStory);
+    
+    // Admin or specific status filter
+    if (!all) {
+      if (statusQuery) {
+        stories = stories.filter(s => s.status === statusQuery);
+      } else {
+        stories = stories.filter(s => s.status === 'published');
+      }
+    }
+    
+    if (categoryQuery && categoryQuery !== 'all') {
+      stories = stories.filter(s => s.category?.toLowerCase() === categoryQuery.toLowerCase());
+    }
+
+    stories.sort((a, b) => {
+      // Sort by display order if set, otherwise by date descending
+      if (typeof a.display_order === 'number' && typeof b.display_order === 'number' && a.display_order !== b.display_order) {
+        return a.display_order - b.display_order;
+      }
+      return new Date(b.date || b.timestamp || b.created_at || 0).getTime() - new Date(a.date || a.timestamp || a.created_at || 0).getTime();
+    });
+
+    return c.json({ stories });
   } catch (error) {
-    console.error('Error fetching stories:', error)
-    return c.json({ error: 'Failed to fetch stories', details: String(error) }, 500)
+    console.error('Error fetching stories:', error);
+    return c.json({ error: 'Failed to fetch stories', details: String(error) }, 500);
   }
-})
+});
 
 app.post('/make-server-2a4be611/admin/stories', requireEditor, async (c) => {
   try {
-    const body = await c.req.json()
-    const { name, title, story, image, category, impact } = body
-    const storyId = body.id || `story:${crypto.randomUUID()}`
-    const normalizedId = storyId.startsWith('story:') ? storyId : `story:${storyId}`
-    await kv.set(normalizedId, { name, title, story, image: image || '', category: category || 'general', impact: impact || '', date: body.date || new Date().toISOString() })
-    return c.json({ success: true, message: 'Story added successfully', id: normalizedId })
+    const body = await c.req.json();
+    const storyId = body.id || `story:${crypto.randomUUID()}`;
+    const normalizedId = storyId.startsWith('story:') ? storyId : `story:${storyId}`;
+    
+    const storyRecord = {
+      id: normalizedId,
+      name: body.name || '',
+      title: body.title || '',
+      slug: body.slug || normalizedId.replace('story:', ''),
+      short_description: body.short_description || body.impact || '',
+      story: body.story || '',
+      quote: body.quote || '',
+      role: body.role || '',
+      location: body.location || 'Kiryandongo District, Uganda',
+      category: body.category || 'livelihoods',
+      program_id: body.program_id || '',
+      program_name: body.program_name || '',
+      image: body.image || '',
+      additional_images: Array.isArray(body.additional_images) ? body.additional_images : [],
+      date: body.date || new Date().toISOString(),
+      status: body.status || 'published',
+      is_published: body.status === 'published',
+      is_featured: Boolean(body.is_featured),
+      display_order: typeof body.display_order === 'number' ? body.display_order : 0,
+      consent_obtained: body.consent_obtained !== undefined ? Boolean(body.consent_obtained) : true,
+      consent_date: body.consent_date || new Date().toISOString().split('T')[0],
+      permission_name: body.permission_name !== undefined ? Boolean(body.permission_name) : true,
+      permission_photo: body.permission_photo !== undefined ? Boolean(body.permission_photo) : true,
+      permission_quote: body.permission_quote !== undefined ? Boolean(body.permission_quote) : true,
+      consent_notes: body.consent_notes || '',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+
+    await kv.set(normalizedId, storyRecord);
+    return c.json({ success: true, message: 'Story added successfully', id: normalizedId, story: storyRecord });
   } catch (error) {
-    console.error('Error creating story:', error)
-    return c.json({ error: 'Failed to create story', details: String(error) }, 500)
+    console.error('Error creating story:', error);
+    return c.json({ error: 'Failed to create story', details: String(error) }, 500);
   }
-})
+});
 
 app.put('/make-server-2a4be611/admin/stories/:id', requireEditor, async (c) => {
   try {
-    const id = normalizeContentKey('story', c.req.param('id'))
-    const body = await c.req.json()
-    const existing = await kv.get(id)
-    if (!existing) return c.json({ error: 'Story not found' }, 404)
-    await kv.set(id, { ...existing, ...body, updatedAt: new Date().toISOString() })
-    return c.json({ success: true, message: 'Story updated successfully' })
+    const id = normalizeContentKey('story', c.req.param('id'));
+    const body = await c.req.json();
+    const existing = await kv.get(id);
+    if (!existing) return c.json({ error: 'Story not found' }, 404);
+    
+    const updatedRecord = {
+      ...existing,
+      ...body,
+      id,
+      is_published: body.status ? body.status === 'published' : (body.is_published !== undefined ? body.is_published : existing.is_published),
+      updated_at: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    await kv.set(id, updatedRecord);
+    return c.json({ success: true, message: 'Story updated successfully', story: updatedRecord });
   } catch (error) {
-    console.error('Error updating story:', error)
-    return c.json({ error: 'Failed to update story', details: String(error) }, 500)
+    console.error('Error updating story:', error);
+    return c.json({ error: 'Failed to update story', details: String(error) }, 500);
   }
-})
+});
 
 app.delete('/make-server-2a4be611/admin/stories/:id', requireAdmin, async (c) => {
   try {
-    const id = normalizeContentKey('story', c.req.param('id'))
-    await kv.del(id)
-    return c.json({ success: true, message: 'Story deleted successfully' })
+    const id = normalizeContentKey('story', c.req.param('id'));
+    await kv.del(id);
+    return c.json({ success: true, message: 'Story deleted successfully' });
   } catch (error) {
-    console.error('Error deleting story:', error)
-    return c.json({ error: 'Failed to delete story', details: String(error) }, 500)
+    console.error('Error deleting story:', error);
+    return c.json({ error: 'Failed to delete story', details: String(error) }, 500);
   }
-})
+});
 
 // Team routes
 app.get('/make-server-2a4be611/team', async (c) => {
@@ -4689,7 +4778,7 @@ app.get('/make-server-2a4be611/site-settings', async (c) => {
           },
           stories: {
             title: 'Impact Stories',
-            description: 'Read inspiring stories from the lives we\'ve touched and the communities we\'ve transformed.'
+            description: 'Discover real stories from individuals and communities working with RESTI to build livelihoods, strengthen resilience, improve community well-being, and create locally led solutions.'
           },
           team: {
             title: 'Meet Our Team',
@@ -4836,7 +4925,7 @@ app.post('/make-server-2a4be611/site-settings/initialize', async (c) => {
         },
         stories: {
           title: 'Impact Stories',
-          description: 'Read inspiring stories from the lives we\'ve touched and the communities we\'ve transformed.'
+          description: 'Discover real stories from individuals and communities working with RESTI to build livelihoods, strengthen resilience, improve community well-being, and create locally led solutions.'
         },
         team: {
           title: 'Meet Our Team',

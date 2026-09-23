@@ -466,13 +466,14 @@ export function StoryFormDialog({ show, onClose, editingItem, onSuccess, userRol
                   onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                   className="w-full pl-10 pr-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all outline-none appearance-none"
                 >
-                  <option value="general">General</option>
-                  <option value="education">Education</option>
-                  <option value="healthcare">Healthcare</option>
-                  <option value="community">Community</option>
-                  <option value="empowerment">Empowerment</option>
-                  <option value="livelihoods">Livelihoods</option>
-                  <option value="environment">Environment</option>
+                  <option value="livelihoods">Livelihoods & Economic Empowerment</option>
+                  <option value="wash">Clean Water & Sanitation (WASH)</option>
+                  <option value="environment">Environmental Sustainability</option>
+                  <option value="climate">Climate Resilience</option>
+                  <option value="community">Community Development</option>
+                  <option value="cohesion">Social Cohesion & Peacebuilding</option>
+                  <option value="skills">Skills & Micro-Enterprise</option>
+                  <option value="governance">Organizational Development</option>
                 </select>
               </div>
             </div>

@@ -253,6 +253,8 @@ export default function App() {
         <Route path="/news/:id" element={<MainLayout><NewsDetail /></MainLayout>} />
         <Route path="/stories" element={<MainLayout><StoriesArchive /></MainLayout>} />
         <Route path="/stories/:id" element={<MainLayout><StoryDetail /></MainLayout>} />
+        <Route path="/impact-stories" element={<MainLayout><StoriesArchive /></MainLayout>} />
+        <Route path="/impact-stories/:id" element={<MainLayout><StoryDetail /></MainLayout>} />
         <Route path="/programs" element={<MainLayout><ProgramsPage /></MainLayout>} />
         <Route path="/programs/:id" element={<MainLayout><ProgramDetail /></MainLayout>} />
         <Route path="/team" element={<MainLayout><TeamPage /></MainLayout>} />
