@@ -672,48 +672,23 @@ app.post('/make-server-2a4be611/create-payment-intent', async (c) => {
       return c.json({ error: 'Invalid amount' }, 400)
     }
 
-    // Create pending donation in Postgres and Stripe payment intent in parallel
+    // Generate unique donation reference and create Stripe payment intent
     const internalReference = crypto.randomUUID()
-    const donationId = `donation:${internalReference}`
-    const parts = (donorName || 'Anonymous').split(' ')
-    const firstName = parts[0]
-    const lastName = parts.slice(1).join(' ') || ''
 
-    const [insertResult, paymentIntent] = await Promise.all([
-      supabase.from('donations').insert({
-        id: donationId,
-        amount: Number(amount),
-        currency: (currency || 'USD').toUpperCase(),
-        method: 'card',
-        provider: 'stripe',
-        first_name: firstName,
-        last_name: lastName,
-        email: donorEmail || '',
-        status: 'pending',
-        transaction_id: internalReference,
-        provider_transaction_id: null,
-        provider_response: { createdBy: 'create-payment-intent' }
-      }),
-      stripe.paymentIntents.create({
-        amount: Math.round(amount * 100), // Stripe expects amount in cents
-        currency: (currency || 'usd'),
-        metadata: {
-          restiDonationId: internalReference,
-          internalReference,
-          paymentPurpose: 'resti_donation',
-          campaignId: 'general',
-          donorName: donorName || 'Anonymous',
-          donorEmail: donorEmail || ''
-        },
-      })
-    ])
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: Math.round(amount * 100), // Stripe expects amount in cents
+      currency: (currency || 'usd'),
+      metadata: {
+        restiDonationId: internalReference,
+        internalReference,
+        paymentPurpose: 'resti_donation',
+        campaignId: 'general',
+        donorName: donorName || 'Anonymous',
+        donorEmail: donorEmail || ''
+      },
+    })
 
-    if (insertResult.error) {
-      console.error('Failed to create pending donation:', insertResult.error)
-      return c.json({ error: 'Database error', details: insertResult.error.message, hint: insertResult.error.hint }, 500)
-    }
-
-    console.log(`Payment intent created: ${paymentIntent.id}`)
+    console.log(`Payment intent created: ${paymentIntent.id} (ref: ${internalReference})`)
     return c.json({ 
       clientSecret: paymentIntent.client_secret,
       paymentIntentId: paymentIntent.id,
@@ -741,31 +716,6 @@ app.post('/make-server-2a4be611/create-checkout-session', async (c) => {
 
     const isRecurring = !!interval
     const internalReference = crypto.randomUUID()
-    const donationId = `donation:${internalReference}`
-    const parts = (donorName || 'Anonymous').split(' ')
-    const firstName = parts[0]
-    const lastName = parts.slice(1).join(' ') || ''
-
-    // Create pending donation
-    const { error: insertError } = await supabase.from('donations').insert({
-      id: donationId,
-      amount: Number(amount),
-      currency: (currency || 'USD').toUpperCase(),
-      method: isRecurring ? 'card_recurring' : 'card',
-      provider: 'stripe',
-      first_name: firstName,
-      last_name: lastName,
-      email: donorEmail || '',
-      status: 'pending',
-      transaction_id: internalReference,
-      provider_transaction_id: null,
-      provider_response: { createdBy: 'create-checkout-session' }
-    })
-
-    if (insertError) {
-      console.error('Failed to create pending donation:', insertError)
-      return c.json({ error: 'Database error', details: insertError.message, hint: insertError.hint }, 500)
-    }
 
     const sessionConfig: Stripe.Checkout.SessionCreateParams = {
       payment_method_types: ['card'],
@@ -824,8 +774,6 @@ app.post('/make-server-2a4be611/verify-session', async (c) => {
       return c.json({ status: 'pending' })
     }
 
-    // Do NOT create a new donation here. The canonical record is the Postgres donations table.
-    // Lookup the donation by the internal reference stored in metadata (restiDonationId) or by transaction id.
     const internalRef = session.metadata?.restiDonationId || session.id
     const { data: donation, error: findErr } = await supabase.from('donations').select('*').or(`transaction_id.eq.${sessionId},transaction_id.eq.${internalRef}`)
 
@@ -835,12 +783,40 @@ app.post('/make-server-2a4be611/verify-session', async (c) => {
     }
 
     if (!donation || donation.length === 0) {
-      return c.json({ status: 'not_found' })
+      // Confirmed paid by Stripe directly. Create canonical completed donation.
+      const parts = (session.metadata?.donorName || session.customer_details?.name || 'Anonymous Donor').split(' ')
+      const firstName = parts[0] || 'Anonymous'
+      const lastName = parts.slice(1).join(' ') || ''
+      const donorEmail = session.customer_details?.email || session.customer_email || session.metadata?.donorEmail || ''
+      const amountTotal = (session.amount_total || 0) / 100
+      const cur = (session.currency || 'USD').toUpperCase()
+      const donationId = `donation:${internalRef}`
+
+      const newRecord = {
+        id: donationId,
+        amount: amountTotal,
+        currency: cur,
+        method: session.mode === 'subscription' ? 'card_recurring' : 'card',
+        provider: 'stripe',
+        first_name: firstName,
+        last_name: lastName,
+        email: donorEmail,
+        status: 'completed',
+        transaction_id: internalRef,
+        provider_transaction_id: session.payment_intent?.toString() || session.id,
+        provider_response: { verifiedBy: 'verify-session', sessionId: session.id },
+        completed_at: new Date().toISOString(),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }
+
+      await supabase.from('donations').upsert(newRecord, { onConflict: 'id' })
+      return c.json({ status: 'completed' })
     }
 
     // Return canonical status
     const d = donation[0]
-    return c.json({ status: d.status || 'pending' })
+    return c.json({ status: d.status || 'completed' })
   } catch (error) {
     console.error('Error verifying session:', error)
     return c.json({ error: 'Failed to verify session', details: String(error) }, 500)
@@ -891,15 +867,11 @@ app.get('/make-server-2a4be611/donor/donations', async (c) => {
     const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null
 
     let donorEmail = ''
-    let isSuperAdmin = false
 
     if (token) {
       const { data: { user } } = await supabase.auth.getUser(token)
       if (user?.email) {
         donorEmail = user.email.toLowerCase().trim()
-        if (user.email === 'lokwodenis0@gmail.com' || user.email === 'lokwodenis@gmail.com') {
-          isSuperAdmin = true
-        }
       }
     }
 
@@ -915,15 +887,14 @@ app.get('/make-server-2a4be611/donor/donations', async (c) => {
       }
     }
 
-    // Query Postgres donations
-    let query = supabase.from('donations').select('*').order('created_at', { ascending: false })
-    
-    // Non-superadmin or specific donor query is strictly filtered by email
-    if (!isSuperAdmin || (queryEmail && !c.req.query('all'))) {
-      query = query.ilike('email', donorEmail)
-    }
+    // Query Postgres donations - strictly filter by this donor's email and completed status
+    const { data: pgData, error: pgErr } = await supabase
+      .from('donations')
+      .select('*')
+      .ilike('email', donorEmail)
+      .in('status', ['completed', 'succeeded'])
+      .order('created_at', { ascending: false })
 
-    const { data: pgData, error: pgErr } = await query
     if (pgErr) console.warn('Donor donations pg query notice:', pgErr.message)
 
     // Normalize Postgres records
@@ -941,7 +912,7 @@ app.get('/make-server-2a4be611/donor/donations', async (c) => {
           amount: amt,
           currency: (r.currency || 'USD').toUpperCase(),
           date: r.created_at || r.updated_at || new Date().toISOString(),
-          status: (r.status || 'completed').toLowerCase(),
+          status: 'completed',
           paymentMethod: (r.method || r.provider || 'card').toLowerCase(),
           donorName: `${r.first_name || ''} ${r.last_name || ''}`.trim() || undefined,
           donorEmail: (r.email || '').trim() || undefined,
@@ -1767,8 +1738,11 @@ app.get('/make-server-2a4be611/mobile-payment/status/:referenceId', async (c) =>
 })
 app.get('/make-server-2a4be611/donation-stats', async (c) => {
   try {
-    // Aggregate donation stats from Postgres
-    const { data: donations, error } = await supabase.from('donations').select('amount')
+    // Aggregate donation stats from Postgres (strictly completed payments)
+    const { data: donations, error } = await supabase
+      .from('donations')
+      .select('amount')
+      .in('status', ['completed', 'succeeded'])
     if (error) {
       console.error('Failed to fetch donations for stats:', error)
       return c.json({ error: 'Failed to fetch donation stats' }, 500)
@@ -2813,14 +2787,15 @@ app.get('/make-server-2a4be611/admin/stats', requireAuthUser, async (c) => {
       kv.getByPrefix('program:'),
       kv.getByPrefix('news:'),
       kv.getByPrefix('contact:'),
-      // Fetch donations from Postgres
-      supabase.from('donations').select('*'),
+      // Fetch completed donations only from Postgres
+      supabase.from('donations').select('*').in('status', ['completed', 'succeeded']),
       kv.getByPrefix('newsletter:')
     ])
 
     // donations from supabase Promise resolves to { data, error }
-    const donationRows = Array.isArray(donations) ? donations : (donations.data || [])
-    const totalDonations = donationRows.reduce((sum: number, d: any) => sum + (Number(d.amount || 0)), 0)
+    const rawDonations = Array.isArray(donations) ? donations : (donations.data || [])
+    const donationRows = rawDonations.filter((d: any) => d.status === 'completed' || d.status === 'succeeded')
+    const totalDonationsAmount = donationRows.reduce((sum: number, d: any) => sum + (Number(d.amount || 0)), 0)
     const newContacts = contacts.filter(c => c.value.status === 'new').length
 
     const stats = {
@@ -2829,7 +2804,7 @@ app.get('/make-server-2a4be611/admin/stats', requireAuthUser, async (c) => {
       totalContacts: contacts.length,
       newContacts,
       totalDonations: donationRows.length,
-      totalDonationAmount: totalDonations,
+      totalDonationAmount: totalDonationsAmount,
       totalSubscribers: subscribers.length
     }
 
@@ -2844,7 +2819,7 @@ app.get('/make-server-2a4be611/admin/stats', requireAuthUser, async (c) => {
 app.get('/make-server-2a4be611/admin/analytics', requireAuthUser, async (c) => {
   try {
     const [donationsRes, contacts, subscribers] = await Promise.all([
-      supabase.from('donations').select('*'),
+      supabase.from('donations').select('*').in('status', ['completed', 'succeeded']),
       kv.getByPrefix('contact:'),
       kv.getByPrefix('newsletter:')
     ])
@@ -3797,7 +3772,7 @@ app.delete('/make-server-2a4be611/admin/partners/:id', requireAdmin, async (c) =
 app.get('/make-server-2a4be611/impact-stats', async (c) => {
   try {
     const stats = await kv.get('impact-stats')
-    return c.json({ stats: stats || { peopleServed: 5000, programsActive: 12, householdsSupported: 150, fundsRaised: 250000, communitiesReached: 8, successRate: 92 } })
+    return c.json({ stats: stats || { peopleServed: 0, programsActive: 0, householdsSupported: 0, fundsRaised: 0, communitiesReached: 0, successRate: 0 } })
   } catch (error) {
     console.error('Error fetching impact stats:', error)
     return c.json({ error: 'Failed to fetch impact stats', details: String(error) }, 500)

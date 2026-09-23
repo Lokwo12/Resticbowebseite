@@ -2852,7 +2852,7 @@ export function EnhancedAdminDashboard() {
       return contacts.filter((c) => c.status === 'pending' || !c.read).length;
     }
     if (badgeKey === 'donations') {
-      return donations.length;
+      return stats?.totalDonations || 0;
     }
     return 0;
   };
@@ -3214,8 +3214,8 @@ export function EnhancedAdminDashboard() {
                       </div>
                       <span className="text-xs font-semibold text-white bg-white/20 border border-white/30 rounded-lg px-2.5 py-1">Raised</span>
                     </div>
-                    <p className="text-[24px] sm:text-[28px] lg:text-[32px] font-bold text-white mb-1 admin-kpi-stat">${stats?.totalDonations ?? 0}</p>
-                    <p className="text-sm font-medium text-emerald-100">Total Donations</p>
+                    <p className="text-[24px] sm:text-[28px] lg:text-[32px] font-bold text-white mb-1 admin-kpi-stat">${(Number(stats?.totalDonationAmount) || 0).toLocaleString()}</p>
+                    <p className="text-sm font-medium text-emerald-100">Total Funds Raised ({stats?.totalDonations ?? 0} {stats?.totalDonations === 1 ? 'gift' : 'gifts'})</p>
                     <div className="mt-4 pt-4 border-t border-white/20 flex items-center gap-1.5 text-xs text-emerald-200 font-medium">
                       <TrendingUp size={12} />
                       <span>All time</span>

@@ -153,39 +153,39 @@ export function DonorDashboard() {
         }
       }
 
-      // Fallback: direct query via Supabase Client (handles RLS)
-      let directQuery = supabase
-        .from('donations')
-        .select('*')
-        .order('created_at', { ascending: false });
-
+      // Fallback: direct query via Supabase Client (strictly authenticated donor & completed gifts)
       if (queryEmail) {
-        directQuery = directQuery.ilike('email', queryEmail);
+        const { data: directData, error: directErr } = await supabase
+          .from('donations')
+          .select('*')
+          .ilike('email', queryEmail)
+          .in('status', ['completed', 'succeeded'])
+          .order('created_at', { ascending: false });
+
+        if (!directErr && directData) {
+          const normalized: Donation[] = directData.map((r: any) => {
+            const rawRef = (r.transaction_id || r.id || '').replace(/^donation:/, '');
+            return {
+              id: r.id || `don-${rawRef}`,
+              amount: Number(r.amount) || 0,
+              currency: (r.currency || 'USD').toUpperCase(),
+              date: r.created_at || r.updated_at || new Date().toISOString(),
+              status: 'completed',
+              paymentMethod: (r.method || r.provider || 'card').toLowerCase(),
+              donorName: `${r.first_name || ''} ${r.last_name || ''}`.trim() || undefined,
+              donorEmail: r.email || undefined,
+              donorPhone: r.phone || undefined,
+              reference: rawRef,
+              receiptNumber: `REC-${rawRef.slice(-8).toUpperCase()}`,
+              campaign: r.campaign || 'Community Empowerment & Education',
+            };
+          });
+          setDonations(normalized);
+          return normalized;
+        }
       }
 
-      const { data: directData, error: directErr } = await directQuery;
-      if (!directErr && directData) {
-        const normalized: Donation[] = directData.map((r: any) => {
-          const rawRef = (r.transaction_id || r.id || '').replace(/^donation:/, '');
-          return {
-            id: r.id || `don-${rawRef}`,
-            amount: Number(r.amount) || 0,
-            currency: (r.currency || 'USD').toUpperCase(),
-            date: r.created_at || r.updated_at || new Date().toISOString(),
-            status: (r.status || 'completed').toLowerCase(),
-            paymentMethod: (r.method || r.provider || 'card').toLowerCase(),
-            donorName: `${r.first_name || ''} ${r.last_name || ''}`.trim() || undefined,
-            donorEmail: r.email || undefined,
-            donorPhone: r.phone || undefined,
-            reference: rawRef,
-            receiptNumber: `REC-${rawRef.slice(-8).toUpperCase()}`,
-            campaign: r.campaign || 'Community Empowerment & Education',
-          };
-        });
-        setDonations(normalized);
-        return normalized;
-      }
-
+      setDonations([]);
       return [];
     } catch (err) {
       console.error('Error in fetchDonorData:', err);

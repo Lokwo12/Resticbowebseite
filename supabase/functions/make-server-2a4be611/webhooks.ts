@@ -647,6 +647,43 @@ export async function handleStripeWebhook(
   })
 
   if (result.notFound) {
+    if (amount && amount > 0) {
+      const parts = (donorName || 'Generous Donor').split(' ')
+      const firstName = parts[0] || 'Generous'
+      const lastName = parts.slice(1).join(' ') || ''
+      const newDonationId = `donation:${dbReferenceId}`
+      const donationRecord = {
+        id: newDonationId,
+        amount: Number(amount),
+        currency: (currency || 'USD').toUpperCase(),
+        method: 'card',
+        provider: 'stripe',
+        first_name: firstName,
+        last_name: lastName,
+        email: donorEmail || '',
+        status: 'completed',
+        transaction_id: dbReferenceId,
+        provider_transaction_id: providerTxId,
+        provider_response: { eventType: event.type, eventId: event.id },
+        completed_at: new Date().toISOString(),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      }
+
+      const { data: inserted, error: insertError } = await supabase
+        .from('donations')
+        .upsert(donationRecord, { onConflict: 'id' })
+        .select()
+        .single()
+
+      if (!insertError && inserted) {
+        await deliverDonationReceipt(inserted, sendEmail)
+        return c.json({ received: true, action: 'completed_and_created' })
+      } else if (insertError) {
+        console.error('Failed to create completed donation:', insertError)
+      }
+    }
+
     const isRestiDonation = metadata?.paymentPurpose === 'resti_donation' && 
                             metadata?.restiDonationId && 
                             metadata?.internalReference && 

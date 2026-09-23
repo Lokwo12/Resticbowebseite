@@ -128,7 +128,6 @@ export function Donation() {
         }
       })
       .catch(() => { });
-    prefetchPaymentIntent(50, 'USD');
   }, []);
 
   const finalAmount = isCustom ? (parseInt(customAmount.replace(/\D/g, '')) || 0) : amount;

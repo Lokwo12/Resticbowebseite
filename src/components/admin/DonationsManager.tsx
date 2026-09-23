@@ -291,7 +291,8 @@ export function DonationsManager({
 
       setDonations(unified);
       if (onDonationsCountChangeRef.current) {
-        onDonationsCountChangeRef.current(unified.length);
+        const completedOnly = unified.filter(d => d.status === 'completed');
+        onDonationsCountChangeRef.current(completedOnly.length);
       }
     } catch (err: any) {
       console.error('Failed to load donations:', err);
@@ -437,6 +438,8 @@ export function DonationsManager({
     const byMethod: Record<string, number> = {};
 
     donations.forEach((d) => {
+      if (d.status !== 'completed') return;
+
       const date = new Date(d.createdAt);
       const monthKey = date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
       byMonth[monthKey] = (byMonth[monthKey] || 0) + d.amount;

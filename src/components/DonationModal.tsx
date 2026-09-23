@@ -160,7 +160,6 @@ export function DonationModal() {
         setMethod(initialMethod);
         setStep(2);
       }
-      prefetchPaymentIntent(initialAmount || amount || 50, currency || 'USD');
       supabase.auth.getSession().then(({ data: { session } }) => {
         if (session?.user) {
           const fullName = session.user.user_metadata?.name || '';

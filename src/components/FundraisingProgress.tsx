@@ -24,11 +24,7 @@ export function FundraisingProgress() {
         { headers: { Authorization: `Bearer ${publicAnonKey}` } }
       );
       const data = await response.json();
-      if (data.stats && data.stats.fundsRaised) {
-        // Assume backend fundsRaised might be in UGX or USD. If it's a huge number, maybe it's UGX.
-        // For the sake of this US Dollar campaign, if it's over 1,000,000 we can divide by 3800, 
-        // or just use a fixed mock if the DB is unconfigured. 
-        // Let's use the actual DB value but cap it realistically for the demo.
+      if (data.stats && data.stats.fundsRaised !== undefined) {
         let raised = Number(data.stats.fundsRaised);
         
         // Safety check if the admin put in a massive UGX number instead of USD
@@ -36,9 +32,8 @@ export function FundraisingProgress() {
           raised = Math.floor(raised / 3800); // rough conversion to USD
         }
 
-        // If the DB has 0, provide a realistic starting point for the campaign's visual momentum
-        if (raised === 0 || isNaN(raised)) {
-          raised = 12500;
+        if (isNaN(raised) || raised < 0) {
+          raised = 0;
         }
 
         setCurrentAmount(raised);
@@ -48,11 +43,11 @@ export function FundraisingProgress() {
         if (data.stats.fundraisingTitle) setCampaignTitle(data.stats.fundraisingTitle);
         if (data.stats.fundraisingDescription) setCampaignDesc(data.stats.fundraisingDescription);
       } else {
-        setCurrentAmount(12500); // Fallback momentum
+        setCurrentAmount(0);
       }
     } catch (err) {
       console.error('Failed to fetch impact stats:', err);
-      setCurrentAmount(12500);
+      setCurrentAmount(0);
     } finally {
       setLoading(false);
     }
