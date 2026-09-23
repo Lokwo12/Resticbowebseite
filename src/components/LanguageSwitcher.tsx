@@ -11,7 +11,11 @@ const languages = [
   { code: 'zh-CN', name: '中文' },
 ];
 
-export function LanguageSwitcher() {
+interface LanguageSwitcherProps {
+  isSolid?: boolean;
+}
+
+export function LanguageSwitcher({ isSolid = true }: LanguageSwitcherProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [currentLang, setCurrentLang] = useState('en');
 
@@ -41,10 +45,12 @@ export function LanguageSwitcher() {
     <div className="relative">
       <button 
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 px-3 py-2 rounded-full hover:bg-slate-100 transition-colors text-slate-700"
+        className={`flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 rounded-full transition-colors ${
+          isSolid ? 'hover:bg-slate-100 text-slate-700' : 'hover:bg-white/15 text-white'
+        }`}
         aria-label="Change Language"
       >
-        <Globe size={18} className="text-emerald-600" />
+        <Globe size={18} className={isSolid ? 'text-emerald-600' : 'text-emerald-400'} />
         <span className="text-sm font-medium hidden sm:inline-block">{currentLangName}</span>
         <ChevronDown size={14} className={`transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
       </button>

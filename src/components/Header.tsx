@@ -166,45 +166,45 @@ export function Header() {
           : 'bg-emerald-950/60 backdrop-blur-md border-b border-white/10'
       }`}>
         <nav className="max-w-7xl mx-auto px-3 sm:px-5 lg:px-6 xl:px-8">
-          <div className={`flex items-center justify-between transition-all duration-300 ${isSolid ? 'h-20 sm:h-22 lg:h-24' : 'h-22 sm:h-24 lg:h-26'}`}>
+          <div className="flex items-center justify-between transition-all duration-300 h-16 sm:h-20 lg:h-24">
             
             {/* Logo & Brand Identity */}
-            <div className="flex items-center shrink-0 mr-2 xl:mr-4">
+            <div className="flex items-center shrink-0 mr-1 sm:mr-3 xl:mr-4">
               <Link 
                 to="/#home"
-                className="flex items-center gap-2.5 sm:gap-3.5 group"
+                className="flex items-center gap-2 sm:gap-3 group"
                 onClick={() => {
                   if (location.pathname === '/') {
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                   }
                 }}
               >
-                <div className="relative shrink-0">
+                <div className="relative shrink-0 flex items-center justify-center">
                   <img 
                     src={getLogoUrl()} 
                     alt={settings.general?.siteName || 'RESTI'} 
-                    className={`rounded-full object-contain bg-white shadow-md transition-all duration-300 group-hover:scale-105 p-1 ${
+                    className={`aspect-square rounded-full object-contain bg-white shadow-xs transition-all duration-300 group-hover:scale-105 p-1 ${
                       isSolid 
-                        ? 'h-14 w-14 sm:h-16 sm:w-16 md:h-18 md:w-18 lg:h-20 lg:w-20 xl:h-22 xl:w-22 border-2 border-emerald-500/30 ring-2 ring-emerald-50' 
-                        : 'h-15 w-15 sm:h-18 sm:w-18 md:h-20 md:w-20 lg:h-22 lg:w-22 xl:h-24 xl:w-24 border-2 border-white/80 shadow-lg shadow-black/20 ring-2 ring-white/25'
+                        ? 'w-11 h-11 sm:w-14 sm:h-14 lg:w-16 lg:h-16 border-2 border-emerald-500/30' 
+                        : 'w-11 h-11 sm:w-14 sm:h-14 lg:w-16 lg:h-16 border-2 border-white/90 shadow-md shadow-black/20'
                     }`} 
                   />
-                  <span className="absolute bottom-0 right-0 w-3.5 h-3.5 sm:w-4 sm:h-4 bg-emerald-500 border-2 border-white rounded-full shadow-sm"></span>
+                  <span className="absolute bottom-0 right-0 w-2.5 h-2.5 sm:w-3 sm:h-3 bg-emerald-500 border-2 border-white rounded-full shadow-xs"></span>
                 </div>
                 
-                <div className="flex flex-col text-left">
+                <div className="flex flex-col text-left justify-center min-w-0">
                   <div className="flex items-center gap-1.5">
-                    <span className={`text-xl sm:text-2xl lg:text-2xl xl:text-3xl font-black font-heading tracking-tight leading-none transition-colors ${
+                    <span className={`text-lg sm:text-2xl font-black font-heading tracking-tight leading-none transition-colors ${
                       isSolid ? 'text-gray-900' : 'text-white'
                     }`}>
                       {settings.general?.siteName || 'RESTI'}
                     </span>
-                    <span className="hidden sm:inline-block px-1.5 py-0.5 text-[10px] font-bold uppercase rounded bg-emerald-100 text-emerald-800 border border-emerald-200/60">
+                    <span className="inline-block px-1.5 py-0.5 text-[9px] sm:text-[10px] font-bold uppercase rounded bg-emerald-100 text-emerald-800 border border-emerald-200/60 leading-none">
                       CBO
                     </span>
                   </div>
                   
-                  {/* Full subtitle on large screens, compact on laptops to prevent navbar wrapping */}
+                  {/* Full subtitle on large screens, compact on tablets, hidden on small phones to prevent crowding */}
                   <p className={`hidden 2xl:block text-[11px] leading-tight mt-1 transition-colors max-w-[280px] truncate ${
                     isSolid ? 'text-gray-600' : 'text-emerald-100/90'
                   }`}>
@@ -542,7 +542,7 @@ export function Header() {
               </button>
 
               {/* Language Switcher */}
-              <LanguageSwitcher />
+              <LanguageSwitcher isSolid={isSolid} />
 
               {/* Donate Button */}
               <button
@@ -555,8 +555,8 @@ export function Header() {
             </div>
 
             {/* Mobile Actions: Language + Search + Hamburger */}
-            <div className="lg:hidden flex items-center gap-1">
-              <LanguageSwitcher />
+            <div className="lg:hidden flex items-center gap-0.5 sm:gap-1">
+              <LanguageSwitcher isSolid={isSolid} />
               
               <button
                 onClick={() => setSearchOpen(true)}
