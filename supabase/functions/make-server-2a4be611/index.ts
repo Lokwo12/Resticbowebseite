@@ -875,13 +875,48 @@ app.get('/make-server-2a4be611/donor/donations', async (c) => {
       }
     }
 
-    // Guest fallback: allow querying if both email and reference are supplied
+    // Guest fallback: restricted to exact single transaction reference verification only
     const queryEmail = c.req.query('email')?.toLowerCase().trim()
     const queryRef = c.req.query('ref')?.toLowerCase().trim()
 
     if (!donorEmail) {
       if (queryEmail && queryRef) {
-        donorEmail = queryEmail
+        // Limited single-receipt retrieval: strictly query ONLY the exact matching transaction reference
+        const { data: singleDonation, error: singleErr } = await supabase
+          .from('donations')
+          .select('*')
+          .ilike('email', queryEmail)
+          .or(`transaction_id.eq.${queryRef},id.eq.${queryRef}`)
+          .in('status', ['completed', 'succeeded'])
+          .limit(1)
+
+        if (singleErr || !singleDonation || singleDonation.length === 0) {
+          return c.json({ donations: [], totalContributedUSD: 0, donationCount: 0, latestDonation: null })
+        }
+
+        const r = singleDonation[0]
+        const rawRef = (r.transaction_id || r.id || '').replace(/^donation:/, '')
+        const item = {
+          id: r.id || `pg-${rawRef}`,
+          amount: Number(r.amount) || 0,
+          currency: (r.currency || 'USD').toUpperCase(),
+          date: r.created_at || r.updated_at || new Date().toISOString(),
+          status: 'completed',
+          paymentMethod: (r.method || r.provider || 'card').toLowerCase(),
+          donorName: `${r.first_name || ''} ${r.last_name || ''}`.trim() || undefined,
+          donorEmail: (r.email || '').trim() || undefined,
+          donorPhone: r.phone || undefined,
+          reference: rawRef,
+          receiptNumber: `REC-${rawRef.slice(-8).toUpperCase()}`,
+          campaign: r.campaign || 'Community Resilience & Livelihoods',
+        }
+
+        return c.json({
+          donations: [item],
+          totalContributedUSD: item.currency === 'USD' ? item.amount : Number((item.amount / 3800).toFixed(2)),
+          donationCount: 1,
+          latestDonation: item,
+        })
       } else {
         return c.json({ error: 'Unauthorized – donor authentication required' }, 401)
       }
@@ -919,7 +954,7 @@ app.get('/make-server-2a4be611/donor/donations', async (c) => {
           donorPhone: r.phone || undefined,
           reference: rawRef,
           receiptNumber: `REC-${rawRef.slice(-8).toUpperCase()}`,
-          campaign: r.campaign || 'Community Empowerment & Education',
+          campaign: r.campaign || 'Community Resilience & Livelihoods',
         }
         if (rawRef) seenRefs.add(rawRef.toLowerCase())
         unifiedList.push(item)

@@ -538,7 +538,7 @@ export function CardPaymentPage() {
 
         {/* Helper link to donor portal */}
         <div className="text-center text-xs text-slate-500 pt-1">
-          Already a supporter? <button type="button" onClick={() => navigate('/donor/dashboard')} className="text-emerald-700 hover:text-emerald-800 underline font-bold cursor-pointer">Access your Donor Portal</button> to view past gifts and download official tax receipts.
+          Already a supporter? <button type="button" onClick={() => navigate('/donor/dashboard')} className="text-emerald-700 hover:text-emerald-800 underline font-bold cursor-pointer">Access your Donor Portal</button> to view past gifts and download official donation receipts.
         </div>
       </div>
     </div>

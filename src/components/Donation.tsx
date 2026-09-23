@@ -58,7 +58,7 @@ const DEFAULT_DONATION_CONFIG = {
   subtitle: 'Your donation helps refugees and host communities access skills, strengthen livelihoods, and build a more resilient future.',
   secondarySubtitle: 'Every contribution makes a difference.',
   orgName: 'Refugee Empowerment For Sustainable Transformation Initiative CBO (RESTI)',
-  orgSub: 'Registered CBO - Uganda NGO Bureau',
+  orgSub: 'Registered CBO • Kiryandongo District Local Government',
   leftQuote1: 'Your donation helps refugees and host communities access skills, strengthen livelihoods, and build a more resilient future. Every contribution makes a difference.',
   leftQuote2: 'When you donate to RESTI, you help refugees and host communities build sustainable livelihoods, access new opportunities, and create a better future. We can’t do this without your support. Please support RESTI today.',
   whySupportTitle: 'Why Your Support Matters',
@@ -243,7 +243,7 @@ export function Donation() {
               className="inline-flex items-center gap-2.5 px-5 py-2.5 rounded-full text-xs sm:text-sm font-semibold text-emerald-800 bg-emerald-100/80 hover:bg-emerald-200 transition-all border border-emerald-300/60 shadow-xs hover:shadow group"
             >
               <User size={15} className="text-emerald-700" />
-              <span>Already a donor? Access Donor Portal & Tax Receipts</span>
+              <span>Already a donor? Access Donor Portal & Official Receipts</span>
               <ArrowRight size={14} className="text-emerald-600 transition-transform group-hover:translate-x-0.5" />
             </Link>
           </div>
@@ -291,7 +291,7 @@ export function Donation() {
                 <div className="font-bold text-lg mb-1 leading-snug drop-shadow-sm">{donationConfig.orgName || 'Refugee Empowerment For Sustainable Transformation Initiative (RESTI)'}</div>
                 <div className="text-emerald-300 text-xs font-semibold uppercase tracking-wider mb-5 flex items-center gap-1.5">
                   <Shield size={13} className="text-emerald-400" />
-                  <span>{donationConfig.orgSub || 'Registered CBO - Uganda NGO Bureau'}</span>
+                  <span>{donationConfig.orgSub || 'Registered CBO • Kiryandongo District Local Government'}</span>
                 </div>
 
                 <div className="bg-slate-900/60 rounded-2xl p-4.5 backdrop-blur-md border border-white/15 mb-6 space-y-2.5 shadow-lg">
@@ -361,7 +361,7 @@ export function Donation() {
                   <span className="text-[10px] bg-emerald-500/30 border border-emerald-400/30 text-emerald-200 font-semibold px-2 py-0.5 rounded-full uppercase tracking-wider">Self-Service</span>
                 </div>
                 <p className="text-emerald-100/80 text-xs leading-relaxed">
-                  Log in to download your tax receipts, review your lifetime donations, and manage recurring giving easily.
+                  Log in to download your official receipts, review your lifetime donations, and manage your supporter profile easily.
                 </p>
                 <div className="pt-2">
                   <Link

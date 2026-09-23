@@ -36,7 +36,7 @@ const iconMap: Record<string, typeof Heart> = {
 };
 
 export const DEFAULT_TRUST_BADGES: TrustBadge[] = [
-  { icon: '🏛️', label: 'Registered CBO', sub: 'Uganda NGO Bureau' },
+  { icon: '🏛️', label: 'Registered CBO', sub: 'Kiryandongo District' },
   { icon: '🌍', label: 'Community Focus', sub: 'Refugees & Host Communities' },
   { icon: '💯', label: '100% Transparent', sub: 'Annual Reports Published' },
   { icon: '🤝', label: 'Community-Led', sub: 'Locally Driven Solutions' },

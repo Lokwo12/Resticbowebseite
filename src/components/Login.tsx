@@ -98,7 +98,7 @@ export function Login() {
           RESTI Donor Portal
         </h2>
         <p className="mt-2 text-center text-sm text-gray-600 max-w-sm mx-auto">
-          Sign in to view your verified giving history, download tax receipts, and track ongoing community impact.
+          Sign in to view your verified giving history, download official receipts, and track ongoing community impact.
         </p>
         <p className="mt-2 text-center text-sm text-gray-500">
           New supporter?{' '}

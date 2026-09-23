@@ -76,7 +76,7 @@ export const DEFAULT_DONATION_PAGE_SETTINGS = {
   subtitle: 'Your donation helps refugees and host communities access skills, strengthen livelihoods, and build a more resilient future.',
   secondarySubtitle: 'Every contribution makes a difference.',
   orgName: 'Refugee Empowerment For Sustainable Transformation Initiative CBO (RESTI)',
-  orgSub: 'Registered CBO - Uganda NGO Bureau',
+  orgSub: 'Registered CBO • Kiryandongo District Local Government',
   leftQuote1: 'Your donation helps refugees and host communities access skills, strengthen livelihoods, and build a more resilient future. Every contribution makes a difference.',
   leftQuote2: 'When you donate to RESTI, you help refugees and host communities build sustainable livelihoods, access new opportunities, and create a better future. We can’t do this without your support. Please support RESTI today.',
   whySupportTitle: 'Why Your Support Matters',
@@ -174,7 +174,7 @@ export const DEFAULT_DONOR_PORTAL_SETTINGS = {
 };
 
 export const DEFAULT_TRUST_BADGES = [
-  { icon: '🏛️', label: 'Registered CBO', sub: 'Uganda NGO Bureau' },
+  { icon: '🏛️', label: 'Registered CBO', sub: 'Kiryandongo District Local Government' },
   { icon: '🌍', label: 'Community Focus', sub: 'Refugees & Host Communities' },
   { icon: '💯', label: '100% Transparent', sub: 'Annual Reports Published' },
   { icon: '🤝', label: 'Community-Led', sub: 'Locally Driven Solutions' },
