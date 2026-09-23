@@ -1442,6 +1442,27 @@ app.post('/make-server-2a4be611/admin/donations/manual', requireAdmin, async (c)
 
 // ── Mobile Money STK Push helpers ────────────────────────────────────────────
 
+// Server-side check: verify whether mobile money integration is fully active and configured for live transactions
+function isMobileMoneyLiveConfigured(provider: 'mtn' | 'airtel'): boolean {
+  // Mobile money payments must be explicitly enabled for live transactions via environment flag
+  const isLive = Deno.env.get('MOBILE_MONEY_LIVE') === 'true'
+  if (!isLive) return false
+
+  if (provider === 'mtn') {
+    return Boolean(
+      Deno.env.get('MTN_MOMO_SUBSCRIPTION_KEY') &&
+      Deno.env.get('MTN_MOMO_API_USER') &&
+      Deno.env.get('MTN_MOMO_API_KEY')
+    )
+  }
+  if (provider === 'airtel') {
+    return Boolean(
+      Deno.env.get('AIRTEL_CLIENT_ID') &&
+      Deno.env.get('AIRTEL_CLIENT_SECRET')
+    )
+  }
+  return false
+}
 
 // ── Initiate mobile money STK push ───────────────────────────────────────────
 app.post('/make-server-2a4be611/mobile-payment/initiate', withRateLimit('mobile-payment', 3, 5 * 60_000), async (c) => {
@@ -1454,6 +1475,15 @@ app.post('/make-server-2a4be611/mobile-payment/initiate', withRateLimit('mobile-
     }
     if (provider !== 'mtn' && provider !== 'airtel') {
       return c.json({ error: 'provider must be "mtn" or "airtel"' }, 400)
+    }
+
+    // Security & Production Guard: Reject MTN & Airtel initiation if not configured for live transactions (HTTP 503)
+    if (!isMobileMoneyLiveConfigured(provider)) {
+      return c.json({
+        status: 'payment_method_unavailable',
+        provider,
+        message: `${provider === 'mtn' ? 'MTN Mobile Money' : 'Airtel Money'} payments are currently under configuration. This payment option is not yet available for live donations.`
+      }, 503)
     }
 
     const phoneV = validateMobileMoneyPhone(phone)
@@ -1604,6 +1634,16 @@ app.get('/make-server-2a4be611/mobile-payment/status/:referenceId', async (c) =>
     const provider: string = pendingDonation.provider
     if (!provider) {
       return c.json({ error: 'Provider information not found for this transaction' }, 500)
+    }
+
+    if (provider === 'mtn' || provider === 'airtel') {
+      if (!isMobileMoneyLiveConfigured(provider as 'mtn' | 'airtel')) {
+        return c.json({
+          status: 'payment_method_unavailable',
+          provider,
+          message: `${provider === 'mtn' ? 'MTN Mobile Money' : 'Airtel Money'} payments are currently under configuration.`
+        }, 503)
+      }
     }
 
     let paymentStatus = 'PENDING'

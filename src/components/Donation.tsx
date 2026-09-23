@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Heart, Lock, Phone, CreditCard, ChevronRight, Building2, Shield, Star, ExternalLink, ArrowLeft, ShieldCheck, User, ArrowRight } from 'lucide-react';
+import { Heart, Lock, Phone, CreditCard, ChevronRight, Building2, Shield, Star, ExternalLink, ArrowLeft, ShieldCheck, User, ArrowRight, AlertCircle, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import { StripePaymentProvider, StripeCardForm, stripePromise, FreqOption, prefetchPaymentIntent } from './StripeShared';
 import { formatCurrency } from '../utils/formatCurrency';
@@ -142,52 +142,10 @@ export function Donation() {
     setDonorData({ firstName: '', lastName: '', email: '', phone: '', address: '', city: '', country: 'Uganda', postalCode: '' });
   };
 
-  const handleMobileMoneySubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (finalAmount < 1) { toast.error('Minimum donation is $1'); return; }
-    if (!donorData.firstName || !donorData.lastName || !donorData.email || !donorData.phone || !donorData.address || !donorData.city || !donorData.postalCode) {
-      toast.error('Please complete all required donor information fields');
-      return;
-    }
-    setSubmitting(true);
-    try {
-      const res = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/mobile-payment/initiate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${publicAnonKey}` },
-        body: JSON.stringify({
-          provider: method, 
-          phone: donorData.phone, 
-          amount: finalAmount, 
-          currency: 'USD',
-          donorName: `${donorData.firstName} ${donorData.lastName}`.trim(), 
-          donorEmail: donorData.email,
-          donorAddress: donorData.address,
-          donorCity: donorData.city,
-          donorCountry: donorData.country,
-          donorPostalCode: donorData.postalCode
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) { toast.error(data.error ?? 'Initiation failed'); setSubmitting(false); return; }
-      setMobileRef(data.referenceId);
-      setSubmitting(false);
-      setMobileWaiting(true);
-      toast.success('PIN prompt sent to your phone!', { duration: 8000 });
-
-      let attempts = 0;
-      const poll = setInterval(async () => {
-        attempts++;
-        try {
-          const sr = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/mobile-payment/status/${data.referenceId}?provider=${method}`, {
-            headers: { Authorization: `Bearer ${publicAnonKey}` }
-          });
-          const sd = await sr.json();
-          if (sd.status === 'SUCCESSFUL') { clearInterval(poll); setDone(true); toast.success('Payment confirmed!'); }
-          else if (sd.status === 'FAILED') { clearInterval(poll); setMobileWaiting(false); toast.error('Payment was declined or failed.'); }
-          else if (attempts >= 30) { clearInterval(poll); setMobileWaiting(false); toast.error('Timed out waiting for confirmation.'); }
-        } catch { }
-      }, 4000);
-    } catch { toast.error('Could not reach server'); setSubmitting(false); }
+  const handleMobileMoneySubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const providerLabel = method === 'mtn' ? 'MTN Mobile Money' : 'Airtel Money';
+    toast.error(`${providerLabel} payments are currently under configuration. This payment option is not yet available for live donations.`);
   };
 
   const handleBankSubmit = async (e: React.FormEvent) => {
@@ -513,16 +471,22 @@ export function Donation() {
                   {/* Method tabs */}
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                     {[
-                      { id: 'card', icon: CreditCard, label: 'Card' },
-                      { id: 'paypal', icon: ExternalLink, label: 'PayPal' },
-                      { id: 'mtn', icon: Phone, label: 'MTN' },
-                      { id: 'airtel', icon: Phone, label: 'Airtel' },
-                      { id: 'bank', icon: Building2, label: 'Bank' },
+                      { id: 'card', icon: CreditCard, label: 'Card', isConfiguring: false },
+                      { id: 'paypal', icon: ExternalLink, label: 'PayPal', isConfiguring: false },
+                      { id: 'mtn', icon: Phone, label: 'MTN MoMo', isConfiguring: true },
+                      { id: 'airtel', icon: Phone, label: 'Airtel Money', isConfiguring: true },
+                      { id: 'bank', icon: Building2, label: 'Bank Wire', isConfiguring: false },
                     ].map(m => (
                       <button key={m.id} type="button" onClick={() => setMethod(m.id as PayMethod)}
-                        className={`flex flex-col items-center gap-1.5 py-3 rounded-xl border-2 transition-all ${method === m.id ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-gray-100 hover:border-emerald-200'}`}>
+                        title={m.isConfiguring ? "This payment method is currently being configured and is not available for live donations." : undefined}
+                        className={`flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl border-2 transition-all ${method === m.id ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-gray-100 hover:border-emerald-200'}`}>
                         <m.icon size={20} />
                         <span className="text-[10px] font-bold uppercase tracking-wider">{m.label}</span>
+                        {m.isConfiguring && (
+                          <span className="text-[9px] font-semibold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded-full border border-amber-200 leading-tight">
+                            Under configuration
+                          </span>
+                        )}
                       </button>
                     ))}
                   </div>
@@ -588,65 +552,88 @@ export function Donation() {
                       )}
 
                       {(method === 'mtn' || method === 'airtel') && (
-                        <form onSubmit={handleMobileMoneySubmit} className="space-y-4">
-                          <div className="grid grid-cols-2 gap-3">
-                            <div>
-                              <label className={lbl}>First Name *</label>
-                              <input required className={inp} style={inpStyle} placeholder="First name" value={donorData.firstName} onChange={e => setDonorData(p => ({ ...p, firstName: e.target.value }))} />
+                        <div className="space-y-5 animate-fade-in-up">
+                          {/* Carrier Header */}
+                          <div
+                            className="rounded-xl px-5 py-4 flex items-center justify-between shadow-xs"
+                            style={{
+                              background: method === 'mtn'
+                                ? 'linear-gradient(135deg, #FFCC00 0%, #F5A500 100%)'
+                                : 'linear-gradient(135deg, #e40000 0%, #a00000 100%)',
+                              color: method === 'mtn' ? '#1a1a1a' : 'white'
+                            }}
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className={`w-9 h-9 rounded-full flex items-center justify-center font-black ${method === 'mtn' ? 'bg-black/10' : 'bg-white/20'}`}>
+                                {method === 'mtn' ? 'MTN' : 'A'}
+                              </div>
+                              <div>
+                                <p className="text-xs font-bold leading-tight">{method === 'mtn' ? 'MTN Mobile Money' : 'Airtel Money'}</p>
+                                <p className="text-[10px] opacity-80">Payment Service Under Configuration</p>
+                              </div>
                             </div>
-                            <div>
-                              <label className={lbl}>Last Name *</label>
-                              <input required className={inp} style={inpStyle} placeholder="Last name" value={donorData.lastName} onChange={e => setDonorData(p => ({ ...p, lastName: e.target.value }))} />
-                            </div>
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-white/30 backdrop-blur-sm text-gray-900 border border-white/20">
+                              Unavailable
+                            </span>
                           </div>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <div>
-                              <label className={lbl}>Email Address *</label>
-                              <input required type="email" className={inp} style={inpStyle} placeholder="you@example.com" value={donorData.email} onChange={e => setDonorData(p => ({ ...p, email: e.target.value }))} />
+
+                          {/* RESTI-branded configuration notice */}
+                          <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl flex items-start gap-3.5 text-left shadow-xs">
+                            <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center shrink-0 mt-0.5 text-amber-700">
+                              <AlertCircle size={18} />
                             </div>
-                            <div>
-                              <label className={lbl}>Phone Number *</label>
-                              <input required type="tel" className={inp} style={inpStyle} placeholder="256 700 000 000" value={donorData.phone} onChange={e => setDonorData(p => ({ ...p, phone: e.target.value }))} />
+                            <div className="space-y-1">
+                              <h4 className="text-xs font-bold text-amber-900">
+                                {method === 'mtn' ? 'MTN Mobile Money' : 'Airtel Money'} Under Configuration
+                              </h4>
+                              <p className="text-xs text-amber-800 leading-relaxed font-normal">
+                                {method === 'mtn'
+                                  ? 'MTN Mobile Money payments are currently under configuration. This payment option is not yet available for live donations. Please try another available payment method.'
+                                  : 'Airtel Money payments are currently under configuration. This payment option is not yet available for live donations. Please try another available payment method.'}
+                              </p>
                             </div>
                           </div>
 
-                          <div>
-                            <label className={lbl}>Street Address *</label>
-                            <input required className={inp} style={inpStyle} placeholder="Street address or P.O. Box" value={donorData.address} onChange={e => setDonorData(p => ({ ...p, address: e.target.value }))} />
+                          {/* Alternative suggestions */}
+                          <div className="bg-gray-50 border border-gray-100 rounded-xl p-3.5 text-left space-y-2">
+                            <p className="text-[11px] font-semibold text-gray-700">Available Live Payment Methods:</p>
+                            <ul className="text-[11px] text-gray-600 space-y-1.5">
+                              <li className="flex items-center gap-2">
+                                <CreditCard size={13} className="text-emerald-600" />
+                                <span><strong>Debit / Credit Card:</strong> Powered securely by Stripe</span>
+                              </li>
+                              <li className="flex items-center gap-2">
+                                <ExternalLink size={13} className="text-emerald-600" />
+                                <span><strong>PayPal:</strong> Instant secure digital checkout</span>
+                              </li>
+                              <li className="flex items-center gap-2">
+                                <Building2 size={13} className="text-emerald-600" />
+                                <span><strong>Bank Wire Transfer:</strong> Direct deposit to RESTI CBO bank account</span>
+                              </li>
+                            </ul>
                           </div>
 
-                          <div className="grid grid-cols-3 gap-2.5">
-                            <div>
-                              <label className={lbl}>City / Town *</label>
-                              <input required className={inp} style={inpStyle} placeholder="City" value={donorData.city} onChange={e => setDonorData(p => ({ ...p, city: e.target.value }))} />
-                            </div>
-                            <div>
-                              <label className={lbl}>Postal / ZIP *</label>
-                              <input required className={inp} style={inpStyle} placeholder="Postal code" value={donorData.postalCode} onChange={e => setDonorData(p => ({ ...p, postalCode: e.target.value }))} />
-                            </div>
-                            <div>
-                              <label className={lbl}>Country *</label>
-                              <select required className={inp} style={inpStyle} value={donorData.country} onChange={e => setDonorData(p => ({ ...p, country: e.target.value }))}>
-                                {COMMON_COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
-                              </select>
-                            </div>
+                          {/* Action buttons */}
+                          <div className="flex flex-col gap-2 pt-1">
+                            <button
+                              type="button"
+                              onClick={() => setMethod('card')}
+                              className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-[10px] text-sm flex items-center justify-center gap-2 shadow-md shadow-emerald-600/20 hover:shadow-lg transition-all duration-200 cursor-pointer"
+                              style={btnStyle}
+                            >
+                              Choose Another Payment Method
+                            </button>
+                            <button
+                              type="button"
+                              disabled
+                              className="w-full bg-gray-100 border border-gray-200 text-gray-400 font-semibold rounded-[10px] text-sm flex items-center justify-center cursor-not-allowed opacity-60"
+                              style={btnStyle}
+                              title="This payment option is not yet available for live donations."
+                            >
+                              Currently Unavailable
+                            </button>
                           </div>
-
-                          {/* Security & Privacy Notice */}
-                          <div className="pt-2 border-t border-gray-100 text-left space-y-1">
-                            <div className="flex items-center gap-1.5 text-xs font-bold text-gray-800">
-                              <ShieldCheck size={14} className="text-emerald-600 shrink-0" />
-                              <span>Security & Privacy is Important to Us</span>
-                            </div>
-                            <p className="text-[11px] text-gray-500 leading-relaxed">
-                              Your details will be kept securely and will not be shared with third parties. Please see our <Link to="/privacy" className="text-emerald-700 underline font-semibold hover:text-emerald-800">Privacy Notice</Link> and <Link to="/privacy" className="text-emerald-700 underline font-semibold hover:text-emerald-800">Cookies Policy</Link> for more information.
-                            </p>
-                          </div>
-
-                          <button type="submit" disabled={submitting} className="w-full bg-resti-green hover:bg-resti-green-dark text-white font-bold rounded-[10px] text-sm flex items-center justify-center gap-2 shadow-md shadow-resti-green/25 hover:shadow-lg hover:scale-[1.01] active:scale-[0.99] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer" style={btnStyle}>
-                            {submitting ? <span className="animate-spin w-5 h-5 border-2 border-white border-t-transparent rounded-full" /> : <><Phone size={18} /> Pay {formatAmt(finalAmount)}</>}
-                          </button>
-                        </form>
+                        </div>
                       )}
 
                       {method === 'bank' && (

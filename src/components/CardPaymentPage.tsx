@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
-import { Lock, Heart, ArrowLeft, CreditCard, Phone, Building2, ExternalLink, ShieldCheck, CheckCircle2 } from 'lucide-react';
+import { Lock, Heart, ArrowLeft, CreditCard, Phone, Building2, ExternalLink, ShieldCheck, CheckCircle2, AlertCircle, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
 import { projectId, publicAnonKey } from '../utils/supabase/info';
@@ -91,45 +91,10 @@ export function CardPaymentPage() {
 
   const finalAmount = isCustom ? (parseInt(customAmount.replace(/\D/g, '')) || 0) : amount;
 
-  const handleMobileMoneySubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!donorData.firstName || !donorData.lastName || !donorData.email || !donorData.phone || !donorData.address || !donorData.city || !donorData.postalCode) {
-      toast.error('Please complete all required fields.');
-      return;
-    }
-    setSubmitting(true);
-    try {
-      const res = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/mobile-payment/initiate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${publicAnonKey}` },
-        body: JSON.stringify({ 
-          provider: method, 
-          phone: donorData.phone, 
-          amount: finalAmount, 
-          currency: 'USD', 
-          donorName: `${donorData.firstName} ${donorData.lastName}`.trim(), 
-          donorEmail: donorData.email,
-          donorAddress: donorData.address,
-          donorCity: donorData.city,
-          donorCountry: donorData.country,
-          donorPostalCode: donorData.postalCode
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) { toast.error(data.error || 'Failed to initiate'); setSubmitting(false); return; }
-      setMobileRef(data.referenceId);
-      setMobileWaiting(true);
-      setSubmitting(false);
-      
-      const poll = setInterval(async () => {
-        try {
-          const sr = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/mobile-payment/status/${data.referenceId}?provider=${method}`, { headers: { Authorization: `Bearer ${publicAnonKey}` } });
-          const sd = await sr.json();
-          if (sd.status === 'SUCCESSFUL') { clearInterval(poll); setDone(true); }
-          else if (sd.status === 'FAILED') { clearInterval(poll); setMobileWaiting(false); toast.error('Payment failed'); }
-        } catch {}
-      }, 4000);
-    } catch { toast.error('Connection error'); setSubmitting(false); }
+  const handleMobileMoneySubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const providerLabel = method === 'mtn' ? 'MTN Mobile Money' : 'Airtel Money';
+    toast.error(`${providerLabel} payments are currently under configuration. This payment option is not yet available for live donations.`);
   };
 
   const handleBankSubmit = async (e: React.FormEvent) => {
@@ -286,22 +251,30 @@ export function CardPaymentPage() {
           {/* Payment Method Selector */}
           <div className="px-6 py-3.5 border-b border-gray-100 flex gap-2 overflow-x-auto no-scrollbar bg-slate-50/40">
             {[
-              { id: 'card', icon: CreditCard, label: 'Card' },
-              { id: 'paypal', icon: ExternalLink, label: 'PayPal' },
-              { id: 'mtn', icon: Phone, label: 'MTN MoMo' },
-              { id: 'airtel', icon: Phone, label: 'Airtel Money' },
-              { id: 'bank', icon: Building2, label: 'Bank Wire' },
+              { id: 'card', icon: CreditCard, label: 'Card', isConfiguring: false },
+              { id: 'paypal', icon: ExternalLink, label: 'PayPal', isConfiguring: false },
+              { id: 'mtn', icon: Phone, label: 'MTN MoMo', isConfiguring: true },
+              { id: 'airtel', icon: Phone, label: 'Airtel Money', isConfiguring: true },
+              { id: 'bank', icon: Building2, label: 'Bank Wire', isConfiguring: false },
             ].map(m => (
               <button 
                 key={m.id} 
                 onClick={() => setMethod(m.id as any)}
-                className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold shrink-0 transition-all cursor-pointer ${
+                title={m.isConfiguring ? "This payment method is currently being configured and is not available for live donations." : undefined}
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold shrink-0 transition-all cursor-pointer ${
                   method === m.id 
                     ? 'bg-emerald-600 text-white shadow-sm' 
                     : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
                 }`}
               >
                 <m.icon size={13} /> {m.label}
+                {m.isConfiguring && (
+                  <span className={`text-[9px] font-semibold px-1.5 py-0.2 rounded-full border leading-tight ${
+                    method === m.id ? 'bg-white/20 text-white border-white/30' : 'bg-amber-50 text-amber-700 border-amber-200'
+                  }`}>
+                    Under config
+                  </span>
+                )}
               </button>
             ))}
           </div>
@@ -412,7 +385,7 @@ export function CardPaymentPage() {
                 )}
 
                 {(method === 'mtn' || method === 'airtel') && (
-                  <form onSubmit={handleMobileMoneySubmit} className="space-y-4">
+                  <div className="space-y-5 animate-fade-in-up">
                     {/* Carrier Header */}
                     <div 
                       className="rounded-xl px-5 py-3.5 flex items-center justify-between mb-2 shadow-xs"
@@ -429,63 +402,69 @@ export function CardPaymentPage() {
                         </div>
                         <div>
                           <p className="text-xs font-bold leading-tight">{method === 'mtn' ? 'MTN Mobile Money' : 'Airtel Money'}</p>
-                          <p className="text-[10px] opacity-80">Instant phone PIN prompt</p>
+                          <p className="text-[10px] opacity-80">Payment Service Under Configuration</p>
                         </div>
                       </div>
-                      <Lock size={14} className="opacity-60" />
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-white/30 backdrop-blur-sm text-gray-900 border border-white/20">
+                        Unavailable
+                      </span>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-3">
-                      <div><label className={lbl}>First Name *</label><input required className={inp} placeholder="First name" value={donorData.firstName} onChange={e => setDonorData(p => ({ ...p, firstName: e.target.value }))} /></div>
-                      <div><label className={lbl}>Last Name *</label><input required className={inp} placeholder="Last name" value={donorData.lastName} onChange={e => setDonorData(p => ({ ...p, lastName: e.target.value }))} /></div>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div><label className={lbl}>Email Address (for official receipt) *</label><input required type="email" className={inp} placeholder="you@example.com" value={donorData.email} onChange={e => setDonorData(p => ({ ...p, email: e.target.value }))} /></div>
-                      <div>
-                        <label className={lbl}>Phone Number *</label>
-                        <input 
-                          required 
-                          type="tel"
-                          className={inp} 
-                          placeholder="256 700 000 000" 
-                          value={donorData.phone} 
-                          onChange={e => {
-                            let val = e.target.value.replace(/\D/g, '');
-                            if ((val.startsWith('07') && val.length > 2) || (val.startsWith('7') && !val.startsWith('256'))) {
-                               if (val.startsWith('0')) val = '256' + val.substring(1);
-                               else val = '256' + val;
-                            }
-                            setDonorData(p => ({ ...p, phone: val }));
-                          }} 
-                        />
+                    {/* RESTI-branded configuration notice */}
+                    <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl flex items-start gap-3.5 text-left shadow-xs">
+                      <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center shrink-0 mt-0.5 text-amber-700">
+                        <AlertCircle size={18} />
+                      </div>
+                      <div className="space-y-1">
+                        <h4 className="text-xs font-bold text-amber-900">
+                          {method === 'mtn' ? 'MTN Mobile Money' : 'Airtel Money'} Under Configuration
+                        </h4>
+                        <p className="text-xs text-amber-800 leading-relaxed font-normal">
+                          {method === 'mtn'
+                            ? 'MTN Mobile Money payments are currently under configuration. This payment option is not yet available for live donations. Please try another available payment method.'
+                            : 'Airtel Money payments are currently under configuration. This payment option is not yet available for live donations. Please try another available payment method.'}
+                        </p>
                       </div>
                     </div>
 
-                    <div>
-                      <label className={lbl}>Street Address *</label>
-                      <input required className={inp} placeholder="Street address or P.O. Box" value={donorData.address} onChange={e => setDonorData(p => ({ ...p, address: e.target.value }))} />
+                    {/* Alternative options */}
+                    <div className="bg-gray-50 border border-gray-100 rounded-xl p-3.5 text-left space-y-2">
+                      <p className="text-[11px] font-semibold text-gray-700">Available Live Payment Methods:</p>
+                      <ul className="text-[11px] text-gray-600 space-y-1.5">
+                        <li className="flex items-center gap-2">
+                          <CreditCard size={13} className="text-emerald-600" />
+                          <span><strong>Debit / Credit Card:</strong> Powered securely by Stripe</span>
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <ExternalLink size={13} className="text-emerald-600" />
+                          <span><strong>PayPal:</strong> Instant digital checkout</span>
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <Building2 size={13} className="text-emerald-600" />
+                          <span><strong>Bank Wire Transfer:</strong> Direct deposit to RESTI CBO bank account</span>
+                        </li>
+                      </ul>
                     </div>
 
-                    <div className="grid grid-cols-3 gap-2.5">
-                      <div><label className={lbl}>City / Town *</label><input required className={inp} placeholder="City" value={donorData.city} onChange={e => setDonorData(p => ({ ...p, city: e.target.value }))} /></div>
-                      <div><label className={lbl}>Postal / ZIP *</label><input required className={inp} placeholder="Postal code" value={donorData.postalCode} onChange={e => setDonorData(p => ({ ...p, postalCode: e.target.value }))} /></div>
-                      <div>
-                        <label className={lbl}>Country *</label>
-                        <select required className={inp} value={donorData.country} onChange={e => setDonorData(p => ({ ...p, country: e.target.value }))}>
-                          {COMMON_COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
-                        </select>
-                      </div>
+                    {/* Action buttons */}
+                    <div className="flex flex-col gap-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => setMethod('card')}
+                        className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 rounded-xl shadow-md flex items-center justify-center gap-2 transition-transform active:scale-[0.98] cursor-pointer"
+                      >
+                        Choose Another Payment Method
+                      </button>
+                      <button 
+                        type="button" 
+                        disabled
+                        className="w-full bg-gray-100 border border-gray-200 text-gray-400 font-semibold py-3.5 rounded-xl flex items-center justify-center cursor-not-allowed opacity-60"
+                        title="This payment option is not yet available for live donations."
+                      >
+                        Currently Unavailable
+                      </button>
                     </div>
-
-                    <button 
-                      type="submit" 
-                      disabled={submitting} 
-                      className={`w-full text-white font-bold py-3.5 rounded-xl shadow-md flex items-center justify-center gap-2 transition-transform active:scale-[0.98] cursor-pointer ${method === 'mtn' ? 'bg-[#FFCC00] !text-black hover:bg-[#F5A500]' : 'bg-[#e40000] hover:bg-[#c00000]'}`}
-                    >
-                      {submitting ? <span className="animate-spin w-4 h-4 border-2 border-current border-t-transparent rounded-full" /> : `Pay ${formatUSD(finalAmount)} Now`}
-                    </button>
-                  </form>
+                  </div>
                 )}
 
                 {method === 'bank' && (
