@@ -363,7 +363,7 @@ export function DemoCardForm({ donorData, finalAmount, freq, children }: any) {
       <div className="space-y-2">
         <h4 className="text-base font-bold text-slate-800">Card Payment Notice</h4>
         <p className="text-xs text-slate-500 max-w-sm mx-auto leading-relaxed">
-          Online card processing is currently being finalized for live production. To donate {formatAmt ? formatAmt(finalAmount) : ''} securely today, please choose <strong>Mobile Money (MTN / Airtel)</strong>, <strong>PayPal</strong>, or <strong>Bank Wire</strong>.
+          Online card processing is currently being finalized for live production. To donate {formatAmt ? formatAmt(finalAmount) : ''} securely today, please choose <strong>PayPal</strong> or <strong>Bank Wire</strong>.
         </p>
       </div>
       <div className="pt-2">
