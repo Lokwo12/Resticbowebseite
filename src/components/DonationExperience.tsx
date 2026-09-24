@@ -3,7 +3,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import {
   Heart, Lock, ShieldCheck, CreditCard, Building2, Phone,
   ExternalLink, CheckCircle2, AlertCircle, Clock, X, ArrowLeft,
-  Printer, Mail, AlertTriangle, ArrowRight, Check, Eye
+  Printer, Mail, AlertTriangle, ArrowRight, Check, Eye,
+  Upload, Paperclip, Copy, FileText, ChevronRight
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '../utils/supabase/client';
@@ -14,7 +15,7 @@ import { PayPalScriptProvider, PayPalButtons } from '@paypal/react-paypal-js';
 
 export type SupportedCurrency = 'UGX' | 'USD' | 'EUR' | 'GBP';
 export type PaymentMethodType = 'card' | 'paypal' | 'mtn' | 'airtel' | 'bank';
-export type PaymentStatus = 'idle' | 'processing' | 'success' | 'pending' | 'failed' | 'cancelled';
+export type PaymentStatus = 'idle' | 'processing' | 'success' | 'pending' | 'pending_verification' | 'failed' | 'cancelled';
 
 export interface DonationExperienceProps {
   isModal?: boolean;
@@ -123,6 +124,149 @@ export function DonationExperience({
   // Form Validation Errors
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  // Dynamic Bank Details Configuration from site-settings (read-only from database)
+  const [bankConfig, setBankConfig] = useState<{
+    bankName: string;
+    accountName: string;
+    accountNumber: string;
+    branch: string;
+    swiftCode: string;
+    currency?: string;
+    orgSub?: string;
+    [key: string]: any;
+  } | null>(null);
+  const [loadingBankConfig, setLoadingBankConfig] = useState<boolean>(true);
+
+  // Persistent unique reference per session: RESTI-2026-XXXXXX
+  const [bankReference] = useState<string>(() => {
+    const chars = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
+    let code = '';
+    for (let i = 0; i < 6; i++) {
+      code += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return `RESTI-2026-${code}`;
+  });
+  const [copiedReference, setCopiedReference] = useState<boolean>(false);
+
+  // Proof of transfer upload state
+  const [proofFile, setProofFile] = useState<File | null>(null);
+  const [proofUrl, setProofUrl] = useState<string>('');
+  const [proofFileName, setProofFileName] = useState<string>('');
+  const [uploadingProof, setUploadingProof] = useState<boolean>(false);
+  const proofFileInputRef = useRef<HTMLInputElement>(null);
+
+  // Fetch dynamic bank settings from /site-settings
+  useEffect(() => {
+    let isMounted = true;
+    async function fetchBankSettings() {
+      try {
+        const res = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/site-settings`, {
+          headers: { 'Authorization': `Bearer ${publicAnonKey}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.settings?.donation && isMounted) {
+            setBankConfig({
+              bankName: data.settings.donation.bankName || 'EQUITY',
+              accountName: data.settings.donation.accountName || 'Refugee Empowerment For Sustainable Transformation Initiative',
+              accountNumber: data.settings.donation.accountNumber || '1050203752178',
+              branch: data.settings.donation.branch || 'Bweyale Branch',
+              swiftCode: data.settings.donation.swiftCode || 'EQBLUGKA',
+              currency: data.settings.donation.currency || 'UGX / USD',
+              orgSub: data.settings.donation.orgSub || 'Registered CBO | CBOR 087 KDNMC',
+              ...data.settings.donation
+            });
+          }
+        }
+      } catch (err) {
+        console.warn('Could not fetch dynamic bank settings:', err);
+      } finally {
+        if (isMounted) setLoadingBankConfig(false);
+      }
+    }
+    fetchBankSettings();
+    return () => { isMounted = false; };
+  }, []);
+
+  const handleCopyReference = () => {
+    navigator.clipboard.writeText(bankReference);
+    setCopiedReference(true);
+    toast.success('Donation reference copied to clipboard!');
+    setTimeout(() => setCopiedReference(false), 2500);
+  };
+
+  const handleProofFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('File size exceeds the 10MB limit.');
+      return;
+    }
+
+    const allowed = ['.pdf', '.png', '.jpg', '.jpeg', '.webp'];
+    const ext = '.' + file.name.split('.').pop()?.toLowerCase();
+    if (!allowed.includes(ext)) {
+      toast.error('Please upload an image (PNG, JPG, WEBP) or PDF file.');
+      return;
+    }
+
+    setProofFile(file);
+    setProofFileName(file.name);
+    setUploadingProof(true);
+
+    try {
+      // 1. Try edge function upload
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/donations/upload-proof`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${publicAnonKey}`
+        },
+        body: formData
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.url) {
+          setProofUrl(data.url);
+          toast.success('Proof of transfer uploaded successfully');
+          return;
+        }
+      }
+
+      // 2. Direct fallback to Supabase storage
+      const cleanName = `transfer-proofs/${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
+      const { error: upErr } = await supabase.storage
+        .from('make-2a4be611-uploads')
+        .upload(cleanName, file);
+
+      if (upErr) throw upErr;
+
+      const { data: pubData } = supabase.storage
+        .from('make-2a4be611-uploads')
+        .getPublicUrl(cleanName);
+
+      if (pubData?.publicUrl) {
+        setProofUrl(pubData.publicUrl);
+        toast.success('Proof of transfer attached');
+      }
+    } catch (err: any) {
+      console.warn('Proof upload notice:', err);
+      toast.info('Proof file selected. You may also email it to info@resticbo.org.');
+    } finally {
+      setUploadingProof(false);
+    }
+  };
+
+  const handleRemoveProof = () => {
+    setProofFile(null);
+    setProofUrl('');
+    setProofFileName('');
+    if (proofFileInputRef.current) proofFileInputRef.current.value = '';
+  };
+
   // Sync initial props
   useEffect(() => {
     if (initialAmount && initialAmount > 0) {
@@ -221,17 +365,21 @@ export function DonationExperience({
     return Object.keys(newErrors).length === 0;
   };
 
-  // Bank Transfer Submission (Pending record creation)
+  // Bank Transfer Submission (Strictly Pending Verification — Never Marked Paid)
   const handleBankTransferSubmit = async () => {
     if (!validateForm()) {
-      toast.error('Please complete all required fields correctly.');
+      toast.error('Please enter your full name and a valid email address.');
+      return;
+    }
+
+    if (uploadingProof) {
+      toast.info('Please wait for your proof of transfer to finish uploading.');
       return;
     }
 
     setStatus('processing');
-    setStatusMessage('Registering direct bank transfer pledge...');
+    setStatusMessage('Submitting your bank transfer notification...');
 
-    const transactionRef = `RESTI-WIRE-${Date.now().toString(36).toUpperCase()}`;
     const nowIso = new Date().toISOString();
 
     try {
@@ -251,35 +399,52 @@ export function DonationExperience({
           donorCountry: country,
           campaign: purpose,
           message: `Voluntary bank transfer for ${purpose}`,
-          transactionId: transactionRef,
-          status: 'pending'
+          transactionId: bankReference,
+          proofUrl: proofUrl || undefined,
+          proofFileName: proofFileName || undefined,
+          status: 'pending_verification'
         })
       });
 
       if (!res.ok) {
-        throw new Error('Could not register bank transfer');
+        throw new Error('Could not submit bank transfer notification');
+      }
+
+      // Explicitly ensure status is recorded as pending_verification in Postgres
+      try {
+        await supabase
+          .from('donations')
+          .update({ status: 'pending_verification' })
+          .eq('transaction_id', bankReference);
+      } catch (_) {
+        // Non-blocking
       }
 
       setConfirmedDonation({
-        id: transactionRef,
+        id: bankReference,
         amount: finalAmount,
         currency: currency,
         paymentMethod: 'Bank Wire Transfer',
         date: nowIso,
         donorName: isAnonymous ? 'Anonymous Supporter' : fullName.trim(),
         donorEmail: email.trim(),
-        reference: transactionRef,
+        donorPhone: phone.trim(),
+        donorCountry: country,
+        reference: bankReference,
         campaign: purpose,
-        status: 'pending'
+        proofUrl: proofUrl || undefined,
+        proofFileName: proofFileName || undefined,
+        status: 'pending_verification',
+        bankDetails: bankConfig
       });
 
-      setStatus('pending');
-      toast.info('Bank transfer registered as pending receipt of funds.');
+      setStatus('pending_verification');
+      toast.success('Donation submitted — awaiting verification');
     } catch (err: any) {
       console.error('Bank submit error:', err);
       setStatus('failed');
-      setStatusMessage('Unable to register bank transfer. Please try again or contact info@resticbo.org.');
-      toast.error('Unable to register transfer request');
+      setStatusMessage('Unable to submit bank transfer notification. Please try again or contact info@resticbo.org.');
+      toast.error('Unable to submit transfer notification');
     }
   };
 
@@ -469,32 +634,62 @@ export function DonationExperience({
   }
 
   // ──────────────────────────────────────────────────────────────────────────
-  // VIEW: PENDING PAYMENT STATE (e.g. Bank wire registration)
+  // VIEW: PENDING PAYMENT STATE (Bank transfer submitted — awaiting verification)
   // ──────────────────────────────────────────────────────────────────────────
-  if (status === 'pending' && confirmedDonation) {
+  if ((status === 'pending' || status === 'pending_verification') && confirmedDonation) {
+    const bankDetails = confirmedDonation.bankDetails || bankConfig;
+
     return (
-      <div className="bg-white rounded-2xl border border-stone-200 p-6 sm:p-10 max-w-xl mx-auto shadow-sm my-6 text-center">
-        <div className="w-16 h-16 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center mx-auto mb-4">
+      <div className="bg-white rounded-3xl border border-stone-200 p-6 sm:p-10 max-w-xl mx-auto shadow-sm my-6 text-center">
+        <div className="w-16 h-16 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center mx-auto mb-4 ring-8 ring-amber-50">
           <Clock className="w-9 h-9" />
         </div>
-        <h2 className="text-2xl font-bold text-stone-900 tracking-tight">Payment Pending</h2>
-        <p className="text-stone-600 text-sm mt-2 mb-6 max-w-md mx-auto leading-relaxed">
-          Your payment has been submitted and is awaiting confirmation. We will update your donation record once the payment is verified.
+        
+        {/* Exact Heading from Requirement 9 */}
+        <h2 className="text-2xl font-bold text-stone-900 tracking-tight">
+          Donation submitted — awaiting verification
+        </h2>
+
+        {/* Exact Description from Requirement 9 */}
+        <p className="text-stone-600 text-sm mt-3 mb-6 max-w-lg mx-auto leading-relaxed">
+          Thank you for supporting RESTI CBO. Your bank-transfer donation has been recorded and is awaiting confirmation of receipt. We will update your donation status once the transfer has been verified.
         </p>
 
-        {/* Wire instructions */}
-        <div className="bg-stone-50 border border-stone-200 rounded-xl p-5 text-left text-xs space-y-2 mb-6">
-          <div className="font-bold text-stone-800 pb-2 border-b border-stone-200 flex items-center justify-between">
-            <span>RESTI Official Bank Details</span>
-            <span className="font-mono text-emerald-800">{confirmedDonation.reference}</span>
+        {/* Wire & Reference Summary Card */}
+        <div className="bg-stone-50 border border-stone-200 rounded-2xl p-5 text-left text-xs space-y-3 mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-stone-200">
+            <div>
+              <span className="text-[10px] uppercase font-bold text-stone-500 block">Donation Reference</span>
+              <span className="font-mono font-bold text-emerald-900 text-base">{confirmedDonation.reference}</span>
+            </div>
+            <div className="sm:text-right">
+              <span className="text-[10px] uppercase font-bold text-stone-500 block">Amount</span>
+              <span className="font-bold text-stone-900 text-sm">
+                {formatMoney(confirmedDonation.amount, confirmedDonation.currency)}
+              </span>
+            </div>
           </div>
-          <div className="flex justify-between"><span className="text-stone-500">Bank:</span> <strong>Stanbic Bank Uganda</strong></div>
-          <div className="flex justify-between"><span className="text-stone-500">Account Name:</span> <strong>RESTI CBO</strong></div>
-          <div className="flex justify-between"><span className="text-stone-500">Account No:</span> <strong>9030012345678</strong></div>
-          <div className="flex justify-between"><span className="text-stone-500">Branch:</span> <strong>Kiryandongo Branch</strong></div>
-          <div className="flex justify-between"><span className="text-stone-500">SWIFT:</span> <strong>SBICUGKX</strong></div>
+
+          <div className="space-y-1.5 text-stone-700">
+            <div className="flex justify-between"><span className="text-stone-500">Donor:</span> <strong>{confirmedDonation.donorName}</strong></div>
+            <div className="flex justify-between"><span className="text-stone-500">Email:</span> <span>{confirmedDonation.donorEmail}</span></div>
+            <div className="flex justify-between"><span className="text-stone-500">Beneficiary Bank:</span> <strong>{bankDetails?.bankName || 'EQUITY'}</strong></div>
+            <div className="flex justify-between"><span className="text-stone-500">Account Name:</span> <strong>{bankDetails?.accountName || 'Refugee Empowerment For Sustainable Transformation Initiative'}</strong></div>
+            <div className="flex justify-between"><span className="text-stone-500">Account Number:</span> <strong className="font-mono">{bankDetails?.accountNumber || '1050203752178'}</strong></div>
+            <div className="flex justify-between"><span className="text-stone-500">Branch / SWIFT:</span> <span>{bankDetails?.branch || 'Bweyale Branch'} ({bankDetails?.swiftCode || 'EQBLUGKA'})</span></div>
+            {confirmedDonation.proofFileName && (
+              <div className="flex justify-between pt-1 border-t border-stone-200 text-emerald-800">
+                <span className="text-stone-500">Proof of Transfer:</span>
+                <span className="font-semibold flex items-center gap-1">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                  {confirmedDonation.proofFileName}
+                </span>
+              </div>
+            )}
+          </div>
+
           <div className="pt-2 text-[11px] text-stone-500 border-t border-stone-200">
-            Please include reference <span className="font-mono font-bold text-stone-700">{confirmedDonation.reference}</span> in your deposit description.
+            Please ensure you have included reference <span className="font-mono font-bold text-emerald-800">{confirmedDonation.reference}</span> in your deposit note. Our finance team reconciles bank deposits regularly.
           </div>
         </div>
 
@@ -503,14 +698,20 @@ export function DonationExperience({
             to="/donor-portal"
             className="px-5 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold rounded-xl flex items-center justify-center gap-1.5 shadow-sm"
           >
-            Track in Supporter Portal <ArrowRight className="w-3.5 h-3.5" />
+            View Supporter & Donor Portal <ArrowRight className="w-3.5 h-3.5" />
           </Link>
           <button
             type="button"
-            onClick={handleTryAgain}
+            onClick={() => {
+              if (isModal && onClose) {
+                onClose();
+              } else {
+                handleTryAgain();
+              }
+            }}
             className="px-5 py-2.5 bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-semibold rounded-xl border border-stone-200"
           >
-            Back to Donation Form
+            {isModal ? 'Done' : 'Back to Donation Form'}
           </button>
         </div>
       </div>
@@ -922,9 +1123,9 @@ export function DonationExperience({
             >
               <div className="flex items-center gap-2">
                 <Building2 className="w-4 h-4 text-emerald-700" />
-                <span className="text-xs font-bold">Bank Wire Transfer</span>
+                <span className="text-xs font-bold">Bank Transfer</span>
               </div>
-              <span className="text-[10px] text-stone-500">Direct wire to RESTI CBO</span>
+              <span className="text-[10px] text-stone-500">Official RESTI CBO bank account</span>
             </button>
 
             {/* Mobile Money Notice Banner when MTN or Airtel selected */}
@@ -1025,15 +1226,166 @@ export function DonationExperience({
               </div>
             )}
 
+            {/* Dedicated Bank Transfer Payment Section */}
             {paymentMethod === 'bank' && (
-              <div className="pt-2 space-y-3">
+              <div className="pt-2 space-y-4">
+                <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 sm:p-5 text-left text-xs space-y-3.5 shadow-xs">
+                  
+                  {/* Amount and Unique Donation Reference */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200">
+                    <div>
+                      <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Donation Amount</div>
+                      <div className="text-lg font-black text-emerald-800">
+                        {formatMoney(finalAmount, currency)}
+                      </div>
+                    </div>
+
+                    <div className="bg-white border border-slate-200 rounded-xl px-3 py-2 flex items-center justify-between sm:justify-start gap-2 shadow-2xs">
+                      <div>
+                        <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Donation Reference</div>
+                        <div className="font-mono font-bold text-emerald-900 text-xs sm:text-sm tracking-wide">
+                          {bankReference}
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleCopyReference}
+                        className="p-1.5 text-slate-500 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition-colors cursor-pointer"
+                        title="Copy donation reference code"
+                      >
+                        {copiedReference ? <Check size={14} className="text-emerald-600" /> : <Copy size={14} />}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Mandatory Instruction */}
+                  <div className="p-3 bg-amber-50/90 border border-amber-200/90 rounded-xl text-amber-900 text-xs leading-relaxed flex items-start gap-2.5">
+                    <AlertCircle className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+                    <div>
+                      <strong className="font-semibold block mb-0.5">Please include this donation reference when making your bank transfer so RESTI can match your payment.</strong>
+                      <p className="text-[11px] text-amber-800">
+                        Include <span className="font-mono font-bold text-emerald-800">{bankReference}</span> in your bank deposit slip, wire narrative, or transfer notes.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Dynamic Bank Transfer Instructions */}
+                  <div className="space-y-2 pt-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                        Bank Transfer Instructions
+                      </span>
+                      {loadingBankConfig && (
+                        <span className="text-[10px] text-slate-400">Loading bank details...</span>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                      <div className="bg-white border border-slate-200/90 rounded-xl p-2.5">
+                        <span className="text-[10px] text-slate-400 font-medium block">Bank Name</span>
+                        <strong className="text-slate-900 font-semibold">{bankConfig?.bankName || 'EQUITY'}</strong>
+                      </div>
+
+                      <div className="bg-white border border-slate-200/90 rounded-xl p-2.5">
+                        <span className="text-[10px] text-slate-400 font-medium block">Account Name</span>
+                        <strong className="text-slate-900 font-semibold truncate block" title={bankConfig?.accountName || 'Refugee Empowerment For Sustainable Transformation Initiative'}>
+                          {bankConfig?.accountName || 'Refugee Empowerment For Sustainable Transformation Initiative'}
+                        </strong>
+                      </div>
+
+                      <div className="bg-white border border-slate-200/90 rounded-xl p-2.5">
+                        <span className="text-[10px] text-slate-400 font-medium block">Account Number</span>
+                        <strong className="text-slate-900 font-mono font-bold tracking-wider">{bankConfig?.accountNumber || '1050203752178'}</strong>
+                      </div>
+
+                      <div className="bg-white border border-slate-200/90 rounded-xl p-2.5">
+                        <span className="text-[10px] text-slate-400 font-medium block">Branch</span>
+                        <strong className="text-slate-900 font-semibold">{bankConfig?.branch || 'Bweyale Branch'}</strong>
+                      </div>
+
+                      <div className="bg-white border border-slate-200/90 rounded-xl p-2.5">
+                        <span className="text-[10px] text-slate-400 font-medium block">SWIFT / BIC</span>
+                        <strong className="text-slate-900 font-mono font-bold">{bankConfig?.swiftCode || 'EQBLUGKA'}</strong>
+                      </div>
+
+                      <div className="bg-white border border-slate-200/90 rounded-xl p-2.5">
+                        <span className="text-[10px] text-slate-400 font-medium block">Accepted Currency</span>
+                        <strong className="text-slate-900 font-semibold">{currency} / UGX / USD</strong>
+                      </div>
+                    </div>
+
+                    {bankConfig?.orgSub && (
+                      <div className="text-[10px] text-slate-500 font-medium pt-0.5">
+                        Official CBO Registration: <span className="font-semibold text-slate-700">{bankConfig.orgSub}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Optional Proof of Transfer Upload */}
+                  <div className="pt-2 border-t border-slate-200">
+                    <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1.5">
+                      Upload proof of transfer <span className="text-slate-400 font-normal lowercase">(optional)</span>
+                    </label>
+
+                    {proofUrl ? (
+                      <div className="flex items-center justify-between bg-emerald-50 border border-emerald-200 rounded-xl p-2.5 text-xs text-emerald-900">
+                        <div className="flex items-center gap-2 truncate">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                          <span className="truncate font-medium">{proofFileName || 'Proof of transfer attached'}</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={handleRemoveProof}
+                          className="text-emerald-700 hover:text-rose-700 text-xs font-semibold px-2 py-1 rounded hover:bg-emerald-100 transition-colors cursor-pointer shrink-0"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ) : (
+                      <div>
+                        <input
+                          type="file"
+                          ref={proofFileInputRef}
+                          onChange={handleProofFileChange}
+                          accept=".pdf,.png,.jpg,.jpeg,.webp"
+                          className="hidden"
+                          id="bank-proof-file-input"
+                        />
+                        <label
+                          htmlFor="bank-proof-file-input"
+                          className="border-2 border-dashed border-slate-300 hover:border-emerald-600 hover:bg-emerald-50/40 rounded-xl p-3 text-center flex flex-col items-center justify-center gap-1 cursor-pointer transition-all"
+                        >
+                          {uploadingProof ? (
+                            <div className="flex items-center gap-2 text-slate-600 text-xs">
+                              <div className="w-4 h-4 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin" />
+                              <span>Uploading transfer proof...</span>
+                            </div>
+                          ) : (
+                            <>
+                              <div className="flex items-center gap-1.5 text-xs font-bold text-slate-700">
+                                <Upload className="w-4 h-4 text-emerald-700" />
+                                <span>Attach bank receipt or transfer confirmation</span>
+                              </div>
+                              <span className="text-[10px] text-slate-500">
+                                Supports PNG, JPG, or PDF up to 10MB
+                              </span>
+                            </>
+                          )}
+                        </label>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Primary Action Button */}
                 <button
                   type="button"
                   onClick={handleBankTransferSubmit}
-                  className="w-full bg-emerald-700 hover:bg-emerald-800 text-white font-bold py-3 rounded-xl text-xs sm:text-sm transition-all shadow-sm flex items-center justify-center gap-1.5 cursor-pointer"
+                  disabled={uploadingProof}
+                  className="w-full bg-emerald-700 hover:bg-emerald-800 disabled:opacity-60 text-white font-bold py-3.5 rounded-xl text-xs sm:text-sm transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer"
                 >
-                  <Heart className="w-4 h-4 fill-white/20" />
-                  Donate {formatMoney(finalAmount, currency)} (Bank Wire)
+                  <Check className="w-4 h-4" />
+                  I Have Made the Bank Transfer
                 </button>
               </div>
             )}

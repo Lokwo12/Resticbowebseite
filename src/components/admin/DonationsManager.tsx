@@ -16,6 +16,17 @@ import {
   ResponsiveContainer, PieChart, Pie, Cell 
 } from 'recharts';
 
+export type DonationAdminStatus = 
+  | 'paid' 
+  | 'completed' 
+  | 'pending_verification' 
+  | 'pending' 
+  | 'processing' 
+  | 'failed' 
+  | 'cancelled' 
+  | 'rejected' 
+  | 'refunded';
+
 export interface AdminDonationRecord {
   id: string;
   key: string;
@@ -29,14 +40,18 @@ export interface AdminDonationRecord {
   frequency: string;
   method: string;
   provider: string;
-  status: 'completed' | 'pending' | 'failed' | 'refunded';
+  status: DonationAdminStatus;
   transactionId: string;
   providerTransactionId?: string;
   createdAt: string;
   updatedAt?: string;
   message?: string;
   verifiedBy?: string;
+  verifiedAt?: string;
   verificationMethod?: string;
+  proofUrl?: string;
+  proofFileName?: string;
+  auditTrail?: any[];
   raw?: any;
 }
 
@@ -65,9 +80,11 @@ const METHOD_OPTIONS = [
 
 const STATUS_OPTIONS = [
   { id: 'all', label: 'All Statuses' },
-  { id: 'completed', label: 'Completed' },
-  { id: 'pending', label: 'Pending / In Review' },
-  { id: 'failed', label: 'Failed' },
+  { id: 'paid', label: 'Paid / Completed' },
+  { id: 'pending_verification', label: 'Pending Verification' },
+  { id: 'pending', label: 'Pending / In Progress' },
+  { id: 'rejected', label: 'Rejected' },
+  { id: 'failed', label: 'Failed / Cancelled' },
   { id: 'refunded', label: 'Refunded' },
 ];
 
@@ -131,7 +148,7 @@ export function DonationsManager({
     currency: 'USD',
     frequency: 'once',
     method: 'card',
-    status: 'completed' as 'completed' | 'pending' | 'failed' | 'refunded',
+    status: 'paid' as DonationAdminStatus,
     transactionId: '',
     date: new Date().toISOString().slice(0, 16),
     message: '',
@@ -147,7 +164,7 @@ export function DonationsManager({
     currency: 'USD',
     frequency: 'once',
     method: 'card',
-    status: 'completed' as 'completed' | 'pending' | 'failed' | 'refunded',
+    status: 'paid' as DonationAdminStatus,
     transactionId: '',
     message: '',
   });
@@ -175,24 +192,40 @@ export function DonationsManager({
     const method = (data.method || data.paymentMethod || data.payment_method || 'other').toLowerCase();
     const provider = data.provider || data.payment_provider || method;
     
-    let status: 'completed' | 'pending' | 'failed' | 'refunded' = 'pending';
+    let status: DonationAdminStatus = 'pending';
     const rawStatus = (data.status || '').toLowerCase();
-    if (rawStatus === 'completed' || rawStatus === 'succeeded' || rawStatus === 'paid' || rawStatus === 'success') {
-      status = 'completed';
+    if (rawStatus === 'paid' || rawStatus === 'completed' || rawStatus === 'succeeded' || rawStatus === 'success') {
+      status = 'paid';
+    } else if (
+      rawStatus === 'pending_verification' || 
+      rawStatus === 'awaiting_verification' || 
+      ((method === 'bank_transfer' || method === 'bank' || method.includes('wire') || method.includes('bank')) && (rawStatus === 'pending' || rawStatus === ''))
+    ) {
+      status = 'pending_verification';
+    } else if (rawStatus === 'processing') {
+      status = 'processing';
+    } else if (rawStatus === 'rejected') {
+      status = 'rejected';
+    } else if (rawStatus === 'cancelled') {
+      status = 'cancelled';
     } else if (rawStatus === 'refunded') {
       status = 'refunded';
-    } else if (rawStatus === 'failed' || rawStatus === 'cancelled' || rawStatus === 'rejected') {
+    } else if (rawStatus === 'failed') {
       status = 'failed';
     } else {
       status = 'pending';
     }
 
-    const transactionId = data.transaction_id || data.transactionId || data.paymentIntentId || data.id || '';
+    const transactionId = data.transaction_id || data.transactionId || data.donation_reference || data.paymentIntentId || data.id || '';
     const createdAt = data.created_at || data.timestamp || new Date().toISOString();
     const updatedAt = data.updated_at || data.updatedAt;
     const message = data.message || data.provider_response?.message || '';
-    const verifiedBy = data.verified_by || data.verifiedBy || '';
-    const verificationMethod = data.verification_method || data.verificationMethod || '';
+    const verifiedBy = data.provider_response?.verified_by || data.verified_by || data.verifiedBy || '';
+    const verifiedAt = data.provider_response?.verified_at || data.verified_at || data.verifiedAt || '';
+    const verificationMethod = data.provider_response?.verification_method || data.verification_method || data.verificationMethod || '';
+    const proofUrl = data.provider_response?.proof_url || data.proof_url || data.proofUrl || '';
+    const proofFileName = data.provider_response?.proof_file_name || data.proof_file_name || data.proofFileName || '';
+    const auditTrail = data.provider_response?.audit_trail || data.audit_trail || [];
 
     const id = data.id || data.key || transactionId || `rec_${Math.random().toString(36).slice(2, 10)}`;
 
@@ -216,7 +249,11 @@ export function DonationsManager({
       updatedAt,
       message,
       verifiedBy,
+      verifiedAt,
       verificationMethod,
+      proofUrl,
+      proofFileName,
+      auditTrail,
       raw: data,
     };
   }, []);
@@ -291,7 +328,7 @@ export function DonationsManager({
 
       setDonations(unified);
       if (onDonationsCountChangeRef.current) {
-        const completedOnly = unified.filter(d => d.status === 'completed');
+        const completedOnly = unified.filter(d => d.status === 'completed' || d.status === 'paid');
         onDonationsCountChangeRef.current(completedOnly.length);
       }
     } catch (err: any) {
@@ -406,14 +443,14 @@ export function DonationsManager({
       if (d.donorEmail) uniqueDonors.add(d.donorEmail.toLowerCase());
       else if (d.donorName && d.donorName !== 'Anonymous') uniqueDonors.add(d.donorName.toLowerCase());
 
-      if (d.status === 'completed') {
+      if (d.status === 'completed' || d.status === 'paid') {
         completedCount++;
         totalUsd += d.amount;
-      } else if (d.status === 'pending') {
+      } else if (d.status === 'pending' || d.status === 'pending_verification' || d.status === 'processing') {
         pendingCount++;
       } else if (d.status === 'refunded') {
         refundedCount++;
-      } else if (d.status === 'failed') {
+      } else if (d.status === 'failed' || d.status === 'rejected' || d.status === 'cancelled') {
         failedCount++;
       }
     });
@@ -438,7 +475,7 @@ export function DonationsManager({
     const byMethod: Record<string, number> = {};
 
     donations.forEach((d) => {
-      if (d.status !== 'completed') return;
+      if (d.status !== 'completed' && d.status !== 'paid') return;
 
       const date = new Date(d.createdAt);
       const monthKey = date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
@@ -650,7 +687,7 @@ export function DonationsManager({
   // [QUICK STATUS CHANGE]
   const handleQuickStatusChange = async (
     d: AdminDonationRecord, 
-    newStatus: 'completed' | 'pending' | 'failed' | 'refunded'
+    newStatus: DonationAdminStatus
   ) => {
     if (d.status === newStatus) return;
 
@@ -687,6 +724,212 @@ export function DonationsManager({
       }
     } catch (err: any) {
       toast.error(err.message || 'Failed to update status');
+    }
+  };
+
+  // State: Tracking in-flight verification
+  const [verifyingId, setVerifyingId] = useState<string | null>(null);
+
+  // [BANK TRANSFER VERIFICATION]
+  const handleVerifyTransfer = async (d: AdminDonationRecord, notes: string = '') => {
+    const confirm = await confirmDialog({
+      title: 'Verify Bank Transfer',
+      message: `Have you confirmed receipt of ${d.currency} ${d.amount.toLocaleString()} from "${d.donorName}" in the official RESTI bank account? This will mark the donation as PAID and issue verification records.`,
+      confirmText: 'Confirm & Mark Paid',
+      cancelText: 'Cancel',
+      destructive: false
+    });
+    if (!confirm) return;
+
+    setVerifyingId(d.id);
+    const nowIso = new Date().toISOString();
+    const verifier = userEmail || userName || 'RESTI Admin';
+
+    try {
+      // 1. Try edge function first
+      let success = false;
+      try {
+        const res = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/donations/${encodeURIComponent(d.id)}/verify`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${accessToken || publicAnonKey}`
+          },
+          body: JSON.stringify({
+            verificationNotes: notes || 'Verified against bank statement',
+            sendReceipt: true
+          })
+        });
+        if (res.ok) success = true;
+      } catch (fErr) {
+        console.warn('Edge function verify failed, falling back to direct DB update:', fErr);
+      }
+
+      // 2. Direct database update fallback
+      if (!success) {
+        const prevResp = d.raw?.provider_response || {};
+        const auditTrail = Array.isArray(prevResp.audit_trail) ? [...prevResp.audit_trail] : [];
+        auditTrail.push({
+          action: 'verified',
+          timestamp: nowIso,
+          actor: verifier,
+          notes: notes || 'Verified against bank statement'
+        });
+
+        const updatedResp = {
+          ...prevResp,
+          verified_by: verifier,
+          verified_at: nowIso,
+          verification_method: 'bank_statement',
+          audit_trail: auditTrail
+        };
+
+        const { error: updErr } = await supabase
+          .from('donations')
+          .update({
+            status: 'paid',
+            updated_at: nowIso,
+            provider_response: updatedResp
+          })
+          .eq('id', d.id);
+
+        if (updErr) throw new Error(updErr.message);
+
+        if (d.key) {
+          await supabase
+            .from('kv_store_2a4be611')
+            .update({
+              value: {
+                ...(d.raw || {}),
+                status: 'paid',
+                verified_by: verifier,
+                verified_at: nowIso,
+                verification_method: 'bank_statement',
+                provider_response: updatedResp,
+                audit_trail: auditTrail
+              }
+            })
+            .eq('key', d.key);
+        }
+      }
+
+      toast.success(`Donation ${d.transactionId} verified and marked as PAID!`);
+      if (logActivity) {
+        logActivity('donation_verified', 'Donations', `Verified bank transfer ${d.transactionId} of ${d.currency} ${d.amount}`);
+      }
+
+      const updatedRecord: AdminDonationRecord = {
+        ...d,
+        status: 'paid',
+        verifiedBy: verifier,
+        verifiedAt: nowIso,
+        verificationMethod: 'bank_statement'
+      };
+
+      setDonations(prev => prev.map(item => item.id === d.id ? updatedRecord : item));
+      if (viewingDonation?.id === d.id) {
+        setViewingDonation(updatedRecord);
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to verify bank transfer');
+    } finally {
+      setVerifyingId(null);
+    }
+  };
+
+  // [BANK TRANSFER REJECTION]
+  const handleRejectTransfer = async (d: AdminDonationRecord) => {
+    const confirm = await confirmDialog({
+      title: 'Reject Bank Transfer',
+      message: `Are you sure you want to mark donation ${d.transactionId} as REJECTED? It will not be marked as paid.`,
+      confirmText: 'Reject Transfer',
+      cancelText: 'Cancel',
+      destructive: true
+    });
+    if (!confirm) return;
+
+    setVerifyingId(d.id);
+    const nowIso = new Date().toISOString();
+    const verifier = userEmail || userName || 'RESTI Admin';
+
+    try {
+      let success = false;
+      try {
+        const res = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/donations/${encodeURIComponent(d.id)}/reject`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${accessToken || publicAnonKey}`
+          },
+          body: JSON.stringify({ reason: 'Transfer unverified on bank statement' })
+        });
+        if (res.ok) success = true;
+      } catch (fErr) {
+        console.warn('Edge function reject failed, using fallback:', fErr);
+      }
+
+      if (!success) {
+        const prevResp = d.raw?.provider_response || {};
+        const auditTrail = Array.isArray(prevResp.audit_trail) ? [...prevResp.audit_trail] : [];
+        auditTrail.push({
+          action: 'rejected',
+          timestamp: nowIso,
+          actor: verifier,
+          reason: 'Unverified on bank statement'
+        });
+
+        const updatedResp = {
+          ...prevResp,
+          rejected_by: verifier,
+          rejected_at: nowIso,
+          rejection_reason: 'Unverified on bank statement',
+          audit_trail: auditTrail
+        };
+
+        const { error: updErr } = await supabase
+          .from('donations')
+          .update({
+            status: 'rejected',
+            updated_at: nowIso,
+            provider_response: updatedResp
+          })
+          .eq('id', d.id);
+
+        if (updErr) throw new Error(updErr.message);
+
+        if (d.key) {
+          await supabase
+            .from('kv_store_2a4be611')
+            .update({
+              value: {
+                ...(d.raw || {}),
+                status: 'rejected',
+                provider_response: updatedResp,
+                audit_trail: auditTrail
+              }
+            })
+            .eq('key', d.key);
+        }
+      }
+
+      toast.info(`Donation ${d.transactionId} marked as REJECTED`);
+      if (logActivity) {
+        logActivity('donation_rejected', 'Donations', `Marked ${d.transactionId} as rejected`);
+      }
+
+      const updatedRecord: AdminDonationRecord = {
+        ...d,
+        status: 'rejected'
+      };
+
+      setDonations(prev => prev.map(item => item.id === d.id ? updatedRecord : item));
+      if (viewingDonation?.id === d.id) {
+        setViewingDonation(updatedRecord);
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to reject donation');
+    } finally {
+      setVerifyingId(null);
     }
   };
 
@@ -1337,48 +1580,76 @@ export function DonationsManager({
                       <td className="py-4 px-4 whitespace-nowrap">
                         <div className="relative inline-block group/status">
                           <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold ${
-                            d.status === 'completed' 
+                            d.status === 'paid' || d.status === 'completed'
                               ? 'bg-emerald-100 text-emerald-800' 
-                              : d.status === 'pending'
+                              : d.status === 'pending_verification'
+                              ? 'bg-amber-100 text-amber-900 border border-amber-300 shadow-2xs'
+                              : d.status === 'pending' || d.status === 'processing'
                               ? 'bg-amber-100 text-amber-800'
                               : d.status === 'refunded'
                               ? 'bg-purple-100 text-purple-800'
                               : 'bg-rose-100 text-rose-800'
                           }`}>
                             <span className={`w-1.5 h-1.5 rounded-full ${
-                              d.status === 'completed' ? 'bg-emerald-600' :
-                              d.status === 'pending' ? 'bg-amber-600' :
+                              d.status === 'paid' || d.status === 'completed' ? 'bg-emerald-600' :
+                              d.status === 'pending_verification' ? 'bg-amber-600 animate-pulse' :
+                              d.status === 'pending' || d.status === 'processing' ? 'bg-amber-600' :
                               d.status === 'refunded' ? 'bg-purple-600' : 'bg-rose-600'
                             }`} />
-                            {d.status.toUpperCase()}
+                            {d.status === 'pending_verification' ? 'PENDING VERIFICATION' : d.status.toUpperCase()}
                           </span>
 
-                          <div className="hidden group-hover/status:flex absolute left-0 top-full mt-1 bg-white border border-slate-200 shadow-xl rounded-xl p-1 z-30 flex-col gap-1 min-w-[130px]">
-                            <button
-                              onClick={() => handleQuickStatusChange(d, 'completed')}
-                              className="text-left px-2.5 py-1.5 rounded-lg text-xs font-semibold text-emerald-700 hover:bg-emerald-50 flex items-center gap-1.5 cursor-pointer"
-                            >
-                              <CheckCircle2 size={12} /> Mark Completed
-                            </button>
-                            <button
-                              onClick={() => handleQuickStatusChange(d, 'pending')}
-                              className="text-left px-2.5 py-1.5 rounded-lg text-xs font-semibold text-amber-700 hover:bg-amber-50 flex items-center gap-1.5 cursor-pointer"
-                            >
-                              <Clock size={12} /> Mark Pending
-                            </button>
-                            <button
-                              onClick={() => handleQuickStatusChange(d, 'refunded')}
-                              className="text-left px-2.5 py-1.5 rounded-lg text-xs font-semibold text-purple-700 hover:bg-purple-50 flex items-center gap-1.5 cursor-pointer"
-                            >
-                              <AlertCircle size={12} /> Mark Refunded
-                            </button>
+                          <div className="hidden group-hover/status:flex absolute left-0 top-full mt-1 bg-white border border-slate-200 shadow-xl rounded-xl p-1 z-30 flex-col gap-1 min-w-[150px]">
+                            {d.status === 'pending_verification' ? (
+                              <>
+                                <button
+                                  onClick={() => handleVerifyTransfer(d)}
+                                  className="text-left px-2.5 py-1.5 rounded-lg text-xs font-semibold text-emerald-700 hover:bg-emerald-50 flex items-center gap-1.5 cursor-pointer"
+                                >
+                                  <CheckCircle2 size={12} /> Verify (Mark Paid)
+                                </button>
+                                <button
+                                  onClick={() => handleRejectTransfer(d)}
+                                  className="text-left px-2.5 py-1.5 rounded-lg text-xs font-semibold text-rose-700 hover:bg-rose-50 flex items-center gap-1.5 cursor-pointer"
+                                >
+                                  <XCircle size={12} /> Reject Transfer
+                                </button>
+                              </>
+                            ) : (
+                              <>
+                                <button
+                                  onClick={() => handleQuickStatusChange(d, 'paid')}
+                                  className="text-left px-2.5 py-1.5 rounded-lg text-xs font-semibold text-emerald-700 hover:bg-emerald-50 flex items-center gap-1.5 cursor-pointer"
+                                >
+                                  <CheckCircle2 size={12} /> Mark Paid
+                                </button>
+                                <button
+                                  onClick={() => handleQuickStatusChange(d, 'pending')}
+                                  className="text-left px-2.5 py-1.5 rounded-lg text-xs font-semibold text-amber-700 hover:bg-amber-50 flex items-center gap-1.5 cursor-pointer"
+                                >
+                                  <Clock size={12} /> Mark Pending
+                                </button>
+                                <button
+                                  onClick={() => handleQuickStatusChange(d, 'rejected')}
+                                  className="text-left px-2.5 py-1.5 rounded-lg text-xs font-semibold text-rose-700 hover:bg-rose-50 flex items-center gap-1.5 cursor-pointer"
+                                >
+                                  <XCircle size={12} /> Mark Rejected
+                                </button>
+                                <button
+                                  onClick={() => handleQuickStatusChange(d, 'refunded')}
+                                  className="text-left px-2.5 py-1.5 rounded-lg text-xs font-semibold text-purple-700 hover:bg-purple-50 flex items-center gap-1.5 cursor-pointer"
+                                >
+                                  <AlertCircle size={12} /> Mark Refunded
+                                </button>
+                              </>
+                            )}
                           </div>
                         </div>
                       </td>
 
                       <td className="py-4 px-4 whitespace-nowrap">
                         <div className="flex items-center gap-1.5">
-                          <span className="font-mono text-xs text-slate-600 bg-slate-100 px-2 py-0.5 rounded border border-slate-200/80 max-w-[150px] truncate">
+                          <span className="font-mono text-xs text-slate-700 bg-slate-100 px-2 py-0.5 rounded border border-slate-200/80 font-bold max-w-[150px] truncate">
                             {d.transactionId || d.id.slice(-8).toUpperCase()}
                           </span>
                           <button
@@ -1389,6 +1660,21 @@ export function DonationsManager({
                             {copiedId === d.id ? <Check size={13} className="text-emerald-600" /> : <Copy size={13} />}
                           </button>
                         </div>
+                        {d.proofUrl && (
+                          <div className="mt-1">
+                            <a
+                              href={d.proofUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 hover:text-emerald-900 hover:underline bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200"
+                              title="View uploaded proof of transfer"
+                            >
+                              <FileText size={11} />
+                              <span>Proof Attached</span>
+                              <ExternalLink size={10} />
+                            </a>
+                          </div>
+                        )}
                       </td>
 
                       <td className="py-4 px-4 whitespace-nowrap text-xs text-slate-500">
@@ -1406,7 +1692,30 @@ export function DonationsManager({
                       </td>
 
                       <td className="py-4 px-6 text-right whitespace-nowrap">
-                        <div className="flex items-center justify-end gap-1">
+                        <div className="flex items-center justify-end gap-1.5">
+                          {d.status === 'pending_verification' && (
+                            <>
+                              <button
+                                onClick={() => handleVerifyTransfer(d)}
+                                disabled={verifyingId === d.id}
+                                className="px-2.5 py-1 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-lg transition-colors flex items-center gap-1 shadow-2xs cursor-pointer"
+                                title="Verify bank deposit and mark as paid"
+                              >
+                                <CheckCircle2 size={13} />
+                                Verify
+                              </button>
+
+                              <button
+                                onClick={() => handleRejectTransfer(d)}
+                                disabled={verifyingId === d.id}
+                                className="px-2 py-1 text-xs font-semibold bg-rose-50 hover:bg-rose-100 disabled:opacity-50 text-rose-700 border border-rose-200 rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
+                                title="Reject or flag this transfer"
+                              >
+                                <XCircle size={13} />
+                                Reject
+                              </button>
+                            </>
+                          )}
                           
                           <button
                             onClick={() => setViewingDonation(d)}
@@ -1984,6 +2293,39 @@ export function DonationsManager({
 
             <div className="p-6 sm:p-8 space-y-6">
               
+              {/* Verification Alert Banner for Pending Verification */}
+              {viewingDonation.status === 'pending_verification' && (
+                <div className="p-4 bg-amber-50/90 border border-amber-200 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-amber-950">
+                  <div className="flex items-start gap-2.5">
+                    <AlertCircle className="w-5 h-5 text-amber-700 shrink-0 mt-0.5" />
+                    <div>
+                      <strong className="block font-bold text-sm">Awaiting Bank Transfer Verification</strong>
+                      <p className="text-xs text-amber-800 mt-0.5">
+                        Please confirm receipt of funds in the official RESTI bank account before verifying.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      onClick={() => handleVerifyTransfer(viewingDonation)}
+                      disabled={verifyingId === viewingDonation.id}
+                      className="px-3.5 py-2 bg-emerald-700 hover:bg-emerald-800 disabled:opacity-50 text-white font-bold text-xs rounded-xl shadow-xs flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <CheckCircle2 size={14} />
+                      Verify (Mark Paid)
+                    </button>
+                    <button
+                      onClick={() => handleRejectTransfer(viewingDonation)}
+                      disabled={verifyingId === viewingDonation.id}
+                      className="px-3 py-2 bg-rose-50 hover:bg-rose-100 disabled:opacity-50 text-rose-700 font-semibold text-xs rounded-xl border border-rose-200 flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <XCircle size={14} />
+                      Reject
+                    </button>
+                  </div>
+                </div>
+              )}
+
               <div className="flex flex-col sm:flex-row sm:items-center justify-between p-5 bg-emerald-50/80 rounded-2xl border border-emerald-100 gap-4">
                 <div>
                   <span className="text-xs font-bold text-emerald-700 uppercase tracking-wider block mb-1">
@@ -2001,12 +2343,13 @@ export function DonationsManager({
 
                 <div className="flex flex-col sm:items-end gap-2">
                   <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${
-                    viewingDonation.status === 'completed' ? 'bg-emerald-200 text-emerald-900' :
-                    viewingDonation.status === 'pending' ? 'bg-amber-200 text-amber-900' :
+                    viewingDonation.status === 'paid' || viewingDonation.status === 'completed' ? 'bg-emerald-200 text-emerald-900' :
+                    viewingDonation.status === 'pending_verification' ? 'bg-amber-200 text-amber-950 border border-amber-300' :
+                    viewingDonation.status === 'pending' || viewingDonation.status === 'processing' ? 'bg-amber-200 text-amber-900' :
                     viewingDonation.status === 'refunded' ? 'bg-purple-200 text-purple-900' : 'bg-rose-200 text-rose-900'
                   }`}>
                     <span className="w-2 h-2 rounded-full bg-current" />
-                    {viewingDonation.status.toUpperCase()}
+                    {viewingDonation.status === 'pending_verification' ? 'PENDING VERIFICATION' : viewingDonation.status.toUpperCase()}
                   </span>
 
                   <button
@@ -2117,7 +2460,81 @@ export function DonationsManager({
                   <span>
                     Verified via <strong>{viewingDonation.verificationMethod || 'system'}</strong> by{' '}
                     <strong>{viewingDonation.verifiedBy || 'automated webhook'}</strong>
+                    {viewingDonation.verifiedAt && ` on ${new Date(viewingDonation.verifiedAt).toLocaleString()}`}
                   </span>
+                </div>
+              )}
+
+              {/* Uploaded Proof of Transfer Document */}
+              {viewingDonation.proofUrl ? (
+                <div className="p-4 bg-amber-50/70 rounded-2xl border border-amber-200">
+                  <span className="text-amber-800 font-bold uppercase tracking-wider text-[11px] block mb-2">
+                    Uploaded Proof of Transfer
+                  </span>
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3 rounded-xl border border-amber-200/80">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="w-9 h-9 rounded-lg bg-amber-100 text-amber-800 flex items-center justify-center shrink-0">
+                        <FileText size={18} />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-xs font-bold text-slate-800 truncate">
+                          {viewingDonation.proofFileName || 'Bank_Transfer_Proof'}
+                        </p>
+                        <p className="text-[11px] text-slate-500">
+                          Submitted by donor as payment evidence
+                        </p>
+                      </div>
+                    </div>
+                    <a
+                      href={viewingDonation.proofUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-lg transition-colors shrink-0 shadow-xs cursor-pointer"
+                    >
+                      <ExternalLink size={13} /> View Attached Proof
+                    </a>
+                  </div>
+                </div>
+              ) : viewingDonation.method === 'bank_transfer' ? (
+                <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs text-slate-500 flex items-center gap-2">
+                  <FileText size={14} className="text-slate-400" />
+                  <span>No proof file was uploaded. Verify against bank statement directly using reference <strong>{viewingDonation.transactionId}</strong>.</span>
+                </div>
+              ) : null}
+
+              {/* Verification & Audit Trail */}
+              {viewingDonation.auditTrail && viewingDonation.auditTrail.length > 0 && (
+                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                  <span className="text-slate-500 font-bold uppercase tracking-wider text-[11px] block mb-2 flex items-center gap-1.5">
+                    <Clock size={13} className="text-slate-400" />
+                    Verification & Audit Trail ({viewingDonation.auditTrail.length})
+                  </span>
+                  <div className="space-y-2 mt-2">
+                    {viewingDonation.auditTrail.map((log: any, idx: number) => (
+                      <div key={idx} className="bg-white p-2.5 rounded-xl border border-slate-200/80 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-4">
+                        <div className="flex items-center gap-2">
+                          <span className={`w-2 h-2 rounded-full shrink-0 ${
+                            log.action === 'verified' || log.status === 'paid' ? 'bg-emerald-500' :
+                            log.action === 'rejected' ? 'bg-rose-500' : 'bg-blue-500'
+                          }`} />
+                          <span className="font-semibold text-slate-800 capitalize">
+                            {log.action ? log.action.replace('_', ' ') : 'Status update'}: <span className="font-mono text-slate-600 font-normal">{log.status || log.new_status || ''}</span>
+                          </span>
+                          {log.by && (
+                            <span className="text-[11px] text-slate-500">by {log.by}</span>
+                          )}
+                        </div>
+                        <div className="text-[11px] text-slate-400 font-mono">
+                          {log.at ? new Date(log.at).toLocaleString() : ''}
+                        </div>
+                        {log.reason && (
+                          <div className="w-full text-[11px] text-rose-600 bg-rose-50 px-2 py-0.5 rounded border border-rose-100 mt-1">
+                            Reason: {log.reason}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
 
@@ -2130,6 +2547,25 @@ export function DonationsManager({
                 </button>
 
                 <div className="flex items-center gap-2">
+                  {viewingDonation.status === 'pending_verification' && (
+                    <>
+                      <button
+                        onClick={() => handleVerifyTransfer(viewingDonation)}
+                        disabled={verifyingId === viewingDonation.id}
+                        className="px-3.5 py-2 bg-emerald-700 hover:bg-emerald-800 disabled:opacity-50 text-white font-bold text-xs rounded-xl shadow-xs flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <CheckCircle2 size={14} /> Verify (Mark Paid)
+                      </button>
+                      <button
+                        onClick={() => handleRejectTransfer(viewingDonation)}
+                        disabled={verifyingId === viewingDonation.id}
+                        className="px-3 py-2 bg-rose-50 hover:bg-rose-100 disabled:opacity-50 text-rose-700 font-semibold text-xs rounded-xl border border-rose-200 flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <XCircle size={14} /> Reject
+                      </button>
+                    </>
+                  )}
+
                   <button
                     onClick={() => {
                       handleStartEdit(viewingDonation);

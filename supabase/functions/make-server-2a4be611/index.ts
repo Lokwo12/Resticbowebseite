@@ -965,7 +965,7 @@ app.get('/make-server-2a4be611/donor/donations', async (c) => {
     unifiedList.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
 
     // Compute metrics
-    const completedGifts = unifiedList.filter((d) => d.status === 'completed')
+    const completedGifts = unifiedList.filter((d) => d.status === 'completed' || d.status === 'paid' || d.status === 'confirmed')
     const totalContributedUSD = completedGifts.reduce((sum, d) => {
       const amt = Number(d.amount) || 0
       return sum + (d.currency === 'USD' ? amt : amt / 3800)
@@ -1194,9 +1194,14 @@ app.post('/make-server-2a4be611/donations', withRateLimit('donation', 5, 5 * 60_
       donorName, 
       donorEmail, 
       donorPhone,
+      donorCountry,
+      campaign,
       message,
       paymentIntentId,
-      transactionId
+      transactionId,
+      proofUrl,
+      proofFileName,
+      status: clientStatus
     } = body
 
     const amountV = validateAmount(amount)
@@ -1214,22 +1219,56 @@ app.post('/make-server-2a4be611/donations', withRateLimit('donation', 5, 5 * 60_
     const firstName = parts[0]
     const lastName = parts.slice(1).join(' ') || ''
     
-    const finalTransactionId = transactionId || crypto.randomUUID()
+    const finalTransactionId = transactionId || (
+      paymentMethod === 'bank_transfer'
+        ? `RESTI-2026-${crypto.randomUUID().slice(0, 6).toUpperCase()}`
+        : crypto.randomUUID()
+    )
     const nowIso = new Date().toISOString()
     const upperCurrency = (currency || 'USD').toUpperCase()
+
+    // Determine status: bank transfers are strictly pending_verification
+    const isBank = paymentMethod === 'bank_transfer'
+    const finalStatus = isBank ? 'pending_verification' : (clientStatus === 'pending_verification' ? 'pending_verification' : 'pending')
+
+    const initialAuditTrail = [
+      {
+        action: 'submitted',
+        timestamp: nowIso,
+        actor: donorEmail || firstName || 'Donor',
+        details: isBank 
+          ? 'Bank transfer submitted by donor — awaiting administrative verification against bank records'
+          : 'Donation pledge recorded — awaiting payment'
+      }
+    ]
+
+    const providerResponseObj: Record<string, any> = {
+      message: message || (isBank ? `Voluntary bank transfer for ${campaign || 'Where Most Needed'}` : 'Pledged / pending donation'),
+      donation_reference: finalTransactionId,
+      submitted_at: nowIso,
+      audit_trail: initialAuditTrail
+    }
+
+    if (proofUrl) {
+      providerResponseObj.proof_url = proofUrl
+      providerResponseObj.proof_file_name = proofFileName || 'transfer_receipt'
+    }
+    if (donorCountry) providerResponseObj.donor_country = donorCountry
+    if (donorPhone) providerResponseObj.donor_phone = donorPhone
+    if (campaign) providerResponseObj.campaign = campaign
 
     const donationRecord = {
       id: donationId,
       amount: Number(amount),
       currency: upperCurrency,
       method: paymentMethod,
-      provider: paymentMethod === 'mtn' || paymentMethod === 'airtel' ? paymentMethod : (paymentMethod === 'bank_transfer' ? 'bank' : 'other'),
+      provider: paymentMethod === 'mtn' || paymentMethod === 'airtel' ? paymentMethod : (isBank ? 'bank' : 'other'),
       first_name: firstName,
       last_name: lastName,
       email: donorEmail || '',
-      status: 'pending',
+      status: finalStatus,
       transaction_id: finalTransactionId,
-      provider_response: { message: message || 'Pledged / pending donation' },
+      provider_response: providerResponseObj,
       created_at: nowIso,
       updated_at: nowIso
     }
@@ -1243,7 +1282,13 @@ app.post('/make-server-2a4be611/donations', withRateLimit('donation', 5, 5 * 60_
 
     // Also sync to KV store for admin dashboard
     try {
-      await kv.set(donationId, donationRecord)
+      await kv.set(donationId, {
+        ...donationRecord,
+        proof_url: proofUrl || null,
+        proof_file_name: proofFileName || null,
+        donation_reference: finalTransactionId,
+        audit_trail: initialAuditTrail
+      })
     } catch (kvErr) {
       console.warn('Could not sync pending donation to kv:', kvErr)
     }
@@ -1251,12 +1296,36 @@ app.post('/make-server-2a4be611/donations', withRateLimit('donation', 5, 5 * 60_
     // 1. Send instruction / acknowledgment email to donor if email provided
     if (donorEmail && donorEmail.trim()) {
       try {
-        const isBank = paymentMethod === 'bank_transfer'
         const donorSubject = isBank 
-          ? `Bank Transfer Donation Instructions – RESTI-CBO (Ref: ${finalTransactionId})`
+          ? `Bank Transfer Received — Awaiting Verification – RESTI-CBO (Ref: ${finalTransactionId})`
           : `Donation Pledge Received – RESTI-CBO (Ref: ${finalTransactionId})`
 
-        const donorHtml = `
+        const donorHtml = isBank ? `
+          <!DOCTYPE html>
+          <html>
+          <head><meta charset="utf-8"></head>
+          <body style="font-family: sans-serif; line-height: 1.6; color: #1e293b; max-width: 600px; margin: 0 auto; padding: 24px;">
+            <div style="background: linear-gradient(135deg, #065f46 0%, #047857 100%); color: white; padding: 24px; border-radius: 8px; text-align: center;">
+              <h2 style="margin: 0;">RESTI-CBO</h2>
+              <p style="margin: 4px 0 0 0; opacity: 0.9; font-size: 13px;">Bank Transfer Donation Notice</p>
+            </div>
+            <div style="padding: 24px 0;">
+              <p>Dear <strong>${firstName} ${lastName}</strong>,</p>
+              <p>Thank you for supporting <strong>RESTI CBO</strong>. Your bank-transfer donation of <strong>${upperCurrency} ${Number(amount).toLocaleString()}</strong> has been recorded and is awaiting confirmation of receipt. We will update your donation status once the transfer has been verified.</p>
+              
+              <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin: 20px 0;">
+                <div style="font-size: 12px; color: #64748b; font-weight: 600; text-transform: uppercase;">Your Transfer Reference Code:</div>
+                <div style="font-size: 20px; font-weight: 800; color: #047857; margin: 6px 0; font-family: monospace;">${finalTransactionId}</div>
+                <p style="margin: 6px 0 0 0; font-size: 12px; color: #64748b;">Please ensure this reference code is included in your deposit or wire transfer description.</p>
+                ${proofUrl ? `<p style="margin: 8px 0 0 0; font-size: 12px; color: #047857; font-weight: 600;">✓ Proof of transfer document received</p>` : ''}
+              </div>
+
+              <p style="font-size: 13px; color: #475569;">Our finance team reconciles incoming transfers against our bank statement. Once verified, an official donation receipt will be emailed to this address and made available in your Supporter Portal.</p>
+              <p style="margin-top: 24px;">With gratitude,<br><strong>RESTI-CBO Finance & Donor Care Team</strong><br>Kiryandongo District, Uganda</p>
+            </div>
+          </body>
+          </html>
+        ` : `
           <!DOCTYPE html>
           <html>
           <head><meta charset="utf-8"></head>
@@ -1290,27 +1359,33 @@ app.post('/make-server-2a4be611/donations', withRateLimit('donation', 5, 5 * 60_
     // 2. Send real-time alert to admin inboxes
     try {
       const adminRecipients = await getAdminNotifyEmails()
-      const adminSubject = `📋 New Donation Pledge (${paymentMethod}): ${upperCurrency} ${Number(amount).toLocaleString()} from ${firstName} ${lastName}`
+      const adminSubject = isBank
+        ? `📋 New Bank Transfer (Pending Verification): ${upperCurrency} ${Number(amount).toLocaleString()} from ${firstName} ${lastName} (Ref: ${finalTransactionId})`
+        : `📋 New Donation Pledge (${paymentMethod}): ${upperCurrency} ${Number(amount).toLocaleString()} from ${firstName} ${lastName}`
+
       const adminHtml = `
         <!DOCTYPE html>
         <html>
         <head><meta charset="utf-8"></head>
         <body style="font-family: sans-serif; line-height: 1.6; color: #1e293b; max-width: 600px; margin: 0 auto; padding: 24px;">
           <div style="background: #1e293b; color: white; padding: 20px; border-radius: 8px; text-align: center;">
-            <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #94a3b8;">Pending Donation Alert</div>
-            <h2 style="margin: 4px 0 0 0;">New Donation Pledge Recorded</h2>
+            <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #94a3b8;">
+              ${isBank ? 'Bank Transfer — Awaiting Verification' : 'Pending Donation Alert'}
+            </div>
+            <h2 style="margin: 4px 0 0 0;">${isBank ? 'Bank Transfer Donation Submitted' : 'New Donation Pledge Recorded'}</h2>
           </div>
           <div style="padding: 20px 0;">
             <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
               <tr><td style="padding: 8px; color: #64748b; font-weight: 600;">Amount:</td><td style="padding: 8px; font-weight: 700; color: #0f172a;">${upperCurrency} ${Number(amount).toLocaleString()}</td></tr>
-              <tr><td style="padding: 8px; color: #64748b; font-weight: 600;">Payment Method:</td><td style="padding: 8px;">${paymentMethod}</td></tr>
+              <tr><td style="padding: 8px; color: #64748b; font-weight: 600;">Payment Method:</td><td style="padding: 8px;">Bank Wire Transfer</td></tr>
               <tr><td style="padding: 8px; color: #64748b; font-weight: 600;">Donor:</td><td style="padding: 8px; font-weight: 600;">${firstName} ${lastName}</td></tr>
               <tr><td style="padding: 8px; color: #64748b; font-weight: 600;">Email:</td><td style="padding: 8px;">${donorEmail ? `<a href="mailto:${donorEmail}">${donorEmail}</a>` : 'Not provided'}</td></tr>
               <tr><td style="padding: 8px; color: #64748b; font-weight: 600;">Phone:</td><td style="padding: 8px;">${donorPhone || 'Not provided'}</td></tr>
-              <tr><td style="padding: 8px; color: #64748b; font-weight: 600;">Reference ID:</td><td style="padding: 8px; font-family: monospace;">${finalTransactionId}</td></tr>
-              <tr><td style="padding: 8px; color: #64748b; font-weight: 600;">Status:</td><td style="padding: 8px; color: #d97706; font-weight: 700;">PENDING (Awaiting Transfer)</td></tr>
+              <tr><td style="padding: 8px; color: #64748b; font-weight: 600;">Reference ID:</td><td style="padding: 8px; font-family: monospace; font-weight: 700;">${finalTransactionId}</td></tr>
+              <tr><td style="padding: 8px; color: #64748b; font-weight: 600;">Status:</td><td style="padding: 8px; color: #d97706; font-weight: 700;">PENDING VERIFICATION (Awaiting Bank Confirmation)</td></tr>
+              ${proofUrl ? `<tr><td style="padding: 8px; color: #64748b; font-weight: 600;">Proof of Transfer:</td><td style="padding: 8px;"><a href="${proofUrl}" target="_blank" style="color: #047857; font-weight: 600;">View Uploaded Receipt (${proofFileName || 'Receipt'})</a></td></tr>` : ''}
             </table>
-            <p style="font-size: 12px; color: #64748b;">When the bank transfer is confirmed by your bank, you can mark this donation as verified in the Admin Dashboard.</p>
+            <p style="font-size: 12px; color: #64748b;">To verify this donation, verify receipt in the RESTI bank account and click "Verify" in the RESTI Admin Dashboard.</p>
           </div>
         </body>
         </html>
@@ -1322,11 +1397,270 @@ app.post('/make-server-2a4be611/donations', withRateLimit('donation', 5, 5 * 60_
       console.warn('Could not send admin pledge alert:', aErr)
     }
 
-    console.log(`Pending donation recorded: ${donationId}`)
-    return c.json({ success: true, message: 'Donation pending — awaiting payment confirmation', id: donationId, referenceId: finalTransactionId })
+    console.log(`Donation recorded: ${donationId} [${finalStatus}]`)
+    return c.json({ 
+      success: true, 
+      message: isBank ? 'Donation submitted — awaiting verification' : 'Donation pending — awaiting payment confirmation', 
+      id: donationId, 
+      referenceId: finalTransactionId,
+      status: finalStatus
+    })
   } catch (error) {
     console.error('Error recording donation:', error)
     return c.json({ error: 'Failed to record donation', details: String(error) }, 500)
+  }
+})
+
+// Document/receipt upload for bank transfer proofs (public rate-limited, images & pdfs up to 10MB)
+app.post('/make-server-2a4be611/donations/upload-proof', withRateLimit('proof_upload', 10, 5 * 60_000), async (c) => {
+  try {
+    const body = await c.req.parseBody()
+    const file = body['file']
+    if (!file || !(file instanceof File)) {
+      return c.json({ error: 'No valid file uploaded' }, 400)
+    }
+    const maxBytes = 10 * 1024 * 1024 // 10MB
+    if (file.size > maxBytes) {
+      return c.json({ error: 'File exceeds 10MB limit' }, 400)
+    }
+    const allowedExtensions = ['.pdf', '.png', '.jpg', '.jpeg', '.webp']
+    const fileExt = ('.' + file.name.split('.').pop()).toLowerCase()
+    if (!allowedExtensions.includes(fileExt)) {
+      return c.json({ error: 'Only PDF, PNG, JPG, JPEG, and WEBP files are allowed' }, 400)
+    }
+    const bucketName = 'make-2a4be611-uploads'
+    const fileName = `transfer-proofs/${crypto.randomUUID()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`
+    const arrayBuffer = await file.arrayBuffer()
+    const uint8Array = new Uint8Array(arrayBuffer)
+    const { error: uploadError } = await supabase.storage
+      .from(bucketName)
+      .upload(fileName, uint8Array, {
+        contentType: file.type || 'application/octet-stream',
+        upsert: true
+      })
+    if (uploadError) {
+      return c.json({ error: 'Failed to upload transfer proof', details: uploadError.message }, 500)
+    }
+    const { data: publicUrlData } = supabase.storage
+      .from(bucketName)
+      .getPublicUrl(fileName)
+    return c.json({
+      success: true,
+      url: publicUrlData.publicUrl,
+      fileName: file.name,
+      size: file.size
+    })
+  } catch (error) {
+    console.error('Error uploading transfer proof:', error)
+    return c.json({ error: 'Failed to upload transfer proof', details: String(error) }, 500)
+  }
+})
+
+// Admin: Verify bank transfer donation (mark paid after confirming money received)
+app.post('/make-server-2a4be611/admin/donations/:id/verify', requireAdmin, async (c) => {
+  try {
+    const id = c.req.param('id')
+    const body = await c.req.json().catch(() => ({}))
+    const { verificationNotes, sendReceipt = true } = body
+
+    const adminUser = c.get('adminUser')
+    const verifiedBy = adminUser?.email || adminUser?.name || 'admin@resticbo.org'
+    const nowIso = new Date().toISOString()
+
+    // 1. Fetch current donation from Postgres
+    const { data: donation, error: fetchErr } = await supabase
+      .from('donations')
+      .select('*')
+      .eq('id', id)
+      .single()
+
+    if (fetchErr || !donation) {
+      return c.json({ error: 'Donation not found' }, 404)
+    }
+
+    const prevResp = donation.provider_response || {}
+    const auditTrail = Array.isArray(prevResp.audit_trail) ? [...prevResp.audit_trail] : []
+    auditTrail.push({
+      action: 'verified',
+      timestamp: nowIso,
+      actor: verifiedBy,
+      notes: verificationNotes || 'Bank transfer verified by administrator against bank records'
+    })
+
+    const updatedResponse = {
+      ...prevResp,
+      verified_by: verifiedBy,
+      verified_at: nowIso,
+      verification_method: 'bank_statement',
+      verification_notes: verificationNotes || null,
+      audit_trail: auditTrail
+    }
+
+    // 2. Update Postgres row to 'paid'
+    const { error: updateErr } = await supabase
+      .from('donations')
+      .update({
+        status: 'paid',
+        updated_at: nowIso,
+        provider_response: updatedResponse
+      })
+      .eq('id', id)
+
+    if (updateErr) {
+      console.error('Error updating donation in Postgres:', updateErr)
+      return c.json({ error: 'Failed to update donation status' }, 500)
+    }
+
+    // 3. Update KV store
+    const kvKey = id.startsWith('donation:') ? id : `donation:${id}`
+    try {
+      const kvExisting = (await kv.get(kvKey)) || {}
+      await kv.set(kvKey, {
+        ...kvExisting,
+        ...donation,
+        status: 'paid',
+        updated_at: nowIso,
+        verified_by: verifiedBy,
+        verified_at: nowIso,
+        verification_method: 'bank_statement',
+        provider_response: updatedResponse,
+        audit_trail: auditTrail
+      })
+    } catch (kvErr) {
+      console.warn('Error syncing verified donation to KV:', kvErr)
+    }
+
+    // 4. Optionally dispatch official receipt to donor
+    if (sendReceipt && donation.email) {
+      try {
+        const donorSubject = `Official Donation Receipt – RESTI-CBO (Ref: ${donation.transaction_id})`
+        const donorHtml = `
+          <!DOCTYPE html>
+          <html>
+          <head><meta charset="utf-8"></head>
+          <body style="font-family: sans-serif; line-height: 1.6; color: #1e293b; max-width: 600px; margin: 0 auto; padding: 24px;">
+            <div style="background: linear-gradient(135deg, #065f46 0%, #047857 100%); color: white; padding: 24px; border-radius: 8px; text-align: center;">
+              <h2 style="margin: 0;">RESTI-CBO</h2>
+              <p style="margin: 4px 0 0 0; opacity: 0.9; font-size: 13px;">Official Donation Receipt</p>
+            </div>
+            <div style="padding: 24px 0;">
+              <p>Dear <strong>${donation.first_name || 'Supporter'} ${donation.last_name || ''}</strong>,</p>
+              <p>We are pleased to confirm that your bank transfer of <strong>${donation.currency} ${Number(donation.amount).toLocaleString()}</strong> has been verified and deposited into RESTI CBO's official account.</p>
+              
+              <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin: 20px 0;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                  <tr><td style="padding: 4px 0; color: #64748b;">Receipt Reference:</td><td style="font-family: monospace; font-weight: 700; color: #047857;">${donation.transaction_id}</td></tr>
+                  <tr><td style="padding: 4px 0; color: #64748b;">Verified Amount:</td><td style="font-weight: 700;">${donation.currency} ${Number(donation.amount).toLocaleString()}</td></tr>
+                  <tr><td style="padding: 4px 0; color: #64748b;">Payment Method:</td><td>Bank Wire Transfer</td></tr>
+                  <tr><td style="padding: 4px 0; color: #64748b;">Status:</td><td style="color: #047857; font-weight: 700;">PAID & VERIFIED</td></tr>
+                  <tr><td style="padding: 4px 0; color: #64748b;">Verification Date:</td><td>${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</td></tr>
+                </table>
+              </div>
+
+              <p style="font-size: 13px; color: #475569;">You can log in to the RESTI Supporter & Donor Portal at any time to view your verified giving history and download official receipt PDFs.</p>
+              <p style="margin-top: 24px;">Thank you for your generous partnership,<br><strong>RESTI-CBO Finance & Donor Care Team</strong><br>Kiryandongo District, Uganda</p>
+            </div>
+          </body>
+          </html>
+        `
+        await sendEmail(donation.email, donorSubject, donorHtml, 'info@resticbo.org')
+      } catch (emErr) {
+        console.warn('Could not dispatch receipt email:', emErr)
+      }
+    }
+
+    return c.json({
+      success: true,
+      message: 'Donation marked as PAID and verified',
+      donationId: id,
+      verifiedBy,
+      verifiedAt: nowIso
+    })
+  } catch (error) {
+    console.error('Error verifying donation:', error)
+    return c.json({ error: 'Failed to verify donation', details: String(error) }, 500)
+  }
+})
+
+// Admin: Reject bank transfer donation
+app.post('/make-server-2a4be611/admin/donations/:id/reject', requireAdmin, async (c) => {
+  try {
+    const id = c.req.param('id')
+    const body = await c.req.json().catch(() => ({}))
+    const { reason = 'Unverified bank transfer' } = body
+
+    const adminUser = c.get('adminUser')
+    const rejectedBy = adminUser?.email || adminUser?.name || 'admin@resticbo.org'
+    const nowIso = new Date().toISOString()
+
+    const { data: donation, error: fetchErr } = await supabase
+      .from('donations')
+      .select('*')
+      .eq('id', id)
+      .single()
+
+    if (fetchErr || !donation) {
+      return c.json({ error: 'Donation not found' }, 404)
+    }
+
+    const prevResp = donation.provider_response || {}
+    const auditTrail = Array.isArray(prevResp.audit_trail) ? [...prevResp.audit_trail] : []
+    auditTrail.push({
+      action: 'rejected',
+      timestamp: nowIso,
+      actor: rejectedBy,
+      reason: reason
+    })
+
+    const updatedResponse = {
+      ...prevResp,
+      rejected_by: rejectedBy,
+      rejected_at: nowIso,
+      rejection_reason: reason,
+      audit_trail: auditTrail
+    }
+
+    const { error: updateErr } = await supabase
+      .from('donations')
+      .update({
+        status: 'rejected',
+        updated_at: nowIso,
+        provider_response: updatedResponse
+      })
+      .eq('id', id)
+
+    if (updateErr) {
+      return c.json({ error: 'Failed to update donation status' }, 500)
+    }
+
+    const kvKey = id.startsWith('donation:') ? id : `donation:${id}`
+    try {
+      const kvExisting = (await kv.get(kvKey)) || {}
+      await kv.set(kvKey, {
+        ...kvExisting,
+        ...donation,
+        status: 'rejected',
+        updated_at: nowIso,
+        rejected_by: rejectedBy,
+        rejected_at: nowIso,
+        rejection_reason: reason,
+        provider_response: updatedResponse,
+        audit_trail: auditTrail
+      })
+    } catch (kvErr) {
+      console.warn('Error syncing rejected donation to KV:', kvErr)
+    }
+
+    return c.json({
+      success: true,
+      message: 'Donation marked as REJECTED',
+      donationId: id,
+      rejectedBy,
+      rejectedAt: nowIso
+    })
+  } catch (error) {
+    console.error('Error rejecting donation:', error)
+    return c.json({ error: 'Failed to reject donation', details: String(error) }, 500)
   }
 })
 
@@ -2863,13 +3197,13 @@ app.get('/make-server-2a4be611/admin/stats', requireAuthUser, async (c) => {
       kv.getByPrefix('news:'),
       kv.getByPrefix('contact:'),
       // Fetch completed donations only from Postgres
-      supabase.from('donations').select('*').in('status', ['completed', 'succeeded']),
+      supabase.from('donations').select('*').in('status', ['completed', 'succeeded', 'paid', 'confirmed']),
       kv.getByPrefix('newsletter:')
     ])
 
     // donations from supabase Promise resolves to { data, error }
     const rawDonations = Array.isArray(donations) ? donations : (donations.data || [])
-    const donationRows = rawDonations.filter((d: any) => d.status === 'completed' || d.status === 'succeeded')
+    const donationRows = rawDonations.filter((d: any) => d.status === 'completed' || d.status === 'succeeded' || d.status === 'paid' || d.status === 'confirmed')
     const totalDonationsAmount = donationRows.reduce((sum: number, d: any) => sum + (Number(d.amount || 0)), 0)
     const newContacts = contacts.filter(c => c.value.status === 'new').length
 
