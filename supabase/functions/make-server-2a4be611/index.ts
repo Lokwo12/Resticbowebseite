@@ -917,8 +917,6 @@ app.get('/make-server-2a4be611/donor/donations', async (c) => {
           donationCount: 1,
           latestDonation: item,
         })
-      } else if (queryEmail) {
-        donorEmail = queryEmail
       } else {
         return c.json({ error: 'Unauthorized – donor authentication required' }, 401)
       }

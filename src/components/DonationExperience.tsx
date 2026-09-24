@@ -151,7 +151,7 @@ export function DonationExperience({
   // Compute final numeric donation amount
   const finalAmount = useMemo(() => {
     if (isCustomAmount) {
-      const parsed = parseInt(customAmountInput.replace(/D/g, ''), 10);
+      const parsed = parseInt(customAmountInput.replace(/\D/g, ''), 10);
       return isNaN(parsed) ? 0 : parsed;
     }
     return selectedAmount;
@@ -188,7 +188,7 @@ export function DonationExperience({
   };
 
   const handleCustomInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const raw = e.target.value.replace(/D/g, '');
+    const raw = e.target.value.replace(/\D/g, '');
     setCustomAmountInput(raw);
     setIsCustomAmount(true);
     setErrors(prev => ({ ...prev, amount: '' }));
@@ -210,9 +210,10 @@ export function DonationExperience({
       newErrors.fullName = 'Please enter your full name';
     }
 
-    if (!email.trim()) {
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail) {
       newErrors.email = 'Please enter your email address';
-    } else if (!/^[^s@]+@[^s@]+.[^s@]+$/.test(email.trim())) {
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
       newErrors.email = 'Please enter a valid email address';
     }
 
