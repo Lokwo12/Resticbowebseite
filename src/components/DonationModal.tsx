@@ -31,7 +31,7 @@ export function DonationModal() {
       <div className="fixed inset-0" onClick={close} />
 
       {/* Modal Dialog Card */}
-      <div className="relative bg-stone-50 rounded-3xl max-w-4xl w-full max-h-[92vh] overflow-y-auto shadow-2xl border border-stone-200 z-10 p-5 sm:p-8">
+      <div className="relative bg-stone-50 rounded-3xl max-w-5xl w-full max-h-[92vh] overflow-y-auto shadow-2xl border border-stone-200 z-10 p-5 sm:p-8">
         
         {/* Close Button */}
         <button

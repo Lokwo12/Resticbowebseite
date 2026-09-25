@@ -684,27 +684,27 @@ export function DonationExperience({
             </div>
           </div>
 
-          <div className="space-y-1.5 text-stone-700">
-            <div className="flex justify-between"><span className="text-stone-500">Donor:</span> <strong>{confirmedDonation.donorName}</strong></div>
-            <div className="flex justify-between"><span className="text-stone-500">Email:</span> <span>{confirmedDonation.donorEmail}</span></div>
+          <div className="space-y-2 text-stone-700">
+            <div className="flex justify-between items-baseline gap-3"><span className="text-stone-500 shrink-0">Donor:</span> <strong className="text-right break-words">{confirmedDonation.donorName}</strong></div>
+            <div className="flex justify-between items-baseline gap-3"><span className="text-stone-500 shrink-0">Email:</span> <span className="text-right break-all">{confirmedDonation.donorEmail}</span></div>
             {confirmedDonation.paymentMethod === 'MTN MoMo' ? (
               <>
-                <div className="flex justify-between"><span className="text-stone-500">Payment Channel:</span> <strong>MTN MoMo (Uganda)</strong></div>
-                <div className="flex justify-between"><span className="text-stone-500">Merchant / Number:</span> <strong className="font-mono">{bankDetails?.merchantMTN || '+256 785 440955'}</strong></div>
-                <div className="flex justify-between"><span className="text-stone-500">Recipient Name:</span> <strong>{bankDetails?.accountName || 'Refugee Empowerment For Sustainable Transformation Initiative'}</strong></div>
+                <div className="flex justify-between items-baseline gap-3"><span className="text-stone-500 shrink-0">Payment Channel:</span> <strong>MTN MoMo (Uganda)</strong></div>
+                <div className="flex justify-between items-baseline gap-3"><span className="text-stone-500 shrink-0">Merchant / Number:</span> <strong className="font-mono">{bankDetails?.merchantMTN || '+256 785 440955'}</strong></div>
+                <div className="flex justify-between items-start gap-3"><span className="text-stone-500 shrink-0">Recipient Name:</span> <strong className="text-right leading-snug break-words max-w-[65%]">{bankDetails?.accountName || 'Refugee Empowerment For Sustainable Transformation Initiative'}</strong></div>
               </>
             ) : confirmedDonation.paymentMethod === 'Airtel Money' ? (
               <>
-                <div className="flex justify-between"><span className="text-stone-500">Payment Channel:</span> <strong>Airtel Money (Uganda)</strong></div>
-                <div className="flex justify-between"><span className="text-stone-500">Merchant / Number:</span> <strong className="font-mono">{bankDetails?.merchantAirtel || bankDetails?.merchantMTN || '+256 785 440955'}</strong></div>
-                <div className="flex justify-between"><span className="text-stone-500">Recipient Name:</span> <strong>{bankDetails?.accountName || 'Refugee Empowerment For Sustainable Transformation Initiative'}</strong></div>
+                <div className="flex justify-between items-baseline gap-3"><span className="text-stone-500 shrink-0">Payment Channel:</span> <strong>Airtel Money (Uganda)</strong></div>
+                <div className="flex justify-between items-baseline gap-3"><span className="text-stone-500 shrink-0">Merchant / Number:</span> <strong className="font-mono">{bankDetails?.merchantAirtel || bankDetails?.merchantMTN || '+256 785 440955'}</strong></div>
+                <div className="flex justify-between items-start gap-3"><span className="text-stone-500 shrink-0">Recipient Name:</span> <strong className="text-right leading-snug break-words max-w-[65%]">{bankDetails?.accountName || 'Refugee Empowerment For Sustainable Transformation Initiative'}</strong></div>
               </>
             ) : (
               <>
-                <div className="flex justify-between"><span className="text-stone-500">Beneficiary Bank:</span> <strong>{bankDetails?.bankName || 'EQUITY'}</strong></div>
-                <div className="flex justify-between"><span className="text-stone-500">Account Name:</span> <strong>{bankDetails?.accountName || 'Refugee Empowerment For Sustainable Transformation Initiative'}</strong></div>
-                <div className="flex justify-between"><span className="text-stone-500">Account Number:</span> <strong className="font-mono">{bankDetails?.accountNumber || '1050203752178'}</strong></div>
-                <div className="flex justify-between"><span className="text-stone-500">Branch / SWIFT:</span> <span>{bankDetails?.branch || 'Bweyale Branch'} ({bankDetails?.swiftCode || 'EQBLUGKA'})</span></div>
+                <div className="flex justify-between items-baseline gap-3"><span className="text-stone-500 shrink-0">Beneficiary Bank:</span> <strong>{bankDetails?.bankName || 'EQUITY'}</strong></div>
+                <div className="flex justify-between items-start gap-3"><span className="text-stone-500 shrink-0">Account Name:</span> <strong className="text-right leading-snug break-words max-w-[65%]">{bankDetails?.accountName || 'Refugee Empowerment For Sustainable Transformation Initiative'}</strong></div>
+                <div className="flex justify-between items-baseline gap-3"><span className="text-stone-500 shrink-0">Account Number:</span> <strong className="font-mono">{bankDetails?.accountNumber || '1050203752178'}</strong></div>
+                <div className="flex justify-between items-baseline gap-3"><span className="text-stone-500 shrink-0">Branch / SWIFT:</span> <span className="text-right">{bankDetails?.branch || 'Bweyale Branch'} ({bankDetails?.swiftCode || 'EQBLUGKA'})</span></div>
               </>
             )}
             {confirmedDonation.proofFileName && (
@@ -795,28 +795,28 @@ export function DonationExperience({
   return (
     <div className="w-full">
       {/* Heading & Short Description */}
-      <div className="mb-8 text-center max-w-2xl mx-auto">
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-semibold uppercase tracking-wider mb-3">
-          <Heart className="w-3.5 h-3.5 text-emerald-600 fill-emerald-600/20" />
+      <div className={`text-center max-w-2xl mx-auto px-2 ${isModal ? 'mb-6 sm:mb-7' : 'mb-8 sm:mb-10'}`}>
+        <div className="inline-flex items-center justify-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-bold uppercase tracking-wider mb-3 shadow-2xs">
+          <Heart className="w-3.5 h-3.5 text-emerald-600 fill-emerald-600/20 shrink-0" />
           <span>Official RESTI Community Support</span>
         </div>
-        <h2 className="text-2xl sm:text-3xl font-extrabold text-stone-900 tracking-tight">
+        <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-stone-900 tracking-tight leading-tight">
           Support RESTI's Community-Led Work
         </h2>
-        <p className="mt-2 text-stone-600 text-xs sm:text-sm leading-relaxed">
+        <p className="mt-3 text-stone-600 text-xs sm:text-sm md:text-base leading-relaxed max-w-xl mx-auto">
           Your contribution helps RESTI work with refugee and host communities to strengthen livelihoods, resilience, environmental sustainability, WASH, community development, and social cohesion.
         </p>
       </div>
 
       {/* Two-Column Donation Container */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-start">
         
         {/* ── LEFT COLUMN: Amount, Frequency, Purpose, Donor Info (7 cols) ── */}
         <div className="lg:col-span-7 bg-white rounded-2xl border border-stone-200 p-5 sm:p-7 shadow-sm space-y-7">
           
           {/* Section 1: Choose Donation Amount & Currency */}
           <div>
-            <div className="flex items-center justify-between mb-3">
+            <div className="flex flex-wrap items-center justify-between gap-2.5 mb-3">
               <label className="text-xs font-bold uppercase tracking-wider text-stone-700">
                 Choose Donation Amount
               </label>
@@ -828,7 +828,7 @@ export function DonationExperience({
                     key={curr}
                     type="button"
                     onClick={() => handleCurrencyChange(curr)}
-                    className={`px-2.5 py-1 text-xs font-semibold rounded-md transition-all ${
+                    className={`px-2.5 py-1 text-xs font-semibold rounded-md transition-all cursor-pointer ${
                       currency === curr
                         ? 'bg-white text-emerald-800 shadow-xs'
                         : 'text-stone-500 hover:text-stone-900'
@@ -847,10 +847,10 @@ export function DonationExperience({
                   key={preset}
                   type="button"
                   onClick={() => handlePresetSelect(preset)}
-                  className={`py-3 px-2 rounded-xl border text-sm font-bold transition-all text-center ${
+                  className={`py-2.5 sm:py-3 px-1.5 sm:px-2 rounded-xl border text-xs sm:text-sm font-bold transition-all text-center whitespace-nowrap overflow-hidden text-ellipsis cursor-pointer ${
                     !isCustomAmount && selectedAmount === preset
-                      ? 'border-emerald-600 bg-emerald-50 text-emerald-800 shadow-xs ring-1 ring-emerald-600'
-                      : 'border-stone-200 bg-stone-50/50 hover:bg-stone-50 text-stone-700'
+                      ? 'border-emerald-600 bg-emerald-50 text-emerald-900 shadow-xs ring-2 ring-emerald-600'
+                      : 'border-stone-200 bg-stone-50/50 hover:bg-stone-50 text-stone-700 hover:border-stone-300'
                   }`}
                 >
                   {formatMoney(preset, currency)}
@@ -1028,39 +1028,41 @@ export function DonationExperience({
               Donation Summary
             </h3>
             
-            <div className="space-y-2 text-xs">
-              <div className="flex justify-between items-baseline">
-                <span className="text-stone-500">Amount:</span>
-                <span className="text-base font-extrabold text-emerald-900">
+            <div className="space-y-2.5 text-xs">
+              <div className="flex justify-between items-baseline gap-2">
+                <span className="text-stone-500 shrink-0">Amount:</span>
+                <span className="text-base font-black text-emerald-900">
                   {formatMoney(finalAmount, currency)}
                 </span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-stone-500">Frequency:</span>
+              <div className="flex justify-between items-center gap-2">
+                <span className="text-stone-500 shrink-0">Frequency:</span>
                 <span className="font-semibold text-stone-800">One-time</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-stone-500">Purpose:</span>
-                <span className="font-semibold text-stone-800 text-right max-w-[200px] truncate">{purpose}</span>
+              <div className="flex justify-between items-start gap-3">
+                <span className="text-stone-500 shrink-0">Purpose:</span>
+                <span className="font-semibold text-stone-800 text-right leading-snug break-words max-w-[65%]">
+                  {purpose}
+                </span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-stone-500">Payment method:</span>
-                <span className="font-semibold text-stone-800 capitalize">
+              <div className="flex justify-between items-baseline gap-2">
+                <span className="text-stone-500 shrink-0">Payment method:</span>
+                <span className="font-semibold text-stone-800 text-right">
                   {paymentMethod === 'card' ? 'Debit / Credit Card' :
                    paymentMethod === 'paypal' ? 'PayPal' :
                    paymentMethod === 'mtn' ? 'MTN Mobile Money' :
                    paymentMethod === 'airtel' ? 'Airtel Money' : 'Bank Transfer'}
                 </span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-stone-500">Donor:</span>
-                <span className="font-semibold text-stone-800 truncate max-w-[180px]">
+              <div className="flex justify-between items-start gap-3">
+                <span className="text-stone-500 shrink-0">Donor:</span>
+                <span className="font-semibold text-stone-800 text-right leading-snug break-words max-w-[65%]">
                   {isAnonymous ? 'Anonymous Supporter' : (fullName || 'Not specified')}
                 </span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-stone-500">Email:</span>
-                <span className="font-semibold text-stone-800 truncate max-w-[180px]">
+              <div className="flex justify-between items-start gap-3">
+                <span className="text-stone-500 shrink-0">Email:</span>
+                <span className="font-semibold text-stone-800 text-right break-all max-w-[65%]">
                   {email || 'Not specified'}
                 </span>
               </div>
@@ -1078,7 +1080,7 @@ export function DonationExperience({
               </span>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5" role="radiogroup" aria-label="Select Payment Method">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5" role="radiogroup" aria-label="Select Payment Method">
               {([
                 {
                   id: 'card' as PaymentMethodType,
@@ -1111,12 +1113,13 @@ export function DonationExperience({
                 {
                   id: 'bank' as PaymentMethodType,
                   title: 'Bank Transfer',
-                  subtitle: 'Official RESTI bank wire',
+                  subtitle: 'Official RESTI bank wire (Equity Bank Uganda)',
                   ariaLabel: 'Donate via direct Bank Wire Transfer',
                   icon: <BankTransferIcon />
                 }
               ]).map((method) => {
                 const isSelected = paymentMethod === method.id;
+                const isBank = method.id === 'bank';
                 return (
                   <button
                     key={method.id}
@@ -1126,15 +1129,17 @@ export function DonationExperience({
                     aria-label={method.ariaLabel}
                     onClick={() => setPaymentMethod(method.id)}
                     className={`p-3.5 rounded-xl border text-left transition-all flex flex-col justify-between relative cursor-pointer group ${
+                      isBank ? 'sm:col-span-2' : ''
+                    } ${
                       isSelected
                         ? 'border-emerald-600 bg-emerald-50/70 text-emerald-950 ring-2 ring-emerald-600 shadow-xs'
                         : 'border-stone-200 hover:border-emerald-300 hover:bg-stone-50/80 text-stone-800 bg-white'
                     }`}
                   >
-                    <div className="flex items-center justify-between w-full mb-2.5">
+                    <div className="flex items-center justify-between w-full mb-2">
                       <div className="h-8 flex items-center">{method.icon}</div>
                       <div
-                        className={`w-4 h-4 rounded-full flex items-center justify-center transition-colors ${
+                        className={`w-4 h-4 rounded-full flex items-center justify-center transition-colors shrink-0 ${
                           isSelected
                             ? 'bg-emerald-600 text-white'
                             : 'border-2 border-stone-300 group-hover:border-stone-400'
@@ -1144,10 +1149,10 @@ export function DonationExperience({
                       </div>
                     </div>
                     <div>
-                      <span className="text-xs font-bold block text-stone-900 group-hover:text-emerald-900 transition-colors">
+                      <span className="text-xs font-bold block text-stone-900 group-hover:text-emerald-900 transition-colors leading-snug">
                         {method.title}
                       </span>
-                      <span className="text-[11px] text-stone-500 line-clamp-1">
+                      <span className="text-[11px] text-stone-500 block leading-tight mt-0.5 break-words">
                         {method.subtitle}
                       </span>
                     </div>
@@ -1156,7 +1161,6 @@ export function DonationExperience({
               })}
             </div>
 
-            {/* Provider Interactive Forms */}
             {/* Provider Interactive Forms */}
             {paymentMethod === 'card' && (
               <div className="pt-2 space-y-3">
@@ -1306,17 +1310,24 @@ export function DonationExperience({
                     </span>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                      <div className="bg-white border border-amber-200/80 rounded-xl p-2.5">
+                      <div className="bg-white border border-amber-200/80 rounded-xl p-2.5 sm:col-span-2">
+                        <span className="text-[10px] text-stone-400 font-medium block">Registered Account Name</span>
+                        <strong className="text-stone-900 font-semibold block mt-0.5 text-xs leading-snug break-words">
+                          {bankConfig?.accountName || 'Refugee Empowerment For Sustainable Transformation Initiative'}
+                        </strong>
+                      </div>
+
+                      <div className="bg-white border border-amber-200/80 rounded-xl p-2.5 sm:col-span-2">
                         <span className="text-[10px] text-stone-400 font-medium block">Merchant / Phone Number</span>
                         <div className="flex items-center justify-between mt-0.5">
-                          <strong className="text-stone-900 font-mono font-bold">{bankConfig?.merchantMTN || '+256 785 440955'}</strong>
+                          <strong className="text-stone-900 font-mono font-bold text-xs sm:text-sm">{bankConfig?.merchantMTN || '+256 785 440955'}</strong>
                           <button
                             type="button"
                             onClick={() => {
                               navigator.clipboard.writeText(bankConfig?.merchantMTN || '+256 785 440955');
                               toast.success('MTN number copied to clipboard');
                             }}
-                            className="p-1 text-stone-400 hover:text-amber-700 transition-colors"
+                            className="p-1 text-stone-400 hover:text-amber-700 transition-colors cursor-pointer"
                             title="Copy number"
                           >
                             <Copy size={12} />
@@ -1324,16 +1335,9 @@ export function DonationExperience({
                         </div>
                       </div>
 
-                      <div className="bg-white border border-amber-200/80 rounded-xl p-2.5">
-                        <span className="text-[10px] text-stone-400 font-medium block">Registered Account Name</span>
-                        <strong className="text-stone-900 font-semibold truncate block mt-0.5" title={bankConfig?.accountName || 'Refugee Empowerment For Sustainable Transformation Initiative'}>
-                          {bankConfig?.accountName || 'Refugee Empowerment For Sustainable Transformation Initiative'}
-                        </strong>
-                      </div>
-
                       <div className="bg-white border border-amber-200/80 rounded-xl p-3 sm:col-span-2 space-y-1">
                         <span className="text-[10px] text-stone-400 font-bold uppercase tracking-wider block">How to Send via MTN MoMo</span>
-                        <ol className="text-[11px] text-stone-700 space-y-1 list-decimal list-inside">
+                        <ol className="text-[11px] text-stone-700 space-y-1.5 list-decimal list-inside leading-relaxed">
                           <li>Dial <span className="font-mono font-bold text-amber-950">*165*3#</span> (MoMoPay) or transfer directly to <span className="font-mono font-bold text-amber-950">{bankConfig?.merchantMTN || '+256 785 440955'}</span></li>
                           <li>Enter Amount: <span className="font-bold text-amber-950">{formatMoney(finalAmount, currency)}</span></li>
                           <li>Enter Reason/Reference: <span className="font-mono font-bold text-amber-950">{bankReference}</span></li>
@@ -1462,17 +1466,24 @@ export function DonationExperience({
                     </span>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                      <div className="bg-white border border-rose-200/80 rounded-xl p-2.5">
+                      <div className="bg-white border border-rose-200/80 rounded-xl p-2.5 sm:col-span-2">
+                        <span className="text-[10px] text-stone-400 font-medium block">Registered Account Name</span>
+                        <strong className="text-stone-900 font-semibold block mt-0.5 text-xs leading-snug break-words">
+                          {bankConfig?.accountName || 'Refugee Empowerment For Sustainable Transformation Initiative'}
+                        </strong>
+                      </div>
+
+                      <div className="bg-white border border-rose-200/80 rounded-xl p-2.5 sm:col-span-2">
                         <span className="text-[10px] text-stone-400 font-medium block">Merchant / Phone Number</span>
                         <div className="flex items-center justify-between mt-0.5">
-                          <strong className="text-stone-900 font-mono font-bold">{bankConfig?.merchantAirtel || bankConfig?.merchantMTN || '+256 785 440955'}</strong>
+                          <strong className="text-stone-900 font-mono font-bold text-xs sm:text-sm">{bankConfig?.merchantAirtel || bankConfig?.merchantMTN || '+256 785 440955'}</strong>
                           <button
                             type="button"
                             onClick={() => {
                               navigator.clipboard.writeText(bankConfig?.merchantAirtel || bankConfig?.merchantMTN || '+256 785 440955');
                               toast.success('Airtel number copied to clipboard');
                             }}
-                            className="p-1 text-stone-400 hover:text-rose-700 transition-colors"
+                            className="p-1 text-stone-400 hover:text-rose-700 transition-colors cursor-pointer"
                             title="Copy number"
                           >
                             <Copy size={12} />
@@ -1480,16 +1491,9 @@ export function DonationExperience({
                         </div>
                       </div>
 
-                      <div className="bg-white border border-rose-200/80 rounded-xl p-2.5">
-                        <span className="text-[10px] text-stone-400 font-medium block">Registered Account Name</span>
-                        <strong className="text-stone-900 font-semibold truncate block mt-0.5" title={bankConfig?.accountName || 'Refugee Empowerment For Sustainable Transformation Initiative'}>
-                          {bankConfig?.accountName || 'Refugee Empowerment For Sustainable Transformation Initiative'}
-                        </strong>
-                      </div>
-
                       <div className="bg-white border border-rose-200/80 rounded-xl p-3 sm:col-span-2 space-y-1">
                         <span className="text-[10px] text-stone-400 font-bold uppercase tracking-wider block">How to Send via Airtel Money</span>
-                        <ol className="text-[11px] text-stone-700 space-y-1 list-decimal list-inside">
+                        <ol className="text-[11px] text-stone-700 space-y-1.5 list-decimal list-inside leading-relaxed">
                           <li>Dial <span className="font-mono font-bold text-rose-950">*185*9#</span> (Airtel Pay) or transfer directly to <span className="font-mono font-bold text-rose-950">{bankConfig?.merchantAirtel || bankConfig?.merchantMTN || '+256 785 440955'}</span></li>
                           <li>Enter Amount: <span className="font-bold text-rose-950">{formatMoney(finalAmount, currency)}</span></li>
                           <li>Enter Reason/Reference: <span className="font-mono font-bold text-rose-950">{bankReference}</span></li>
@@ -1623,36 +1627,36 @@ export function DonationExperience({
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                      <div className="bg-white border border-slate-200/90 rounded-xl p-2.5">
-                        <span className="text-[10px] text-slate-400 font-medium block">Bank Name</span>
-                        <strong className="text-slate-900 font-semibold">{bankConfig?.bankName || 'EQUITY'}</strong>
-                      </div>
-
-                      <div className="bg-white border border-slate-200/90 rounded-xl p-2.5">
+                      <div className="bg-white border border-slate-200/90 rounded-xl p-2.5 sm:col-span-2">
                         <span className="text-[10px] text-slate-400 font-medium block">Account Name</span>
-                        <strong className="text-slate-900 font-semibold truncate block" title={bankConfig?.accountName || 'Refugee Empowerment For Sustainable Transformation Initiative'}>
+                        <strong className="text-slate-900 font-semibold text-xs leading-snug block mt-0.5 break-words">
                           {bankConfig?.accountName || 'Refugee Empowerment For Sustainable Transformation Initiative'}
                         </strong>
                       </div>
 
                       <div className="bg-white border border-slate-200/90 rounded-xl p-2.5">
+                        <span className="text-[10px] text-slate-400 font-medium block">Bank Name</span>
+                        <strong className="text-slate-900 font-semibold text-xs block mt-0.5">{bankConfig?.bankName || 'EQUITY'}</strong>
+                      </div>
+
+                      <div className="bg-white border border-slate-200/90 rounded-xl p-2.5">
                         <span className="text-[10px] text-slate-400 font-medium block">Account Number</span>
-                        <strong className="text-slate-900 font-mono font-bold tracking-wider">{bankConfig?.accountNumber || '1050203752178'}</strong>
+                        <strong className="text-slate-900 font-mono font-bold tracking-wider text-xs block mt-0.5">{bankConfig?.accountNumber || '1050203752178'}</strong>
                       </div>
 
                       <div className="bg-white border border-slate-200/90 rounded-xl p-2.5">
                         <span className="text-[10px] text-slate-400 font-medium block">Branch</span>
-                        <strong className="text-slate-900 font-semibold">{bankConfig?.branch || 'Bweyale Branch'}</strong>
+                        <strong className="text-slate-900 font-semibold text-xs block mt-0.5">{bankConfig?.branch || 'Bweyale Branch'}</strong>
                       </div>
 
                       <div className="bg-white border border-slate-200/90 rounded-xl p-2.5">
                         <span className="text-[10px] text-slate-400 font-medium block">SWIFT / BIC</span>
-                        <strong className="text-slate-900 font-mono font-bold">{bankConfig?.swiftCode || 'EQBLUGKA'}</strong>
+                        <strong className="text-slate-900 font-mono font-bold text-xs block mt-0.5">{bankConfig?.swiftCode || 'EQBLUGKA'}</strong>
                       </div>
 
-                      <div className="bg-white border border-slate-200/90 rounded-xl p-2.5">
+                      <div className="bg-white border border-slate-200/90 rounded-xl p-2.5 sm:col-span-2">
                         <span className="text-[10px] text-slate-400 font-medium block">Accepted Currency</span>
-                        <strong className="text-slate-900 font-semibold">{currency} / UGX / USD</strong>
+                        <strong className="text-slate-900 font-semibold text-xs block mt-0.5">{currency} / UGX / USD</strong>
                       </div>
                     </div>
 
