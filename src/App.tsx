@@ -52,10 +52,9 @@ import { DonationModalProvider } from './components/DonationModalContext';
 import { CardPaymentPage } from './components/CardPaymentPage';
 import { ContactPage } from './components/ContactPage';
 import { CustomPage } from './components/CustomPage';
-import { Login } from './components/Login';
-import { Register } from './components/Register';
 import { ResetPassword } from './components/ResetPassword';
-import { DonorDashboard } from './components/DonorDashboard';
+
+
 import { HelmetProvider } from 'react-helmet-async';
 import { SEO } from './components/SEO';
 import { GoogleAnalytics } from './components/GoogleAnalytics';
@@ -84,14 +83,10 @@ function PageTitleManager() {
       '/opportunities': 'Opportunities | RESTI CBO',
       '/donate': 'Donate | Support Our Mission',
       '/donation': 'Donate | Support Our Mission',
-      '/donor': 'Donor Portal | RESTI',
-      '/donor/dashboard': 'Donor Portal | RESTI',
-      '/donor/portal': 'Donor Portal | RESTI',
-      '/donor-portal': 'Donor Portal | RESTI',
-      '/donor-dashboard': 'Donor Portal | RESTI',
-      '/login': 'Donor Sign In | RESTI',
+
       '/contact': 'Get Involved & Contact | RESTI CBO',
       '/get-involved': 'Get Involved | RESTI CBO',
+
       '/financials': 'Financial Transparency | RESTI',
       '/about': 'About Us | RESTI',
       '/events': 'Events & Activities | RESTI CBO',
@@ -270,14 +265,15 @@ export default function App() {
         <Route path="/opportunities" element={<MainLayout><OpportunitiesPage /></MainLayout>} />
         <Route path="/donate" element={<MainLayout><CardPaymentPage /></MainLayout>} />
         <Route path="/donation" element={<Navigate to="/donate" replace />} />
-        <Route path="/donor" element={<Navigate to="/donor-portal" replace />} />
-        <Route path="/donor/portal" element={<Navigate to="/donor-portal" replace />} />
-        <Route path="/donor/dashboard" element={<Navigate to="/donor-portal" replace />} />
-        <Route path="/donor-dashboard" element={<Navigate to="/donor-portal" replace />} />
-        <Route path="/donor-portal" element={<MainLayout><DonorDashboard /></MainLayout>} />
-        <Route path="/login" element={<MainLayout><Login /></MainLayout>} />
-        <Route path="/register" element={<MainLayout><Register /></MainLayout>} />
+        <Route path="/donor" element={<Navigate to="/donate" replace />} />
+        <Route path="/donor/portal" element={<Navigate to="/donate" replace />} />
+        <Route path="/donor/dashboard" element={<Navigate to="/donate" replace />} />
+        <Route path="/donor-dashboard" element={<Navigate to="/donate" replace />} />
+        <Route path="/donor-portal" element={<Navigate to="/donate" replace />} />
+        <Route path="/login" element={<Navigate to="/donate" replace />} />
+        <Route path="/register" element={<Navigate to="/donate" replace />} />
         <Route path="/reset-password" element={<MainLayout><ResetPassword /></MainLayout>} />
+
         <Route path="/contact" element={<ContactPage />} />
         <Route path="/get-involved" element={<ContactPage />} />
         <Route path="/financials" element={<MainLayout><FinancialReports /></MainLayout>} />

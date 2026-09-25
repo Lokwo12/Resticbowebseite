@@ -174,7 +174,7 @@ export function Footer() {
               <li><Link to="/partners" className="block hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Become a Partner</Link></li>
               <li><Link to="/opportunities" className="block hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Opportunities</Link></li>
               <li><Link to="/#newsletter" className="block hover:text-emerald-400 hover:translate-x-1 transition-all duration-300">Newsletter</Link></li>
-              <li><Link to="/donor-portal" className="block hover:text-emerald-400 hover:translate-x-1 transition-all duration-300 font-semibold text-emerald-400">Donor Portal</Link></li>
+
             </ul>
           </div>
 

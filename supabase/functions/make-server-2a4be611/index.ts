@@ -795,7 +795,8 @@ app.post('/make-server-2a4be611/create-checkout-session', async (c) => {
           quantity: 1,
         },
       ],
-      success_url: successUrl || `${c.req.header('origin') || 'http://localhost:5173'}/donor/dashboard?session_id={CHECKOUT_SESSION_ID}`,
+      success_url: successUrl || `${c.req.header('origin') || 'http://localhost:5173'}/donate?session_id={CHECKOUT_SESSION_ID}`,
+
       cancel_url: cancelUrl || `${c.req.header('origin') || 'http://localhost:5173'}/donate`,
       customer_email: donorEmail || undefined,
       metadata: {
@@ -945,7 +946,8 @@ app.post('/make-server-2a4be611/create-portal-session', async (c) => {
 
     const session = await stripe.billingPortal.sessions.create({
       customer: customerId,
-      return_url: returnUrl || `${c.req.header('origin') || 'http://localhost:5173'}/donor/dashboard`,
+      return_url: returnUrl || `${c.req.header('origin') || 'http://localhost:5173'}/donate`,
+
     })
 
     return c.json({ url: session.url })
@@ -954,232 +956,6 @@ app.post('/make-server-2a4be611/create-portal-session', async (c) => {
   }
 })
 
-// ── Donor Portal Endpoints ──────────────────────────────────────────────────
-
-// 1. Get authenticated donor's donations & metrics
-app.get('/make-server-2a4be611/donor/donations', async (c) => {
-  try {
-    const authHeader = c.req.header('Authorization')
-    const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null
-
-    let donorEmail = ''
-
-    if (token) {
-      const { data: { user } } = await supabase.auth.getUser(token)
-      if (user?.email) {
-        donorEmail = user.email.toLowerCase().trim()
-      }
-    }
-
-    // Guest fallback: restricted to exact single transaction reference verification only
-    const queryEmail = c.req.query('email')?.toLowerCase().trim()
-    const queryRef = c.req.query('ref')?.toLowerCase().trim()
-
-    if (!donorEmail) {
-      if (queryEmail && queryRef) {
-        // Limited single-receipt retrieval: strictly query ONLY the exact matching transaction reference
-        const { data: singleDonation, error: singleErr } = await supabase
-          .from('donations')
-          .select('*')
-          .ilike('email', queryEmail)
-          .or(`transaction_id.eq.${queryRef},id.eq.${queryRef}`)
-          .in('status', ['completed', 'succeeded'])
-          .limit(1)
-
-        if (singleErr || !singleDonation || singleDonation.length === 0) {
-          return c.json({ donations: [], totalContributedUSD: 0, donationCount: 0, latestDonation: null })
-        }
-
-        const r = singleDonation[0]
-        const rawRef = (r.transaction_id || r.id || '').replace(/^donation:/, '')
-        const item = {
-          id: r.id || `pg-${rawRef}`,
-          amount: Number(r.amount) || 0,
-          currency: (r.currency || 'USD').toUpperCase(),
-          date: r.created_at || r.updated_at || new Date().toISOString(),
-          status: 'completed',
-          paymentMethod: (r.method || r.provider || 'card').toLowerCase(),
-          donorName: `${r.first_name || ''} ${r.last_name || ''}`.trim() || undefined,
-          donorEmail: (r.email || '').trim() || undefined,
-          donorPhone: r.phone || undefined,
-          reference: rawRef,
-          receiptNumber: `REC-${rawRef.slice(-8).toUpperCase()}`,
-          campaign: r.campaign || 'Community Resilience & Livelihoods',
-        }
-
-        return c.json({
-          donations: [item],
-          totalContributedUSD: item.currency === 'USD' ? item.amount : Number((item.amount / 3800).toFixed(2)),
-          donationCount: 1,
-          latestDonation: item,
-        })
-      } else {
-        return c.json({ error: 'Unauthorized – donor authentication required' }, 401)
-      }
-    }
-
-    // Query Postgres donations - strictly filter by this donor's email and completed status
-    const { data: pgData, error: pgErr } = await supabase
-      .from('donations')
-      .select('*')
-      .ilike('email', donorEmail)
-      .in('status', ['completed', 'succeeded'])
-      .order('created_at', { ascending: false })
-
-    if (pgErr) console.warn('Donor donations pg query notice:', pgErr.message)
-
-    // Normalize Postgres records
-    const unifiedList: any[] = []
-    const seenRefs = new Set<string>()
-
-    if (pgData && Array.isArray(pgData)) {
-      for (const r of pgData) {
-        const amt = Number(r.amount)
-        if (!amt || isNaN(amt) || amt <= 0) continue
-
-        const rawRef = (r.transaction_id || r.id || '').replace(/^donation:/, '')
-        const item = {
-          id: r.id || `pg-${rawRef}`,
-          amount: amt,
-          currency: (r.currency || 'USD').toUpperCase(),
-          date: r.created_at || r.updated_at || new Date().toISOString(),
-          status: 'completed',
-          paymentMethod: (r.method || r.provider || 'card').toLowerCase(),
-          donorName: `${r.first_name || ''} ${r.last_name || ''}`.trim() || undefined,
-          donorEmail: (r.email || '').trim() || undefined,
-          donorPhone: r.phone || undefined,
-          reference: rawRef,
-          receiptNumber: `REC-${rawRef.slice(-8).toUpperCase()}`,
-          campaign: r.campaign || 'Community Resilience & Livelihoods',
-        }
-        if (rawRef) seenRefs.add(rawRef.toLowerCase())
-        unifiedList.push(item)
-      }
-    }
-
-    // Sort by date descending
-    unifiedList.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-
-    // Compute metrics
-    const completedGifts = unifiedList.filter((d) => d.status === 'completed' || d.status === 'paid' || d.status === 'confirmed')
-    const totalContributedUSD = completedGifts.reduce((sum, d) => {
-      const amt = Number(d.amount) || 0
-      return sum + (d.currency === 'USD' ? amt : amt / 3800)
-    }, 0)
-
-    const latestDonation = unifiedList.length > 0 ? unifiedList[0] : null
-
-    return c.json({
-      donations: unifiedList,
-      totalContributedUSD: Number(totalContributedUSD.toFixed(2)),
-      donationCount: completedGifts.length,
-      latestDonation,
-    })
-  } catch (error) {
-    console.error('Error fetching donor donations:', error)
-    return c.json({ error: 'Failed to fetch donations', details: String(error) }, 500)
-  }
-})
-
-// 2. Email official receipt to authenticated donor
-app.post('/make-server-2a4be611/donor/send-receipt', async (c) => {
-  try {
-    const authHeader = c.req.header('Authorization')
-    const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null
-
-    let authenticatedEmail = ''
-    if (token) {
-      const { data: { user } } = await supabase.auth.getUser(token)
-      authenticatedEmail = user?.email?.toLowerCase().trim() || ''
-    }
-
-    const body = await c.req.json()
-    const { donationId, reference, targetEmail } = body
-
-    if (!donationId && !reference) {
-      return c.json({ error: 'Donation ID or reference is required' }, 400)
-    }
-
-    // Lookup donation in Postgres
-    let query = supabase.from('donations').select('*')
-    if (donationId) {
-      query = query.or(`id.eq.${donationId},transaction_id.eq.${donationId}`)
-    } else if (reference) {
-      query = query.or(`transaction_id.eq.${reference},id.eq.${reference}`)
-    }
-
-    const { data: donations, error } = await query.limit(1)
-    if (error || !donations || donations.length === 0) {
-      return c.json({ error: 'Donation not found' }, 404)
-    }
-
-    const donation = donations[0]
-    const donationEmail = (donation.email || '').toLowerCase().trim()
-
-    // Enforce authorization: user must either be authenticated as the owner, or provided targetEmail must match
-    if (authenticatedEmail && donationEmail && authenticatedEmail !== donationEmail) {
-      if (authenticatedEmail !== 'lokwodenis0@gmail.com' && authenticatedEmail !== 'lokwodenis@gmail.com') {
-        return c.json({ error: 'Forbidden – you can only request receipts for your own gifts' }, 403)
-      }
-    }
-
-    const recipient = targetEmail || donationEmail || authenticatedEmail
-    if (!recipient) {
-      return c.json({ error: 'No recipient email associated with this donation' }, 400)
-    }
-
-    const delivered = await deliverDonationReceipt({
-      ...donation,
-      email: recipient,
-    })
-
-    if (delivered) {
-      return c.json({ success: true, message: `Official receipt sent to ${recipient}` })
-    } else {
-      return c.json({ error: 'Unable to deliver receipt email. Please download the PDF receipt directly.' }, 500)
-    }
-  } catch (error) {
-    console.error('Error sending donor receipt:', error)
-    return c.json({ error: 'Failed to send receipt', details: String(error) }, 500)
-  }
-})
-
-// 3. Get donor's recurring subscriptions
-app.get('/make-server-2a4be611/donor/subscriptions', async (c) => {
-  try {
-    const authHeader = c.req.header('Authorization')
-    const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null
-
-    let donorEmail = ''
-    let userId = ''
-
-    if (token) {
-      const { data: { user } } = await supabase.auth.getUser(token)
-      if (user) {
-        donorEmail = user.email?.toLowerCase().trim() || ''
-        userId = user.id
-      }
-    }
-
-    const queryEmail = c.req.query('email')?.toLowerCase().trim()
-    const targetEmail = donorEmail || queryEmail
-
-    if (!targetEmail) {
-      return c.json({ subscriptions: [] })
-    }
-
-    const { data: subData } = await supabase
-      .from('subscriptions')
-      .select('*')
-      .or(`donor_id.eq.${userId},donor_id.eq.${targetEmail}`)
-      .order('created_at', { ascending: false })
-
-    return c.json({ subscriptions: subData || [] })
-  } catch (error) {
-    console.error('Error fetching donor subscriptions:', error)
-    return c.json({ subscriptions: [] })
-  }
-})
 
 // Delete a specific donation (admin)
 app.delete('/make-server-2a4be611/admin/donations/:id', requireAdmin, async (c) => {
@@ -1653,7 +1429,8 @@ app.post('/make-server-2a4be611/admin/donations/:id/verify', requireAdmin, async
                 </table>
               </div>
 
-              <p style="font-size: 13px; color: #475569;">You can log in to the RESTI Supporter & Donor Portal at any time to view your verified giving history and download official receipt PDFs.</p>
+              <p style="font-size: 13px; color: #475569;">An official receipt has been sent to your email address. Please keep it for your records.</p>
+
               <p style="margin-top: 24px;">Thank you for your generous partnership,<br><strong>RESTI-CBO Finance & Donor Care Team</strong><br>Kiryandongo District, Uganda</p>
             </div>
           </body>

@@ -1,14 +1,15 @@
 import { 
-  Menu, X, Heart, ChevronDown, Search, User, 
+  Menu, X, Heart, ChevronDown, Search,
   Users, HelpCircle, FileText, BarChart3, 
   Calendar, Newspaper, FolderDown, HandHeart, Briefcase, Building2, 
   ShieldCheck, Sparkles, ExternalLink
 } from 'lucide-react';
+
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 const logo = '/logo.png';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
-import { supabase } from '../utils/supabase/client';
+
 import { useDonationModal } from './DonationModalContext';
 import { GlobalSearch } from './GlobalSearch';
 import { LanguageSwitcher } from './LanguageSwitcher';
@@ -43,24 +44,12 @@ export function Header() {
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [customPages, setCustomPages] = useState<Array<{slug: string; title: string}>>([]);
   const [searchOpen, setSearchOpen] = useState(false);
-  const [donorUser, setDonorUser] = useState<any>(null);
 
   // Close mobile menu on route change
   useEffect(() => {
     setMobileMenuOpen(false);
     setActiveDropdown(null);
   }, [location.pathname]);
-
-  // Auth listener
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setDonorUser(session?.user || null);
-    });
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setDonorUser(session?.user || null);
-    });
-    return () => subscription.unsubscribe();
-  }, []);
 
   // Scroll handler
   useEffect(() => {
@@ -462,7 +451,7 @@ export function Header() {
                 <button
                   onClick={() => setActiveDropdown(activeDropdown === 'involved' ? null : 'involved')}
                   className={`px-2 xl:px-2.5 py-2 rounded-lg text-[15px] xl:text-[16px] font-medium transition-colors flex items-center gap-1 whitespace-nowrap ${
-                    isActive('/opportunities') || isActive('/partners') || isActive('/donor')
+                    isActive('/opportunities') || isActive('/partners')
                       ? isSolid ? 'text-resti-green font-bold bg-resti-green-light/90' : 'text-white font-bold bg-white/15'
                       : isSolid ? 'text-resti-neutral-dark hover:text-resti-green hover:bg-resti-neutral-offwhite' : 'text-white/90 hover:text-white hover:bg-white/10'
                   }`}
