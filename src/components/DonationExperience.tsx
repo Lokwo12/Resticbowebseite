@@ -22,7 +22,7 @@ import {
   MastercardIcon
 } from './PaymentBrandIcons';
 
-export type SupportedCurrency = 'UGX' | 'USD' | 'EUR' | 'GBP';
+export type SupportedCurrency = 'USD' | 'EUR' | 'GBP' | 'UGX';
 export type PaymentMethodType = 'card' | 'paypal' | 'mtn' | 'airtel' | 'bank';
 export type PaymentStatus = 'idle' | 'processing' | 'success' | 'pending' | 'pending_verification' | 'failed' | 'cancelled';
 
@@ -41,14 +41,6 @@ const CURRENCY_CONFIG: Record<SupportedCurrency, {
   max: number;
   defaultAmount: number;
 }> = {
-  UGX: {
-    label: 'UGX',
-    symbol: 'UGX',
-    presets: [10000, 25000, 50000, 100000, 250000],
-    min: 5000,
-    max: 100000000,
-    defaultAmount: 50000
-  },
   USD: {
     label: 'USD',
     symbol: '$',
@@ -72,6 +64,14 @@ const CURRENCY_CONFIG: Record<SupportedCurrency, {
     min: 5,
     max: 25000,
     defaultAmount: 25
+  },
+  UGX: {
+    label: 'UGX',
+    symbol: 'UGX',
+    presets: [5000, 25000, 50000, 100000, 250000],
+    min: 5000,
+    max: 100000000,
+    defaultAmount: 50000
   }
 };
 
@@ -99,9 +99,9 @@ export function DonationExperience({
 }: DonationExperienceProps) {
   const navigate = useNavigate();
 
-  // State: Amount & Currency
-  const [currency, setCurrency] = useState<SupportedCurrency>('UGX');
-  const [selectedAmount, setSelectedAmount] = useState<number>(50000);
+  // State: Amount & Currency (USD is primary/default, UGX is last)
+  const [currency, setCurrency] = useState<SupportedCurrency>('USD');
+  const [selectedAmount, setSelectedAmount] = useState<number>(25);
   const [customAmountInput, setCustomAmountInput] = useState<string>('');
   const [isCustomAmount, setIsCustomAmount] = useState<boolean>(false);
 
@@ -869,7 +869,7 @@ export function DonationExperience({
               
               {/* Currency Selector */}
               <div className="flex items-center gap-1 bg-stone-100 p-1 rounded-lg">
-                {(['UGX', 'USD', 'EUR', 'GBP'] as SupportedCurrency[]).map((curr) => (
+                {(['USD', 'EUR', 'GBP', 'UGX'] as SupportedCurrency[]).map((curr) => (
                   <button
                     key={curr}
                     type="button"
