@@ -130,3 +130,68 @@ export function normaliseUgandanPhone(phone: string): string {
   if (cleaned.startsWith('07')) return '256' + cleaned.slice(1)
   return cleaned
 }
+
+/** Zero-decimal currencies in Stripe that do not have subunits. */
+export const ZERO_DECIMAL_CURRENCIES = new Set([
+  'BIF', 'CLP', 'DJF', 'GNF', 'JPY', 'KMF', 'KRW', 'MGA', 
+  'PYG', 'RWF', 'UGX', 'VND', 'VUV', 'XAF', 'XOF', 'XPF'
+])
+
+export function isZeroDecimalCurrency(currency: string): boolean {
+  return ZERO_DECIMAL_CURRENCIES.has((currency || '').toUpperCase())
+}
+
+export function toStripeSmallestUnit(amount: number, currency: string): number {
+  if (isZeroDecimalCurrency(currency)) {
+    return Math.round(amount)
+  }
+  return Math.round(amount * 100)
+}
+
+export function fromStripeSmallestUnit(amount: number, currency: string): number {
+  if (isZeroDecimalCurrency(currency)) {
+    return amount
+  }
+  return amount / 100
+}
+
+export interface StripeValidationResult {
+  ok: boolean
+  error?: string
+  validAmount?: number
+  validCurrency?: string
+}
+
+export function validateStripeDonation(amount: unknown, currency: unknown): StripeValidationResult {
+  const cur = typeof currency === 'string' ? currency.trim().toUpperCase() : 'USD'
+  const allowedCurrencies = ['USD', 'EUR', 'GBP', 'UGX']
+  
+  if (!allowedCurrencies.includes(cur)) {
+    return { ok: false, error: `Unsupported currency '${cur}'. Supported currencies: ${allowedCurrencies.join(', ')}` }
+  }
+
+  const num = Number(amount)
+  if (isNaN(num) || !isFinite(num) || num <= 0) {
+    return { ok: false, error: 'Donation amount must be a positive number' }
+  }
+
+  // Min / Max rules matching frontend and Stripe requirements
+  if (cur === 'UGX') {
+    if (num < 5000) {
+      return { ok: false, error: 'Minimum card donation in UGX is 5,000' }
+    }
+    if (num > 100_000_000) {
+      return { ok: false, error: 'Maximum card donation in UGX is 100,000,000' }
+    }
+  } else {
+    // USD, EUR, GBP
+    if (num < 5) {
+      return { ok: false, error: `Minimum card donation in ${cur} is 5.00` }
+    }
+    if (num > 25000) {
+      return { ok: false, error: `Maximum card donation in ${cur} is 25,000.00` }
+    }
+  }
+
+  return { ok: true, validAmount: num, validCurrency: cur }
+}

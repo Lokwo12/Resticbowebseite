@@ -15,12 +15,12 @@ export type FreqOption = 'once' | 'monthly' | 'yearly';
 // In-memory cache for Payment Intents to make card checkout render instantly
 const paymentIntentCache = new Map<string, Promise<string>>();
 
-export function prefetchPaymentIntent(amount: number, currency = 'USD', donorData?: any): Promise<string> | undefined {
+export function prefetchPaymentIntent(amount: number, currency = 'USD', donorData?: any, campaign?: string): Promise<string> | undefined {
   if (!amount || Number.isNaN(amount) || amount < 1 || !STRIPE_PK || STRIPE_PK === 'pk_test_REPLACE_ME') {
     return undefined;
   }
   const curr = (currency || 'USD').toLowerCase();
-  const cacheKey = `${amount}_${curr}`;
+  const cacheKey = `${amount}_${curr}_${donorData?.email || ''}`;
 
   if (paymentIntentCache.has(cacheKey)) {
     return paymentIntentCache.get(cacheKey);
@@ -36,6 +36,9 @@ export function prefetchPaymentIntent(amount: number, currency = 'USD', donorDat
           currency: curr,
           donorName: donorData ? `${donorData.firstName || ''} ${donorData.lastName || ''}`.trim() : '',
           donorEmail: donorData?.email || '',
+          donorPhone: donorData?.phone || '',
+          donorCountry: donorData?.country || 'Uganda',
+          campaign: campaign || 'Where Most Needed'
         }),
       });
       const data = await response.json().catch(() => ({}));
@@ -53,7 +56,7 @@ export function prefetchPaymentIntent(amount: number, currency = 'USD', donorDat
   return promise;
 }
 
-export function StripePaymentProvider({ finalAmount, currency, freq, donorData, children }: any) {
+export function StripePaymentProvider({ finalAmount, currency, freq, donorData, campaign, children }: any) {
   const [clientSecret, setClientSecret] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [retryCount, setRetryCount] = useState(0);
@@ -69,7 +72,7 @@ export function StripePaymentProvider({ finalAmount, currency, freq, donorData, 
     setErrorMsg('');
 
     const curr = (currency || 'USD').toLowerCase();
-    const cacheKey = `${finalAmount}_${curr}`;
+    const cacheKey = `${finalAmount}_${curr}_${donorData?.email || ''}`;
 
     // If retry is requested, clear the existing cached promise
     if (retryCount > 0) {
@@ -78,7 +81,7 @@ export function StripePaymentProvider({ finalAmount, currency, freq, donorData, 
 
     const initialisePayment = async () => {
       try {
-        const promise = prefetchPaymentIntent(finalAmount, curr, donorData);
+        const promise = prefetchPaymentIntent(finalAmount, curr, donorData, campaign);
         if (!promise) return;
         const secret = await promise;
         if (!controller.signal.aborted) {
@@ -150,46 +153,37 @@ export interface StripeFormProps {
     firstName: string;
     lastName: string;
     email: string;
-    phone: string;
+    phone?: string;
     address?: string;
     city?: string;
     country?: string;
     postalCode?: string;
   };
-  setDonorData: React.Dispatch<React.SetStateAction<any>>;
+  setDonorData?: React.Dispatch<React.SetStateAction<any>>;
   finalAmount: number;
   freq: FreqOption;
-  setDone: React.Dispatch<React.SetStateAction<boolean>>;
+  setDone: (paymentIntent?: any) => void;
   submitting: boolean;
   setSubmitting: React.Dispatch<React.SetStateAction<boolean>>;
-  inp: string;
-  lbl: string;
-  onBack: () => void;
+  inp?: string;
+  lbl?: string;
+  onBack?: () => void;
   formatAmt: (n: number) => string;
 }
 
-const COMMON_COUNTRIES = [
-  'Uganda',
-  'United States',
-  'United Kingdom',
-  'Canada',
-  'Germany',
-  'Australia',
-  'Kenya',
-  'South Sudan',
-  'Rwanda',
-  'Tanzania',
-  'Netherlands',
-  'France',
-  'Sweden',
-  'Norway',
-  'Denmark',
-  'Switzerland',
-  'South Africa',
-  'Other'
-];
-
-export function StripeCardForm({ donorData, setDonorData, finalAmount, freq, setDone, submitting, setSubmitting, inp, lbl, onBack, formatAmt }: StripeFormProps) {
+export function StripeCardForm({ 
+  donorData, 
+  setDonorData, 
+  finalAmount, 
+  freq, 
+  setDone, 
+  submitting, 
+  setSubmitting, 
+  inp = "w-full border border-stone-200 rounded-xl px-3 py-2 text-xs outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600", 
+  lbl = "block text-[11px] font-semibold text-stone-600 mb-1 uppercase", 
+  onBack, 
+  formatAmt 
+}: StripeFormProps) {
   const stripe = useStripe();
   const elements = useElements();
 
@@ -198,153 +192,150 @@ export function StripeCardForm({ donorData, setDonorData, finalAmount, freq, set
     if (!stripe || !elements) return;
     setSubmitting(true);
     try {
+      const returnUrl = new URL(window.location.href);
+      returnUrl.searchParams.set('payment_return', 'stripe');
+
       const { error, paymentIntent } = await stripe.confirmPayment({
         elements,
         confirmParams: {
-          return_url: window.location.href,
+          return_url: returnUrl.toString(),
           payment_method_data: {
             billing_details: {
-              name: `${donorData.firstName} ${donorData.lastName}`.trim(),
-              email: donorData.email,
+              name: `${donorData.firstName || ''} ${donorData.lastName || ''}`.trim() || undefined,
+              email: donorData.email || undefined,
               phone: donorData.phone || undefined,
               address: {
                 line1: donorData.address || undefined,
                 city: donorData.city || undefined,
                 postal_code: donorData.postalCode || undefined,
+                country: donorData.country === 'Uganda' ? 'UG' : undefined,
               }
             }
           }
         },
         redirect: 'if_required',
       });
-      if (error) {
-        toast.error(error.message ?? 'Payment failed. Please try again.');
-      } else if (paymentIntent?.status === 'succeeded' || paymentIntent?.status === 'requires_capture') {
-        try {
-          // Record donation in Postgres and trigger automated Email Receipt
-          await fetch(`${supabaseUrl}/functions/v1/make-server-2a4be611/donations`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${publicAnonKey}` },
-            body: JSON.stringify({
-              amount: finalAmount, 
-              currency: paymentIntent.currency?.toUpperCase() || 'USD',
-              paymentMethod: 'card',
-              donorName: `${donorData.firstName} ${donorData.lastName}`.trim(),
-              donorEmail: donorData.email,
-              donorPhone: donorData.phone || '',
-              donorAddress: donorData.address || '',
-              donorCity: donorData.city || '',
-              donorCountry: donorData.country || '',
-              donorPostalCode: donorData.postalCode || '',
-              paymentIntentId: paymentIntent.id,
-              transactionId: paymentIntent.id
-            })
-          });
-        } catch (e) { console.error('Failed to record donation email logic', e) }
 
-        toast.success('Thank you! Your donation was confirmed.', { duration: 7000 });
-        setDone(true);
+      if (error) {
+        if (error.type === 'card_error' || error.type === 'validation_error') {
+          toast.error(error.message || 'Payment declined. Please check your card information.');
+        } else {
+          toast.error(error.message || 'Payment failed. Please try again or select another payment option.');
+        }
+      } else if (paymentIntent) {
+        switch (paymentIntent.status) {
+          case 'succeeded':
+          case 'requires_capture':
+            toast.success('Thank you! Your card donation has been confirmed.', { duration: 7000 });
+            setDone(paymentIntent);
+            break;
+          case 'processing':
+            toast.info('Your payment is currently processing. Your official receipt will be sent via email once clearance is received.');
+            setDone(paymentIntent);
+            break;
+          case 'requires_action':
+            // 3D Secure / SCA in progress via modal or redirect
+            break;
+          case 'requires_payment_method':
+            toast.error('Payment was declined. Please verify your card details or try a different card.');
+            break;
+          case 'canceled':
+            toast.error('Payment was canceled.');
+            break;
+          default:
+            toast.error(`Payment status: ${paymentIntent.status}.`);
+            break;
+        }
       }
-    } catch {
+    } catch (err: any) {
       toast.error('An unexpected error occurred. Please try again.');
     } finally {
       setSubmitting(false);
     }
   };
 
+  const hasNameAndEmail = donorData.firstName && donorData.email;
+
   return (
-    <form onSubmit={handleCardSubmit}>
-      <div className="px-6 py-5 flex items-center justify-between" style={{ background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)' }}>
-        <div>
-          <p className="text-white font-bold text-sm">Secure Payment</p>
-          <p className="text-gray-400 text-xs mt-0.5">End-to-end encrypted · Powered by Stripe</p>
-        </div>
-        <Lock size={16} className="text-white" />
-      </div>
-
-      <div className="mx-6 mt-5 bg-emerald-50 border border-emerald-100 rounded-xl px-4 py-3 flex items-center justify-between">
-        <div>
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-0.5">Donation Amount</p>
-          <p className="text-lg font-bold text-emerald-700">{formatAmt(finalAmount)}</p>
-        </div>
-        <div className="text-right">
-          <p className="text-xs text-gray-400 uppercase tracking-wider mb-0.5">Frequency</p>
-          <p className="text-xs font-semibold text-gray-700">{freq === 'once' ? 'One-time' : 'Monthly'}</p>
-        </div>
-      </div>
-
-      <div className="px-6 pt-4 pb-6 space-y-4">
-        {/* Name Fields */}
-        <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1.5">
-            <label className={lbl}>First Name *</label>
-            <input required className={inp} style={{ height: 44 }} placeholder="John" value={donorData.firstName} onChange={e => setDonorData((p:any) => ({ ...p, firstName: e.target.value }))} />
+    <form onSubmit={handleCardSubmit} className="space-y-4">
+      {/* If name or email are missing, prompt for them inline */}
+      {!hasNameAndEmail && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pb-2">
+          <div className="space-y-1">
+            <label className={lbl}>Donor Name *</label>
+            <input 
+              required 
+              className={inp} 
+              placeholder="Your full name" 
+              value={`${donorData.firstName || ''} ${donorData.lastName || ''}`.trim()} 
+              onChange={e => {
+                if (setDonorData) {
+                  const parts = e.target.value.split(' ');
+                  setDonorData((p: any) => ({ ...p, firstName: parts[0] || '', lastName: parts.slice(1).join(' ') || '' }));
+                }
+              }} 
+            />
           </div>
-          <div className="space-y-1.5">
-            <label className={lbl}>Last Name *</label>
-            <input required className={inp} style={{ height: 44 }} placeholder="Smith" value={donorData.lastName} onChange={e => setDonorData((p:any) => ({ ...p, lastName: e.target.value }))} />
-          </div>
-        </div>
-
-        {/* Email & Phone */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div className="space-y-1.5">
+          <div className="space-y-1">
             <label className={lbl}>Email Address (for receipt) *</label>
-            <input required type="email" className={inp} style={{ height: 44 }} placeholder="you@example.com" value={donorData.email} onChange={e => setDonorData((p:any) => ({ ...p, email: e.target.value }))} />
-          </div>
-          <div className="space-y-1.5">
-            <label className={lbl}>Phone Number *</label>
-            <input required type="tel" className={inp} style={{ height: 44 }} placeholder="+256 700 000 000" value={donorData.phone || ''} onChange={e => setDonorData((p:any) => ({ ...p, phone: e.target.value }))} />
-          </div>
-        </div>
-
-        {/* Street Address */}
-        <div className="space-y-1.5">
-          <label className={lbl}>Street Address *</label>
-          <input required className={inp} style={{ height: 44 }} placeholder="Street address or P.O. Box" value={donorData.address || ''} onChange={e => setDonorData((p:any) => ({ ...p, address: e.target.value }))} />
-        </div>
-
-        {/* City, Postal Code & Country */}
-        <div className="grid grid-cols-3 gap-2.5">
-          <div className="space-y-1.5">
-            <label className={lbl}>City / Town *</label>
-            <input required className={inp} style={{ height: 44 }} placeholder="City" value={donorData.city || ''} onChange={e => setDonorData((p:any) => ({ ...p, city: e.target.value }))} />
-          </div>
-          <div className="space-y-1.5">
-            <label className={lbl}>Postal / ZIP *</label>
-            <input required className={inp} style={{ height: 44 }} placeholder="Postal code" value={donorData.postalCode || ''} onChange={e => setDonorData((p:any) => ({ ...p, postalCode: e.target.value }))} />
-          </div>
-          <div className="space-y-1.5">
-            <label className={lbl}>Country *</label>
-            <select required className={inp} style={{ height: 44 }} value={donorData.country || 'Uganda'} onChange={e => setDonorData((p:any) => ({ ...p, country: e.target.value }))}>
-              {COMMON_COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
-            </select>
+            <input 
+              required 
+              type="email" 
+              className={inp} 
+              placeholder="you@example.com" 
+              value={donorData.email || ''} 
+              onChange={e => {
+                if (setDonorData) setDonorData((p: any) => ({ ...p, email: e.target.value }));
+              }} 
+            />
           </div>
         </div>
+      )}
 
-        {/* Stripe Payment Card Element */}
-        <div className="space-y-1.5 pt-2">
-          <label className={lbl}>Payment Details</label>
-          <PaymentElement options={{ layout: 'tabs' }} />
+      {/* Stripe Payment Card Element */}
+      <div className="space-y-1.5 bg-stone-50/70 p-3 sm:p-4 rounded-xl border border-stone-200">
+        <label className={lbl}>Card Details</label>
+        <PaymentElement options={{ layout: 'tabs' }} />
+      </div>
+
+      {/* Security & Privacy Notice */}
+      <div className="pt-2 border-t border-stone-100 text-left space-y-1">
+        <div className="flex items-center gap-1.5 text-xs font-bold text-stone-800">
+          <ShieldCheck size={14} className="text-emerald-700 shrink-0" />
+          <span>Encrypted 256-bit SSL Card Processing</span>
         </div>
+        <p className="text-[11px] text-stone-500 leading-relaxed">
+          Your card data is processed directly by Stripe's certified PCI-DSS Level 1 infrastructure. RESTI never sees or stores your full card number.
+        </p>
+      </div>
 
-        {/* Security & Privacy Notice */}
-        <div className="pt-3 border-t border-gray-100 text-left space-y-1">
-          <div className="flex items-center gap-1.5 text-xs font-bold text-gray-800">
-            <ShieldCheck size={14} className="text-emerald-600 shrink-0" />
-            <span>Security & Privacy is Important to Us</span>
-          </div>
-          <p className="text-[11px] text-gray-500 leading-relaxed">
-            Your details will be kept securely and will not be shared with third parties. Please see our <Link to="/privacy" className="text-emerald-600 underline font-semibold hover:text-emerald-700">Privacy Notice</Link> and <Link to="/privacy" className="text-emerald-600 underline font-semibold hover:text-emerald-700">Cookies Policy</Link> for more information.
-          </p>
-        </div>
-
-        <div className="pt-4 flex gap-3">
-          <button type="button" onClick={onBack} disabled={submitting} className="w-1/3 bg-white border border-gray-200 hover:bg-gray-50 text-gray-600 font-semibold rounded-xl text-sm transition-all duration-200" style={{ height: 44 }}>Back</button>
-          <button type="submit" disabled={submitting || !stripe || !elements} className="w-2/3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl text-sm shadow-md flex items-center justify-center gap-2 transition-all duration-200 cursor-pointer" style={{ height: 44 }}>
-            {submitting ? <span className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" /> : <><Lock size={14} /> Donate {formatAmt(finalAmount)}</>}
+      <div className="pt-2 flex gap-3">
+        {onBack && (
+          <button 
+            type="button" 
+            onClick={onBack} 
+            disabled={submitting} 
+            className="w-1/3 bg-white border border-stone-200 hover:bg-stone-50 text-stone-700 font-semibold rounded-xl text-xs sm:text-sm transition-all"
+            style={{ height: 44 }}
+          >
+            Back
           </button>
-        </div>
+        )}
+        <button 
+          type="submit" 
+          disabled={submitting || !stripe || !elements} 
+          className={`${onBack ? 'w-2/3' : 'w-full'} bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-xl text-xs sm:text-sm shadow-md flex items-center justify-center gap-2 transition-all duration-200 cursor-pointer disabled:opacity-50`} 
+          style={{ height: 44 }}
+        >
+          {submitting ? (
+            <span className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
+          ) : (
+            <>
+              <Lock size={14} /> 
+              <span>Donate {formatAmt(finalAmount)}</span>
+            </>
+          )}
+        </button>
       </div>
     </form>
   );

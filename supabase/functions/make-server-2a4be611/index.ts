@@ -5,7 +5,7 @@ import type { Context, Next } from 'npm:hono'
 import { createClient } from 'npm:@supabase/supabase-js@2'
 import Stripe from 'npm:stripe@17.5.0'
 import * as kv from './kv_store.tsx'
-import { escapeHtml, escapeMessage, validateName, validateEmail, validatePhone, validateMessage, validateSubject, validateAmount, validateMobileMoneyPhone, normaliseUgandanPhone } from './validation.ts'
+import { escapeHtml, escapeMessage, validateName, validateEmail, validatePhone, validateMessage, validateSubject, validateAmount, validateMobileMoneyPhone, normaliseUgandanPhone, toStripeSmallestUnit, fromStripeSmallestUnit, validateStripeDonation } from './validation.ts'
 import { withRateLimit } from './rateLimit.ts'
 import { handleStripeWebhook, handleMtnWebhook, handleAirtelWebhook, completeDonationFromWebhook, deliverDonationReceipt, notifyAdminFailedDonation, getAdminNotifyEmails } from './webhooks.ts'
 import { getMtnAccessToken, getAirtelAccessToken } from './tokens.ts'
@@ -666,29 +666,86 @@ app.post('/make-server-2a4be611/create-payment-intent', async (c) => {
     }
 
     const body = await c.req.json()
-    const { amount, currency, donorName, donorEmail } = body
+    const { amount, currency, donorName, donorEmail, donorPhone, donorCountry, campaign } = body
 
-    if (!amount || amount < 1) {
-      return c.json({ error: 'Invalid amount' }, 400)
+    // Server-side strict validation
+    const val = validateStripeDonation(amount, currency)
+    if (!val.ok || !val.validAmount || !val.validCurrency) {
+      return c.json({ error: val.error || 'Invalid amount or currency' }, 400)
     }
 
-    // Generate unique donation reference and create Stripe payment intent
-    const internalReference = crypto.randomUUID()
+    const validAmount = val.validAmount
+    const validCurrency = val.validCurrency
+
+    // Generate unique internal donation reference
+    const internalReference = `RESTI-CARD-${crypto.randomUUID().slice(0, 8).toUpperCase()}`
+    const smallestUnitAmount = toStripeSmallestUnit(validAmount, validCurrency)
 
     const paymentIntent = await stripe.paymentIntents.create({
-      amount: Math.round(amount * 100), // Stripe expects amount in cents
-      currency: (currency || 'usd'),
+      amount: smallestUnitAmount,
+      currency: validCurrency.toLowerCase(),
       metadata: {
         restiDonationId: internalReference,
         internalReference,
+        transactionId: internalReference,
         paymentPurpose: 'resti_donation',
-        campaignId: 'general',
+        campaignId: campaign || 'Where Most Needed',
         donorName: donorName || 'Anonymous',
-        donorEmail: donorEmail || ''
+        donorEmail: donorEmail || '',
+        donorPhone: donorPhone || '',
+        donorCountry: donorCountry || 'Uganda'
       },
     })
 
-    console.log(`Payment intent created: ${paymentIntent.id} (ref: ${internalReference})`)
+    // Create the canonical PENDING record in Postgres immediately so webhook can verify and update it
+    const parts = (donorName || 'Anonymous').trim().split(' ')
+    const firstName = parts[0] || 'Anonymous'
+    const lastName = parts.slice(1).join(' ') || ''
+    const nowIso = new Date().toISOString()
+
+    const donationRecord = {
+      id: `donation:${internalReference}`,
+      amount: validAmount,
+      currency: validCurrency,
+      method: 'card',
+      provider: 'stripe',
+      status: 'pending',
+      first_name: firstName,
+      last_name: lastName,
+      email: donorEmail || '',
+      transaction_id: internalReference,
+      provider_transaction_id: paymentIntent.id,
+      provider_response: {
+        paymentIntentId: paymentIntent.id,
+        clientSecret: paymentIntent.client_secret,
+        campaign: campaign || 'Where Most Needed',
+        donorCountry: donorCountry || null,
+        donorPhone: donorPhone || null,
+        createdAt: nowIso,
+        audit_trail: [
+          {
+            action: 'intent_created',
+            timestamp: nowIso,
+            actor: donorEmail || firstName || 'Donor',
+            details: `Stripe PaymentIntent initialized for ${validCurrency} ${validAmount}`
+          }
+        ]
+      },
+      created_at: nowIso,
+      updated_at: nowIso
+    }
+
+    const { error: insertErr } = await supabase.from('donations').insert(donationRecord)
+    if (insertErr) {
+      console.error('Error recording pending donation in Postgres:', insertErr)
+    }
+    try {
+      await kv.set(`donation:${internalReference}`, donationRecord)
+    } catch (kvErr) {
+      console.warn('Could not sync pending donation to kv:', kvErr)
+    }
+
+    console.log(`Payment intent created: ${paymentIntent.id} (ref: ${internalReference}, amount: ${smallestUnitAmount} ${validCurrency})`)
     return c.json({ 
       clientSecret: paymentIntent.client_secret,
       paymentIntentId: paymentIntent.id,
@@ -700,7 +757,7 @@ app.post('/make-server-2a4be611/create-payment-intent', async (c) => {
   }
 })
 
-// Create Stripe Checkout Session (for subscriptions/recurring)
+// Create Stripe Checkout Session (for subscriptions/recurring or hosted checkout)
 app.post('/make-server-2a4be611/create-checkout-session', async (c) => {
   try {
     if (!stripe) {
@@ -708,14 +765,18 @@ app.post('/make-server-2a4be611/create-checkout-session', async (c) => {
     }
 
     const body = await c.req.json()
-    const { amount, currency, donorName, donorEmail, interval, successUrl, cancelUrl } = body
+    const { amount, currency, donorName, donorEmail, interval, successUrl, cancelUrl, campaign } = body
 
-    if (!amount || amount < 1) {
-      return c.json({ error: 'Invalid amount' }, 400)
+    const val = validateStripeDonation(amount, currency)
+    if (!val.ok || !val.validAmount || !val.validCurrency) {
+      return c.json({ error: val.error || 'Invalid amount or currency' }, 400)
     }
 
+    const validAmount = val.validAmount
+    const validCurrency = val.validCurrency
     const isRecurring = !!interval
-    const internalReference = crypto.randomUUID()
+    const internalReference = `RESTI-CHK-${crypto.randomUUID().slice(0, 8).toUpperCase()}`
+    const smallestUnitAmount = toStripeSmallestUnit(validAmount, validCurrency)
 
     const sessionConfig: Stripe.Checkout.SessionCreateParams = {
       payment_method_types: ['card'],
@@ -723,11 +784,11 @@ app.post('/make-server-2a4be611/create-checkout-session', async (c) => {
       line_items: [
         {
           price_data: {
-            currency: (currency || 'usd'),
+            currency: validCurrency.toLowerCase(),
             ...(isRecurring ? { recurring: { interval: interval } } : {}),
-            unit_amount: Math.round(amount * 100),
+            unit_amount: smallestUnitAmount,
             product_data: {
-              name: isRecurring ? `Recurring Donation to Resti Kiryandongo CBO` : `One-time Donation to Resti Kiryandongo CBO`,
+              name: isRecurring ? `Recurring Donation to RESTI CBO` : `Donation to RESTI CBO (${campaign || 'Where Most Needed'})`,
               description: isRecurring ? `A ${interval}ly donation. Thank you for your support!` : `One-time donation. Thank you for your support!`,
             },
           },
@@ -740,8 +801,9 @@ app.post('/make-server-2a4be611/create-checkout-session', async (c) => {
       metadata: {
         restiDonationId: internalReference,
         internalReference,
+        transactionId: internalReference,
         paymentPurpose: 'resti_donation',
-        campaignId: 'general',
+        campaignId: campaign || 'Where Most Needed',
         donorName: donorName || 'Anonymous',
         donorEmail: donorEmail || '',
         isRecurring: isRecurring ? 'true' : 'false',
@@ -749,6 +811,39 @@ app.post('/make-server-2a4be611/create-checkout-session', async (c) => {
     }
 
     const session = await stripe.checkout.sessions.create(sessionConfig)
+
+    // Record pending donation
+    const parts = (donorName || 'Anonymous').trim().split(' ')
+    const firstName = parts[0] || 'Anonymous'
+    const lastName = parts.slice(1).join(' ') || ''
+    const nowIso = new Date().toISOString()
+
+    const donationRecord = {
+      id: `donation:${internalReference}`,
+      amount: validAmount,
+      currency: validCurrency,
+      method: isRecurring ? 'card_recurring' : 'card',
+      provider: 'stripe',
+      status: 'pending',
+      first_name: firstName,
+      last_name: lastName,
+      email: donorEmail || '',
+      transaction_id: internalReference,
+      provider_transaction_id: session.id,
+      provider_response: {
+        checkoutSessionId: session.id,
+        isRecurring,
+        createdAt: nowIso
+      },
+      created_at: nowIso,
+      updated_at: nowIso
+    }
+
+    await supabase.from('donations').insert(donationRecord).catch(e => console.error('Error inserting checkout pending donation:', e))
+    try {
+      await kv.set(`donation:${internalReference}`, donationRecord)
+    } catch {}
+
     return c.json({ url: session.url, restiDonationId: internalReference })
   } catch (error) {
     console.error('Error creating checkout session:', error)
@@ -782,14 +877,15 @@ app.post('/make-server-2a4be611/verify-session', async (c) => {
       return c.json({ error: 'Database lookup failed' }, 500)
     }
 
+    const cur = (session.currency || 'USD').toUpperCase()
+    const amountTotal = fromStripeSmallestUnit(session.amount_total || 0, cur)
+
     if (!donation || donation.length === 0) {
       // Confirmed paid by Stripe directly. Create canonical completed donation.
       const parts = (session.metadata?.donorName || session.customer_details?.name || 'Anonymous Donor').split(' ')
       const firstName = parts[0] || 'Anonymous'
       const lastName = parts.slice(1).join(' ') || ''
       const donorEmail = session.customer_details?.email || session.customer_email || session.metadata?.donorEmail || ''
-      const amountTotal = (session.amount_total || 0) / 100
-      const cur = (session.currency || 'USD').toUpperCase()
       const donationId = `donation:${internalRef}`
 
       const newRecord = {

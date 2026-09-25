@@ -301,6 +301,32 @@ export function DonationExperience({
     });
   }, []);
 
+  // Detect 3D Secure / SCA return from Stripe redirect
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const paymentIntentId = params.get('payment_intent');
+    const redirectStatus = params.get('redirect_status');
+
+    if (paymentIntentId && redirectStatus) {
+      if (redirectStatus === 'succeeded') {
+        handleCardSuccess({
+          id: paymentIntentId,
+          status: 'succeeded'
+        });
+      } else if (redirectStatus === 'processing') {
+        handleCardSuccess({
+          id: paymentIntentId,
+          status: 'processing'
+        });
+      } else {
+        toast.error('Card verification was not completed. Please try again.');
+      }
+      // Clean up URL parameters so back/refresh doesn't re-trigger
+      const cleanUrl = window.location.pathname + window.location.hash;
+      window.history.replaceState({}, document.title, cleanUrl);
+    }
+  }, []);
+
   // Compute final numeric donation amount
   const finalAmount = useMemo(() => {
     if (isCustomAmount) {
@@ -462,26 +488,32 @@ export function DonationExperience({
     }
   };
 
-  // Handle Card Success (invoked by StripeCardForm when paymentIntent succeeds)
+  // Handle Card Success (invoked by StripeCardForm when paymentIntent succeeds or processes)
   const handleCardSuccess = (stripeIntent: any) => {
-    const transactionRef = stripeIntent.id;
+    const transactionRef = stripeIntent?.id || `pi_${Date.now()}`;
     const nowIso = new Date().toISOString();
+    const isProcessing = stripeIntent?.status === 'processing';
     const confirmed = {
       id: transactionRef,
       amount: finalAmount,
       currency: currency,
       paymentMethod: 'Credit / Debit Card',
       date: nowIso,
-      donorName: isAnonymous ? 'Anonymous Supporter' : fullName.trim(),
+      donorName: isAnonymous ? 'Anonymous Supporter' : (fullName.trim() || 'Generous Supporter'),
       donorEmail: email.trim(),
       reference: transactionRef,
       receiptNumber: `RESTI-REC-${transactionRef.slice(-8).toUpperCase()}`,
       campaign: purpose,
-      status: 'completed'
+      status: isProcessing ? 'processing' : 'completed'
     };
     setConfirmedDonation(confirmed);
-    setStatus('success');
-    toast.success('Thank you! Your donation was successfully received.');
+    setStatus(isProcessing ? 'processing' : 'success');
+    if (isProcessing) {
+      setStatusMessage('Your card donation is processing with your financial institution. Your official receipt will be delivered via email once confirmed.');
+      toast.info('Card payment processing');
+    } else {
+      toast.success('Thank you! Your donation was successfully received.');
+    }
   };
 
   // Handle PayPal Success
@@ -1181,20 +1213,17 @@ export function DonationExperience({
                   currency={currency}
                   freq="once"
                   donorData={{ firstName: fullName, lastName: '', email, phone, country }}
+                  campaign={purpose}
                 >
                   <StripeCardForm
                     donorData={{ firstName: fullName, lastName: '', email, phone, country }}
-                    setDonorData={() => {}}
                     finalAmount={finalAmount}
                     freq="once"
-                    setDone={() => {
-                      handleCardSuccess({ id: `pi_card_${Date.now()}` });
+                    setDone={(intent: any) => {
+                      handleCardSuccess(intent);
                     }}
                     submitting={cardSubmitting}
                     setSubmitting={setCardSubmitting}
-                    inp="w-full border border-stone-200 rounded-xl px-3 py-2 text-xs outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600"
-                    lbl="block text-[11px] font-semibold text-stone-600 mb-1 uppercase"
-                    onBack={() => {}}
                     formatAmt={(val: number) => formatMoney(val, currency)}
                   />
                 </StripePaymentProvider>

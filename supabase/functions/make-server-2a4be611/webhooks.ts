@@ -2,6 +2,7 @@ import { createClient } from 'npm:@supabase/supabase-js@2'
 import type { Context } from 'npm:hono'
 import Stripe from 'npm:stripe@17.5.0'
 import { getMtnAccessToken, getAirtelAccessToken } from './tokens.ts'
+import { fromStripeSmallestUnit } from './validation.ts'
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!
 const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -520,11 +521,13 @@ export async function handleStripeWebhook(
   if (event.type === 'payment_intent.payment_failed' || event.type === 'charge.failed') {
     const obj = event.data.object as any
     const failureReason = obj.last_payment_error?.message || obj.failure_message || 'Card payment declined or failed'
+    const cur = (obj.currency || 'USD').toUpperCase()
+    const failedAmount = fromStripeSmallestUnit(obj.amount || obj.amount_total || 0, cur)
     const failedDonation = {
       id: obj.metadata?.restiDonationId ? `donation:${obj.metadata.restiDonationId}` : obj.id,
       transaction_id: obj.metadata?.restiDonationId || obj.id,
-      amount: (obj.amount || obj.amount_total || 0) / 100,
-      currency: (obj.currency || 'USD').toUpperCase(),
+      amount: failedAmount,
+      currency: cur,
       donorName: obj.metadata?.donorName || obj.billing_details?.name || 'Card Donor',
       email: obj.receipt_email || obj.metadata?.donorEmail || obj.billing_details?.email || '',
       method: 'Credit / Debit Card (Stripe)',
@@ -615,8 +618,10 @@ export async function handleStripeWebhook(
     const session = event.data.object as Stripe.Checkout.Session
     referenceId = session.id
     providerTxId = session.payment_intent?.toString() || session.id
-    amount = session.amount_total ? session.amount_total / 100 : undefined
-    currency = session.currency?.toUpperCase()
+    currency = session.currency?.toUpperCase() || 'USD'
+    amount = session.amount_total !== null && session.amount_total !== undefined 
+      ? fromStripeSmallestUnit(session.amount_total, currency) 
+      : undefined
     donorEmail = session.customer_details?.email || session.customer_email || undefined
     donorName = session.metadata?.donorName || session.customer_details?.name || 'Anonymous'
     metadata = session.metadata || {}
@@ -624,9 +629,9 @@ export async function handleStripeWebhook(
     const pi = event.data.object as Stripe.PaymentIntent
     referenceId = pi.id
     providerTxId = pi.id
-    amount = pi.amount / 100
     currency = pi.currency.toUpperCase()
-    donorEmail = pi.receipt_email || undefined
+    amount = fromStripeSmallestUnit(pi.amount, currency)
+    donorEmail = pi.receipt_email || pi.metadata?.donorEmail || undefined
     donorName = pi.metadata?.donorName || 'Anonymous'
     metadata = pi.metadata || {}
   }
