@@ -42,11 +42,15 @@ export function prefetchPaymentIntent(amount: number, currency = 'USD', donorDat
 
   const promise = (async () => {
     try {
+      // For UGX: Stripe API requires a 2-decimal multiplier (* 100) for legacy compatibility
+      // (e.g. 5,000 UGX = 500,000; 50,000 UGX = 5,000,000 in Stripe API units).
+      const apiAmount = (curr === 'ugx' && amount < 500_000) ? Math.round(amount * 100) : amount;
+
       const response = await fetch(`${supabaseUrl}/functions/v1/make-server-2a4be611/create-payment-intent`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${publicAnonKey}` },
         body: JSON.stringify({
-          amount,
+          amount: apiAmount,
           currency: curr,
           donorName: donorData ? `${donorData.firstName || ''} ${donorData.lastName || ''}`.trim() : '',
           donorEmail: donorData?.email || '',

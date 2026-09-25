@@ -131,25 +131,42 @@ export function normaliseUgandanPhone(phone: string): string {
   return cleaned
 }
 
-/** Zero-decimal currencies in Stripe that do not have subunits. */
+/** Zero-decimal currencies in Stripe that do not have subunits.
+ * Note: While UGX has no physical subunits in circulation, Stripe API explicitly requires
+ * a 2-decimal multiplier (* 100) for legacy compatibility (e.g. 5,000 UGX = 500,000 in Stripe API).
+ * Therefore, UGX must NOT be treated as zero-decimal in Stripe API subunit calculations.
+ */
 export const ZERO_DECIMAL_CURRENCIES = new Set([
   'BIF', 'CLP', 'DJF', 'GNF', 'JPY', 'KMF', 'KRW', 'MGA', 
-  'PYG', 'RWF', 'UGX', 'VND', 'VUV', 'XAF', 'XOF', 'XPF'
+  'PYG', 'RWF', 'VND', 'VUV', 'XAF', 'XOF', 'XPF'
 ])
 
 export function isZeroDecimalCurrency(currency: string): boolean {
-  return ZERO_DECIMAL_CURRENCIES.has((currency || '').toUpperCase())
+  const cur = (currency || '').toUpperCase()
+  if (cur === 'UGX') return false
+  return ZERO_DECIMAL_CURRENCIES.has(cur)
 }
 
 export function toStripeSmallestUnit(amount: number, currency: string): number {
-  if (isZeroDecimalCurrency(currency)) {
+  const cur = (currency || '').toUpperCase()
+  if (isZeroDecimalCurrency(cur)) {
     return Math.round(amount)
+  }
+  // For UGX: Stripe requires 2 decimals (* 100).
+  // If the amount is already scaled to Stripe's smallest units (e.g. >= 500,000 for >= 5,000 UGX),
+  // do not scale it twice.
+  if (cur === 'UGX') {
+    if (amount >= 500_000 && amount % 100 === 0) {
+      return Math.round(amount)
+    }
+    return Math.round(amount * 100)
   }
   return Math.round(amount * 100)
 }
 
 export function fromStripeSmallestUnit(amount: number, currency: string): number {
-  if (isZeroDecimalCurrency(currency)) {
+  const cur = (currency || '').toUpperCase()
+  if (isZeroDecimalCurrency(cur)) {
     return amount
   }
   return amount / 100
