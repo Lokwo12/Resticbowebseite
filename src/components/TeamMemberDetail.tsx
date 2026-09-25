@@ -134,8 +134,8 @@ export function TeamMemberDetail() {
   return (
     <div className="bg-slate-50 min-h-screen pb-28" style={{ paddingTop: '120px' }}>
       <SEO 
-        title={`${member.name} — ${member.role} | RESTI`} 
-        description={member.bio ? member.bio.slice(0, 160) : `Learn more about ${member.name}, ${member.role} at RESTI.`}
+        title={`${member.name} — ${member.role} | RESTI CBO`} 
+        description={member.bio ? member.bio.slice(0, 160) : `Learn more about ${member.name}, ${member.role} at RESTI CBO.`}
         image={member.image}
       />
 

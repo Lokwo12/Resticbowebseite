@@ -84,7 +84,7 @@ export const EVENTS_PAGE_STRINGS = {
     'Past RESTI events and activities will appear here as they are completed.',
   registerButtonText: 'Register for this',
   viewEventButtonText: 'View Event',
-  defaultOrganizer: 'RESTI Kiryandongo CBO',
+  defaultOrganizer: 'RESTI CBO',
   defaultEmail: 'info@resticbo.org',
   defaultPhone: '+256 700 000 000',
   defaultLocation: 'Kiryandongo Refugee Settlement, Kiryandongo District, Uganda',

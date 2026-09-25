@@ -380,18 +380,18 @@ app.post('/make-server-2a4be611/contact', withRateLimit('contact', 10, 10 * 60_0
     try {
       await sendEmail(
         email.trim(),
-        `Thank you for contacting RESTI-CBO: ${safeSubject}`,
+        `Thank you for contacting RESTI CBO: ${safeSubject}`,
         `
           <div style="font-family: sans-serif; line-height: 1.6; color: #1e293b; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 8px;">
             <h2 style="color: #047857; margin-top: 0;">Thank You for Reaching Out!</h2>
             <p>Dear ${safeName},</p>
-            <p>We have received your message regarding <strong>${safeSubject}</strong> and a member of the RESTI-CBO team will get back to you shortly.</p>
+            <p>We have received your message regarding <strong>${safeSubject}</strong> and a member of the RESTI CBO team will get back to you shortly.</p>
             <div style="background: #f8fafc; border-left: 3px solid #10b981; padding: 12px 16px; margin: 16px 0;">
               <strong>Topic:</strong> ${safeSubject}<br><br>
               <strong>Your Message:</strong><br>
               ${safeMessage}
             </div>
-            <p>Warm regards,<br><strong>RESTI-CBO Team</strong><br>Kiryandongo District, Uganda<br><a href="https://resticbo.org" style="color: #047857;">www.resticbo.org</a></p>
+            <p>Warm regards,<br><strong>RESTI CBO Team</strong><br>Kiryandongo District, Uganda<br><a href="https://resticbo.org" style="color: #047857;">www.resticbo.org</a></p>
           </div>
         `
       )
@@ -1221,7 +1221,7 @@ app.post('/make-server-2a4be611/donations', withRateLimit('donation', 5, 5 * 60_
               </div>
 
               <p style="font-size: 13px; color: #475569;">If you have already initiated the transfer, please allow 1–3 business days for bank processing. If you have questions, reply directly to this email.</p>
-              <p style="margin-top: 24px;">With gratitude,<br><strong>RESTI-CBO Finance & Donor Care Team</strong><br>Kiryandongo District, Uganda</p>
+              <p style="margin-top: 24px;">With gratitude,<br><strong>RESTI CBO Finance & Donor Care Team</strong><br>Kiryandongo District, Uganda</p>
             </div>
           </body>
           </html>
@@ -1261,7 +1261,7 @@ app.post('/make-server-2a4be611/donations', withRateLimit('donation', 5, 5 * 60_
               <tr><td style="padding: 8px; color: #64748b; font-weight: 600;">Status:</td><td style="padding: 8px; color: #d97706; font-weight: 700;">PENDING VERIFICATION (Awaiting Bank Confirmation)</td></tr>
               ${proofUrl ? `<tr><td style="padding: 8px; color: #64748b; font-weight: 600;">Proof of Transfer:</td><td style="padding: 8px;"><a href="${proofUrl}" target="_blank" style="color: #047857; font-weight: 600;">View Uploaded Receipt (${proofFileName || 'Receipt'})</a></td></tr>` : ''}
             </table>
-            <p style="font-size: 12px; color: #64748b;">To verify this donation, verify receipt in the RESTI bank account and click "Verify" in the RESTI Admin Dashboard.</p>
+            <p style="font-size: 12px; color: #64748b;">To verify this donation, verify receipt in the RESTI bank account and click "Verify" in the RESTI CBO Admin Dashboard.</p>
           </div>
         </body>
         </html>
@@ -1435,7 +1435,7 @@ app.post('/make-server-2a4be611/admin/donations/:id/verify', requireAdmin, async
 
               <p style="font-size: 13px; color: #475569;">An official receipt has been sent to your email address. Please keep it for your records.</p>
 
-              <p style="margin-top: 24px;">Thank you for your generous partnership,<br><strong>RESTI-CBO Finance & Donor Care Team</strong><br>Kiryandongo District, Uganda</p>
+              <p style="margin-top: 24px;">Thank you for your generous partnership,<br><strong>RESTI CBO Finance & Donor Care Team</strong><br>Kiryandongo District, Uganda</p>
             </div>
           </body>
           </html>
@@ -1776,7 +1776,7 @@ app.post('/make-server-2a4be611/mobile-payment/initiate', withRateLimit('mobile-
           currency: mtnCurrency,
           externalId: referenceId,
           payer: { partyIdType: 'MSISDN', partyId: cleanPhone },
-          payerMessage: 'Donation to Resti Kiryandongo CBO',
+          payerMessage: 'Donation to RESTI CBO',
           payeeNote: `Donation ref: ${referenceId}`,
         }),
       })
@@ -1809,7 +1809,7 @@ app.post('/make-server-2a4be611/mobile-payment/initiate', withRateLimit('mobile-
           'X-Currency': airtelCurrency,
         },
         body: JSON.stringify({
-          reference: 'Donation to Resti Kiryandongo CBO',
+          reference: 'Donation to RESTI CBO',
           subscriber: { country, currency: airtelCurrency, msisdn: cleanPhone },
           transaction: { amount: String(amount), country, currency: airtelCurrency, id: referenceId },
         }),
@@ -2912,11 +2912,11 @@ app.post('/make-server-2a4be611/admin/contacts/:id/reply', requireEditor, async 
     try {
       const emailResult = await sendEmail(
         toEmail,
-        `Re: Your message to RESTI-CBO`,
+        `Re: Your message to RESTI CBO`,
         `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #1e293b;">
             <div style="border-bottom: 2px solid #10b981; padding-bottom: 12px; margin-bottom: 20px;">
-              <h2 style="color: #10b981; margin: 0;">RESTI-CBO</h2>
+              <h2 style="color: #10b981; margin: 0;">RESTI CBO</h2>
               <p style="color: #64748b; font-size: 13px; margin: 4px 0 0 0;">Community Based Organization • Kiryandongo, Uganda</p>
             </div>
             <p>Dear ${toName},</p>
@@ -2929,7 +2929,7 @@ app.post('/make-server-2a4be611/admin/contacts/:id/reply', requireEditor, async 
               <p style="margin: 0 0 6px 0; font-weight: bold; font-size: 13px; color: #065f46;">Our response:</p>
               <p style="margin: 0; color: #047857; white-space: pre-wrap;">${message.replace(/\n/g, '<br>')}</p>
             </div>
-            <p style="margin-top: 24px;">Best regards,<br><strong>RESTI-CBO Team</strong></p>
+            <p style="margin-top: 24px;">Best regards,<br><strong>RESTI CBO Team</strong></p>
             <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0 12px 0;">
             <p style="font-size: 11px; color: #94a3b8; margin: 0;">You received this email because you submitted a contact inquiry on resticbo.org.</p>
           </div>
@@ -3709,7 +3709,7 @@ app.post('/make-server-2a4be611/admin/events', requireEditor, async (c) => {
       end_time: body.end_time || '',
       location: body.location || 'Kiryandongo Refugee Settlement, Kiryandongo District, Uganda',
       address: body.address || '',
-      organizer: body.organizer || 'RESTI Kiryandongo CBO',
+      organizer: body.organizer || 'RESTI CBO',
       registration_required: Boolean(body.registration_required ?? body.registrationRequired),
       registration_url: body.registration_url || body.registrationUrl || '',
       registration_deadline: body.registration_deadline || body.registrationDeadline || '',
@@ -3764,7 +3764,7 @@ app.put('/make-server-2a4be611/admin/events/:id', requireEditor, async (c) => {
       end_time: body.end_time !== undefined ? body.end_time : (existing.end_time || ''),
       location: body.location || existing.location || 'Kiryandongo Refugee Settlement, Kiryandongo District, Uganda',
       address: body.address !== undefined ? body.address : (existing.address || ''),
-      organizer: body.organizer || existing.organizer || 'RESTI Kiryandongo CBO',
+      organizer: body.organizer || existing.organizer || 'RESTI CBO',
       registration_required: body.registration_required !== undefined ? Boolean(body.registration_required) : Boolean(existing.registration_required),
       registration_url: body.registration_url !== undefined ? body.registration_url : (existing.registration_url || ''),
       registration_deadline: body.registration_deadline !== undefined ? body.registration_deadline : (existing.registration_deadline || ''),
@@ -4903,7 +4903,7 @@ app.post('/make-server-2a4be611/initialize', async (c) => {
 
       // Add sample FAQs
       await kv.set('faq:1', {
-        question: 'How can I donate to Resti Kiryandongo CBO?',
+        question: 'How can I donate to RESTI CBO?',
         answer: 'You can donate through our secure online donation form, via bank transfer, or by contacting us directly. All donations are tax-deductible and go directly to supporting our community programs.',
         category: 'donations',
         order: 1
@@ -4927,7 +4927,7 @@ app.post('/make-server-2a4be611/initialize', async (c) => {
       const now = new Date().toISOString()
       await kv.set('page:default-1', { title: 'Privacy Policy', slug: 'privacy-policy', content: '<h2>Privacy Policy</h2><p>We are committed to protecting your personal information and your right to privacy. This policy outlines how we collect, use, and protect your data.</p>', published: true, createdAt: now, updatedAt: now })
       await kv.set('page:default-2', { title: 'Terms of Service', slug: 'terms-of-service', content: '<h2>Terms of Service</h2><p>By accessing our website, you agree to be bound by these Terms of Service. Please read them carefully before using our services.</p>', published: true, createdAt: now, updatedAt: now })
-      await kv.set('page:default-3', { title: 'Refund Policy', slug: 'refund-policy', content: '<h2>Refund Policy</h2><p>Donations made to Resti Kiryandongo CBO are generally non-refundable. If you believe a refund is warranted, please contact us within 30 days.</p>', published: true, createdAt: now, updatedAt: now })
+      await kv.set('page:default-3', { title: 'Refund Policy', slug: 'refund-policy', content: '<h2>Refund Policy</h2><p>Donations made to RESTI CBO are generally non-refundable. If you believe a refund is warranted, please contact us within 30 days.</p>', published: true, createdAt: now, updatedAt: now })
     }
 
     return c.json({ success: true, message: 'Initialization complete' })
@@ -4948,7 +4948,7 @@ app.get('/make-server-2a4be611/site-settings', async (c) => {
     if (!settings) {
       const defaultSettings = {
         general: {
-          siteName: 'Resti Kiryandongo CBO',
+          siteName: 'RESTI CBO',
           tagline: 'Community Based Organization',
           description: 'Empowering communities through education, healthcare, and sustainable development.',
           logoUrl: 'figma:asset/2b36c5cb8ddf5552ba2d3e612fd68401a7bb193e.png',
@@ -4962,7 +4962,7 @@ app.get('/make-server-2a4be611/site-settings', async (c) => {
         hero: {
           badgeText: 'Making a Difference in Kiryandongo',
           title: 'Empowering Communities Through Action',
-          subtitle: 'Resti Kiryandongo CBO is dedicated to improving lives through education, healthcare, and community development initiatives in Kiryandongo District, Uganda.',
+          subtitle: 'RESTI CBO is dedicated to improving lives through education, healthcare, and community development initiatives in Kiryandongo District, Uganda.',
           primaryButtonText: 'Donate Now',
           secondaryButtonText: 'Learn More',
           imageUrl: 'https://images.unsplash.com/photo-1606471015285-85fa1288aa4e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxhZnJpY2FuJTIwY29tbXVuaXR5JTIwZW1wb3dlcm1lbnR8ZW58MXx8fHwxNzYyNDU3NTkyfDA&ixlib=rb-4.1.0&q=80&w=1080',
@@ -4973,7 +4973,7 @@ app.get('/make-server-2a4be611/site-settings', async (c) => {
           ]
         },
         about: {
-          title: 'About Resti Kiryandongo CBO',
+          title: 'About RESTI CBO',
           intro: 'Founded with a mission to empower and uplift communities in Kiryandongo District, we are a community-based organization dedicated to creating sustainable positive change through collaborative action and locally-driven solutions.',
           mission: 'To empower communities in Kiryandongo through sustainable development programs in education, healthcare, and economic empowerment, fostering self-reliance and improved quality of life for all.',
           vision: 'A thriving, self-sustaining community where every individual has access to quality education, healthcare, and opportunities for economic prosperity.',
@@ -4987,7 +4987,7 @@ app.get('/make-server-2a4be611/site-settings', async (c) => {
           storyTitle: 'From a small village initiative to a district-wide movement.',
           storyImage: 'https://images.unsplash.com/photo-1529070538774-1843cb3265df?w=1200&q=80',
           story: [
-            'Resti Kiryandongo CBO was born from a shared vision among community members who recognized the need for organized, sustainable development initiatives in our district. What started as small-scale educational support has grown into a comprehensive community development organization.',
+            'RESTI CBO was born from a shared vision among community members who recognized the need for organized, sustainable development initiatives in our district. What started as small-scale educational support has grown into a comprehensive community development organization.',
             'Today, we work closely with local government, international partners, and most importantly, the communities we serve, to identify needs, develop solutions, and implement programs that create lasting positive change. Our grassroots approach ensures that every initiative is community-driven and culturally appropriate.'
           ]
         },
@@ -5014,14 +5014,14 @@ app.get('/make-server-2a4be611/site-settings', async (c) => {
           merchantMTN: '0772 000 000',
           merchantAirtel: '0701 000 000',
           bankName: 'Stanbic Bank Uganda',
-          accountName: 'Resti Kiryandongo CBO',
+          accountName: 'Refugee Empowerment For Sustainable Transformation Initiative',
           accountNumber: '9030012345678',
           branch: 'Kiryandongo Branch',
           swiftCode: 'SBICUGKX',
         },
         footer: {
           description: 'Empowering communities through education, healthcare, and sustainable development.',
-          copyrightText: 'Resti Kiryandongo CBO. All rights reserved.',
+          copyrightText: 'RESTI CBO (Refugee Empowerment For Sustainable Transformation Initiative). All rights reserved.',
           taglineBottom: 'Made with ❤️ for our community'
         },
         sections: {
@@ -5110,7 +5110,7 @@ app.post('/make-server-2a4be611/site-settings/initialize', async (c) => {
   try {
     const defaultSettings = {
       general: {
-        siteName: 'Resti Kiryandongo CBO',
+        siteName: 'RESTI CBO',
         tagline: 'Community Based Organization',
         description: 'Empowering communities through education, healthcare, and sustainable development.',
         logoUrl: 'figma:asset/2b36c5cb8ddf5552ba2d3e612fd68401a7bb193e.png',
@@ -5119,7 +5119,7 @@ app.post('/make-server-2a4be611/site-settings/initialize', async (c) => {
       hero: {
         badgeText: 'Making a Difference in Kiryandongo',
         title: 'Empowering Communities Through Action',
-        subtitle: 'Resti Kiryandongo CBO is dedicated to improving lives through education, healthcare, and community development initiatives in Kiryandongo District, Uganda.',
+        subtitle: 'RESTI CBO is dedicated to improving lives through education, healthcare, and community development initiatives in Kiryandongo District, Uganda.',
         primaryButtonText: 'Donate Now',
         secondaryButtonText: 'Learn More',
         imageUrl: 'https://images.unsplash.com/photo-1606471015285-85fa1288aa4e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxhZnJpY2FuJTIwY29tbXVuaXR5JTIwZW1wb3dlcm1lbnR8ZW58MXx8fHwxNzYyNDU3NTkyfDA&ixlib=rb-4.1.0&q=80&w=1080',
@@ -5130,7 +5130,7 @@ app.post('/make-server-2a4be611/site-settings/initialize', async (c) => {
         ]
       },
       about: {
-        title: 'About Resti Kiryandongo CBO',
+        title: 'About RESTI CBO',
         intro: 'Founded with a mission to empower and uplift communities in Kiryandongo District, we are a community-based organization dedicated to creating sustainable positive change through collaborative action and locally-driven solutions.',
         mission: 'To empower communities in Kiryandongo through sustainable development programs in education, healthcare, and economic empowerment, fostering self-reliance and improved quality of life for all.',
         vision: 'A thriving, self-sustaining community where every individual has access to quality education, healthcare, and opportunities for economic prosperity.',
@@ -5144,7 +5144,7 @@ app.post('/make-server-2a4be611/site-settings/initialize', async (c) => {
         storyTitle: 'From a small village initiative to a district-wide movement.',
         storyImage: 'https://images.unsplash.com/photo-1529070538774-1843cb3265df?w=1200&q=80',
         story: [
-          'Resti Kiryandongo CBO was born from a shared vision among community members who recognized the need for organized, sustainable development initiatives in our district. What started as small-scale educational support has grown into a comprehensive community development organization.',
+          'RESTI CBO was born from a shared vision among community members who recognized the need for organized, sustainable development initiatives in our district. What started as small-scale educational support has grown into a comprehensive community development organization.',
           'Today, we work closely with local government, international partners, and most importantly, the communities we serve, to identify needs, develop solutions, and implement programs that create lasting positive change. Our grassroots approach ensures that every initiative is community-driven and culturally appropriate.'
         ]
       },
@@ -5168,7 +5168,7 @@ app.post('/make-server-2a4be611/site-settings/initialize', async (c) => {
       },
       footer: {
         description: 'Empowering communities through education, healthcare, and sustainable development.',
-        copyrightText: 'Resti Kiryandongo CBO. All rights reserved.',
+        copyrightText: 'RESTI CBO (Refugee Empowerment For Sustainable Transformation Initiative). All rights reserved.',
         taglineBottom: 'Made with ❤️ for our community'
       },
       sections: {
@@ -5424,7 +5424,7 @@ app.post('/make-server-2a4be611/admin/users', requireSuperAdmin, async (c) => {
     // Send welcome email
     await sendEmail(
       email,
-      'Welcome to RESTI-CBO Admin',
+      'Welcome to RESTI CBO Admin',
       `
         <h2>Welcome ${name}!</h2>
         <p>Your admin account has been created with the role: <strong>${role || 'viewer'}</strong></p>
@@ -5632,7 +5632,7 @@ app.post('/make-server-2a4be611/admin/users/:id/reset-password', requireSuperAdm
     if (user && user.email) {
       await sendEmail(
         user.email,
-        'Password Reset - RESTI-CBO',
+        'Password Reset - RESTI CBO',
         `
           <h2>Password Reset</h2>
           <p>Your password has been reset by an administrator.</p>

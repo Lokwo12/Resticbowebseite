@@ -163,7 +163,7 @@ export function StoriesArchive() {
   return (
     <div className="bg-slate-50 min-h-screen">
       <SEO
-        title="Impact Stories | RESTI CBO"
+        title="RESTI CBO | Impact Stories"
         description={headerInfo.subtitle}
       />
 

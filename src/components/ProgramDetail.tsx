@@ -781,7 +781,7 @@ export function ProgramDetail() {
   return (
     <div className="bg-slate-50/60 min-h-screen pt-24 sm:pt-28 pb-24 font-sans selection:bg-emerald-100 selection:text-emerald-900">
       <SEO 
-        title={`${program.title} | RESTI Community Programs`} 
+        title={`${program.title} | RESTI CBO Programs`} 
         description={program.description ? program.description.substring(0, 160) : 'RESTI CBO community initiative in Kiryandongo District, Uganda.'} 
         image={program.image} 
         type="article"

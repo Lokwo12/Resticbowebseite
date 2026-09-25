@@ -41,7 +41,7 @@ export function generateBotReply(rawMessage: string): BotReply {
     msg === 'hi' || msg === 'hello' || msg === 'hey'
   ) {
     return {
-      text: "Hello! 👋 Welcome to RESTI CBO Kiryandongo. How can I help you today?",
+      text: "Hello! 👋 Welcome to RESTI CBO. How can I help you today?",
       quickReplies: INITIAL_QUICK_ACTIONS
     };
   }

@@ -27,7 +27,7 @@ export function Header() {
 
   const [settings, setSettings] = useState<SiteSettings>({
     general: { 
-      siteName: 'RESTI', 
+      siteName: 'RESTI CBO', 
       tagline: 'Refugee Empowerment For Sustainable Transformation Initiative', 
       logoUrl: logo 
     },
@@ -186,7 +186,7 @@ export function Header() {
                     <span className={`text-lg sm:text-2xl font-black font-heading tracking-tight leading-none transition-colors ${
                       isSolid ? 'text-gray-900' : 'text-white'
                     }`}>
-                      {settings.general?.siteName || 'RESTI'}
+                      {(settings.general?.siteName || 'RESTI CBO').replace(/\s*CBO\s*$/i, '').trim() || 'RESTI'}
                     </span>
                     <span className="inline-block px-1.5 py-0.5 text-[9px] sm:text-[10px] font-bold uppercase rounded bg-emerald-100 text-emerald-800 border border-emerald-200/60 leading-none">
                       CBO
@@ -256,7 +256,7 @@ export function Header() {
                     >
                       <Sparkles size={16} className="text-emerald-600 shrink-0" />
                       <div>
-                        <div className="font-semibold text-[15px] text-gray-900 leading-tight">About RESTI</div>
+                        <div className="font-semibold text-[15px] text-gray-900 leading-tight">About RESTI CBO</div>
                         <div className="text-[11px] text-gray-500">Mission, vision & values</div>
                       </div>
                     </Link>
@@ -632,7 +632,7 @@ export function Header() {
                 >
                   <span className="flex items-center gap-2">
                     <Sparkles size={16} className="text-emerald-600" />
-                    About RESTI
+                    About RESTI CBO
                   </span>
                   <ChevronDown size={16} className={`transition-transform ${mobileSectionOpen === 'about' ? 'rotate-180 text-emerald-600' : 'text-gray-400'}`} />
                 </button>

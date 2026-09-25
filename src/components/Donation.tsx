@@ -32,7 +32,7 @@ export function Donation() {
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 transition-colors shadow-2xs group text-center"
           >
             <User className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
-            <span>Already a supporter? View Portal &amp; Official Receipts</span>
+            <span>Already a supporter? RESTI CBO Supporter &amp; Donor Portal</span>
             <ArrowRight className="w-3 h-3 text-emerald-600 transition-transform group-hover:translate-x-0.5 shrink-0" />
           </Link>
         </div>
@@ -50,11 +50,11 @@ export function Donation() {
             <span>•</span>
             <span className="flex items-center gap-1.5">
               <Shield className="w-3.5 h-3.5 text-emerald-700" />
-              Verified Kiryandongo District CBO
+              Verified Registered CBO · Uganda
             </span>
           </div>
           <p className="text-[11px] text-stone-400">
-            Resilience and Empowerment for Social Transformation Initiative (RESTI) is a registered Community-Based Organization in Kiryandongo District, Uganda. Contributions directly support locally led community programs.
+            Refugee Empowerment For Sustainable Transformation Initiative (RESTI CBO) is a registered Community-Based Organization in Uganda. Contributions directly support locally led community programs.
           </p>
         </div>
 

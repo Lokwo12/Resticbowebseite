@@ -9,8 +9,8 @@ interface SEOProps {
 }
 
 export function SEO({
-  title = 'RESTI — Refugee Empowerment For Sustainable Transformation Initiative',
-  description = 'Empowering communities through education, healthcare, and sustainable development.',
+  title = 'RESTI CBO | Community-Led Development in Uganda',
+  description = 'RESTI CBO is a community-based organization working alongside refugees and host communities in Uganda to strengthen sustainable livelihoods, resilience, and self-reliance.',
   image = '/logo.png',
   type = 'website',
 }: SEOProps) {
@@ -25,6 +25,7 @@ export function SEO({
       <link rel="canonical" href={canonicalUrl} />
 
       {/* Open Graph / Facebook */}
+      <meta property="og:site_name" content="RESTI CBO" />
       <meta property="og:type" content={type} />
       <meta property="og:url" content={canonicalUrl} />
       <meta property="og:title" content={title} />
@@ -42,22 +43,39 @@ export function SEO({
       <script type="application/ld+json">
         {JSON.stringify({
           "@context": "https://schema.org",
-          "@type": "NGO",
-          "name": "RESTI — Refugee Empowerment For Sustainable Transformation Initiative",
-          "url": "https://resticbo.org",
-          "logo": "https://resticbo.org/logo.png",
-          "description": description,
-          "image": image,
-          "address": {
-            "@type": "PostalAddress",
-            "addressLocality": "Kiryandongo",
-            "addressCountry": "UG"
-          },
-          "contactPoint": {
-            "@type": "ContactPoint",
-            "telephone": "+256-000-000000",
-            "contactType": "customer service"
-          }
+          "@graph": [
+            {
+              "@type": "NGO",
+              "@id": "https://resticbo.org/#organization",
+              "name": "RESTI CBO",
+              "alternateName": "Refugee Empowerment For Sustainable Transformation Initiative",
+              "legalName": "Refugee Empowerment For Sustainable Transformation Initiative",
+              "url": "https://resticbo.org",
+              "logo": "https://resticbo.org/logo.png",
+              "description": description,
+              "image": image,
+              "address": {
+                "@type": "PostalAddress",
+                "addressLocality": "Kiryandongo",
+                "addressCountry": "UG"
+              },
+              "contactPoint": {
+                "@type": "ContactPoint",
+                "email": "info@resticbo.org",
+                "telephone": "+256 700 000 000",
+                "contactType": "Donor & Community Support"
+              }
+            },
+            {
+              "@type": "WebSite",
+              "@id": "https://resticbo.org/#website",
+              "name": "RESTI CBO",
+              "url": "https://resticbo.org",
+              "publisher": {
+                "@id": "https://resticbo.org/#organization"
+              }
+            }
+          ]
         })}
       </script>
     </Helmet>

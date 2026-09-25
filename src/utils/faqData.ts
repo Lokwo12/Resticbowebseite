@@ -117,7 +117,7 @@ export const DEFAULT_FAQS: FAQItem[] = [
   {
     id: 'faq-don-1',
     key: 'faq:don-1',
-    question: 'How can I donate to RESTI Kiryandongo CBO?',
+    question: 'How can I donate to RESTI CBO?',
     answer: 'You can support RESTI through the donation options available on our website. Depending on the available payment methods, you may be able to make a one-time or recurring contribution. Donations help support RESTI\'s community programs and locally led initiatives.',
     category: 'Donations',
     order: 9,
@@ -266,8 +266,8 @@ export function normalizeFaqList(rawList: any[]): FAQItem[] {
 
     // Capitalize properly if needed
     let question = (val.question || '').trim();
-    if (question.toLowerCase() === 'how can i donate to resti kiryandongo cbo?' || question.toLowerCase() === 'how can i donate to the organization?') {
-      question = 'How can I donate to RESTI Kiryandongo CBO?';
+    if (question.toLowerCase() === 'how can i donate to resti kiryandongo cbo?' || question.toLowerCase() === 'how can i donate to the organization?' || question.toLowerCase() === 'how can i donate to resti cbo?') {
+      question = 'How can I donate to RESTI CBO?';
     } else if (question.toLowerCase() === 'what programs do you offer?' || question.toLowerCase() === 'what programs does resti offer?') {
       question = 'What programs does RESTI offer?';
     }

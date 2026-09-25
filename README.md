@@ -1,6 +1,6 @@
-# Resti Kiryandongo CBO — Website
+# RESTI CBO — Website
 
-A full-stack nonprofit donation website for **Resti Kiryandongo CBO**. Built with React, TypeScript, Vite, and Tailwind CSS on the frontend, and Supabase (Edge Functions + PostgreSQL + Auth) on the backend. The static frontend is hosted on Hostinger. The backend lives entirely on Supabase.
+A full-stack nonprofit donation website for **RESTI CBO**. Built with React, TypeScript, Vite, and Tailwind CSS on the frontend, and Supabase (Edge Functions + PostgreSQL + Auth) on the backend. The static frontend is hosted on Hostinger. The backend lives entirely on Supabase.
 
 ---
 
@@ -148,7 +148,7 @@ Resend sends donation receipts, contact form confirmations, and admin notificati
 4. Log in to your domain registrar (Namecheap, GoDaddy, etc.) and add those records
 5. Back in Resend → click **Verify** (takes 10–60 minutes)
 6. Once verified, set:
-   - `ADMIN_EMAIL` = `Resti Kiryandongo CBO <noreply@resti.org>`
+   - `ADMIN_EMAIL` = `RESTI CBO <noreply@resti.org>`
 
 > **No domain yet?** Leave `ADMIN_EMAIL` as the default. Resend's sandbox sender (`onboarding@resend.dev`) works for testing.
 
@@ -163,7 +163,7 @@ Stripe processes international card donations. Free to set up — they charge 1.
 2. Fill in your details:
    - **Business type**: Non-profit / Sole trader / Other
    - **Country**: Uganda
-   - **Business name**: Resti Kiryandongo CBO
+   - **Business name**: RESTI CBO
 3. Verify your email
 
 #### Step 2 — Get your API keys
@@ -384,7 +384,7 @@ This creates two secure storage buckets:
 | `AIRTEL_COUNTRY` | `UG` |
 | `AIRTEL_CURRENCY` | `UGX` |
 | `RESEND_API_KEY` | `re_abc123...` |
-| `ADMIN_EMAIL` | `Resti Kiryandongo CBO <noreply@resti.org>` |
+| `ADMIN_EMAIL` | `RESTI CBO <noreply@resti.org>` |
 | `ADMIN_NOTIFY_EMAIL` | `admin@resti.org` |
 | `ALLOWED_ORIGINS` | `https://resti.org,https://www.resti.org` |
 | `ADMIN_REGISTRATION_OPEN` | `false` |
@@ -417,7 +417,7 @@ supabase secrets set AIRTEL_ENVIRONMENT=production
 supabase secrets set AIRTEL_COUNTRY=UG
 supabase secrets set AIRTEL_CURRENCY=UGX
 supabase secrets set RESEND_API_KEY=re_...
-supabase secrets set ADMIN_EMAIL="Resti Kiryandongo CBO <noreply@resti.org>"
+supabase secrets set ADMIN_EMAIL="RESTI CBO <noreply@resti.org>"
 supabase secrets set ADMIN_NOTIFY_EMAIL=admin@resti.org
 supabase secrets set "ALLOWED_ORIGINS=https://resti.org,https://www.resti.org"
 supabase secrets set ADMIN_REGISTRATION_OPEN=false

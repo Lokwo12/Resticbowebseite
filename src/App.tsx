@@ -65,41 +65,39 @@ function PageTitleManager() {
   const { pathname } = useLocation();
 
   const titleMap: Record<string, string> = {
-      '/': 'Home | RESTI CBO',
-      '/admin': 'Admin Dashboard | RESTI CBO',
-      '/admin/reset-password': 'Reset Administrator Password | RESTI CBO',
-      '/super-secret-admin-route': 'Admin Dashboard | RESTI CBO',
-      '/privacy': 'Privacy Policy | RESTI CBO',
-      '/cookies': 'Cookies Policy | RESTI CBO',
-      '/terms': 'Terms of Service | RESTI CBO',
-      '/refund': 'Refund Policy | RESTI CBO',
-      '/news': 'Latest News | RESTI CBO',
-      '/stories': 'Impact Stories | RESTI CBO',
-      '/team': 'Our Team | RESTI CBO',
-      '/reports': 'Impact Reports | RESTI CBO',
-      '/impact-dashboard': 'Impact Dashboard | RESTI CBO',
-      '/faqs': 'Frequently Asked Questions | RESTI CBO',
-      '/partners': 'Our Partners | RESTI CBO',
-      '/opportunities': 'Opportunities | RESTI CBO',
-      '/donate': 'Donate | Support Our Mission',
-      '/donation': 'Donate | Support Our Mission',
-
-      '/contact': 'Get Involved & Contact | RESTI CBO',
-      '/get-involved': 'Get Involved | RESTI CBO',
-
-      '/financials': 'Financial Transparency | RESTI',
-      '/about': 'About Us | RESTI',
-      '/events': 'Events & Activities | RESTI CBO',
-      '/resources': 'Resources & Downloads | RESTI CBO',
-      '/programs': 'Our Programs | RESTI',
+      '/': 'RESTI CBO | Community-Led Development in Uganda',
+      '/about': 'RESTI CBO | About Us',
+      '/programs': 'RESTI CBO | Programs',
+      '/donate': 'RESTI CBO | Donate',
+      '/donation': 'RESTI CBO | Donate',
+      '/stories': 'RESTI CBO | Impact Stories',
+      '/resources': 'RESTI CBO | Resources & Downloads',
+      '/events': 'RESTI CBO | Events',
+      '/news': 'RESTI CBO | News',
+      '/contact': 'RESTI CBO | Contact',
+      '/get-involved': 'RESTI CBO | Get Involved',
+      '/team': 'RESTI CBO | Our Team',
+      '/reports': 'RESTI CBO | Impact Reports',
+      '/impact-dashboard': 'RESTI CBO | Impact Dashboard',
+      '/faqs': 'RESTI CBO | FAQs',
+      '/partners': 'RESTI CBO | Our Partners',
+      '/opportunities': 'RESTI CBO | Opportunities',
+      '/financials': 'RESTI CBO | Financial Transparency',
+      '/privacy': 'RESTI CBO | Privacy Policy',
+      '/cookies': 'RESTI CBO | Cookies Policy',
+      '/terms': 'RESTI CBO | Terms of Service',
+      '/refund': 'RESTI CBO | Refund Policy',
+      '/admin': 'RESTI CBO | Admin Portal',
+      '/admin/reset-password': 'RESTI CBO | Reset Administrator Password',
+      '/super-secret-admin-route': 'RESTI CBO | Admin Dashboard',
     };
 
-    let title = titleMap[pathname] || 'RESTI';
-    if (pathname.startsWith('/events/')) title = 'Event Details | RESTI CBO';
-    else if (pathname.startsWith('/news/')) title = 'News Article | RESTI CBO';
-    else if (pathname.startsWith('/programs/')) title = 'Program Details | RESTI CBO';
-    else if (pathname.startsWith('/team/')) title = 'Team Member | RESTI CBO';
-    else if (pathname.startsWith('/pages/')) title = 'Page | RESTI CBO';
+    let title = titleMap[pathname] || 'RESTI CBO';
+    if (pathname.startsWith('/events/')) title = 'RESTI CBO | Events';
+    else if (pathname.startsWith('/news/')) title = 'RESTI CBO | News';
+    else if (pathname.startsWith('/programs/')) title = 'RESTI CBO | Programs';
+    else if (pathname.startsWith('/team/')) title = 'RESTI CBO | Our Team';
+    else if (pathname.startsWith('/pages/')) title = 'RESTI CBO';
 
   return <SEO title={title} />;
 }

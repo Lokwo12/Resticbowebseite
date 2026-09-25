@@ -185,8 +185,8 @@ export function ProgramsPage() {
   return (
     <div className="bg-slate-50 min-h-screen pb-24" style={{ paddingTop: '120px' }}>
       <SEO 
-        title="Our Programs | RESTI — Refugee Empowerment For Sustainable Transformation Initiative" 
-        description="Explore our community programs in education, healthcare, sustainable livelihoods, clean water, and women empowerment in Kiryandongo District, Uganda." 
+        title="RESTI CBO | Programs" 
+        description="Explore RESTI CBO community programs in livelihoods and economic empowerment, clean water and WASH, environmental sustainability, and community development in Uganda." 
       />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

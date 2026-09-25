@@ -147,7 +147,7 @@ export function buildReceiptEmail(
       <div class="receipt-card">
         <div class="header">
           <div class="badge">Official Donation Receipt</div>
-          <h1>RESTI-CBO</h1>
+          <h1>RESTI CBO</h1>
           <p style="margin: 6px 0 0 0; font-size: 13px; opacity: 0.9;">Refugee and Host Community Empowerment • Kiryandongo District, Uganda</p>
         </div>
         <div class="content">
@@ -182,7 +182,7 @@ export function buildReceiptEmail(
             </tr>
             <tr>
               <td class="lbl">Organization:</td>
-              <td class="val">RESTI-CBO (Uganda NGO Bureau)</td>
+              <td class="val">RESTI CBO (Uganda NGO Bureau)</td>
             </tr>
           </table>
 
@@ -192,13 +192,13 @@ export function buildReceiptEmail(
           </div>
 
           <div class="legal-note">
-            RESTI-CBO is a legally registered Community-Based Organization operating under the regulatory oversight of the Uganda NGO Bureau. No goods or services were provided in exchange for this contribution other than intangible religious or charitable benefits.
+            RESTI CBO is a legally registered Community-Based Organization operating under the regulatory oversight of the Uganda NGO Bureau. No goods or services were provided in exchange for this contribution other than intangible religious or charitable benefits.
           </div>
         </div>
         <div class="footer">
           With deep gratitude,<br>
-          <strong>The RESTI-CBO Team & Community Leadership</strong><br>
-          Kiryandongo District, Uganda • <a href="https://resticbo.org" style="color: #059669; text-decoration: none;">www.resticbo.org</a> • <a href="mailto:info@resticbo.org" style="color: #059669; text-decoration: none;">info@resticbo.org</a>
+          <strong>The RESTI CBO Team & Community Leadership</strong><br>
+          Kiryandongo District, Uganda • <a href="https://resticbo.org" style="color: #059669; text-decoration: none;">resticbo.org</a> • <a href="mailto:info@resticbo.org" style="color: #059669; text-decoration: none;">info@resticbo.org</a>
         </div>
       </div>
     </body>
@@ -255,8 +255,8 @@ export function buildAdminDonationAlertEmail(donation: any, isSuccess: boolean, 
         <div class="content">
           <p style="margin-top: 0; font-size: 15px; color: #475569;">
             ${isSuccess 
-              ? `A donor has successfully completed a donation on <strong>RESTI-CBO</strong>:` 
-              : `A donation attempt has failed or was declined on <strong>RESTI-CBO</strong>:`}
+              ? `A donor has successfully completed a donation on <strong>RESTI CBO</strong>:` 
+              : `A donation attempt has failed or was declined on <strong>RESTI CBO</strong>:`}
           </p>
 
           <table class="info-table">
@@ -303,15 +303,15 @@ export function buildAdminDonationAlertEmail(donation: any, isSuccess: boolean, 
           <div class="action-box">
             ${isSuccess ? `
               <p style="margin: 0 0 6px 0; font-size: 13px; color: #475569;">The official receipt has been dispatched to the donor. You can view the full record in your Admin Dashboard.</p>
-              ${email ? `<a href="mailto:${email}?subject=${encodeURIComponent('Thank you for your donation to RESTI-CBO')}" class="action-btn">Send Personal Thank You</a>` : ''}
+              ${email ? `<a href="mailto:${email}?subject=${encodeURIComponent('Thank you for your donation to RESTI CBO')}" class="action-btn">Send Personal Thank You</a>` : ''}
             ` : `
               <p style="margin: 0 0 6px 0; font-size: 13px; color: #475569;">You can reach out to the donor to offer alternative payment options (Mobile Money, Bank Wire, PayPal).</p>
-              ${email ? `<a href="mailto:${email}?subject=${encodeURIComponent('Assistance with your RESTI-CBO donation')}" class="action-btn">Contact Donor to Assist</a>` : ''}
+              ${email ? `<a href="mailto:${email}?subject=${encodeURIComponent('Assistance with your RESTI CBO donation')}" class="action-btn">Contact Donor to Assist</a>` : ''}
             `}
           </div>
         </div>
         <div class="footer">
-          RESTI-CBO Real-Time Donation Monitoring • Kiryandongo District, Uganda
+          RESTI CBO Real-Time Donation Monitoring • Kiryandongo District, Uganda
         </div>
       </div>
     </body>
@@ -340,7 +340,7 @@ export async function deliverDonationReceipt(
     try {
       const emailRes = await sendEmail(
         email,
-        `Official Donation Receipt – RESTI-CBO (Ref: ${reference.slice(0, 8).toUpperCase()})`,
+        `Official Donation Receipt – RESTI CBO (Ref: ${reference.slice(0, 8).toUpperCase()})`,
         buildReceiptEmail(donorName, currency, amount, reference, method, formattedDate),
         'info@resticbo.org'
       )
@@ -381,7 +381,7 @@ export async function deliverDonationReceipt(
       console.log(`Dispatching successful donation alert to admin: ${adminTo}`)
       await sendEmail(
         adminTo,
-        `🎉 New Donation Received: ${currency} ${amount.toLocaleString()} from ${donorName} - RESTI-CBO`,
+        `🎉 New Donation Received: ${currency} ${amount.toLocaleString()} from ${donorName} - RESTI CBO`,
         adminAlertHtml,
         email || 'info@resticbo.org'
       )

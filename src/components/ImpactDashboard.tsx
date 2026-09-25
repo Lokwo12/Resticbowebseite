@@ -139,7 +139,7 @@ export function ImpactDashboard() {
   return (
     <div className="bg-slate-50 min-h-screen">
       <SEO 
-        title={`${data.heroTitle} | RESTI CBO`} 
+        title="RESTI CBO | Impact Dashboard" 
         description={data.heroSubtitle} 
       />
 

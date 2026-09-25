@@ -187,7 +187,7 @@ export function NewsDetail() {
   return (
     <div className="bg-gray-50 min-h-screen pt-28 sm:pt-36 pb-24">
       <SEO 
-        title={article.seoTitle || `${article.title} | RESTI CBO News`} 
+        title={article.seoTitle || `${article.title} | RESTI CBO`} 
         description={article.seoDescription || article.description || article.content.substring(0, 160).replace(/<[^>]+>/g, '')} 
         image={article.image} 
         type="article"

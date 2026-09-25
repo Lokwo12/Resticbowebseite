@@ -118,8 +118,8 @@ export function FAQPage() {
   return (
     <div className="bg-slate-50 min-h-screen">
       <SEO 
-        title="Frequently Asked Questions | RESTI CBO"
-        description="Find answers to common questions about RESTI, our programs, donations, partnerships, and how you can get involved in Kiryandongo District, Uganda."
+        title="RESTI CBO | FAQs"
+        description="Find answers to common questions about RESTI CBO, our community programs, donations, partnerships, and how you can get involved in Uganda."
       />
 
       {/* JSON-LD Structured Data for FAQPage */}

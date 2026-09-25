@@ -155,7 +155,7 @@ export function StoryDetail() {
   return (
     <div className="bg-slate-50 min-h-screen pt-32 sm:pt-40 pb-24">
       <SEO
-        title={`${story.title} | RESTI Impact Stories`}
+        title={`${story.title} | RESTI CBO Impact Stories`}
         description={story.quote || story.short_description || cleanStoryText(story.story).substring(0, 160)}
         image={story.permission_photo !== false ? story.image : undefined}
         type="article"

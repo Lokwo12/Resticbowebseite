@@ -96,7 +96,7 @@ export function TeamPage() {
   return (
     <div className="bg-slate-50 min-h-screen">
       <SEO 
-        title="Our Dedicated Team | RESTI CBO"
+        title="RESTI CBO | Our Team"
         description="Meet the passionate leadership and team members driving community empowerment, research, livelihoods, and innovation at RESTI CBO in Uganda."
       />
 

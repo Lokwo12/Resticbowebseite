@@ -31,12 +31,12 @@ interface ContactSettings {
 export function Footer() {
   const { open: openDonationModal } = useDonationModal();
   const [footerSettings, setFooterSettings] = useState<FooterSettings>({
-    description: 'Refugee Empowerment For Sustainable Transformation Initiative (RESTI) empowers refugees and host communities in Kiryandongo through education, healthcare, and sustainable livelihoods.',
-    copyrightText: 'RESTI (Refugee Empowerment For Sustainable Transformation Initiative). All rights reserved.',
+    description: 'RESTI CBO is a community-based organization working alongside refugees and host communities in Uganda to strengthen sustainable livelihoods, resilience, and self-reliance.',
+    copyrightText: 'RESTI CBO (Refugee Empowerment For Sustainable Transformation Initiative). All rights reserved.',
     taglineBottom: 'Turning potential into sustainable transformation'
   });
   const [generalSettings, setGeneralSettings] = useState<GeneralSettings>({
-    siteName: 'RESTI',
+    siteName: 'RESTI CBO',
     tagline: 'Refugee Empowerment For Sustainable Transformation Initiative',
     logoUrl: logo
   });

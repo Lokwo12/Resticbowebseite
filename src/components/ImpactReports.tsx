@@ -118,7 +118,7 @@ export function ImpactReports() {
   return (
     <div className="bg-slate-50 min-h-screen">
       <SEO 
-        title={`${data.heroTitle} | RESTI CBO`} 
+        title="RESTI CBO | Impact Reports" 
         description={data.heroIntroP1} 
       />
 

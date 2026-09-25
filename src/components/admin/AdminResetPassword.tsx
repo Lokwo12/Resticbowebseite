@@ -239,7 +239,7 @@ export function AdminResetPassword() {
   return (
     <div className="min-h-screen bg-slate-900 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden selection:bg-emerald-500 selection:text-white">
       <SEO 
-        title="Reset Administrator Password | RESTI CBO"
+        title="RESTI CBO | Reset Administrator Password"
         description="Reset your RESTI CBO administrator account password securely."
       />
 

@@ -134,7 +134,7 @@ export function About() {
             </div>
             <h2 className="text-[28px] sm:text-[30px] lg:text-[36px] font-bold font-heading tracking-tight text-gray-900 mb-5 leading-[1.2] flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-emerald-600 hidden md:block"></span>
-              About RESTI
+              About RESTI CBO
             </h2>
             <div className="space-y-4">
               <p className="text-[17px] text-gray-600 leading-[1.6] font-normal">

@@ -40,7 +40,7 @@ const iconMap: Record<string, typeof Heart> = {
 
 
 const DEFAULT_ABOUT_SETTINGS: AboutSettings = {
-  title: 'About RESTI',
+  title: 'About RESTI CBO',
   intro: 'Refugee Empowerment For Sustainable Transformation Initiative (RESTI) is a community-rooted organization in Kiryandongo District, Uganda. We transform vulnerable settlements through education, healthcare, sustainable livelihoods, and peacebuilding.',
   mission: 'To empower refugees and host communities in Kiryandongo through locally-driven, sustainable programs in education, healthcare, and economic livelihoods, fostering enduring self-reliance and community cohesion.',
   vision: 'A thriving, self-sustaining society where every refugee and community member enjoys dignity, quality education, reliable healthcare, and equal economic opportunities.',
