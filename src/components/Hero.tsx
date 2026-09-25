@@ -385,14 +385,14 @@ export function Hero() {
             {/* Elegant Hero Status Badge */}
             <motion.div 
               variants={{ hidden: { opacity: 0, y: 15 }, visible: { opacity: 1, y: 0 } }}
-              className="inline-flex items-center gap-2.5 px-4.5 py-2 sm:py-2.5 rounded-full bg-emerald-900/85 hover:bg-emerald-800/90 border border-emerald-400/60 backdrop-blur-md shadow-lg shadow-emerald-950/40 transition-all duration-300 ring-1 ring-emerald-500/30"
+              className="inline-flex items-center justify-center gap-2.5 sm:gap-3 px-5 py-2.5 sm:px-6 sm:py-3 rounded-full bg-emerald-900/90 hover:bg-emerald-800/95 border border-emerald-400/60 backdrop-blur-md shadow-lg shadow-emerald-950/50 transition-all duration-300 ring-1 ring-emerald-500/40 max-w-[95vw] sm:max-w-max"
             >
-              <span className="relative flex h-2.5 w-2.5">
+              <span className="relative flex h-2.5 w-2.5 sm:h-3 sm:w-3 shrink-0">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-300"></span>
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 sm:h-3 sm:w-3 bg-emerald-300"></span>
               </span>
-              <span className="text-xs sm:text-sm font-bold text-white tracking-wide drop-shadow-xs">
-                {settings.badgeText}
+              <span className="text-sm sm:text-base md:text-lg font-bold text-white tracking-wide drop-shadow-sm text-center leading-normal">
+                {settings.badgeText || DEFAULT_HERO_SETTINGS.badgeText}
               </span>
             </motion.div>
 
