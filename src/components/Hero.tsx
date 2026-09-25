@@ -385,13 +385,13 @@ export function Hero() {
             {/* Elegant Hero Status Badge */}
             <motion.div 
               variants={{ hidden: { opacity: 0, y: 15 }, visible: { opacity: 1, y: 0 } }}
-              className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full bg-slate-900/70 border border-sky-400/35 backdrop-blur-md shadow-md text-sky-200 hover:border-sky-400/60 transition-all duration-300"
+              className="inline-flex items-center gap-2.5 px-4.5 py-2 sm:py-2.5 rounded-full bg-emerald-900/85 hover:bg-emerald-800/90 border border-emerald-400/60 backdrop-blur-md shadow-lg shadow-emerald-950/40 transition-all duration-300 ring-1 ring-emerald-500/30"
             >
               <span className="relative flex h-2.5 w-2.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-sky-400"></span>
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-300"></span>
               </span>
-              <span className="text-xs sm:text-sm font-semibold tracking-wide">
+              <span className="text-xs sm:text-sm font-bold text-white tracking-wide drop-shadow-xs">
                 {settings.badgeText}
               </span>
             </motion.div>
