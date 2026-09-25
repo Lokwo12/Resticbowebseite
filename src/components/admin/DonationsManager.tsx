@@ -15,6 +15,13 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, 
   ResponsiveContainer, PieChart, Pie, Cell 
 } from 'recharts';
+import {
+  MtnMomoIcon,
+  AirtelMoneyIcon,
+  PayPalIcon,
+  CardPaymentIcon,
+  BankTransferIcon
+} from '../PaymentBrandIcons';
 
 export type DonationAdminStatus = 
   | 'paid' 
@@ -1080,19 +1087,39 @@ export function DonationsManager({
   const getMethodBadge = (method: string) => {
     const m = (method || '').toLowerCase();
     if (m.includes('card') || m.includes('stripe')) {
-      return { label: 'Card (Stripe)', color: 'bg-blue-50 text-blue-700 border-blue-200', icon: CreditCard };
+      return { 
+        label: 'Card (Stripe)', 
+        color: 'bg-blue-50 text-blue-900 border-blue-200', 
+        customIcon: <CardPaymentIcon className="scale-75 origin-left" /> 
+      };
     }
     if (m.includes('mtn')) {
-      return { label: 'MTN MoMo', color: 'bg-amber-50 text-amber-800 border-amber-300 font-bold', icon: Phone };
+      return { 
+        label: 'MTN MoMo', 
+        color: 'bg-amber-50 text-amber-950 border-amber-300 font-bold', 
+        customIcon: <MtnMomoIcon className="h-3.5 w-auto" /> 
+      };
     }
     if (m.includes('airtel')) {
-      return { label: 'Airtel Money', color: 'bg-rose-50 text-rose-700 border-rose-200 font-bold', icon: Phone };
+      return { 
+        label: 'Airtel Money', 
+        color: 'bg-rose-50 text-rose-950 border-rose-200 font-bold', 
+        customIcon: <AirtelMoneyIcon className="h-3.5 w-auto" /> 
+      };
     }
     if (m.includes('paypal')) {
-      return { label: 'PayPal', color: 'bg-sky-50 text-sky-700 border-sky-200', icon: DollarSign };
+      return { 
+        label: 'PayPal', 
+        color: 'bg-sky-50 text-sky-950 border-sky-200', 
+        customIcon: <PayPalIcon className="h-3 w-auto" /> 
+      };
     }
     if (m.includes('bank') || m.includes('wire')) {
-      return { label: 'Bank Wire', color: 'bg-indigo-50 text-indigo-700 border-indigo-200', icon: Building2 };
+      return { 
+        label: 'Bank Wire', 
+        color: 'bg-emerald-50 text-emerald-950 border-emerald-200', 
+        customIcon: <BankTransferIcon className="h-3.5 w-3.5 text-emerald-800" /> 
+      };
     }
     if (m.includes('cash')) {
       return { label: 'Cash / Offline', color: 'bg-emerald-50 text-emerald-700 border-emerald-200', icon: DollarSign };
@@ -1522,7 +1549,7 @@ export function DonationsManager({
                 {paginatedDonations.map((d) => {
                   const methodBadge = getMethodBadge(d.method);
                   const isSelected = selectedIds.has(d.id);
-                  const MethodIcon = methodBadge.icon;
+                  const MethodIcon = (methodBadge as any).icon;
 
                   return (
                     <tr 
@@ -1571,9 +1598,13 @@ export function DonationsManager({
                       </td>
 
                       <td className="py-4 px-4 whitespace-nowrap">
-                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold border ${methodBadge.color}`}>
-                          <MethodIcon size={12} />
-                          {methodBadge.label}
+                        <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg text-xs font-semibold border ${methodBadge.color}`}>
+                          {(methodBadge as any).customIcon ? (
+                            (methodBadge as any).customIcon
+                          ) : MethodIcon ? (
+                            <MethodIcon size={12} />
+                          ) : null}
+                          <span>{methodBadge.label}</span>
                         </span>
                       </td>
 

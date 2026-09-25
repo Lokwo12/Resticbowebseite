@@ -4,7 +4,7 @@ import {
   Heart, Lock, ShieldCheck, CreditCard, Building2, Phone,
   ExternalLink, CheckCircle2, AlertCircle, Clock, X, ArrowLeft,
   Printer, Mail, AlertTriangle, ArrowRight, Check, Eye,
-  Upload, Paperclip, Copy, FileText, ChevronRight
+  Upload, Paperclip, Copy, FileText, ChevronRight, Smartphone
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '../utils/supabase/client';
@@ -12,6 +12,15 @@ import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { STRIPE_PK, PAYPAL_CLIENT_ID } from '../utils/env';
 import { StripePaymentProvider, StripeCardForm, prefetchPaymentIntent } from './StripeShared';
 import { PayPalScriptProvider, PayPalButtons } from '@paypal/react-paypal-js';
+import {
+  MtnMomoIcon,
+  AirtelMoneyIcon,
+  PayPalIcon,
+  CardPaymentIcon,
+  BankTransferIcon,
+  VisaIcon,
+  MastercardIcon
+} from './PaymentBrandIcons';
 
 export type SupportedCurrency = 'UGX' | 'USD' | 'EUR' | 'GBP';
 export type PaymentMethodType = 'card' | 'paypal' | 'mtn' | 'airtel' | 'bank';
@@ -35,7 +44,7 @@ const CURRENCY_CONFIG: Record<SupportedCurrency, {
   UGX: {
     label: 'UGX',
     symbol: 'UGX',
-    presets: [10000, 25000, 50000, 100000],
+    presets: [10000, 25000, 50000, 100000, 250000],
     min: 5000,
     max: 100000000,
     defaultAmount: 50000
@@ -43,26 +52,26 @@ const CURRENCY_CONFIG: Record<SupportedCurrency, {
   USD: {
     label: 'USD',
     symbol: '$',
-    presets: [10, 25, 50, 100],
+    presets: [5, 10, 25, 100, 250],
     min: 5,
     max: 25000,
-    defaultAmount: 50
+    defaultAmount: 25
   },
   EUR: {
     label: 'EUR',
     symbol: '€',
-    presets: [10, 25, 50, 100],
+    presets: [5, 10, 25, 100, 250],
     min: 5,
     max: 25000,
-    defaultAmount: 50
+    defaultAmount: 25
   },
   GBP: {
     label: 'GBP',
     symbol: '£',
-    presets: [10, 25, 50, 100],
+    presets: [5, 10, 25, 100, 250],
     min: 5,
     max: 25000,
-    defaultAmount: 50
+    defaultAmount: 25
   }
 };
 
@@ -373,12 +382,17 @@ export function DonationExperience({
     }
 
     if (uploadingProof) {
-      toast.info('Please wait for your proof of transfer to finish uploading.');
+      toast.info('Please wait for your proof attachment to finish uploading.');
       return;
     }
 
+    const isMtn = (paymentMethod as any) === 'mtn';
+    const isAirtel = (paymentMethod as any) === 'airtel';
+    const methodLabel = isMtn ? 'MTN MoMo' : isAirtel ? 'Airtel Money' : 'Bank Wire Transfer';
+    const apiPaymentMethod = isMtn ? 'mtn' : isAirtel ? 'airtel' : 'bank_transfer';
+
     setStatus('processing');
-    setStatusMessage('Submitting your bank transfer notification...');
+    setStatusMessage(`Submitting your ${methodLabel} notification...`);
 
     const nowIso = new Date().toISOString();
 
@@ -392,13 +406,13 @@ export function DonationExperience({
         body: JSON.stringify({
           amount: finalAmount,
           currency: currency,
-          paymentMethod: 'bank_transfer',
+          paymentMethod: apiPaymentMethod,
           donorName: isAnonymous ? 'Anonymous Supporter' : fullName.trim(),
           donorEmail: email.trim(),
           donorPhone: phone.trim() || undefined,
           donorCountry: country,
           campaign: purpose,
-          message: `Voluntary bank transfer for ${purpose}`,
+          message: `Voluntary donation via ${methodLabel} for ${purpose}`,
           transactionId: bankReference,
           proofUrl: proofUrl || undefined,
           proofFileName: proofFileName || undefined,
@@ -407,7 +421,7 @@ export function DonationExperience({
       });
 
       if (!res.ok) {
-        throw new Error('Could not submit bank transfer notification');
+        throw new Error(`Could not submit ${methodLabel} notification`);
       }
 
       // Explicitly ensure status is recorded as pending_verification in Postgres
@@ -424,7 +438,7 @@ export function DonationExperience({
         id: bankReference,
         amount: finalAmount,
         currency: currency,
-        paymentMethod: 'Bank Wire Transfer',
+        paymentMethod: methodLabel,
         date: nowIso,
         donorName: isAnonymous ? 'Anonymous Supporter' : fullName.trim(),
         donorEmail: email.trim(),
@@ -441,9 +455,9 @@ export function DonationExperience({
       setStatus('pending_verification');
       toast.success('Donation submitted — awaiting verification');
     } catch (err: any) {
-      console.error('Bank submit error:', err);
+      console.error(`${methodLabel} submit error:`, err);
       setStatus('failed');
-      setStatusMessage('Unable to submit bank transfer notification. Please try again or contact info@resticbo.org.');
+      setStatusMessage(`Unable to submit ${methodLabel} notification. Please try again or contact info@resticbo.org.`);
       toast.error('Unable to submit transfer notification');
     }
   };
@@ -673,10 +687,26 @@ export function DonationExperience({
           <div className="space-y-1.5 text-stone-700">
             <div className="flex justify-between"><span className="text-stone-500">Donor:</span> <strong>{confirmedDonation.donorName}</strong></div>
             <div className="flex justify-between"><span className="text-stone-500">Email:</span> <span>{confirmedDonation.donorEmail}</span></div>
-            <div className="flex justify-between"><span className="text-stone-500">Beneficiary Bank:</span> <strong>{bankDetails?.bankName || 'EQUITY'}</strong></div>
-            <div className="flex justify-between"><span className="text-stone-500">Account Name:</span> <strong>{bankDetails?.accountName || 'Refugee Empowerment For Sustainable Transformation Initiative'}</strong></div>
-            <div className="flex justify-between"><span className="text-stone-500">Account Number:</span> <strong className="font-mono">{bankDetails?.accountNumber || '1050203752178'}</strong></div>
-            <div className="flex justify-between"><span className="text-stone-500">Branch / SWIFT:</span> <span>{bankDetails?.branch || 'Bweyale Branch'} ({bankDetails?.swiftCode || 'EQBLUGKA'})</span></div>
+            {confirmedDonation.paymentMethod === 'MTN MoMo' ? (
+              <>
+                <div className="flex justify-between"><span className="text-stone-500">Payment Channel:</span> <strong>MTN MoMo (Uganda)</strong></div>
+                <div className="flex justify-between"><span className="text-stone-500">Merchant / Number:</span> <strong className="font-mono">{bankDetails?.merchantMTN || '+256 785 440955'}</strong></div>
+                <div className="flex justify-between"><span className="text-stone-500">Recipient Name:</span> <strong>{bankDetails?.accountName || 'Refugee Empowerment For Sustainable Transformation Initiative'}</strong></div>
+              </>
+            ) : confirmedDonation.paymentMethod === 'Airtel Money' ? (
+              <>
+                <div className="flex justify-between"><span className="text-stone-500">Payment Channel:</span> <strong>Airtel Money (Uganda)</strong></div>
+                <div className="flex justify-between"><span className="text-stone-500">Merchant / Number:</span> <strong className="font-mono">{bankDetails?.merchantAirtel || bankDetails?.merchantMTN || '+256 785 440955'}</strong></div>
+                <div className="flex justify-between"><span className="text-stone-500">Recipient Name:</span> <strong>{bankDetails?.accountName || 'Refugee Empowerment For Sustainable Transformation Initiative'}</strong></div>
+              </>
+            ) : (
+              <>
+                <div className="flex justify-between"><span className="text-stone-500">Beneficiary Bank:</span> <strong>{bankDetails?.bankName || 'EQUITY'}</strong></div>
+                <div className="flex justify-between"><span className="text-stone-500">Account Name:</span> <strong>{bankDetails?.accountName || 'Refugee Empowerment For Sustainable Transformation Initiative'}</strong></div>
+                <div className="flex justify-between"><span className="text-stone-500">Account Number:</span> <strong className="font-mono">{bankDetails?.accountNumber || '1050203752178'}</strong></div>
+                <div className="flex justify-between"><span className="text-stone-500">Branch / SWIFT:</span> <span>{bankDetails?.branch || 'Bweyale Branch'} ({bankDetails?.swiftCode || 'EQBLUGKA'})</span></div>
+              </>
+            )}
             {confirmedDonation.proofFileName && (
               <div className="flex justify-between pt-1 border-t border-stone-200 text-emerald-800">
                 <span className="text-stone-500">Proof of Transfer:</span>
@@ -811,7 +841,7 @@ export function DonationExperience({
             </div>
 
             {/* Presets Grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+            <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 sm:gap-2.5">
               {currentCurrencyConfig.presets.map((preset) => (
                 <button
                   key={preset}
@@ -1039,114 +1069,109 @@ export function DonationExperience({
 
           {/* Section 5: Choose a Payment Method */}
           <div className="bg-white rounded-2xl border border-stone-200 p-5 shadow-sm space-y-4">
-            <label className="text-xs font-bold uppercase tracking-wider text-stone-700 block">
-              Choose a Payment Method
-            </label>
-
-            <div className="grid grid-cols-2 gap-2">
-              {/* Card */}
-              <button
-                type="button"
-                onClick={() => setPaymentMethod('card')}
-                className={`p-3 rounded-xl border text-left transition-all flex flex-col justify-between ${
-                  paymentMethod === 'card'
-                    ? 'border-emerald-600 bg-emerald-50 text-emerald-900 ring-1 ring-emerald-600'
-                    : 'border-stone-200 hover:bg-stone-50 text-stone-700'
-                }`}
-              >
-                <CreditCard className="w-5 h-5 text-emerald-700 mb-1" />
-                <span className="text-xs font-bold block">Card</span>
-                <span className="text-[10px] text-stone-500">Pay securely by card</span>
-              </button>
-
-              {/* PayPal */}
-              <button
-                type="button"
-                onClick={() => setPaymentMethod('paypal')}
-                className={`p-3 rounded-xl border text-left transition-all flex flex-col justify-between ${
-                  paymentMethod === 'paypal'
-                    ? 'border-emerald-600 bg-emerald-50 text-emerald-900 ring-1 ring-emerald-600'
-                    : 'border-stone-200 hover:bg-stone-50 text-stone-700'
-                }`}
-              >
-                <ExternalLink className="w-5 h-5 text-emerald-700 mb-1" />
-                <span className="text-xs font-bold block">PayPal</span>
-                <span className="text-[10px] text-stone-500">Pay with PayPal</span>
-              </button>
-
-              {/* MTN Mobile Money */}
-              <button
-                type="button"
-                onClick={() => setPaymentMethod('mtn')}
-                className={`p-3 rounded-xl border text-left transition-all flex flex-col justify-between ${
-                  paymentMethod === 'mtn'
-                    ? 'border-amber-500 bg-amber-50/60 ring-1 ring-amber-500'
-                    : 'border-stone-200 hover:bg-stone-50'
-                }`}
-              >
-                <div className="flex items-center justify-between w-full mb-1">
-                  <Phone className="w-5 h-5 text-amber-700" />
-                  <span className="text-[9px] font-bold text-amber-800 bg-amber-100 px-1 py-0.5 rounded">Setup</span>
-                </div>
-                <span className="text-xs font-bold text-stone-800 block">MTN MoMo</span>
-                <span className="text-[10px] text-amber-700 font-medium">Under configuration</span>
-              </button>
-
-              {/* Airtel Money */}
-              <button
-                type="button"
-                onClick={() => setPaymentMethod('airtel')}
-                className={`p-3 rounded-xl border text-left transition-all flex flex-col justify-between ${
-                  paymentMethod === 'airtel'
-                    ? 'border-rose-500 bg-rose-50/60 ring-1 ring-rose-500'
-                    : 'border-stone-200 hover:bg-stone-50'
-                }`}
-              >
-                <div className="flex items-center justify-between w-full mb-1">
-                  <Phone className="w-5 h-5 text-rose-700" />
-                  <span className="text-[9px] font-bold text-rose-800 bg-rose-100 px-1 py-0.5 rounded">Setup</span>
-                </div>
-                <span className="text-xs font-bold text-stone-800 block">Airtel Money</span>
-                <span className="text-[10px] text-rose-700 font-medium">Under configuration</span>
-              </button>
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold uppercase tracking-wider text-stone-700 block">
+                Choose a Payment Method
+              </label>
+              <span className="text-[11px] text-stone-500 flex items-center gap-1">
+                <Lock className="w-3 h-3 text-emerald-700" /> Encrypted &amp; Verified
+              </span>
             </div>
 
-            {/* Bank Transfer button full width */}
-            <button
-              type="button"
-              onClick={() => setPaymentMethod('bank')}
-              className={`w-full p-2.5 rounded-xl border text-left transition-all flex items-center justify-between ${
-                paymentMethod === 'bank'
-                  ? 'border-emerald-600 bg-emerald-50 text-emerald-900 ring-1 ring-emerald-600'
-                  : 'border-stone-200 hover:bg-stone-50 text-stone-700'
-              }`}
-            >
-              <div className="flex items-center gap-2">
-                <Building2 className="w-4 h-4 text-emerald-700" />
-                <span className="text-xs font-bold">Bank Transfer</span>
-              </div>
-              <span className="text-[10px] text-stone-500">Official RESTI CBO bank account</span>
-            </button>
-
-            {/* Mobile Money Notice Banner when MTN or Airtel selected */}
-            {(paymentMethod === 'mtn' || paymentMethod === 'airtel') && (
-              <div className="p-3.5 bg-amber-50 border border-amber-200 rounded-xl text-xs space-y-1.5">
-                <div className="flex items-center gap-2 font-bold text-amber-900">
-                  <AlertCircle className="w-4 h-4 text-amber-700 shrink-0" />
-                  <span>{paymentMethod === 'mtn' ? 'MTN Mobile Money' : 'Airtel Money'}</span>
-                </div>
-                <p className="text-[11px] text-amber-800 leading-relaxed">
-                  Mobile Money payments are currently under configuration and are not yet available for live donations.
-                </p>
-                <p className="text-[11px] text-stone-600">
-                  Please select an available live payment method above (Card, PayPal, or Bank Transfer).
-                </p>
-              </div>
-            )}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5" role="radiogroup" aria-label="Select Payment Method">
+              {([
+                {
+                  id: 'card' as PaymentMethodType,
+                  title: 'Credit / Debit Card',
+                  subtitle: 'Visa & Mastercard via Stripe',
+                  ariaLabel: 'Donate using Credit or Debit Card with Visa or Mastercard',
+                  icon: <CardPaymentIcon />
+                },
+                {
+                  id: 'paypal' as PaymentMethodType,
+                  title: 'PayPal',
+                  subtitle: 'Fast, secure online checkout',
+                  ariaLabel: 'Donate using PayPal',
+                  icon: <PayPalIcon />
+                },
+                {
+                  id: 'mtn' as PaymentMethodType,
+                  title: 'MTN MoMo',
+                  subtitle: 'Mobile Money (Uganda)',
+                  ariaLabel: 'Donate using MTN Mobile Money',
+                  icon: <MtnMomoIcon />
+                },
+                {
+                  id: 'airtel' as PaymentMethodType,
+                  title: 'Airtel Money',
+                  subtitle: 'Airtel Money (Uganda)',
+                  ariaLabel: 'Donate using Airtel Money',
+                  icon: <AirtelMoneyIcon />
+                },
+                {
+                  id: 'bank' as PaymentMethodType,
+                  title: 'Bank Transfer',
+                  subtitle: 'Official RESTI bank wire',
+                  ariaLabel: 'Donate via direct Bank Wire Transfer',
+                  icon: <BankTransferIcon />
+                }
+              ]).map((method) => {
+                const isSelected = paymentMethod === method.id;
+                return (
+                  <button
+                    key={method.id}
+                    type="button"
+                    role="radio"
+                    aria-checked={isSelected}
+                    aria-label={method.ariaLabel}
+                    onClick={() => setPaymentMethod(method.id)}
+                    className={`p-3.5 rounded-xl border text-left transition-all flex flex-col justify-between relative cursor-pointer group ${
+                      isSelected
+                        ? 'border-emerald-600 bg-emerald-50/70 text-emerald-950 ring-2 ring-emerald-600 shadow-xs'
+                        : 'border-stone-200 hover:border-emerald-300 hover:bg-stone-50/80 text-stone-800 bg-white'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between w-full mb-2.5">
+                      <div className="h-8 flex items-center">{method.icon}</div>
+                      <div
+                        className={`w-4 h-4 rounded-full flex items-center justify-center transition-colors ${
+                          isSelected
+                            ? 'bg-emerald-600 text-white'
+                            : 'border-2 border-stone-300 group-hover:border-stone-400'
+                        }`}
+                      >
+                        {isSelected && <Check className="w-2.5 h-2.5 stroke-[3]" />}
+                      </div>
+                    </div>
+                    <div>
+                      <span className="text-xs font-bold block text-stone-900 group-hover:text-emerald-900 transition-colors">
+                        {method.title}
+                      </span>
+                      <span className="text-[11px] text-stone-500 line-clamp-1">
+                        {method.subtitle}
+                      </span>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
 
             {/* Provider Interactive Forms */}
+            {/* Provider Interactive Forms */}
             {paymentMethod === 'card' && (
-              <div className="pt-2">
+              <div className="pt-2 space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-2 p-3 bg-stone-50 border border-stone-200 rounded-xl text-xs text-stone-600">
+                  <div className="flex items-center gap-2">
+                    <ShieldCheck className="w-4 h-4 text-emerald-700 shrink-0" />
+                    <span>Secure 256-bit encrypted card processing via Stripe</span>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="text-[10px] uppercase font-bold text-stone-400">Supported:</span>
+                    <VisaIcon className="h-3 w-auto" />
+                    <MastercardIcon className="h-3.5 w-auto" />
+                  </div>
+                </div>
+
                 <StripePaymentProvider
                   finalAmount={finalAmount}
                   currency={currency}
@@ -1174,6 +1199,11 @@ export function DonationExperience({
 
             {paymentMethod === 'paypal' && (
               <div className="pt-2 space-y-3">
+                <div className="flex items-center gap-2 p-3 bg-sky-50/70 border border-sky-200 rounded-xl text-xs text-sky-900">
+                  <ShieldCheck className="w-4 h-4 text-sky-700 shrink-0" />
+                  <span>Encrypted, buyer-protected donation payment via official PayPal</span>
+                </div>
+
                 {PAYPAL_CLIENT_ID ? (
                   <PayPalScriptProvider options={{ clientId: PAYPAL_CLIENT_ID }}>
                     <PayPalButtons
@@ -1216,13 +1246,325 @@ export function DonationExperience({
                         }
                         window.open('https://paypal.com/donate', '_blank');
                       }}
-                      className="w-full bg-[#FFC439] hover:bg-[#F2BA36] font-bold text-stone-900 py-2.5 rounded-xl text-xs transition-all flex items-center justify-center gap-1.5 shadow-sm"
+                      className="w-full bg-[#FFC439] hover:bg-[#F2BA36] font-bold text-stone-900 py-2.5 rounded-xl text-xs transition-all flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
                     >
                       <ExternalLink className="w-3.5 h-3.5" />
                       Proceed with PayPal
                     </button>
                   </div>
                 )}
+              </div>
+            )}
+
+            {/* Dedicated MTN MoMo Payment Section */}
+            {paymentMethod === 'mtn' && (
+              <div className="pt-2 space-y-4">
+                <div className="bg-amber-50/40 border border-amber-200 rounded-2xl p-4 sm:p-5 text-left text-xs space-y-3.5 shadow-2xs">
+                  
+                  {/* Amount and Unique Donation Reference */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-amber-200/80">
+                    <div>
+                      <div className="text-[10px] font-bold text-amber-800 uppercase tracking-wider">Donation Amount</div>
+                      <div className="text-lg font-black text-amber-950">
+                        {formatMoney(finalAmount, currency)}
+                      </div>
+                    </div>
+
+                    <div className="bg-white border border-amber-200 rounded-xl px-3 py-2 flex items-center justify-between sm:justify-start gap-2 shadow-2xs">
+                      <div>
+                        <div className="text-[9px] font-bold text-stone-400 uppercase tracking-wider">Donation Reference</div>
+                        <div className="font-mono font-bold text-amber-950 text-xs sm:text-sm tracking-wide">
+                          {bankReference}
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleCopyReference}
+                        className="p-1.5 text-stone-500 hover:text-amber-800 hover:bg-amber-50 rounded-lg transition-colors cursor-pointer"
+                        title="Copy donation reference code"
+                      >
+                        {copiedReference ? <Check size={14} className="text-emerald-600" /> : <Copy size={14} />}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Mandatory Instruction */}
+                  <div className="p-3 bg-amber-100/70 border border-amber-300/80 rounded-xl text-amber-950 text-xs leading-relaxed flex items-start gap-2.5">
+                    <AlertCircle className="w-4 h-4 text-amber-800 shrink-0 mt-0.5" />
+                    <div>
+                      <strong className="font-semibold block mb-0.5">Please include this donation reference when making your MTN MoMo payment.</strong>
+                      <p className="text-[11px] text-amber-900">
+                        Enter <span className="font-mono font-bold text-amber-950">{bankReference}</span> in the payment reason or reference field so RESTI can match your payment.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* MTN MoMo Details & Dial Steps */}
+                  <div className="space-y-2 pt-1">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-amber-900">
+                      MTN MoMo Payment Details
+                    </span>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                      <div className="bg-white border border-amber-200/80 rounded-xl p-2.5">
+                        <span className="text-[10px] text-stone-400 font-medium block">Merchant / Phone Number</span>
+                        <div className="flex items-center justify-between mt-0.5">
+                          <strong className="text-stone-900 font-mono font-bold">{bankConfig?.merchantMTN || '+256 785 440955'}</strong>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              navigator.clipboard.writeText(bankConfig?.merchantMTN || '+256 785 440955');
+                              toast.success('MTN number copied to clipboard');
+                            }}
+                            className="p-1 text-stone-400 hover:text-amber-700 transition-colors"
+                            title="Copy number"
+                          >
+                            <Copy size={12} />
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="bg-white border border-amber-200/80 rounded-xl p-2.5">
+                        <span className="text-[10px] text-stone-400 font-medium block">Registered Account Name</span>
+                        <strong className="text-stone-900 font-semibold truncate block mt-0.5" title={bankConfig?.accountName || 'Refugee Empowerment For Sustainable Transformation Initiative'}>
+                          {bankConfig?.accountName || 'Refugee Empowerment For Sustainable Transformation Initiative'}
+                        </strong>
+                      </div>
+
+                      <div className="bg-white border border-amber-200/80 rounded-xl p-3 sm:col-span-2 space-y-1">
+                        <span className="text-[10px] text-stone-400 font-bold uppercase tracking-wider block">How to Send via MTN MoMo</span>
+                        <ol className="text-[11px] text-stone-700 space-y-1 list-decimal list-inside">
+                          <li>Dial <span className="font-mono font-bold text-amber-950">*165*3#</span> (MoMoPay) or transfer directly to <span className="font-mono font-bold text-amber-950">{bankConfig?.merchantMTN || '+256 785 440955'}</span></li>
+                          <li>Enter Amount: <span className="font-bold text-amber-950">{formatMoney(finalAmount, currency)}</span></li>
+                          <li>Enter Reason/Reference: <span className="font-mono font-bold text-amber-950">{bankReference}</span></li>
+                          <li>Enter your MTN MoMo PIN to authorize the transaction</li>
+                        </ol>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Optional Proof Upload */}
+                  <div className="pt-2 border-t border-amber-200/80">
+                    <label className="block text-[11px] font-bold uppercase tracking-wider text-amber-950 mb-1.5">
+                      Upload MoMo screenshot / SMS confirmation <span className="text-stone-500 font-normal lowercase">(optional)</span>
+                    </label>
+
+                    {proofUrl ? (
+                      <div className="flex items-center justify-between bg-emerald-50 border border-emerald-200 rounded-xl p-2.5 text-xs text-emerald-900">
+                        <div className="flex items-center gap-2 truncate">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                          <span className="truncate font-medium">{proofFileName || 'Proof of transfer attached'}</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={handleRemoveProof}
+                          className="text-emerald-700 hover:text-rose-700 text-xs font-semibold px-2 py-1 rounded hover:bg-emerald-100 transition-colors cursor-pointer shrink-0"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ) : (
+                      <div>
+                        <input
+                          type="file"
+                          ref={proofFileInputRef}
+                          onChange={handleProofFileChange}
+                          accept=".pdf,.png,.jpg,.jpeg,.webp"
+                          className="hidden"
+                          id="mtn-proof-file-input"
+                        />
+                        <label
+                          htmlFor="mtn-proof-file-input"
+                          className="border-2 border-dashed border-amber-300 hover:border-amber-500 hover:bg-amber-100/50 rounded-xl p-3 text-center flex flex-col items-center justify-center gap-1 cursor-pointer transition-all"
+                        >
+                          {uploadingProof ? (
+                            <div className="flex items-center gap-2 text-stone-600 text-xs">
+                              <div className="w-4 h-4 border-2 border-amber-600 border-t-transparent rounded-full animate-spin" />
+                              <span>Uploading transfer proof...</span>
+                            </div>
+                          ) : (
+                            <>
+                              <div className="flex items-center gap-1.5 text-xs font-bold text-amber-950">
+                                <Upload className="w-4 h-4 text-amber-800" />
+                                <span>Attach MoMo transaction confirmation or receipt</span>
+                              </div>
+                              <span className="text-[10px] text-stone-500">
+                                Supports PNG, JPG, or PDF up to 10MB
+                              </span>
+                            </>
+                          )}
+                        </label>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Primary Action Button */}
+                <button
+                  type="button"
+                  onClick={handleBankTransferSubmit}
+                  disabled={uploadingProof}
+                  className="w-full bg-amber-600 hover:bg-amber-700 disabled:opacity-60 text-white font-bold py-3.5 rounded-xl text-xs sm:text-sm transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <Check className="w-4 h-4" />
+                  I Have Sent the MTN MoMo Donation
+                </button>
+              </div>
+            )}
+
+            {/* Dedicated Airtel Money Payment Section */}
+            {paymentMethod === 'airtel' && (
+              <div className="pt-2 space-y-4">
+                <div className="bg-rose-50/40 border border-rose-200 rounded-2xl p-4 sm:p-5 text-left text-xs space-y-3.5 shadow-2xs">
+                  
+                  {/* Amount and Unique Donation Reference */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-rose-200/80">
+                    <div>
+                      <div className="text-[10px] font-bold text-rose-800 uppercase tracking-wider">Donation Amount</div>
+                      <div className="text-lg font-black text-rose-950">
+                        {formatMoney(finalAmount, currency)}
+                      </div>
+                    </div>
+
+                    <div className="bg-white border border-rose-200 rounded-xl px-3 py-2 flex items-center justify-between sm:justify-start gap-2 shadow-2xs">
+                      <div>
+                        <div className="text-[9px] font-bold text-stone-400 uppercase tracking-wider">Donation Reference</div>
+                        <div className="font-mono font-bold text-rose-950 text-xs sm:text-sm tracking-wide">
+                          {bankReference}
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleCopyReference}
+                        className="p-1.5 text-stone-500 hover:text-rose-800 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                        title="Copy donation reference code"
+                      >
+                        {copiedReference ? <Check size={14} className="text-emerald-600" /> : <Copy size={14} />}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Mandatory Instruction */}
+                  <div className="p-3 bg-rose-100/70 border border-rose-300/80 rounded-xl text-rose-950 text-xs leading-relaxed flex items-start gap-2.5">
+                    <AlertCircle className="w-4 h-4 text-rose-800 shrink-0 mt-0.5" />
+                    <div>
+                      <strong className="font-semibold block mb-0.5">Please include this donation reference when making your Airtel Money payment.</strong>
+                      <p className="text-[11px] text-rose-900">
+                        Enter <span className="font-mono font-bold text-rose-950">{bankReference}</span> in the payment reason or reference field so RESTI can match your payment.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Airtel Money Details & Dial Steps */}
+                  <div className="space-y-2 pt-1">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-rose-900">
+                      Airtel Money Payment Details
+                    </span>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                      <div className="bg-white border border-rose-200/80 rounded-xl p-2.5">
+                        <span className="text-[10px] text-stone-400 font-medium block">Merchant / Phone Number</span>
+                        <div className="flex items-center justify-between mt-0.5">
+                          <strong className="text-stone-900 font-mono font-bold">{bankConfig?.merchantAirtel || bankConfig?.merchantMTN || '+256 785 440955'}</strong>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              navigator.clipboard.writeText(bankConfig?.merchantAirtel || bankConfig?.merchantMTN || '+256 785 440955');
+                              toast.success('Airtel number copied to clipboard');
+                            }}
+                            className="p-1 text-stone-400 hover:text-rose-700 transition-colors"
+                            title="Copy number"
+                          >
+                            <Copy size={12} />
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="bg-white border border-rose-200/80 rounded-xl p-2.5">
+                        <span className="text-[10px] text-stone-400 font-medium block">Registered Account Name</span>
+                        <strong className="text-stone-900 font-semibold truncate block mt-0.5" title={bankConfig?.accountName || 'Refugee Empowerment For Sustainable Transformation Initiative'}>
+                          {bankConfig?.accountName || 'Refugee Empowerment For Sustainable Transformation Initiative'}
+                        </strong>
+                      </div>
+
+                      <div className="bg-white border border-rose-200/80 rounded-xl p-3 sm:col-span-2 space-y-1">
+                        <span className="text-[10px] text-stone-400 font-bold uppercase tracking-wider block">How to Send via Airtel Money</span>
+                        <ol className="text-[11px] text-stone-700 space-y-1 list-decimal list-inside">
+                          <li>Dial <span className="font-mono font-bold text-rose-950">*185*9#</span> (Airtel Pay) or transfer directly to <span className="font-mono font-bold text-rose-950">{bankConfig?.merchantAirtel || bankConfig?.merchantMTN || '+256 785 440955'}</span></li>
+                          <li>Enter Amount: <span className="font-bold text-rose-950">{formatMoney(finalAmount, currency)}</span></li>
+                          <li>Enter Reason/Reference: <span className="font-mono font-bold text-rose-950">{bankReference}</span></li>
+                          <li>Enter your Airtel Money PIN to authorize the transaction</li>
+                        </ol>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Optional Proof Upload */}
+                  <div className="pt-2 border-t border-rose-200/80">
+                    <label className="block text-[11px] font-bold uppercase tracking-wider text-rose-950 mb-1.5">
+                      Upload Airtel screenshot / SMS confirmation <span className="text-stone-500 font-normal lowercase">(optional)</span>
+                    </label>
+
+                    {proofUrl ? (
+                      <div className="flex items-center justify-between bg-emerald-50 border border-emerald-200 rounded-xl p-2.5 text-xs text-emerald-900">
+                        <div className="flex items-center gap-2 truncate">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                          <span className="truncate font-medium">{proofFileName || 'Proof of transfer attached'}</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={handleRemoveProof}
+                          className="text-emerald-700 hover:text-rose-700 text-xs font-semibold px-2 py-1 rounded hover:bg-emerald-100 transition-colors cursor-pointer shrink-0"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ) : (
+                      <div>
+                        <input
+                          type="file"
+                          ref={proofFileInputRef}
+                          onChange={handleProofFileChange}
+                          accept=".pdf,.png,.jpg,.jpeg,.webp"
+                          className="hidden"
+                          id="airtel-proof-file-input"
+                        />
+                        <label
+                          htmlFor="airtel-proof-file-input"
+                          className="border-2 border-dashed border-rose-300 hover:border-rose-500 hover:bg-rose-100/50 rounded-xl p-3 text-center flex flex-col items-center justify-center gap-1 cursor-pointer transition-all"
+                        >
+                          {uploadingProof ? (
+                            <div className="flex items-center gap-2 text-stone-600 text-xs">
+                              <div className="w-4 h-4 border-2 border-rose-600 border-t-transparent rounded-full animate-spin" />
+                              <span>Uploading transfer proof...</span>
+                            </div>
+                          ) : (
+                            <>
+                              <div className="flex items-center gap-1.5 text-xs font-bold text-rose-950">
+                                <Upload className="w-4 h-4 text-rose-800" />
+                                <span>Attach Airtel transaction confirmation or receipt</span>
+                              </div>
+                              <span className="text-[10px] text-stone-500">
+                                Supports PNG, JPG, or PDF up to 10MB
+                              </span>
+                            </>
+                          )}
+                        </label>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Primary Action Button */}
+                <button
+                  type="button"
+                  onClick={handleBankTransferSubmit}
+                  disabled={uploadingProof}
+                  className="w-full bg-rose-600 hover:bg-rose-700 disabled:opacity-60 text-white font-bold py-3.5 rounded-xl text-xs sm:text-sm transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <Check className="w-4 h-4" />
+                  I Have Sent the Airtel Money Donation
+                </button>
               </div>
             )}
 
@@ -1386,19 +1728,6 @@ export function DonationExperience({
                 >
                   <Check className="w-4 h-4" />
                   I Have Made the Bank Transfer
-                </button>
-              </div>
-            )}
-
-            {/* Unavailable Mobile Money Action Button */}
-            {(paymentMethod === 'mtn' || paymentMethod === 'airtel') && (
-              <div className="pt-2">
-                <button
-                  type="button"
-                  disabled
-                  className="w-full bg-stone-200 text-stone-500 font-bold py-3 rounded-xl text-xs sm:text-sm cursor-not-allowed opacity-75"
-                >
-                  Currently Unavailable
                 </button>
               </div>
             )}
