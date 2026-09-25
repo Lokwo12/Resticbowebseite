@@ -1,6 +1,6 @@
 import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Heart, Shield, Lock, User } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { ArrowLeft, Heart, Shield, Lock } from 'lucide-react';
 import { DonationExperience } from './DonationExperience';
 
 export function CardPaymentPage() {
@@ -20,14 +20,6 @@ export function CardPaymentPage() {
             <ArrowLeft className="w-4 h-4" />
             <span>Back to site</span>
           </button>
-
-          <Link
-            to="/donor-portal"
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-800 bg-white hover:bg-emerald-50 border border-stone-200 px-3.5 py-1.5 rounded-xl transition-colors shadow-2xs"
-          >
-            <User className="w-3.5 h-3.5 text-emerald-700" />
-            <span>Donor Portal &amp; Official Receipts</span>
-          </Link>
         </div>
 
         {/* Standard Nonprofit Donation Experience */}

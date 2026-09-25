@@ -753,7 +753,11 @@ app.post('/make-server-2a4be611/create-payment-intent', async (c) => {
     })
   } catch (error) {
     console.error('Error creating payment intent:', error)
-    return c.json({ error: 'Failed to create payment intent', details: String(error) }, 500)
+    let details = String(error)
+    if (/convert to at least 50 cents/i.test(details) || /minimum/i.test(details)) {
+      details = 'Amount must be at least 5,000 UGX (approx. €1.20 / $1.35) to meet card processing network minimums.'
+    }
+    return c.json({ error: 'Failed to create payment intent', details }, 500)
   }
 })
 

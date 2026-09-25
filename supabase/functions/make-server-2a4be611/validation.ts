@@ -178,7 +178,7 @@ export function validateStripeDonation(amount: unknown, currency: unknown): Stri
   // Min / Max rules matching frontend and Stripe requirements
   if (cur === 'UGX') {
     if (num < 5000) {
-      return { ok: false, error: 'Minimum card donation in UGX is 5,000' }
+      return { ok: false, error: 'Minimum card donation in UGX is 5,000 (approx. €1.20 / $1.35) to meet card processing network minimums.' }
     }
     if (num > 100_000_000) {
       return { ok: false, error: 'Maximum card donation in UGX is 100,000,000' }

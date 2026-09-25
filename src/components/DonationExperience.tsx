@@ -370,8 +370,22 @@ export function DonationExperience({
     const raw = e.target.value.replace(/\D/g, '');
     setCustomAmountInput(raw);
     setIsCustomAmount(true);
-    setErrors(prev => ({ ...prev, amount: '' }));
+    const parsed = parseInt(raw, 10);
+    if (!isNaN(parsed) && parsed > 0 && parsed < currentCurrencyConfig.min) {
+      setErrors(prev => ({ 
+        ...prev, 
+        amount: `Minimum donation for ${currency} is ${formatMoney(currentCurrencyConfig.min, currency)}` 
+      }));
+    } else if (!isNaN(parsed) && parsed > currentCurrencyConfig.max) {
+      setErrors(prev => ({ 
+        ...prev, 
+        amount: `Maximum donation for ${currency} is ${formatMoney(currentCurrencyConfig.max, currency)}` 
+      }));
+    } else {
+      setErrors(prev => ({ ...prev, amount: '' }));
+    }
   };
+
 
   // Validate form before payment submission
   const validateForm = (): boolean => {
@@ -1214,6 +1228,8 @@ export function DonationExperience({
                   freq="once"
                   donorData={{ firstName: fullName, lastName: '', email, phone, country }}
                   campaign={purpose}
+                  onSetAmount={handlePresetSelect}
+                  formatAmt={(val: number) => formatMoney(val, currency)}
                 >
                   <StripeCardForm
                     donorData={{ firstName: fullName, lastName: '', email, phone, country }}
