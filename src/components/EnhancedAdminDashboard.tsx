@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useConfirm } from '../hooks/useConfirm';
 import { createClient } from '@supabase/supabase-js';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
@@ -163,6 +163,9 @@ export function EnhancedAdminDashboard() {
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
   const [chatReply, setChatReply] = useState('');
   const [isReplyingChat, setIsReplyingChat] = useState(false);
+  const [chatFilter, setChatFilter] = useState<'all' | 'needs-reply' | 'active' | 'closed'>('all');
+  const [chatSearch, setChatSearch] = useState('');
+  const chatMessagesEndRef = useRef<HTMLDivElement>(null);
 
   const [activeTab, setActiveTab] = useState('overview');
   const [analytics, setAnalytics] = useState<Analytics | null>(null);
@@ -1315,12 +1318,7 @@ export function EnhancedAdminDashboard() {
         const data = await response.json();
         setPages(data.pages || []);
       } else if (activeTab === 'live-chat') {
-        const response = await fetch(
-          `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/livechats`,
-          { headers: { Authorization: `Bearer ${accessToken || publicAnonKey}` } }
-        );
-        const data = await response.json();
-        setLiveChats(data.sessions || []);
+        await fetchLiveChats(false);
       } else if (activeTab === 'map') {
         const response = await fetch(
           `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/map-locations`,
@@ -1336,50 +1334,274 @@ export function EnhancedAdminDashboard() {
   };
 
   
-  useEffect(() => {
-    let intervalId: ReturnType<typeof setTimeout>;
-    if (activeTab === 'live-chat') {
-      intervalId = setInterval(() => {
-        loadData();
-      }, 3000);
+  // Dedicated Live Chat fetching with dual-layer synchronization
+  const fetchLiveChats = useCallback(async (isSilent = true) => {
+    try {
+      const sessionMap = new Map<string, any>();
+
+      // 1. Fetch from Edge Function
+      try {
+        const token = await getAuthToken();
+        const response = await fetch(
+          `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/livechats`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        if (response.ok) {
+          const data = await response.json();
+          if (Array.isArray(data.sessions)) {
+            data.sessions.forEach((s: any) => {
+              if (s && s.id) sessionMap.set(s.id, s);
+            });
+          }
+        }
+      } catch (apiErr) {
+        // silent fallback
+      }
+
+      // 2. Fetch directly from kv_store_2a4be611 for high resilience
+      try {
+        const { data: kvData } = await supabase
+          .from('kv_store_2a4be611')
+          .select('key, value')
+          .like('key', 'livechat:%');
+        if (kvData && Array.isArray(kvData)) {
+          kvData.forEach((row: any) => {
+            if (row.value && row.value.id) {
+              const existing = sessionMap.get(row.value.id);
+              if (!existing || new Date(row.value.updated_at || 0) >= new Date(existing.updated_at || 0)) {
+                sessionMap.set(row.value.id, row.value);
+              }
+            }
+          });
+        }
+      } catch (kvErr) {
+        // silent fallback
+      }
+
+      const sessions = Array.from(sessionMap.values());
+      sessions.sort((a, b) => new Date(b.updated_at || b.created_at || 0).getTime() - new Date(a.updated_at || a.created_at || 0).getTime());
+      setLiveChats(sessions);
+    } catch (err) {
+      if (!isSilent) {
+        console.error('Error fetching live chats:', err);
+      }
     }
-    return () => {
-      if (intervalId) clearInterval(intervalId);
-    };
-  }, [activeTab]);
+  }, []);
 
+  // Background polling for live chats across the dashboard
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    fetchLiveChats(true);
 
+    const intervalMs = activeTab === 'live-chat' ? 2500 : 12000;
+    const intervalId = setInterval(() => {
+      fetchLiveChats(true);
+    }, intervalMs);
 
+    return () => clearInterval(intervalId);
+  }, [activeTab, isAuthenticated, fetchLiveChats]);
+
+  // Auto-scroll chat messages to bottom
+  const scrollChatToBottom = () => {
+    if (chatMessagesEndRef.current) {
+      chatMessagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
+  useEffect(() => {
+    if (selectedChatId && activeTab === 'live-chat') {
+      setTimeout(scrollChatToBottom, 60);
+    }
+  }, [selectedChatId, liveChats, activeTab]);
+
+  // Send reply to live chat visitor
   const handleChatReply = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!chatReply.trim() || !selectedChatId) return;
+    const replyText = chatReply.trim();
+    if (!replyText || !selectedChatId) return;
 
     setIsReplyingChat(true);
-    try {
-      const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/livechats/${selectedChatId}/reply`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${accessToken || publicAnonKey}`
-          },
-          body: JSON.stringify({ message: chatReply.trim() })
-        }
-      );
-      if (response.ok) {
-        setChatReply('');
-        loadData(); // refresh chats immediately
-      } else {
-        toast.error('Failed to send reply');
+    const nowIso = new Date().toISOString();
+    const newMsg = {
+      sender: 'agent',
+      text: replyText,
+      timestamp: nowIso
+    };
+
+    // 1. Optimistic UI update
+    setLiveChats(prev => prev.map(chat => {
+      if (chat.id === selectedChatId) {
+        const updatedMsgs = [...(chat.messages || []), newMsg];
+        return {
+          ...chat,
+          status: 'active',
+          messages: updatedMsgs,
+          updated_at: nowIso
+        };
       }
-    } catch (err) {
-      console.error(err);
+      return chat;
+    }));
+    setChatReply('');
+    setTimeout(scrollChatToBottom, 40);
+
+    try {
+      // 2. Direct dual-sync to kv_store_2a4be611
+      const activeChat = liveChats.find(c => c.id === selectedChatId);
+      const updatedMessages = [...(activeChat?.messages || []), newMsg];
+      const updatedSession = {
+        ...(activeChat || { id: selectedChatId }),
+        status: 'active',
+        messages: updatedMessages,
+        updated_at: nowIso
+      };
+
+      try {
+        await supabase.from('kv_store_2a4be611').upsert({
+          key: `livechat:${selectedChatId}`,
+          value: updatedSession
+        });
+      } catch (kvErr) {
+        console.warn('Direct kv chat reply warning:', kvErr);
+      }
+
+      // 3. Notify backend Edge Function
+      try {
+        const token = await getAuthToken();
+        await fetch(
+          `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/livechats/${selectedChatId}/reply`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`
+            },
+            body: JSON.stringify({ message: replyText })
+          }
+        );
+      } catch (beErr) {
+        console.warn('Backend reply endpoint notice:', beErr);
+      }
+
+      toast.success('Reply sent to visitor');
+      logActivity('created', 'Live Chat', `Replied to visitor in session: ${selectedChatId}`);
+    } catch (err: any) {
+      console.error('Chat reply error:', err);
       toast.error('Failed to send reply');
     } finally {
       setIsReplyingChat(false);
+      setTimeout(scrollChatToBottom, 100);
     }
   };
+
+  // Toggle chat status (resolve / reopen)
+  const handleToggleChatStatus = async (chatId: string, currentStatus: string) => {
+    const newStatus = currentStatus === 'closed' ? 'active' : 'closed';
+    const nowIso = new Date().toISOString();
+
+    setLiveChats(prev => prev.map(c => c.id === chatId ? { ...c, status: newStatus, updated_at: nowIso } : c));
+
+    try {
+      const activeChat = liveChats.find(c => c.id === chatId);
+      if (activeChat) {
+        try {
+          await supabase.from('kv_store_2a4be611').upsert({
+            key: `livechat:${chatId}`,
+            value: {
+              ...activeChat,
+              status: newStatus,
+              updated_at: nowIso
+            }
+          });
+        } catch (kvErr) {}
+      }
+
+      try {
+        const token = await getAuthToken();
+        await fetch(
+          `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/livechats/${chatId}/status`,
+          {
+            method: 'PATCH',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`
+            },
+            body: JSON.stringify({ status: newStatus })
+          }
+        );
+      } catch {}
+
+      toast.success(newStatus === 'closed' ? 'Conversation marked as resolved' : 'Conversation reopened');
+      logActivity('updated', 'Live Chat', `${newStatus === 'closed' ? 'Resolved' : 'Reopened'} chat session: ${chatId}`);
+    } catch (err) {
+      toast.error('Failed to update chat status');
+    }
+  };
+
+  // Delete live chat conversation
+  const handleDeleteChat = async (chatId: string) => {
+    if (!(await confirmDialog({ title: 'Delete Conversation', message: 'Permanently delete this chat conversation? This cannot be undone.' }))) return;
+
+    setLiveChats(prev => prev.filter(c => c.id !== chatId));
+    if (selectedChatId === chatId) {
+      setSelectedChatId(null);
+    }
+
+    try {
+      try {
+        await supabase.from('kv_store_2a4be611').delete().eq('key', `livechat:${chatId}`);
+      } catch (kvErr) {}
+
+      try {
+        const token = await getAuthToken();
+        await fetch(
+          `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/livechats/${chatId}`,
+          {
+            method: 'DELETE',
+            headers: { Authorization: `Bearer ${token}` }
+          }
+        );
+      } catch {}
+
+      toast.success('Conversation deleted');
+      logActivity('deleted', 'Live Chat', `Deleted chat session: ${chatId}`);
+    } catch (err) {
+      toast.error('Failed to delete chat');
+    }
+  };
+
+  // Filtered live chats
+  const getFilteredLiveChats = () => {
+    return liveChats.filter((chat) => {
+      if (chatFilter === 'needs-reply') {
+        if (chat.status === 'closed') return false;
+        const lastMsg = Array.isArray(chat.messages) && chat.messages.length > 0 ? chat.messages[chat.messages.length - 1] : null;
+        if (!lastMsg || lastMsg.sender !== 'user') return false;
+      } else if (chatFilter === 'active') {
+        if (chat.status === 'closed') return false;
+      } else if (chatFilter === 'closed') {
+        if (chat.status !== 'closed') return false;
+      }
+
+      if (chatSearch.trim()) {
+        const q = chatSearch.toLowerCase();
+        const emailMatch = (chat.email || '').toLowerCase().includes(q);
+        const idMatch = (chat.id || '').toLowerCase().includes(q);
+        const msgMatch = Array.isArray(chat.messages) && chat.messages.some((m: any) => (m.text || '').toLowerCase().includes(q));
+        if (!emailMatch && !idMatch && !msgMatch) return false;
+      }
+
+      return true;
+    });
+  };
+
+  const QUICK_CHAT_REPLIES = [
+    "👋 Hello! How can we assist you today?",
+    "💚 Thank you for reaching out to RESTI CBO.",
+    "📍 Our office is located in Kiryandongo District, Bweyale.",
+    "🤝 A team coordinator will follow up with you shortly.",
+    "📞 You can reach our office directly at +256 781 294 624.",
+    "🌐 You can explore our community programs at resticbo.org/programs"
+  ];
 
   const handleImageUpload = async (file: File) => {
     setUploadingImage(true);
@@ -3153,7 +3375,11 @@ export function EnhancedAdminDashboard() {
   const getBadgeCount = (badgeKey?: string) => {
     if (!badgeKey) return 0;
     if (badgeKey === 'liveChat') {
-      return liveChats.filter((c) => c.unread || c.status === 'active').length;
+      return liveChats.filter((c) => {
+        if (c.status === 'closed') return false;
+        const lastMsg = Array.isArray(c.messages) && c.messages.length > 0 ? c.messages[c.messages.length - 1] : null;
+        return lastMsg && lastMsg.sender === 'user';
+      }).length;
     }
     if (badgeKey === 'contacts') {
       return contacts.filter((c) => c.status === 'pending' || !c.read).length;
@@ -4981,110 +5207,308 @@ export function EnhancedAdminDashboard() {
             {/* Map Locations Tab */}
             
             {activeTab === 'live-chat' && (
-              <div className="flex h-[calc(100vh-160px)] -m-6 mt-0 border-t border-slate-200">
-                {/* Left Sidebar - Chat List */}
-                <div className="w-80 bg-white border-r border-slate-200 flex flex-col">
-                  <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-                    <h3 className="font-semibold text-slate-800 flex items-center gap-2">
-                      <MessageCircle size={18} className="text-emerald-600" /> Active Chats
-                    </h3>
-                    <span className="bg-emerald-100 text-emerald-700 py-0.5 px-2 rounded-full text-xs font-medium">
-                      {liveChats.length}
-                    </span>
+              <div className="flex h-[calc(100vh-140px)] -m-6 mt-0 border-t border-slate-200 bg-slate-50 rounded-b-2xl overflow-hidden">
+                {/* Left Sidebar - Chat Sessions List */}
+                <div className="w-88 md:w-96 bg-white border-r border-slate-200 flex flex-col shrink-0">
+                  {/* Header & Stats */}
+                  <div className="p-4 border-b border-slate-100 bg-slate-50/70 space-y-3">
+                    <div className="flex justify-between items-center">
+                      <h3 className="font-bold text-slate-800 flex items-center gap-2 text-base">
+                        <MessageCircle size={20} className="text-emerald-600" /> Live Chat
+                      </h3>
+                      <div className="flex items-center gap-1.5">
+                        <span className="bg-emerald-100 text-emerald-800 py-0.5 px-2.5 rounded-full text-xs font-semibold">
+                          {liveChats.length} Total
+                        </span>
+                        {liveChats.filter(c => c.status !== 'closed' && Array.isArray(c.messages) && c.messages.length > 0 && c.messages[c.messages.length - 1].sender === 'user').length > 0 && (
+                          <span className="bg-amber-100 text-amber-800 py-0.5 px-2 rounded-full text-xs font-semibold flex items-center gap-1 animate-pulse">
+                            <span className="w-1.5 h-1.5 bg-amber-500 rounded-full"></span>
+                            {liveChats.filter(c => c.status !== 'closed' && Array.isArray(c.messages) && c.messages.length > 0 && c.messages[c.messages.length - 1].sender === 'user').length} waiting
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Search Bar */}
+                    <div className="relative">
+                      <Search size={14} className="absolute left-3 top-3 text-slate-400" />
+                      <input
+                        type="text"
+                        value={chatSearch}
+                        onChange={(e) => setChatSearch(e.target.value)}
+                        placeholder="Search by email or message..."
+                        className="w-full pl-9 pr-7 py-2 bg-white border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition-all placeholder:text-slate-400"
+                      />
+                      {chatSearch && (
+                        <button
+                          type="button"
+                          onClick={() => setChatSearch('')}
+                          className="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-600"
+                        >
+                          <X size={14} />
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Filter Tabs */}
+                    <div className="flex gap-1 p-1 bg-slate-200/60 rounded-xl text-xs font-medium">
+                      <button
+                        type="button"
+                        onClick={() => setChatFilter('all')}
+                        className={`flex-1 py-1 px-2 rounded-lg transition-all ${chatFilter === 'all' ? 'bg-white text-slate-800 shadow-xs font-semibold' : 'text-slate-600 hover:text-slate-900'}`}
+                      >
+                        All
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setChatFilter('needs-reply')}
+                        className={`flex-1 py-1 px-2 rounded-lg transition-all flex items-center justify-center gap-1 ${chatFilter === 'needs-reply' ? 'bg-white text-emerald-700 shadow-xs font-semibold' : 'text-slate-600 hover:text-slate-900'}`}
+                      >
+                        Needs Reply
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setChatFilter('active')}
+                        className={`flex-1 py-1 px-2 rounded-lg transition-all ${chatFilter === 'active' ? 'bg-white text-slate-800 shadow-xs font-semibold' : 'text-slate-600 hover:text-slate-900'}`}
+                      >
+                        Active
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setChatFilter('closed')}
+                        className={`flex-1 py-1 px-2 rounded-lg transition-all ${chatFilter === 'closed' ? 'bg-white text-slate-800 shadow-xs font-semibold' : 'text-slate-600 hover:text-slate-900'}`}
+                      >
+                        Resolved
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex-1 overflow-y-auto">
-                    {liveChats.length === 0 ? (
+
+                  {/* Sessions List */}
+                  <div className="flex-1 overflow-y-auto divide-y divide-slate-100">
+                    {getFilteredLiveChats().length === 0 ? (
                       <div className="p-8 text-center text-slate-500">
-                        <MessageCircle size={32} className="mx-auto mb-3 text-slate-300" />
-                        <p className="text-sm">No active chats right now.</p>
+                        <MessageCircle size={36} className="mx-auto mb-3 text-slate-300" />
+                        <p className="text-sm font-medium text-slate-700">No conversations found</p>
+                        <p className="text-xs text-slate-400 mt-1">
+                          {chatSearch ? 'Try adjusting your search criteria' : 'Visitor chats will appear here in real time'}
+                        </p>
                       </div>
                     ) : (
-                      <div className="divide-y divide-slate-100">
-                        {liveChats.map((chat: any) => {
-                          const lastMessage = chat.messages[chat.messages.length - 1];
-                          const unreadCount = chat.messages.filter((m: any) => m.sender === 'user' && new Date(m.timestamp) > new Date(chat.updated_at || 0)).length; // Very basic unread indication
-                          
-                          return (
-                            <button
-                              key={chat.id}
-                              onClick={() => setSelectedChatId(chat.id)}
-                              className={`w-full text-left p-4 hover:bg-slate-50 transition-colors flex flex-col gap-1 relative ${selectedChatId === chat.id ? 'bg-emerald-50 border-l-4 border-l-emerald-500 pl-3' : 'border-l-4 border-transparent'}`}
-                            >
-                              <div className="flex justify-between items-start w-full">
-                                <span className="font-medium text-sm text-slate-800 truncate">
-                                  {chat.email || 'Anonymous User'}
-                                </span>
-                                <span className="text-[10px] text-slate-400 shrink-0">
-                                  {new Date(chat.updated_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                                </span>
+                      getFilteredLiveChats().map((chat: any) => {
+                        const msgs = Array.isArray(chat.messages) ? chat.messages : [];
+                        const lastMessage = msgs[msgs.length - 1];
+                        const isWaitingForReply = chat.status !== 'closed' && lastMessage && lastMessage.sender === 'user';
+                        const isClosed = chat.status === 'closed';
+
+                        return (
+                          <div
+                            key={chat.id}
+                            onClick={() => setSelectedChatId(chat.id)}
+                            className={`w-full text-left p-3.5 hover:bg-slate-50 transition-all flex flex-col gap-1.5 relative cursor-pointer group ${selectedChatId === chat.id ? 'bg-emerald-50/70 border-l-4 border-l-emerald-600 pl-3' : 'border-l-4 border-transparent'}`}
+                          >
+                            <div className="flex justify-between items-start w-full gap-2">
+                              <div className="flex items-center gap-2 min-w-0">
+                                <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 font-bold text-xs ${isClosed ? 'bg-slate-200 text-slate-600' : isWaitingForReply ? 'bg-amber-100 text-amber-700 ring-2 ring-amber-300' : 'bg-emerald-100 text-emerald-700'}`}>
+                                  {chat.email ? chat.email.charAt(0).toUpperCase() : <User size={14} />}
+                                </div>
+                                <div className="min-w-0">
+                                  <span className="font-semibold text-xs sm:text-sm text-slate-900 truncate block">
+                                    {chat.email || 'Visitor'}
+                                  </span>
+                                  <span className="text-[10px] text-slate-400 font-mono block">
+                                    ID: {chat.id.replace('chat-', '').substring(0, 8)}
+                                  </span>
+                                </div>
                               </div>
-                              <p className="text-xs text-slate-500 truncate w-full">
-                                {lastMessage ? (lastMessage.sender === 'bot' ? 'You: ' + lastMessage.text : lastMessage.text) : 'No messages'}
-                              </p>
-                              <div className="text-[10px] text-slate-400 mt-1">ID: {chat.id.substring(0, 15)}...</div>
-                            </button>
-                          );
-                        })}
-                      </div>
+                              <div className="text-right shrink-0 flex flex-col items-end gap-1">
+                                <span className="text-[10px] text-slate-400 font-medium">
+                                  {chat.updated_at ? new Date(chat.updated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
+                                </span>
+                                {isClosed ? (
+                                  <span className="text-[9px] bg-slate-100 text-slate-600 font-medium px-1.5 py-0.5 rounded">
+                                    Resolved
+                                  </span>
+                                ) : isWaitingForReply ? (
+                                  <span className="text-[9px] bg-amber-500 text-white font-bold px-1.5 py-0.5 rounded-full flex items-center gap-1 shadow-2xs">
+                                    <span className="w-1.5 h-1.5 bg-white rounded-full animate-ping"></span>
+                                    Reply
+                                  </span>
+                                ) : (
+                                  <span className="text-[9px] bg-emerald-100 text-emerald-700 font-medium px-1.5 py-0.5 rounded">
+                                    Replied
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            <p className="text-xs text-slate-600 line-clamp-2 w-full pl-10 pr-2">
+                              {lastMessage ? (
+                                <>
+                                  <span className="font-medium text-slate-500">
+                                    {lastMessage.sender === 'user' ? 'Visitor: ' : 'Staff: '}
+                                  </span>
+                                  {lastMessage.text}
+                                </>
+                              ) : (
+                                <span className="italic text-slate-400">Empty conversation</span>
+                              )}
+                            </p>
+
+                            <div className="flex justify-between items-center pl-10 pt-1 text-[10px] text-slate-400">
+                              <span>{msgs.length} messages</span>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteChat(chat.id);
+                                }}
+                                className="opacity-0 group-hover:opacity-100 hover:text-red-600 p-1 rounded transition-all"
+                                title="Delete conversation"
+                              >
+                                <Trash2 size={12} />
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })
                     )}
                   </div>
                 </div>
 
                 {/* Right Area - Chat Window */}
-                <div className="flex-1 bg-slate-50 flex flex-col">
+                <div className="flex-1 bg-slate-50 flex flex-col min-w-0">
                   {selectedChatId ? (() => {
                     const activeChat = liveChats.find((c: any) => c.id === selectedChatId);
-                    if (!activeChat) return null;
+                    if (!activeChat) {
+                      return (
+                        <div className="flex-1 flex flex-col items-center justify-center text-slate-400 h-full">
+                          <p>Conversation not found</p>
+                        </div>
+                      );
+                    }
+                    const msgs = Array.isArray(activeChat.messages) ? activeChat.messages : [];
+                    const isClosed = activeChat.status === 'closed';
+
                     return (
                       <>
-                        <div className="h-16 border-b border-slate-200 bg-white px-6 flex items-center justify-between shadow-sm z-10">
-                          <div>
-                            <h2 className="font-semibold text-slate-800 flex items-center gap-2">
-                              {activeChat.email || 'Anonymous User'}
-                            </h2>
-                            <p className="text-xs text-slate-500">Session ID: {activeChat.id}</p>
-                          </div>
-                          <button onClick={() => {
-                             if(confirm('Are you sure you want to end this chat? (Note: End chat is just a local reset for now)')) setSelectedChatId(null);
-                          }} className="text-xs text-rose-500 hover:text-rose-600 bg-rose-50 hover:bg-rose-100 px-3 py-1.5 rounded-lg transition-colors">
-                            Close Chat
-                          </button>
-                        </div>
-                        
-                        <div className="flex-1 overflow-y-auto p-6 space-y-4">
-                          <div className="text-center text-xs text-slate-400 mb-6 bg-white py-1 px-3 rounded-full inline-block border border-slate-100 mx-auto w-max shadow-sm">
-                            Chat started at {new Date(activeChat.created_at).toLocaleString()}
-                          </div>
-                          {activeChat.messages.map((msg: any, idx: number) => (
-                            <div key={idx} className={`flex ${msg.sender === 'bot' ? 'justify-end' : 'justify-start'}`}>
-                              <div className={`max-w-[70%] rounded-2xl px-4 py-2.5 text-sm shadow-sm ${
-                                msg.sender === 'bot' 
-                                  ? 'bg-emerald-600 text-white rounded-tr-sm' 
-                                  : 'bg-white border border-slate-200 text-slate-700 rounded-tl-sm'
-                              }`}>
-                                {msg.text}
-                                <div className={`text-[10px] mt-1 text-right ${msg.sender === 'bot' ? 'text-emerald-200' : 'text-slate-400'}`}>
-                                  {new Date(msg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                                </div>
-                              </div>
+                        {/* Conversation Header */}
+                        <div className="h-18 border-b border-slate-200 bg-white px-6 flex items-center justify-between shadow-xs z-10 shrink-0">
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm shrink-0 ${isClosed ? 'bg-slate-200 text-slate-700' : 'bg-emerald-100 text-emerald-700'}`}>
+                              {activeChat.email ? activeChat.email.charAt(0).toUpperCase() : <User size={18} />}
                             </div>
-                          ))}
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2">
+                                <h2 className="font-bold text-slate-900 text-base truncate">
+                                  {activeChat.email || 'Anonymous Visitor'}
+                                </h2>
+                                <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${isClosed ? 'bg-slate-100 text-slate-600' : 'bg-emerald-100 text-emerald-700'}`}>
+                                  {isClosed ? 'Resolved' : 'Active'}
+                                </span>
+                              </div>
+                              <p className="text-xs text-slate-400 font-mono truncate">
+                                Session ID: {activeChat.id}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2 shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => handleToggleChatStatus(activeChat.id, activeChat.status)}
+                              className={`text-xs font-semibold px-3 py-1.5 rounded-xl border transition-all flex items-center gap-1.5 ${
+                                isClosed
+                                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
+                                  : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                              }`}
+                            >
+                              <Check size={14} />
+                              {isClosed ? 'Reopen Chat' : 'Mark as Resolved'}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteChat(activeChat.id)}
+                              className="text-xs font-semibold text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-200 px-3 py-1.5 rounded-xl transition-all flex items-center gap-1.5"
+                              title="Delete this conversation"
+                            >
+                              <Trash2 size={14} />
+                              Delete
+                            </button>
+                          </div>
                         </div>
-                        
-                        <div className="p-4 bg-white border-t border-slate-200">
+
+                        {/* Messages Area */}
+                        <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                          <div className="flex justify-center mb-4">
+                            <div className="text-center text-xs text-slate-400 bg-white py-1 px-4 rounded-full border border-slate-200 shadow-2xs font-medium">
+                              Conversation started on {new Date(activeChat.created_at || Date.now()).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })} at {new Date(activeChat.created_at || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </div>
+                          </div>
+
+                          {msgs.length === 0 ? (
+                            <div className="text-center py-12 text-slate-400 text-sm">
+                              No messages yet in this conversation.
+                            </div>
+                          ) : (
+                            msgs.map((msg: any, idx: number) => {
+                              const isStaff = msg.sender === 'bot' || msg.sender === 'agent';
+                              return (
+                                <div key={idx} className={`flex flex-col ${isStaff ? 'items-end' : 'items-start'}`}>
+                                  <div className="flex items-center gap-1.5 mb-1 px-1">
+                                    <span className="text-[11px] font-semibold text-slate-500">
+                                      {isStaff ? 'Staff Support (You)' : (activeChat.email || 'Visitor')}
+                                    </span>
+                                    <span className="text-[10px] text-slate-400">
+                                      {msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
+                                    </span>
+                                  </div>
+                                  <div className={`max-w-[75%] rounded-2xl px-4 py-2.5 text-sm shadow-xs whitespace-pre-wrap leading-relaxed ${
+                                    isStaff 
+                                      ? 'bg-emerald-600 text-white rounded-tr-xs' 
+                                      : 'bg-white border border-slate-200 text-slate-800 rounded-tl-xs'
+                                  }`}>
+                                    {msg.text}
+                                  </div>
+                                </div>
+                              );
+                            })
+                          )}
+                          <div ref={chatMessagesEndRef} />
+                        </div>
+
+                        {/* Quick Responses & Input Form */}
+                        <div className="bg-white border-t border-slate-200 p-4 space-y-3 shrink-0">
+                          {/* Quick Canned Replies */}
+                          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+                            <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider shrink-0 mr-1">
+                              Quick:
+                            </span>
+                            {QUICK_CHAT_REPLIES.map((replyText, rIdx) => (
+                              <button
+                                key={rIdx}
+                                type="button"
+                                onClick={() => setChatReply(replyText)}
+                                className="text-xs bg-slate-100 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300 text-slate-700 border border-slate-200 rounded-full px-3 py-1 transition-all shrink-0 whitespace-nowrap cursor-pointer"
+                              >
+                                {replyText}
+                              </button>
+                            ))}
+                          </div>
+
+                          {/* Reply Form */}
                           <form onSubmit={handleChatReply} className="flex gap-2">
                             <input
                               type="text"
                               value={chatReply}
                               onChange={(e) => setChatReply(e.target.value)}
-                              placeholder="Type your reply to the user..."
-                              className="flex-1 bg-slate-100 border-transparent focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 rounded-xl py-2.5 px-4 text-sm transition-all outline-none"
+                              placeholder={isClosed ? "This chat is marked as resolved. Send a message to reopen..." : "Type your reply to the visitor... (Press Enter to send)"}
+                              className="flex-1 bg-slate-50 border border-slate-200 focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 rounded-xl py-2.5 px-4 text-sm transition-all outline-none"
                               disabled={isReplyingChat}
                             />
                             <button
                               type="submit"
                               disabled={!chatReply.trim() || isReplyingChat}
-                              className="bg-emerald-600 text-white px-5 rounded-xl font-medium flex items-center gap-2 hover:bg-emerald-700 disabled:opacity-50 transition-colors"
+                              className="bg-emerald-600 text-white px-5 rounded-xl font-semibold flex items-center gap-2 hover:bg-emerald-700 disabled:opacity-50 transition-colors shadow-xs cursor-pointer"
                             >
                               <Send size={16} />
                               Send
@@ -5094,12 +5518,14 @@ export function EnhancedAdminDashboard() {
                       </>
                     );
                   })() : (
-                    <div className="flex-1 flex flex-col items-center justify-center text-slate-400 h-full">
-                      <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-sm mb-4">
-                        <MessageCircle size={40} className="text-slate-300" />
+                    <div className="flex-1 flex flex-col items-center justify-center text-slate-400 h-full p-8 text-center">
+                      <div className="w-20 h-20 bg-white rounded-3xl flex items-center justify-center shadow-xs border border-slate-200 mb-4">
+                        <MessageCircle size={36} className="text-emerald-600" />
                       </div>
-                      <p className="text-lg font-medium text-slate-500">Select a chat to view</p>
-                      <p className="text-sm">Choose an active conversation from the sidebar to reply.</p>
+                      <h3 className="text-lg font-bold text-slate-800 mb-1">Select a Conversation</h3>
+                      <p className="text-sm text-slate-500 max-w-sm">
+                        Choose a visitor conversation from the left sidebar to read their messages and reply in real time.
+                      </p>
                     </div>
                   )}
                 </div>

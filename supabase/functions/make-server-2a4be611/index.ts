@@ -6002,8 +6002,9 @@ app.post('/make-server-2a4be611/admin/livechats/:id/reply', requireEditor, async
     if (!session) return c.json({ error: 'Session not found' }, 404)
     
     session.updated_at = new Date().toISOString()
+    if (!Array.isArray(session.messages)) session.messages = []
     session.messages.push({
-      sender: 'bot',
+      sender: 'agent',
       text: message,
       timestamp: new Date().toISOString()
     })
@@ -6011,6 +6012,38 @@ app.post('/make-server-2a4be611/admin/livechats/:id/reply', requireEditor, async
     await kv.set(key, session)
     
     return c.json({ success: true, session })
+  } catch (err: any) {
+    return c.json({ error: err.message }, 500)
+  }
+})
+
+// Admin updates chat status (e.g. close, resolve, or reopen)
+app.patch('/make-server-2a4be611/admin/livechats/:id/status', requireEditor, async (c) => {
+  try {
+    const id = c.req.param('id')
+    const { status } = await c.req.json()
+    const key = `livechat:${id}`
+    
+    const session = await kv.get(key)
+    if (!session) return c.json({ error: 'Session not found' }, 404)
+    
+    session.status = status || 'active'
+    session.updated_at = new Date().toISOString()
+    await kv.set(key, session)
+    
+    return c.json({ success: true, session })
+  } catch (err: any) {
+    return c.json({ error: err.message }, 500)
+  }
+})
+
+// Admin deletes a chat session
+app.delete('/make-server-2a4be611/admin/livechats/:id', requireEditor, async (c) => {
+  try {
+    const id = c.req.param('id')
+    const key = `livechat:${id}`
+    await kv.del(key)
+    return c.json({ success: true, deleted: id })
   } catch (err: any) {
     return c.json({ error: err.message }, 500)
   }

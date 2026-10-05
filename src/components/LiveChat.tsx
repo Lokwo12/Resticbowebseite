@@ -4,6 +4,7 @@ import {
   MessageCircle, X, Send, Bot, RotateCcw, ArrowRight, Minus, Sparkles
 } from 'lucide-react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
+import { supabase } from '../utils/supabase/client';
 import { toast } from 'sonner';
 import { 
   generateBotReply, 
@@ -93,27 +94,45 @@ export function LiveChat() {
     const pollSession = async () => {
       if (!sessionId || !isOpen) return;
       try {
-        const res = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/livechat/session/${sessionId}`, {
-          headers: { Authorization: `Bearer ${publicAnonKey}` }
-        });
-        if (res.ok) {
-          const data = await res.json();
-          if (data.session && Array.isArray(data.session.messages)) {
-            const backendMsgs: ChatMessage[] = data.session.messages.map((m: any) => ({
-              sender: m.sender,
-              text: m.text,
-              timestamp: m.timestamp
-            }));
-
-            setMessages(prev => {
-              const prevTextSet = new Set(prev.map(p => p.text));
-              const newItems = backendMsgs.filter(b => !prevTextSet.has(b.text));
-              if (newItems.length > 0) {
-                return [...prev, ...newItems];
-              }
-              return prev;
-            });
+        let sessionData: any = null;
+        try {
+          const res = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/livechat/session/${sessionId}`, {
+            headers: { Authorization: `Bearer ${publicAnonKey}` }
+          });
+          if (res.ok) {
+            const data = await res.json();
+            sessionData = data.session;
           }
+        } catch (apiErr) {}
+
+        if (!sessionData) {
+          try {
+            const { data: kvRow } = await supabase
+              .from('kv_store_2a4be611')
+              .select('value')
+              .eq('key', `livechat:${sessionId}`)
+              .maybeSingle();
+            if (kvRow?.value) {
+              sessionData = kvRow.value;
+            }
+          } catch (kvErr) {}
+        }
+
+        if (sessionData && Array.isArray(sessionData.messages)) {
+          const backendMsgs: ChatMessage[] = sessionData.messages.map((m: any) => ({
+            sender: m.sender,
+            text: m.text,
+            timestamp: m.timestamp
+          }));
+
+          setMessages(prev => {
+            const prevKeySet = new Set(prev.map(p => `${p.sender}|${p.timestamp || ''}|${p.text}`));
+            const newItems = backendMsgs.filter(b => !prevKeySet.has(`${b.sender}|${b.timestamp || ''}|${b.text}`));
+            if (newItems.length > 0) {
+              return [...prev, ...newItems];
+            }
+            return prev;
+          });
         }
       } catch (err) {
         // Silent error handling for poll
@@ -234,25 +253,59 @@ export function LiveChat() {
 
     // Sync to backend session
     try {
-      const res = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/livechat/message`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${publicAnonKey}`
-        },
-        body: JSON.stringify({
-          sessionId: sessionId,
-          email: email || '',
-          message: userText
-        })
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.sessionId && !sessionId) {
-          setSessionId(data.sessionId);
-          localStorage.setItem('resti_chat_session', data.sessionId);
+      let createdSessionId = sessionId;
+      try {
+        const res = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/livechat/message`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${publicAnonKey}`
+          },
+          body: JSON.stringify({
+            sessionId: sessionId,
+            email: email || '',
+            message: userText
+          })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.sessionId && !sessionId) {
+            createdSessionId = data.sessionId;
+            setSessionId(data.sessionId);
+            localStorage.setItem('resti_chat_session', data.sessionId);
+          }
         }
+      } catch (apiErr) {}
+
+      // Dual-sync to kv_store_2a4be611 for high resilience
+      const activeSid = createdSessionId || sessionId || `chat-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+      if (!sessionId) {
+        setSessionId(activeSid);
+        localStorage.setItem('resti_chat_session', activeSid);
       }
+      try {
+        const { data: existingKv } = await supabase
+          .from('kv_store_2a4be611')
+          .select('value')
+          .eq('key', `livechat:${activeSid}`)
+          .maybeSingle();
+
+        const currentMsgs = existingKv?.value?.messages || [];
+        const nowIso = new Date().toISOString();
+        const updatedMsgs = [...currentMsgs, { sender: 'user', text: userText, timestamp: nowIso }];
+
+        await supabase.from('kv_store_2a4be611').upsert({
+          key: `livechat:${activeSid}`,
+          value: {
+            id: activeSid,
+            email: email || existingKv?.value?.email || '',
+            status: 'active',
+            messages: updatedMsgs,
+            created_at: existingKv?.value?.created_at || nowIso,
+            updated_at: nowIso
+          }
+        });
+      } catch (kvErr) {}
     } catch (e) {
       // Seamless offline / local fallback
     }
