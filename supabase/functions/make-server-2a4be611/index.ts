@@ -80,11 +80,24 @@ async function getAuthenticatedAdmin(c: Context): Promise<{ error?: string; stat
     .eq('id', user.id)
     .single()
 
-  const role = normalizeAdminRole(admin?.role) || normalizeAdminRole(user.user_metadata?.role) || 'viewer'
-  if (adminError || !admin || admin.status !== 'active') {
-    if (admin?.status === 'inactive' || admin?.status === 'suspended') {
-      return { error: 'Forbidden – account is inactive or suspended', status: 403 }
-    }
+  let resolvedRole = normalizeAdminRole(admin?.role)
+  let resolvedStatus = admin?.status
+
+  if (adminError || !admin) {
+    try {
+      const kvUser = await kv.get(`admin_user:${user.id}`)
+      if (kvUser) {
+        resolvedRole = normalizeAdminRole(kvUser.role)
+        resolvedStatus = kvUser.status
+      }
+    } catch {}
+  }
+
+  const role = resolvedRole || normalizeAdminRole(user.user_metadata?.role) || 'viewer'
+  const status = resolvedStatus || 'active'
+
+  if (status === 'inactive' || status === 'suspended') {
+    return { error: 'Forbidden – account is inactive or suspended', status: 403 }
   }
 
   return {
@@ -167,8 +180,23 @@ async function checkIsAdmin(c: Context): Promise<boolean> {
       .eq('id', user.id)
       .single()
       
-    if (adminError || !admin || admin.status !== 'active') return false
-    const role = normalizeAdminRole(admin?.role)
+    let role = normalizeAdminRole(admin?.role)
+    let status = admin?.status
+
+    if (adminError || !admin) {
+      try {
+        const kvUser = await kv.get(`admin_user:${user.id}`)
+        if (kvUser) {
+          role = normalizeAdminRole(kvUser.role)
+          status = kvUser.status
+        }
+      } catch {}
+    }
+
+    role = role || normalizeAdminRole(user.user_metadata?.role)
+    status = status || 'active'
+
+    if (status !== 'active') return false
     return ['admin', 'super-admin'].includes(role || '')
   } catch {
     return false
@@ -2494,19 +2522,45 @@ app.get('/make-server-2a4be611/admin/users/:userId/status', async (c) => {
   try {
     const userId = c.req.param('userId')
     
-    // Check postgres admin_users table
+    // 1. Check postgres admin_users table
     const { data: user, error } = await supabase
       .from('admin_users')
       .select('status, role')
       .eq('id', userId)
       .single()
 
-    if (error || !user) {
-      // If not in postgres, default to viewer to prevent locked out
-      return c.json({ success: true, status: 'pending', role: 'viewer' })
+    if (!error && user) {
+      return c.json({ success: true, status: user.status, role: normalizeAdminRole(user.role) })
     }
+
+    // 2. Check KV store as fallback
+    try {
+      const kvUser = await kv.get(`admin_user:${userId}`)
+      if (kvUser && kvUser.status) {
+        // Sync to Postgres so next time it finds it directly
+        await supabase.from('admin_users').upsert({
+          id: userId,
+          email: kvUser.email || '',
+          name: kvUser.name || '',
+          role: kvUser.role || 'viewer',
+          status: kvUser.status || 'active',
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'id' }).catch(() => {})
+
+        return c.json({ success: true, status: kvUser.status, role: normalizeAdminRole(kvUser.role) })
+      }
+    } catch {}
+
+    // 3. Check Supabase Auth user metadata
+    try {
+      const { data: authData } = await supabase.auth.admin.getUserById(userId)
+      if (authData?.user) {
+        const authRole = authData.user.user_metadata?.role || 'viewer'
+        return c.json({ success: true, status: 'active', role: normalizeAdminRole(authRole) })
+      }
+    } catch {}
     
-    return c.json({ success: true, status: user.status, role: normalizeAdminRole(user.role) })
+    return c.json({ success: true, status: 'pending', role: 'viewer' })
   } catch (error) {
     console.error('Error fetching user status:', error)
     return c.json({ error: 'Failed to fetch status', details: String(error) }, 500)
@@ -5368,12 +5422,37 @@ app.put('/make-server-2a4be611/financial-transparency', requireAdmin, async (c) 
 // ── Get all users (admin) ────────────────────────────────────────────────
 app.get('/make-server-2a4be611/admin/users', requireSuperAdmin, async (c) => {
   try {
+    // 1. Sync any users in PostgreSQL admin_users into KV store so nothing is lost
+    try {
+      const { data: pgUsers, error: pgErr } = await supabase.from('admin_users').select('*')
+      if (!pgErr && pgUsers && pgUsers.length > 0) {
+        for (const pu of pgUsers) {
+          const kvKey = `admin_user:${pu.id}`
+          const existing = await kv.get(kvKey)
+          if (!existing) {
+            await kv.set(kvKey, {
+              id: pu.id,
+              email: pu.email,
+              name: pu.name || (pu.email ? pu.email.split('@')[0] : 'Admin User'),
+              role: pu.role || 'viewer',
+              status: pu.status || 'active',
+              createdAt: pu.created_at || new Date().toISOString(),
+              lastLogin: null,
+              loginCount: 0
+            })
+          }
+        }
+      }
+    } catch (syncErr) {
+      console.warn('Sync admin_users to KV warning:', syncErr)
+    }
+
     const limit = parseInt(c.req.query('limit') || '100');
     const offset = parseInt(c.req.query('offset') || '0');
     
     if (c.req.query('limit') !== undefined) {
       const { data, count } = await kv.getPaginatedByPrefix('admin_user:', limit, offset);
-      data.sort((a, b) => new Date(b.value?.timestamp || b.value?.created_at || 0).getTime() - new Date(a.value?.timestamp || a.value?.created_at || 0).getTime());
+      data.sort((a, b) => new Date(b.value?.timestamp || b.value?.created_at || b.value?.createdAt || 0).getTime() - new Date(a.value?.timestamp || a.value?.created_at || a.value?.createdAt || 0).getTime());
       return c.json({ users: data, count, limit, offset });
     }
     
@@ -5395,46 +5474,103 @@ app.post('/make-server-2a4be611/admin/users', requireSuperAdmin, async (c) => {
       return c.json({ error: 'Email, password, and name are required' }, 400)
     }
 
-    // Create user in Supabase Auth
+    const cleanEmail = String(email).trim().toLowerCase()
+    const cleanName = String(name).trim()
+    const userRole = role || 'viewer'
+    const userStatus = status || 'active'
+
+    if (password.length < 6) {
+      return c.json({ error: 'Password must be at least 6 characters' }, 400)
+    }
+
+    let authUser: any = null
+
+    // 1. Create or update user in Supabase Auth
     const { data, error } = await supabase.auth.admin.createUser({
-      email,
+      email: cleanEmail,
       password,
-      user_metadata: { name, role: role || 'viewer' },
+      user_metadata: { name: cleanName, role: userRole },
       email_confirm: true // Auto-confirm email
     })
 
     if (error) {
-      console.error('Supabase auth error:', error)
-      return c.json({ error: error.message }, 400)
+      // If user already exists in Supabase Auth, update their password and metadata instead of failing!
+      if (error.message.includes('already been registered') || error.message.includes('already exists')) {
+        console.log(`User ${cleanEmail} already exists in auth, updating metadata & password...`)
+        const { data: listData } = await supabase.auth.admin.listUsers()
+        const existingAuth = listData?.users?.find((u: any) => u.email?.toLowerCase() === cleanEmail)
+        
+        if (existingAuth) {
+          const { data: updateData, error: updateError } = await supabase.auth.admin.updateUserById(existingAuth.id, {
+            password,
+            user_metadata: { ...existingAuth.user_metadata, name: cleanName, role: userRole },
+            email_confirm: true
+          })
+          if (updateError) {
+            console.error('Supabase auth update existing error:', updateError)
+            return c.json({ error: updateError.message }, 400)
+          }
+          authUser = updateData.user
+        } else {
+          return c.json({ error: error.message }, 400)
+        }
+      } else {
+        console.error('Supabase auth error:', error)
+        return c.json({ error: error.message }, 400)
+      }
+    } else {
+      authUser = data.user
     }
 
-    // Store additional user info in KV
-    const userId = `admin_user:${data.user.id}`
-    await kv.set(userId, {
-      id: data.user.id,
-      email,
-      name,
-      role: role || 'viewer',
-      status: status || 'active',
-      createdAt: new Date().toISOString(),
-      lastLogin: null,
-      loginCount: 0
+    const userId = authUser.id
+
+    // 2. Store in PostgreSQL admin_users table for auth / status verification
+    try {
+      await supabase.from('admin_users').upsert({
+        id: userId,
+        email: cleanEmail,
+        name: cleanName,
+        role: userRole,
+        status: userStatus,
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'id' })
+    } catch (pgErr) {
+      console.warn('Failed to upsert admin_users table:', pgErr)
+    }
+
+    // 3. Store in KV store for Admin Dashboard
+    const kvKey = `admin_user:${userId}`
+    const existingKv = await kv.get(kvKey)
+    await kv.set(kvKey, {
+      id: userId,
+      email: cleanEmail,
+      name: cleanName,
+      role: userRole,
+      status: userStatus,
+      createdAt: existingKv?.createdAt || new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      lastLogin: existingKv?.lastLogin || null,
+      loginCount: existingKv?.loginCount || 0
     })
 
-    // Send welcome email
-    await sendEmail(
-      email,
-      'Welcome to RESTI CBO Admin',
-      `
-        <h2>Welcome ${name}!</h2>
-        <p>Your admin account has been created with the role: <strong>${role || 'viewer'}</strong></p>
-        <p>You can login at: <a href="${Deno.env.get('SUPABASE_URL')}/admin">Admin Dashboard</a></p>
-        <p>Email: ${email}</p>
-        <p>Please keep your password secure.</p>
-      `
-    )
+    // 4. Send welcome email (non-blocking)
+    try {
+      await sendEmail(
+        cleanEmail,
+        'Welcome to RESTI CBO Admin',
+        `
+          <h2>Welcome ${cleanName}!</h2>
+          <p>Your admin account has been created with the role: <strong>${userRole}</strong></p>
+          <p>You can login at: <a href="https://resticbo.org/admin">Admin Dashboard</a></p>
+          <p>Email: ${cleanEmail}</p>
+          <p>Please keep your password secure.</p>
+        `
+      )
+    } catch (emailErr) {
+      console.warn('Welcome email error:', emailErr)
+    }
 
-    return c.json({ success: true, user: data.user })
+    return c.json({ success: true, user: authUser })
   } catch (error) {
     console.error('Error creating user:', error)
     return c.json({ error: 'Failed to create user', details: String(error) }, 500)
@@ -5446,41 +5582,61 @@ app.put('/make-server-2a4be611/admin/users/:id', requireSuperAdmin, async (c) =>
   try {
     const id = c.req.param('id')
     const body = await c.req.json()
-    const { name, role, status, email } = body
+    const { name, role, status, email, password } = body
 
     const userId = `admin_user:${id}`
     const existingUser = await kv.get(userId)
 
-    if (!existingUser) {
-      return c.json({ error: 'User not found' }, 404)
-    }
+    const cleanEmail = email ? String(email).trim().toLowerCase() : existingUser?.email
+    const cleanName = name ? String(name).trim() : existingUser?.name
+    const userRole = role || existingUser?.role || 'viewer'
+    const userStatus = status || existingUser?.status || 'active'
 
     // Update user metadata in Supabase Auth
     const updateData: any = {
       user_metadata: {
-        name: name || existingUser.name,
-        role: role || existingUser.role
+        name: cleanName,
+        role: userRole
       }
     }
 
-    if (email && email !== existingUser.email) {
-      updateData.email = email
+    if (cleanEmail && cleanEmail !== existingUser?.email) {
+      updateData.email = cleanEmail
+    }
+
+    if (password && String(password).trim().length >= 6) {
+      updateData.password = String(password).trim()
     }
 
     const { error } = await supabase.auth.admin.updateUserById(id, updateData)
 
-    if (error) {
+    if (error && !error.message.includes('not found')) {
       console.error('Supabase auth update error:', error)
       return c.json({ error: error.message }, 400)
+    }
+
+    // Update PostgreSQL admin_users table
+    try {
+      await supabase.from('admin_users').upsert({
+        id,
+        email: cleanEmail,
+        name: cleanName,
+        role: userRole,
+        status: userStatus,
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'id' })
+    } catch (pgErr) {
+      console.warn('Failed to update admin_users table:', pgErr)
     }
 
     // Update KV store
     await kv.set(userId, {
       ...existingUser,
-      name: name || existingUser.name,
-      role: role || existingUser.role,
-      status: status || existingUser.status,
-      email: email || existingUser.email,
+      id,
+      name: cleanName,
+      role: userRole,
+      status: userStatus,
+      email: cleanEmail,
       updatedAt: new Date().toISOString()
     })
 
@@ -5504,6 +5660,13 @@ app.delete('/make-server-2a4be611/admin/users/:id', requireSuperAdmin, async (c)
       return c.json({ error: error.message }, 400)
     }
 
+    // Delete from PostgreSQL admin_users table
+    try {
+      await supabase.from('admin_users').delete().eq('id', id)
+    } catch (pgErr) {
+      console.warn('Failed to delete from admin_users table:', pgErr)
+    }
+
     // Delete from KV store
     await kv.del(`admin_user:${id}`)
 
@@ -5518,7 +5681,8 @@ app.delete('/make-server-2a4be611/admin/users/:id', requireSuperAdmin, async (c)
 app.post('/make-server-2a4be611/admin/users/bulk-status', requireSuperAdmin, async (c) => {
   try {
     const body = await c.req.json()
-    const { ids, status } = body
+    const ids = body.ids || body.userIds
+    const status = body.status
 
     if (!ids || !Array.isArray(ids) || ids.length === 0) {
       return c.json({ error: 'Valid ids array is required' }, 400)
@@ -5534,6 +5698,13 @@ app.post('/make-server-2a4be611/admin/users/bulk-status', requireSuperAdmin, asy
           updatedAt: new Date().toISOString()
         })
       }
+      // Update in PostgreSQL admin_users
+      try {
+        await supabase.from('admin_users').update({
+          status,
+          updated_at: new Date().toISOString()
+        }).eq('id', id)
+      } catch {}
     }
 
     return c.json({ success: true })
@@ -5547,7 +5718,8 @@ app.post('/make-server-2a4be611/admin/users/bulk-status', requireSuperAdmin, asy
 app.post('/make-server-2a4be611/admin/users/bulk-role', requireSuperAdmin, async (c) => {
   try {
     const body = await c.req.json()
-    const { ids, role } = body
+    const ids = body.ids || body.userIds
+    const role = body.role
 
     if (!ids || !Array.isArray(ids) || ids.length === 0) {
       return c.json({ error: 'Valid ids array is required' }, 400)
@@ -5560,7 +5732,7 @@ app.post('/make-server-2a4be611/admin/users/bulk-role', requireSuperAdmin, async
         // Update in Auth
         await supabase.auth.admin.updateUserById(id, {
           user_metadata: { ...user, role }
-        })
+        }).catch(err => console.warn('Auth role update error:', err))
 
         // Update in KV
         await kv.set(userId, {
@@ -5569,6 +5741,13 @@ app.post('/make-server-2a4be611/admin/users/bulk-role', requireSuperAdmin, async
           updatedAt: new Date().toISOString()
         })
       }
+      // Update in PostgreSQL admin_users
+      try {
+        await supabase.from('admin_users').update({
+          role,
+          updated_at: new Date().toISOString()
+        }).eq('id', id)
+      } catch {}
     }
 
     return c.json({ success: true })
@@ -5582,7 +5761,7 @@ app.post('/make-server-2a4be611/admin/users/bulk-role', requireSuperAdmin, async
 app.post('/make-server-2a4be611/admin/users/bulk-delete', requireSuperAdmin, async (c) => {
   try {
     const body = await c.req.json()
-    const { ids } = body
+    const ids = body.ids || body.userIds
 
     if (!ids || !Array.isArray(ids) || ids.length === 0) {
       return c.json({ error: 'Valid ids array is required' }, 400)
@@ -5593,6 +5772,11 @@ app.post('/make-server-2a4be611/admin/users/bulk-delete', requireSuperAdmin, asy
       await supabase.auth.admin.deleteUser(id).catch(err => {
         console.log(`User ${id} may not exist in auth:`, err.message)
       })
+
+      // Delete from PostgreSQL admin_users
+      try {
+        await supabase.from('admin_users').delete().eq('id', id)
+      } catch {}
 
       // Delete from KV
       await kv.del(`admin_user:${id}`)
@@ -5630,15 +5814,19 @@ app.post('/make-server-2a4be611/admin/users/:id/reset-password', requireSuperAdm
     const user = await kv.get(userId)
 
     if (user && user.email) {
-      await sendEmail(
-        user.email,
-        'Password Reset - RESTI CBO',
-        `
-          <h2>Password Reset</h2>
-          <p>Your password has been reset by an administrator.</p>
-          <p>You can now login with your new password.</p>
-        `
-      )
+      try {
+        await sendEmail(
+          user.email,
+          'Password Reset - RESTI CBO',
+          `
+            <h2>Password Reset</h2>
+            <p>Your password has been reset by an administrator.</p>
+            <p>You can now login with your new password.</p>
+          `
+        )
+      } catch (emailErr) {
+        console.warn('Password reset email warning:', emailErr)
+      }
     }
 
     return c.json({ success: true })

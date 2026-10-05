@@ -644,6 +644,21 @@ export function EnhancedAdminDashboard() {
     }
   };
 
+  const getAuthToken = async (): Promise<string> => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.access_token) {
+        if (session.access_token !== accessToken) {
+          setAccessToken(session.access_token);
+        }
+        return session.access_token;
+      }
+    } catch (err) {
+      console.warn('Error retrieving active session token:', err);
+    }
+    return accessToken || publicAnonKey;
+  };
+
   const checkAuth = async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -655,7 +670,7 @@ export function EnhancedAdminDashboard() {
           // Fetch user status from backend to verify approval
           const statusRes = await fetch(
             `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/users/${user.id}/status`,
-            { headers: { Authorization: `Bearer ${publicAnonKey}` } }
+            { headers: { Authorization: `Bearer ${session.access_token}` } }
           );
           const statusData = await statusRes.json();
           
@@ -1062,9 +1077,10 @@ export function EnhancedAdminDashboard() {
         const data = await response.json();
         setSubscribers(data.subscribers || []);
       } else if (activeTab === 'users' && userRole === 'super-admin') {
+        const token = await getAuthToken();
         const response = await fetch(
           `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/users`,
-          { headers: { Authorization: `Bearer ${accessToken || publicAnonKey}` } }
+          { headers: { Authorization: `Bearer ${token}` } }
         );
         const data = await response.json();
         setAdminUsers(data.users || []);
@@ -2165,6 +2181,7 @@ export function EnhancedAdminDashboard() {
     }
 
     try {
+      const token = await getAuthToken();
       const url = editingItem
         ? `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/users/${editingItem.id || editingItem.value?.id}`
         : `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/users`;
@@ -2173,14 +2190,14 @@ export function EnhancedAdminDashboard() {
         method: editingItem ? 'PUT' : 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${accessToken || publicAnonKey}`,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(userFormData),
       });
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to save user');
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error.error || error.message || 'Failed to save user');
       }
 
       toast.success(editingItem ? 'User updated successfully' : 'User created successfully');
@@ -2203,15 +2220,19 @@ export function EnhancedAdminDashboard() {
     if (!(await confirmDialog({ title: 'Confirm Action', message: 'Delete this user? This action cannot be undone.' }))) return;
 
     try {
+      const token = await getAuthToken();
       const response = await fetch(
         `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/users/${id}`,
         {
           method: 'DELETE',
-          headers: { Authorization: `Bearer ${accessToken || publicAnonKey}` },
+          headers: { Authorization: `Bearer ${token}` },
         }
       );
 
-      if (!response.ok) throw new Error('Failed to delete user');
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error.error || error.message || 'Failed to delete user');
+      }
 
       toast.success('User deleted successfully');
       logActivity('deleted', 'Users', `Deleted user ID: ${id}`);
@@ -2230,19 +2251,23 @@ export function EnhancedAdminDashboard() {
     if (!(await confirmDialog({ title: 'Confirm Action', message: `Delete ${ids.length} users? This action cannot be undone.` }))) return;
 
     try {
+      const token = await getAuthToken();
       const response = await fetch(
         `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/users/bulk-delete`,
         {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${accessToken || publicAnonKey}`,
+            Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({ ids }),
+          body: JSON.stringify({ ids, userIds: ids }),
         }
       );
 
-      if (!response.ok) throw new Error('Failed to delete users');
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error.error || error.message || 'Failed to delete users');
+      }
 
       toast.success(`${ids.length} users deleted`);
       setSelectedUsers([]);
@@ -2260,19 +2285,23 @@ export function EnhancedAdminDashboard() {
     }
 
     try {
+      const token = await getAuthToken();
       const response = await fetch(
         `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/users/bulk-role`,
         {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${accessToken || publicAnonKey}`,
+            Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({ ids, role }),
+          body: JSON.stringify({ ids, userIds: ids, role }),
         }
       );
 
-      if (!response.ok) throw new Error('Failed to update roles');
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error.error || error.message || 'Failed to update roles');
+      }
 
       toast.success(`Role updated for ${ids.length} users`);
       setSelectedUsers([]);
@@ -2290,19 +2319,23 @@ export function EnhancedAdminDashboard() {
     }
 
     try {
+      const token = await getAuthToken();
       const response = await fetch(
         `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/users/bulk-status`,
         {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${accessToken || publicAnonKey}`,
+            Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({ ids, status }),
+          body: JSON.stringify({ ids, userIds: ids, status }),
         }
       );
 
-      if (!response.ok) throw new Error('Failed to update status');
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error.error || error.message || 'Failed to update status');
+      }
 
       toast.success(`Status updated for ${ids.length} users`);
       setSelectedUsers([]);
@@ -2318,25 +2351,29 @@ export function EnhancedAdminDashboard() {
       toast.error('Only super admins can reset passwords');
       return;
     }
-    if (!newPassword) {
-      toast.error('Please enter a new password');
+    if (!newPassword || newPassword.length < 6) {
+      toast.error('Password must be at least 6 characters');
       return;
     }
 
     try {
+      const token = await getAuthToken();
       const response = await fetch(
         `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/users/${userId}/reset-password`,
         {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${accessToken || publicAnonKey}`,
+            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({ password: newPassword }),
         }
       );
 
-      if (!response.ok) throw new Error('Failed to reset password');
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error.error || error.message || 'Failed to reset password');
+      }
 
       toast.success('Password reset successfully');
       setShowPasswordResetDialog(false);
