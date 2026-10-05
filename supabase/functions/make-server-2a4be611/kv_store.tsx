@@ -49,6 +49,17 @@ const mapToSql = (table: string, id: string, val: any) => {
       updated_at: val.updatedAt || new Date().toISOString()
     };
   }
+  if (table === 'admin_users') {
+    return {
+      id,
+      email: val.email,
+      name: val.name || '',
+      role: val.role || 'viewer',
+      status: val.status || 'active',
+      created_at: val.createdAt || val.created_at || new Date().toISOString(),
+      updated_at: val.updatedAt || val.updated_at || new Date().toISOString()
+    };
+  }
   if (table === 'programs') {
     return {
       id,
@@ -133,6 +144,14 @@ export const set = async (key: string, value: any): Promise<void> => {
       value: { id: info.id, ...value }
     });
   }
+
+  if (info.table === 'admin_users') {
+    const fullKey = key.startsWith('admin_user:') ? key : `admin_user:${info.id}`;
+    await supabase.from('kv_store_2a4be611').upsert({
+      key: fullKey,
+      value: { id: info.id, ...value }
+    }).catch(err => console.warn('Sync admin_user to kv_store_2a4be611 failed:', err));
+  }
 };
 
 export const get = async (key: string): Promise<any> => {
@@ -175,6 +194,11 @@ export const del = async (key: string): Promise<void> => {
   if (info.table === 'programs') {
     const fullKey = key.startsWith('program:') ? key : `program:${info.id}`;
     await supabase.from('kv_store_2a4be611').delete().eq("key", fullKey);
+  }
+
+  if (info.table === 'admin_users') {
+    const fullKey = key.startsWith('admin_user:') ? key : `admin_user:${info.id}`;
+    await supabase.from('kv_store_2a4be611').delete().eq("key", fullKey).catch(() => {});
   }
 };
 

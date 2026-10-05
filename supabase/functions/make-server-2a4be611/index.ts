@@ -5539,19 +5539,23 @@ app.post('/make-server-2a4be611/admin/users', requireSuperAdmin, async (c) => {
     }
 
     // 3. Store in KV store for Admin Dashboard
-    const kvKey = `admin_user:${userId}`
-    const existingKv = await kv.get(kvKey)
-    await kv.set(kvKey, {
-      id: userId,
-      email: cleanEmail,
-      name: cleanName,
-      role: userRole,
-      status: userStatus,
-      createdAt: existingKv?.createdAt || new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      lastLogin: existingKv?.lastLogin || null,
-      loginCount: existingKv?.loginCount || 0
-    })
+    try {
+      const kvKey = `admin_user:${userId}`
+      const existingKv = await kv.get(kvKey).catch(() => null)
+      await kv.set(kvKey, {
+        id: userId,
+        email: cleanEmail,
+        name: cleanName,
+        role: userRole,
+        status: userStatus,
+        createdAt: existingKv?.createdAt || new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        lastLogin: existingKv?.lastLogin || null,
+        loginCount: existingKv?.loginCount || 0
+      })
+    } catch (kvErr) {
+      console.warn('KV user set warning:', kvErr)
+    }
 
     // 4. Send welcome email (non-blocking)
     try {
