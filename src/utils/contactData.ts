@@ -87,7 +87,7 @@ export const DEFAULT_CONTACT_SETTINGS: ContactSettings = {
     twitter: 'https://x.com/resticbo',
     instagram: 'https://instagram.com/resticbo',
     linkedin: '',
-    youtube: '',
+    youtube: 'https://www.youtube.com/@RESTI-CBO',
   },
   locations: [
     {
@@ -211,7 +211,7 @@ export function normalizeContactSettings(raw: any): ContactSettings {
       twitter: social.twitter || DEFAULT_CONTACT_SETTINGS.socialLinks.twitter || '',
       instagram: social.instagram || DEFAULT_CONTACT_SETTINGS.socialLinks.instagram || '',
       linkedin: social.linkedin || '',
-      youtube: social.youtube || '',
+      youtube: social.youtube || DEFAULT_CONTACT_SETTINGS.socialLinks.youtube || 'https://www.youtube.com/@RESTI-CBO',
     },
     locations: locations.length > 0 ? locations : DEFAULT_CONTACT_SETTINGS.locations,
     contactPersons: contactPersons.length > 0 ? contactPersons : DEFAULT_CONTACT_SETTINGS.contactPersons,

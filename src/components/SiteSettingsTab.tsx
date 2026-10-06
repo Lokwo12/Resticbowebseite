@@ -2268,7 +2268,7 @@ export function SiteSettingsTab({ settings: initialSettings, onUpdate, accessTok
                           },
                         })
                       }
-                      placeholder="https://youtube.com/@resticbo"
+                      placeholder="https://www.youtube.com/@RESTI-CBO"
                       className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 bg-white text-sm"
                     />
                   </div>

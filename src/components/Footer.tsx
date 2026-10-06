@@ -1,4 +1,4 @@
-import { Heart, Facebook, Twitter, Instagram, Mail, ArrowUp, Shield } from 'lucide-react';
+import { Heart, Facebook, Twitter, Instagram, Youtube, Mail, ArrowUp, Shield } from 'lucide-react';
 import { Link } from 'react-router-dom';
 const logo = '/logo.png';
 import { useState, useEffect } from 'react';
@@ -25,6 +25,7 @@ interface ContactSettings {
     facebook: string;
     twitter: string;
     instagram: string;
+    youtube?: string;
   };
 }
 
@@ -47,7 +48,8 @@ export function Footer() {
     socialLinks: {
       facebook: 'https://www.facebook.com/resticbo',
       twitter: 'https://x.com/resticbo',
-      instagram: 'https://www.instagram.com/resticbo'
+      instagram: 'https://www.instagram.com/resticbo',
+      youtube: 'https://www.youtube.com/@RESTI-CBO'
     }
   });
 
@@ -85,7 +87,16 @@ export function Footer() {
       const data = await response.json();
       if (data.settings?.footer) setFooterSettings(data.settings.footer);
       if (data.settings?.general) setGeneralSettings(data.settings.general);
-      if (data.settings?.contact) setContactSettings(data.settings.contact);
+      if (data.settings?.contact) {
+        const c = data.settings.contact;
+        setContactSettings({
+          ...c,
+          socialLinks: {
+            ...c.socialLinks,
+            youtube: c.socialLinks?.youtube || 'https://www.youtube.com/@RESTI-CBO'
+          }
+        });
+      }
     } catch (error) {
       console.error('Error fetching footer settings:', error);
       // Default settings already set as initial state — no action needed
@@ -244,6 +255,17 @@ export function Footer() {
               >
                 <Instagram size={20} />
               </a>
+              {contactSettings.socialLinks.youtube && (
+                <a
+                  href={contactSettings.socialLinks.youtube}
+                  className="w-10 h-10 bg-white/10 rounded-lg backdrop-blur-sm flex items-center justify-center hover:bg-red-600 hover:scale-110 hover:-translate-y-1 transition-all duration-300"
+                  aria-label="YouTube"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <Youtube size={20} />
+                </a>
+              )}
               <a
                 href={`mailto:${contactSettings.email}`}
                 className="w-10 h-10 bg-white/10 rounded-lg backdrop-blur-sm flex items-center justify-center hover:bg-emerald-600 transition-colors"
