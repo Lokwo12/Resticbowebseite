@@ -1,4 +1,4 @@
-import { Heart, Users, Target, Award, Sparkles } from 'lucide-react';
+import { Heart, Users, Target, Award, Sparkles, ArrowRight, BookOpen, MapPin, CheckCircle2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
@@ -27,6 +27,9 @@ interface AboutSettings {
   story: string[];
   trustBadges?: TrustBadge[];
   wayWeWork?: WayWeWorkSettings;
+  storyBadge?: string;
+  storyTitle?: string;
+  storyImage?: string;
 }
 
 const iconMap: Record<string, typeof Heart> = {
@@ -59,7 +62,10 @@ const DEFAULT_ABOUT_SETTINGS: AboutSettings = {
     'Today, we work closely with local government, international partners, and most importantly, the communities we serve, to identify needs, develop solutions, and implement programs that create lasting positive change. Our grassroots approach ensures that every initiative is community-driven and culturally appropriate.'
   ],
   trustBadges: DEFAULT_TRUST_BADGES,
-  wayWeWork: DEFAULT_WAY_WE_WORK
+  wayWeWork: DEFAULT_WAY_WE_WORK,
+  storyBadge: 'Our Story & Journey',
+  storyTitle: 'From a Grassroots Initiative to a District-Wide Movement',
+  storyImage: 'https://images.unsplash.com/photo-1529070538774-1843cb3265df?w=1200&q=80',
 };
 
 const TRUST_BADGE_COLOR_THEMES = [
@@ -106,7 +112,10 @@ export function About() {
             : DEFAULT_TRUST_BADGES,
           wayWeWork: (aboutData.wayWeWork && Array.isArray(aboutData.wayWeWork.items))
             ? aboutData.wayWeWork
-            : DEFAULT_WAY_WE_WORK
+            : DEFAULT_WAY_WE_WORK,
+          storyBadge: aboutData.storyBadge || DEFAULT_ABOUT_SETTINGS.storyBadge,
+          storyTitle: aboutData.storyTitle || DEFAULT_ABOUT_SETTINGS.storyTitle,
+          storyImage: aboutData.storyImage || DEFAULT_ABOUT_SETTINGS.storyImage,
         });
       }
     } catch {
@@ -247,27 +256,101 @@ export function About() {
           </div>
         </motion.div>
 
-        {/* Story */}
+        {/* Story Section */}
         {displaySettings.story && displaySettings.story.length > 0 && (
           <motion.div 
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, amount: 0.2 }}
+            viewport={{ once: true, amount: 0.15 }}
             transition={{ duration: 0.8, ease: "easeOut" }}
-            className="relative overflow-hidden bg-gradient-to-br from-slate-50 to-emerald-50/20 p-8 lg:p-12 rounded-3xl border border-slate-100 shadow-sm hover:shadow-premium-soft transition-all duration-300"
+            className="relative bg-white rounded-3xl p-8 lg:p-12 border border-slate-100 shadow-xl overflow-hidden mb-16"
           >
-            <div className="absolute top-0 left-0 w-1.5 h-full bg-emerald-600"></div>
-            <div className="max-w-3xl mx-auto">
-              <h3 className="text-3xl font-bold font-heading tracking-tight text-gray-900 mb-6 flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
-                Our Story
-              </h3>
-              <div className="space-y-6">
-                {displaySettings.story.map((paragraph, index) => (
-                  <p key={index} className="text-gray-600 text-lg md:text-xl leading-relaxed font-normal">
-                    {paragraph}
-                  </p>
-                ))}
+            {/* Subtle atmospheric ambient glows */}
+            <div className="absolute -top-24 -right-24 w-80 h-80 bg-emerald-100/50 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute -bottom-24 -left-24 w-80 h-80 bg-teal-100/40 rounded-full blur-3xl pointer-events-none" />
+
+            <div className="relative grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-center">
+              {/* Left Column: Premium Photography Frame with Floating Pill */}
+              <div className="lg:col-span-5 relative group">
+                <div className="absolute inset-0 bg-gradient-to-tr from-emerald-600 to-teal-500 rounded-3xl translate-x-3 translate-y-3 -z-10 group-hover:translate-x-4 group-hover:translate-y-4 transition-transform duration-300 opacity-90" />
+                
+                <div className="relative rounded-3xl overflow-hidden shadow-2xl h-[360px] sm:h-[440px]">
+                  <img 
+                    src={displaySettings.storyImage || "https://images.unsplash.com/photo-1529070538774-1843cb3265df?w=1200&q=80"} 
+                    alt={displaySettings.storyTitle || "Our Story"}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" 
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
+                  
+                  {/* Floating location & focus badge */}
+                  <div className="absolute bottom-4 left-4 right-4 p-3.5 rounded-2xl bg-white/95 backdrop-blur-md border border-white/50 shadow-lg">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+                        <MapPin size={20} />
+                      </div>
+                      <div>
+                        <div className="text-xs font-bold text-gray-900 leading-tight">Kiryandongo District, Uganda</div>
+                        <div className="text-[11px] text-gray-600 font-medium">Refugee & Host Community Initiatives</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Column: Narrative, Badges & Action Links */}
+              <div className="lg:col-span-7 space-y-6">
+                <div>
+                  <span className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700 uppercase tracking-widest px-3.5 py-1.5 bg-emerald-100/80 rounded-full mb-3.5">
+                    <BookOpen size={13} className="text-emerald-600" />
+                    {displaySettings.storyBadge || "Our Story & Journey"}
+                  </span>
+                  <h3 className="text-2xl sm:text-3xl lg:text-4xl font-bold font-heading tracking-tight text-gray-900 leading-tight">
+                    {displaySettings.storyTitle || "From a Grassroots Initiative to a District-Wide Movement"}
+                  </h3>
+                </div>
+
+                {/* Narrative text paragraphs */}
+                <div className="space-y-4 text-gray-600 text-base sm:text-[17px] leading-relaxed font-normal">
+                  {displaySettings.story.map((paragraph, index) => (
+                    <p key={index}>
+                      {paragraph}
+                    </p>
+                  ))}
+                </div>
+
+                {/* Key Pillars Badge Strip */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+                  <div className="flex items-center gap-2 p-3 rounded-xl bg-emerald-50/80 border border-emerald-100">
+                    <CheckCircle2 size={16} className="text-emerald-600 shrink-0" />
+                    <span className="text-xs font-bold text-gray-800">Community-Led</span>
+                  </div>
+                  <div className="flex items-center gap-2 p-3 rounded-xl bg-teal-50/80 border border-teal-100">
+                    <CheckCircle2 size={16} className="text-teal-600 shrink-0" />
+                    <span className="text-xs font-bold text-gray-800">Sustainable Solutions</span>
+                  </div>
+                  <div className="flex items-center gap-2 p-3 rounded-xl bg-sky-50/80 border border-sky-100">
+                    <CheckCircle2 size={16} className="text-sky-600 shrink-0" />
+                    <span className="text-xs font-bold text-gray-800">Transparent Action</span>
+                  </div>
+                </div>
+
+                {/* Navigation CTA Links */}
+                <div className="pt-2 flex flex-wrap items-center gap-4">
+                  <Link 
+                    to="/about" 
+                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm shadow-md hover:shadow-lg transition-all group"
+                  >
+                    <span>Read Full Story & Timeline</span>
+                    <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
+                  </Link>
+                  <Link 
+                    to="/team" 
+                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-gray-700 hover:text-emerald-700 hover:bg-emerald-50 font-semibold text-sm transition-all"
+                  >
+                    <span>Meet Our Leadership Team</span>
+                    <span>→</span>
+                  </Link>
+                </div>
               </div>
             </div>
           </motion.div>
