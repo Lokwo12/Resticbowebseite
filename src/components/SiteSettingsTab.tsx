@@ -8,6 +8,7 @@ import { Save, RefreshCw, Plus, Trash2, Upload, BarChart, Code, PieChart, Trendi
 import { Card } from './ui/card';
 import { Button } from './ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
+import { AVAILABLE_CORE_VALUE_ICONS, resolveCoreValueIcon } from '../utils/coreValuesIcons';
 
 export const SETTING_CATEGORIES = [
   { id: 'all', label: 'All Modules' },
@@ -181,6 +182,7 @@ export const DEFAULT_TRUST_BADGES = [
 ];
 
 export interface WayWeWorkItem {
+  icon?: string;
   title: string;
   desc: string;
 }
@@ -194,24 +196,33 @@ export interface WayWeWorkSettings {
 
 export const DEFAULT_WAY_WE_WORK: WayWeWorkSettings = {
   badge: 'Guiding Principles',
-  title: 'The Way We Work',
-  intro: 'Our values guide how we carry out our daily work and how we interact with each other, with communities, and with partners.',
+  title: 'Our Core Values',
+  intro: 'Our values guide how we work every day and how we engage with communities, partners, colleagues, and other stakeholders. They shape our decisions, strengthen accountability, and ensure that our work remains people-centered, ethical, and focused on lasting impact.',
   items: [
     {
+      icon: 'Users',
       title: 'We value people.',
-      desc: 'All people have inherent dignity and potential. We place communities at the centre of our work, treating everyone with respect regardless of ethnicity, gender, religion, age, or displacement status. We seek to enable people to live normal and peaceful lives, develop their potential, and build hope for the future.'
+      desc: 'Every person has dignity, potential, and the ability to create positive change.'
     },
     {
+      icon: 'Target',
       title: 'We are committed.',
-      desc: 'We aim for lasting change, not short-term assistance. We stay with communities beyond the initial crisis, supporting them as they move from relief to recovery and from potential to sustainable transformation.'
+      desc: 'We create lasting change by strengthening resilience, self-reliance, and sustainable development.'
     },
     {
+      icon: 'ShieldCheck',
       title: 'We are good stewards.',
-      desc: 'We use the resources entrusted to us in the most responsible, efficient, and transparent way. We are accountable to the communities we serve and to the partners and donors who support our work.'
+      desc: 'Responsible, efficient, and transparent management of entrusted resources.'
     },
     {
+      icon: 'Scale',
       title: 'We serve with integrity.',
-      desc: 'We uphold high standards of personal and organizational integrity. We are open and honest in how we deal and communicate with stakeholders, and we treat people with respect in all our interactions.'
+      desc: 'Honesty, transparency, and accountability guide our actions.'
+    },
+    {
+      icon: 'HeartHandshake',
+      title: 'We Are Accountable to Communities',
+      desc: 'Community voices guide our work, decisions, and actions.'
     }
   ]
 };
@@ -1410,20 +1421,20 @@ export function SiteSettingsTab({ settings: initialSettings, onUpdate, accessTok
                 </div>
               </div>
 
-              {/* The Way We Work (Guiding Principles) */}
+              {/* Core Values & Guiding Principles */}
               <div className="pt-6 border-t border-slate-200">
                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-4">
                   <div>
                     <div className="flex items-center gap-2">
                       <label className="block text-base font-bold text-gray-900">
-                        The Way We Work (Guiding Principles)
+                        Core Values & Guiding Principles
                       </label>
                       <span className="text-[11px] font-semibold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full">
-                        Featured on About & Homepage
+                        Featured in Grid on About & Homepage
                       </span>
                     </div>
                     <p className="text-xs text-gray-500 mt-0.5">
-                      Manage the guiding principles, section badge, title, intro text, and each organizational value statement.
+                      Configure your organization's core values. Each value displays in a modern card grid with a professional icon at top and words below.
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
@@ -1431,18 +1442,24 @@ export function SiteSettingsTab({ settings: initialSettings, onUpdate, accessTok
                       type="button"
                       onClick={() => {
                         const currentWWW = settings.about?.wayWeWork || DEFAULT_WAY_WE_WORK;
-                        const newItems = [...(currentWWW.items || []), { title: '', desc: '' }];
+                        const newItems = [...(currentWWW.items || []), { icon: 'Users', title: '', desc: '' }];
+                        const syncValues = newItems.map((it: any) => ({
+                          icon: it.icon || 'Heart',
+                          title: it.title || '',
+                          description: it.desc || ''
+                        }));
                         setSettings({
                           ...settings,
                           about: {
                             ...settings.about,
-                            wayWeWork: { ...currentWWW, items: newItems }
+                            wayWeWork: { ...currentWWW, items: newItems },
+                            values: syncValues
                           }
                         });
                       }}
                       className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 bg-emerald-100/70 hover:bg-emerald-200/80 px-3.5 py-2 rounded-xl transition-all cursor-pointer"
                     >
-                      <Plus size={15} /> Add Principle
+                      <Plus size={15} /> Add Core Value
                     </button>
                   </div>
                 </div>
@@ -1483,7 +1500,7 @@ export function SiteSettingsTab({ settings: initialSettings, onUpdate, accessTok
                           }
                         });
                       }}
-                      placeholder="The Way We Work"
+                      placeholder="Our Core Values"
                       className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none font-semibold text-gray-900"
                     />
                   </div>
@@ -1502,65 +1519,132 @@ export function SiteSettingsTab({ settings: initialSettings, onUpdate, accessTok
                         });
                       }}
                       rows={2}
-                      placeholder="Our values guide how we carry out our daily work..."
+                      placeholder="Our values guide how we work every day..."
                       className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                     />
                   </div>
                 </div>
 
-                {/* Principle cards */}
-                <div className="space-y-3">
+                {/* Core Value cards */}
+                <div className="space-y-4">
                   {((settings.about?.wayWeWork?.items !== undefined) ? settings.about.wayWeWork.items : DEFAULT_WAY_WE_WORK.items).map((item: any, index: number) => {
                     const currentWWW = settings.about?.wayWeWork || DEFAULT_WAY_WE_WORK;
                     const itemsList = currentWWW.items || [];
+                    const IconComponent = resolveCoreValueIcon(item.icon, item.title, index);
                     return (
-                      <div key={index} className="flex gap-3 items-start p-4 bg-white rounded-2xl border border-gray-200 shadow-sm hover:border-emerald-200 transition-all">
-                        <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-xs shrink-0 mt-1">
-                          {index + 1}
-                        </div>
-                        <div className="flex-1 space-y-2">
-                          <div>
-                            <label className="block text-[11px] font-bold text-gray-700 mb-1">Principle Title</label>
-                            <input
-                              type="text"
-                              value={item.title}
-                              onChange={(e) => {
-                                const updated = [...itemsList];
-                                updated[index] = { ...updated[index], title: e.target.value };
-                                setSettings({
-                                  ...settings,
-                                  about: {
-                                    ...settings.about,
-                                    wayWeWork: { ...currentWWW, items: updated }
-                                  }
-                                });
-                              }}
-                              placeholder="e.g. We value people."
-                              className="w-full px-3 py-2 text-sm font-semibold text-gray-900 border border-slate-200 rounded-xl bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"
-                            />
+                      <div key={index} className="flex flex-col sm:flex-row gap-3 items-start p-4 bg-white rounded-2xl border border-gray-200 shadow-sm hover:border-emerald-300 transition-all">
+                        {/* Number & Icon Preview Badge */}
+                        <div className="flex sm:flex-col items-center gap-2 shrink-0">
+                          <div className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-xs">
+                            {index + 1}
                           </div>
+                          <div className="w-12 h-12 rounded-xl bg-emerald-50 border border-emerald-200/80 text-emerald-700 flex items-center justify-center shadow-xs" title={`Icon: ${item.icon || 'Default'}`}>
+                            <IconComponent size={22} strokeWidth={2.2} />
+                          </div>
+                        </div>
+
+                        {/* Fields */}
+                        <div className="flex-1 w-full space-y-3">
+                          <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
+                            {/* Icon selector */}
+                            <div className="sm:col-span-5">
+                              <label className="block text-[11px] font-bold text-gray-700 mb-1">
+                                Professional Icon
+                              </label>
+                              <select
+                                value={item.icon || ''}
+                                onChange={(e) => {
+                                  const updated = [...itemsList];
+                                  updated[index] = { ...updated[index], icon: e.target.value };
+                                  const syncValues = updated.map((it: any) => ({
+                                    icon: it.icon || 'Heart',
+                                    title: it.title || '',
+                                    description: it.desc || ''
+                                  }));
+                                  setSettings({
+                                    ...settings,
+                                    about: {
+                                      ...settings.about,
+                                      wayWeWork: { ...currentWWW, items: updated },
+                                      values: syncValues
+                                    }
+                                  });
+                                }}
+                                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl bg-white focus:ring-2 focus:ring-emerald-500 font-medium text-gray-800"
+                              >
+                                <option value="">Auto-Detect ({AVAILABLE_CORE_VALUE_ICONS[index % AVAILABLE_CORE_VALUE_ICONS.length]?.id})</option>
+                                {AVAILABLE_CORE_VALUE_ICONS.map((opt) => (
+                                  <option key={opt.id} value={opt.id}>
+                                    {opt.id} — {opt.label}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+
+                            {/* Value Title */}
+                            <div className="sm:col-span-7">
+                              <label className="block text-[11px] font-bold text-gray-700 mb-1">
+                                Value Title
+                              </label>
+                              <input
+                                type="text"
+                                value={item.title}
+                                onChange={(e) => {
+                                  const updated = [...itemsList];
+                                  updated[index] = { ...updated[index], title: e.target.value };
+                                  const syncValues = updated.map((it: any) => ({
+                                    icon: it.icon || 'Heart',
+                                    title: it.title || '',
+                                    description: it.desc || ''
+                                  }));
+                                  setSettings({
+                                    ...settings,
+                                    about: {
+                                      ...settings.about,
+                                      wayWeWork: { ...currentWWW, items: updated },
+                                      values: syncValues
+                                    }
+                                  });
+                                }}
+                                placeholder="e.g. We value people."
+                                className="w-full px-3 py-2 text-sm font-semibold text-gray-900 border border-slate-200 rounded-xl bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                              />
+                            </div>
+                          </div>
+
+                          {/* Description */}
                           <div>
-                            <label className="block text-[11px] font-medium text-gray-600 mb-1">Description / Commitment</label>
+                            <label className="block text-[11px] font-medium text-gray-600 mb-1">
+                              Words Below (Description / Commitment)
+                            </label>
                             <textarea
                               value={item.desc}
                               onChange={(e) => {
                                 const updated = [...itemsList];
                                 updated[index] = { ...updated[index], desc: e.target.value };
+                                const syncValues = updated.map((it: any) => ({
+                                  icon: it.icon || 'Heart',
+                                  title: it.title || '',
+                                  description: it.desc || ''
+                                }));
                                 setSettings({
                                   ...settings,
                                   about: {
                                     ...settings.about,
-                                    wayWeWork: { ...currentWWW, items: updated }
+                                    wayWeWork: { ...currentWWW, items: updated },
+                                    values: syncValues
                                   }
                                 });
                               }}
-                              rows={3}
-                              placeholder="Description of this guiding principle..."
+                              rows={2}
+                              placeholder="Brief statement describing this core value..."
                               className="w-full px-3 py-2 text-sm text-gray-700 border border-slate-200 rounded-xl bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none leading-relaxed"
                             />
                           </div>
                         </div>
-                        <div className="flex flex-col gap-1 shrink-0 mt-6">
+
+                        {/* Actions */}
+                        <div className="flex sm:flex-col gap-1 shrink-0 self-end sm:self-center mt-2 sm:mt-0">
                           <button
                             type="button"
                             disabled={index === 0}
@@ -1570,11 +1654,17 @@ export function SiteSettingsTab({ settings: initialSettings, onUpdate, accessTok
                               const temp = updated[index - 1];
                               updated[index - 1] = updated[index];
                               updated[index] = temp;
+                              const syncValues = updated.map((it: any) => ({
+                                icon: it.icon || 'Heart',
+                                title: it.title || '',
+                                description: it.desc || ''
+                              }));
                               setSettings({
                                 ...settings,
                                 about: {
                                   ...settings.about,
-                                  wayWeWork: { ...currentWWW, items: updated }
+                                  wayWeWork: { ...currentWWW, items: updated },
+                                  values: syncValues
                                 }
                               });
                             }}
@@ -1592,11 +1682,17 @@ export function SiteSettingsTab({ settings: initialSettings, onUpdate, accessTok
                               const temp = updated[index + 1];
                               updated[index + 1] = updated[index];
                               updated[index] = temp;
+                              const syncValues = updated.map((it: any) => ({
+                                icon: it.icon || 'Heart',
+                                title: it.title || '',
+                                description: it.desc || ''
+                              }));
                               setSettings({
                                 ...settings,
                                 about: {
                                   ...settings.about,
-                                  wayWeWork: { ...currentWWW, items: updated }
+                                  wayWeWork: { ...currentWWW, items: updated },
+                                  values: syncValues
                                 }
                               });
                             }}
@@ -1609,16 +1705,22 @@ export function SiteSettingsTab({ settings: initialSettings, onUpdate, accessTok
                             type="button"
                             onClick={() => {
                               const updated = itemsList.filter((_: any, i: number) => i !== index);
+                              const syncValues = updated.map((it: any) => ({
+                                icon: it.icon || 'Heart',
+                                title: it.title || '',
+                                description: it.desc || ''
+                              }));
                               setSettings({
                                 ...settings,
                                 about: {
                                   ...settings.about,
-                                  wayWeWork: { ...currentWWW, items: updated }
+                                  wayWeWork: { ...currentWWW, items: updated },
+                                  values: syncValues
                                 }
                               });
                             }}
                             className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                            title="Delete Principle"
+                            title="Delete Core Value"
                           >
                             <Trash2 size={16} />
                           </button>
@@ -1629,95 +1731,29 @@ export function SiteSettingsTab({ settings: initialSettings, onUpdate, accessTok
 
                   {(!settings.about?.wayWeWork?.items || settings.about.wayWeWork.items.length === 0) && (
                     <div className="p-6 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200">
-                      <p className="text-sm text-gray-500 mb-2">No custom principles defined. Default principles are currently showing on the website.</p>
+                      <p className="text-sm text-gray-500 mb-2">No custom core values defined. Default values are currently showing on the website.</p>
                       <button
                         type="button"
-                        onClick={() => setSettings({
-                          ...settings,
-                          about: {
-                            ...settings.about,
-                            wayWeWork: DEFAULT_WAY_WE_WORK
-                          }
-                        })}
+                        onClick={() => {
+                          const syncValues = DEFAULT_WAY_WE_WORK.items.map((it: any) => ({
+                            icon: it.icon || 'Heart',
+                            title: it.title,
+                            description: it.desc
+                          }));
+                          setSettings({
+                            ...settings,
+                            about: {
+                              ...settings.about,
+                              wayWeWork: DEFAULT_WAY_WE_WORK,
+                              values: syncValues
+                            }
+                          });
+                        }}
                         className="text-xs font-semibold text-emerald-600 hover:underline"
                       >
-                        Load Default Principles
+                        Load Default Core Values
                       </button>
                     </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="pt-4 border-t">
-                <div className="flex justify-between items-center mb-4">
-                  <label className="block text-sm font-medium text-gray-900">Legacy Core Values</label>
-                  <button
-                    onClick={() => {
-                      const newValues = [...(settings.about?.values || []), { icon: 'Heart', title: '', description: '' }];
-                      setSettings({ ...settings, about: { ...settings.about, values: newValues } });
-                    }}
-                    className="flex items-center gap-1 text-sm text-emerald-600 hover:text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-full transition-colors"
-                  >
-                    <Plus size={16} /> Add Value
-                  </button>
-                </div>
-                <div className="space-y-4">
-                  {(settings.about?.values || []).map((val: any, index: number) => (
-                    <div key={index} className="flex gap-4 items-start p-4 bg-gray-50 rounded-lg border border-gray-100">
-                      <div className="flex-1 space-y-3">
-                        <div className="flex gap-4">
-                          <select
-                            value={val.icon}
-                            onChange={(e) => {
-                              const newValues = [...(settings.about?.values || [])];
-                              newValues[index] = { ...newValues[index], icon: e.target.value };
-                              setSettings({ ...settings, about: { ...settings.about, values: newValues } });
-                            }}
-                            className="w-1/3 px-3 py-1.5 text-sm border rounded-md focus:ring-2 focus:ring-emerald-500"
-                          >
-                            <option value="Heart">Heart</option>
-                            <option value="Users">Users</option>
-                            <option value="Target">Target</option>
-                            <option value="Award">Award</option>
-                          </select>
-                          <input
-                            type="text"
-                            value={val.title}
-                            onChange={(e) => {
-                              const newValues = [...(settings.about?.values || [])];
-                              newValues[index] = { ...newValues[index], title: e.target.value };
-                              setSettings({ ...settings, about: { ...settings.about, values: newValues } });
-                            }}
-                            placeholder="Value Title (e.g. Compassion)"
-                            className="flex-1 px-3 py-1.5 text-sm border rounded-md focus:ring-2 focus:ring-emerald-500"
-                          />
-                        </div>
-                        <textarea
-                          value={val.description}
-                          onChange={(e) => {
-                            const newValues = [...(settings.about?.values || [])];
-                            newValues[index] = { ...newValues[index], description: e.target.value };
-                            setSettings({ ...settings, about: { ...settings.about, values: newValues } });
-                          }}
-                          placeholder="Description of the value..."
-                          rows={2}
-                          className="w-full px-3 py-1.5 text-sm border rounded-md focus:ring-2 focus:ring-emerald-500"
-                        />
-                      </div>
-                      <button
-                        onClick={() => {
-                          const newValues = settings.about.values.filter((_: any, i: number) => i !== index);
-                          setSettings({ ...settings, about: { ...settings.about, values: newValues } });
-                        }}
-                        className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                        title="Remove Value"
-                      >
-                        <Trash2 size={18} />
-                      </button>
-                    </div>
-                  ))}
-                  {(!settings.about?.values || settings.about.values.length === 0) && (
-                    <p className="text-sm text-gray-500 text-center py-4">No core values added yet.</p>
                   )}
                 </div>
               </div>

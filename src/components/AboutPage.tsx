@@ -1,8 +1,9 @@
-import { Heart, Users, Target, Award, ArrowRight, Play } from 'lucide-react';
+import { Heart, Users, Target, Award, ArrowRight, Play, Sparkles } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { useScrollAnimation, getStaggerDelay } from '../utils/animations';
+import { resolveCoreValueIcon, VALUE_CARD_THEMES } from '../utils/coreValuesIcons';
 
 interface AboutValue {
   icon: string;
@@ -226,39 +227,59 @@ export function AboutPage() {
         </div>
       </section>
 
-      {/* ── THE WAY WE WORK (Guiding Principles) ── */}
+      {/* ── CORE VALUES & GUIDING PRINCIPLES GRID ── */}
       <section className="py-24 bg-gray-50">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-sm font-bold text-emerald-600 uppercase tracking-widest mb-2">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center max-w-3xl mx-auto mb-16">
+            <span className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700 uppercase tracking-widest px-3.5 py-1.5 bg-emerald-100/80 rounded-full mb-3">
+              <Sparkles size={14} className="text-emerald-600" />
               {settings.wayWeWork?.badge || DEFAULT_WAY_WE_WORK.badge}
-            </h2>
-            <h3 className="text-3xl md:text-5xl font-bold font-heading text-gray-900">
+            </span>
+            <h2 className="text-3xl md:text-5xl font-bold font-heading text-gray-900 mb-4">
               {settings.wayWeWork?.title || DEFAULT_WAY_WE_WORK.title}
-            </h3>
+            </h2>
+            {(settings.wayWeWork?.intro || DEFAULT_WAY_WE_WORK.intro) && (
+              <p className="text-lg text-gray-600 leading-relaxed font-normal">
+                {settings.wayWeWork?.intro || DEFAULT_WAY_WE_WORK.intro}
+              </p>
+            )}
           </div>
 
           <div 
             ref={valuesRef}
             className={`transition-all duration-1000 ${valuesVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`}
           >
-            <div className="bg-white p-8 md:p-12 rounded-3xl shadow-premium-soft border border-gray-100">
-              <div className="space-y-8 text-gray-700 text-lg leading-relaxed font-normal">
-                {(settings.wayWeWork?.intro || DEFAULT_WAY_WE_WORK.intro) && (
-                  <p className="text-xl font-medium text-gray-800">
-                    {settings.wayWeWork?.intro || DEFAULT_WAY_WE_WORK.intro}
-                  </p>
-                )}
-                {(settings.wayWeWork?.items && settings.wayWeWork.items.length > 0
-                  ? settings.wayWeWork.items
-                  : DEFAULT_WAY_WE_WORK.items
-                ).map((item, index) => (
-                  <p key={index}>
-                    <strong className="text-emerald-800 text-xl block mb-2">{item.title}</strong>
-                    {item.desc}
-                  </p>
-                ))}
-              </div>
+            <div className={`grid gap-6 sm:gap-8 ${
+              (settings.wayWeWork?.items || DEFAULT_WAY_WE_WORK.items).length === 4
+                ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4'
+                : (settings.wayWeWork?.items || DEFAULT_WAY_WE_WORK.items).length <= 3
+                  ? 'grid-cols-1 md:grid-cols-3 max-w-5xl mx-auto'
+                  : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'
+            }`}>
+              {(settings.wayWeWork?.items && settings.wayWeWork.items.length > 0
+                ? settings.wayWeWork.items
+                : DEFAULT_WAY_WE_WORK.items
+              ).map((item, index) => {
+                const IconComp = resolveCoreValueIcon(item.icon, item.title, index);
+                const theme = VALUE_CARD_THEMES[index % VALUE_CARD_THEMES.length];
+                return (
+                  <div 
+                    key={index}
+                    className={`group relative bg-white rounded-3xl p-8 border border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 flex flex-col items-center text-center ${theme.accentBorder}`}
+                  >
+                    <span className={`w-2 h-2 rounded-full ${theme.accentDot} mb-3 opacity-60 group-hover:scale-125 transition-transform`} />
+                    <div className={`w-16 h-16 rounded-2xl border flex items-center justify-center mb-5 shadow-xs transition-all duration-300 group-hover:scale-110 ${theme.iconBg} ${theme.badgeGlow}`}>
+                      <IconComp size={28} strokeWidth={2.2} />
+                    </div>
+                    <h3 className={`text-xl font-bold font-heading text-gray-900 mb-3 leading-snug transition-colors ${theme.titleHover}`}>
+                      {item.title}
+                    </h3>
+                    <p className="text-gray-600 text-[15px] leading-relaxed font-normal">
+                      {item.desc}
+                    </p>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>

@@ -1,9 +1,10 @@
-import { Heart, Users, Target, Award } from 'lucide-react';
+import { Heart, Users, Target, Award, Sparkles } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { motion } from 'framer-motion';
 import { DEFAULT_WAY_WE_WORK, WayWeWorkSettings } from './SiteSettingsTab';
+import { resolveCoreValueIcon, VALUE_CARD_THEMES } from '../utils/coreValuesIcons';
 
 interface AboutValue {
   icon: string;
@@ -177,39 +178,72 @@ export function About() {
           </motion.div>
         </div>
 
-        {/* The Way We Work (Guiding Principles) */}
+        {/* Core Values & Guiding Principles Grid */}
         <motion.div 
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, amount: 0.2 }}
+          viewport={{ once: true, amount: 0.15 }}
           transition={{ duration: 0.8, ease: "easeOut" }}
-          className="relative overflow-hidden bg-gradient-to-br from-emerald-50/50 to-teal-50/50 p-8 lg:p-12 rounded-3xl border border-emerald-100 shadow-sm hover:shadow-premium-soft transition-all duration-300 mb-12"
+          className="mb-16"
         >
-          <div className="absolute top-0 left-0 w-1.5 h-full bg-emerald-500"></div>
-          <div className="max-w-3xl mx-auto">
-            <span className="inline-block text-xs font-bold text-emerald-700 uppercase tracking-widest mb-1.5">
+          {/* Header */}
+          <div className="text-center max-w-3xl mx-auto mb-10 md:mb-12">
+            <span className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700 uppercase tracking-widest px-3.5 py-1.5 bg-emerald-100/80 rounded-full mb-3">
+              <Sparkles size={14} className="text-emerald-600" />
               {displaySettings.wayWeWork?.badge || DEFAULT_WAY_WE_WORK.badge}
             </span>
-            <h3 className="text-[22px] lg:text-[24px] font-semibold font-heading tracking-tight text-gray-900 mb-6 leading-[1.3] flex items-center gap-2">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
+            <h3 className="text-2xl sm:text-3xl lg:text-4xl font-bold font-heading tracking-tight text-gray-900 mb-4 leading-tight">
               {displaySettings.wayWeWork?.title || DEFAULT_WAY_WE_WORK.title}
             </h3>
-            <div className="space-y-6 text-gray-700 text-[17px] leading-[1.6] font-normal">
-              {(displaySettings.wayWeWork?.intro || DEFAULT_WAY_WE_WORK.intro) && (
-                <p>
-                  {displaySettings.wayWeWork?.intro || DEFAULT_WAY_WE_WORK.intro}
-                </p>
-              )}
-              {(displaySettings.wayWeWork?.items && displaySettings.wayWeWork.items.length > 0
-                ? displaySettings.wayWeWork.items
-                : DEFAULT_WAY_WE_WORK.items
-              ).map((item, index) => (
-                <p key={index}>
-                  <strong className="text-emerald-800">{item.title}</strong><br />
-                  {item.desc}
-                </p>
-              ))}
-            </div>
+            {(displaySettings.wayWeWork?.intro || DEFAULT_WAY_WE_WORK.intro) && (
+              <p className="text-gray-600 text-base sm:text-lg leading-relaxed font-normal">
+                {displaySettings.wayWeWork?.intro || DEFAULT_WAY_WE_WORK.intro}
+              </p>
+            )}
+          </div>
+
+          {/* Responsive Grid */}
+          <div className={`grid gap-6 ${
+            (displaySettings.wayWeWork?.items || DEFAULT_WAY_WE_WORK.items).length === 4
+              ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4'
+              : (displaySettings.wayWeWork?.items || DEFAULT_WAY_WE_WORK.items).length <= 3
+                ? 'grid-cols-1 md:grid-cols-3 max-w-5xl mx-auto'
+                : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'
+          }`}>
+            {(displaySettings.wayWeWork?.items && displaySettings.wayWeWork.items.length > 0
+              ? displaySettings.wayWeWork.items
+              : DEFAULT_WAY_WE_WORK.items
+            ).map((item, index) => {
+              const IconComp = resolveCoreValueIcon(item.icon, item.title, index);
+              const theme = VALUE_CARD_THEMES[index % VALUE_CARD_THEMES.length];
+              return (
+                <motion.div
+                  key={index}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.5, delay: index * 0.08 }}
+                  className={`group relative bg-white rounded-3xl p-7 lg:p-8 border border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 flex flex-col items-center text-center ${theme.accentBorder}`}
+                >
+                  <span className={`w-2 h-2 rounded-full ${theme.accentDot} mb-3 opacity-60 group-hover:scale-125 transition-transform`} />
+                  
+                  {/* Professional Icon Badge */}
+                  <div className={`w-16 h-16 rounded-2xl border flex items-center justify-center mb-5 shadow-xs transition-all duration-300 group-hover:scale-110 ${theme.iconBg} ${theme.badgeGlow}`}>
+                    <IconComp size={28} strokeWidth={2.2} />
+                  </div>
+
+                  {/* Title */}
+                  <h4 className={`text-lg sm:text-xl font-bold font-heading text-gray-900 mb-2.5 leading-snug transition-colors ${theme.titleHover}`}>
+                    {item.title}
+                  </h4>
+
+                  {/* Words / Description Below */}
+                  <p className="text-gray-600 text-sm sm:text-[15px] leading-relaxed font-normal">
+                    {item.desc}
+                  </p>
+                </motion.div>
+              );
+            })}
           </div>
         </motion.div>
 
