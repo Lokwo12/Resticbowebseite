@@ -3738,6 +3738,51 @@ app.get('/make-server-2a4be611/events/:slugOrId', async (c) => {
   }
 })
 
+// Get all events for admin dashboard
+app.get('/make-server-2a4be611/admin/events', async (c) => {
+  try {
+    const limit = parseInt(c.req.query('limit') || '200')
+    const offset = parseInt(c.req.query('offset') || '0')
+    
+    const rawEvents = await kv.getByPrefix('event:')
+    let mapped = rawEvents.map(e => {
+      const val = e.value || {}
+      const cleanId = (e.key || '').replace(/^event:/, '')
+      const title = val.title || 'Untitled Event'
+      const slug = val.slug || title.toLowerCase().replace(/[\s\W-]+/g, '-').replace(/^-+|-+$/g, '') || cleanId
+      return {
+        ...val,
+        id: cleanId,
+        key: e.key,
+        title,
+        slug,
+        is_published: val.is_published !== undefined ? Boolean(val.is_published) : val.published !== undefined ? Boolean(val.published) : val.status !== 'draft' && val.status !== 'archived',
+        is_featured: Boolean(val.is_featured ?? val.featured),
+        start_date: val.start_date || val.date || '',
+        start_time: val.start_time || val.time || '',
+        event_type: val.event_type || val.category || 'Community Activity',
+        featured_image: val.featured_image || val.image || '',
+        gallery: Array.isArray(val.gallery) ? val.gallery : []
+      }
+    })
+
+    // Sort: upcoming events first (earliest to latest), completed/past events (latest to earliest)
+    mapped.sort((a, b) => {
+      const dateA = new Date(a.start_date || a.date || 0).getTime()
+      const dateB = new Date(b.start_date || b.date || 0).getTime()
+      return dateB - dateA
+    })
+
+    const count = mapped.length
+    const paginated = mapped.slice(offset, offset + limit)
+
+    return c.json({ events: paginated, count, limit, offset })
+  } catch (error) {
+    console.error('Error fetching admin events:', error)
+    return c.json({ error: 'Failed to fetch events', details: String(error) }, 500)
+  }
+})
+
 // Create event (admin)
 app.post('/make-server-2a4be611/admin/events', requireEditor, async (c) => {
   try {
@@ -3755,11 +3800,15 @@ app.post('/make-server-2a4be611/admin/events', requireEditor, async (c) => {
       short_description: body.short_description || body.shortDescription || '',
       description: body.description || '',
       event_type: body.event_type || body.category || 'Community Activity',
+      category: body.category || body.event_type || 'Community Activity',
       featured_image: body.featured_image || body.image || '',
+      image: body.featured_image || body.image || '',
       gallery: Array.isArray(body.gallery) ? body.gallery : [],
       start_date: body.start_date || body.date || '',
+      date: body.start_date || body.date || '',
       end_date: body.end_date || '',
       start_time: body.start_time || body.time || '',
+      time: body.start_time || body.time || '',
       end_time: body.end_time || '',
       location: body.location || 'Kiryandongo Refugee Settlement, Kiryandongo District, Uganda',
       address: body.address || '',

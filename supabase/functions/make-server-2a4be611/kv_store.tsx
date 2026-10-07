@@ -73,6 +73,23 @@ const mapToSql = (table: string, id: string, val: any) => {
       updated_at: val.updatedAt || val.updated_at || new Date().toISOString()
     };
   }
+  if (table === 'events') {
+    return {
+      id,
+      title: val.title || '',
+      description: val.description || val.short_description || '',
+      date: val.start_date || val.date || null,
+      time: val.start_time || val.time || null,
+      location: val.location || null,
+      image: val.featured_image || val.image || null,
+      category: val.category || val.event_type || 'general',
+      capacity: (val.capacity !== undefined && val.capacity !== null && val.capacity !== '') ? Number(val.capacity) : null,
+      registered: (val.registered !== undefined && val.registered !== null && val.registered !== '') ? Number(val.registered) : 0,
+      status: val.status || 'upcoming',
+      created_at: val.createdAt || val.created_at || new Date().toISOString(),
+      updated_at: val.updatedAt || val.updated_at || new Date().toISOString()
+    };
+  }
   
   const mapped: any = { id, ...val };
   // Handle specific snake_case conversions based on schema
@@ -145,6 +162,14 @@ export const set = async (key: string, value: any): Promise<void> => {
     });
   }
 
+  if (info.table === 'events') {
+    const fullKey = key.startsWith('event:') ? key : `event:${info.id}`;
+    await supabase.from('kv_store_2a4be611').upsert({
+      key: fullKey,
+      value: { id: info.id, ...value }
+    }).catch(err => console.warn('Sync event to kv_store_2a4be611 failed:', err));
+  }
+
   if (info.table === 'admin_users') {
     const fullKey = key.startsWith('admin_user:') ? key : `admin_user:${info.id}`;
     await supabase.from('kv_store_2a4be611').upsert({
@@ -166,6 +191,12 @@ export const get = async (key: string): Promise<any> => {
 
   if (info.table === 'programs') {
     const fullKey = key.startsWith('program:') ? key : `program:${info.id}`;
+    const { data: kvData } = await supabase.from('kv_store_2a4be611').select("value").eq("key", fullKey).maybeSingle();
+    if (kvData?.value) return kvData.value;
+  }
+
+  if (info.table === 'events') {
+    const fullKey = key.startsWith('event:') ? key : `event:${info.id}`;
     const { data: kvData } = await supabase.from('kv_store_2a4be611').select("value").eq("key", fullKey).maybeSingle();
     if (kvData?.value) return kvData.value;
   }
@@ -196,6 +227,11 @@ export const del = async (key: string): Promise<void> => {
     await supabase.from('kv_store_2a4be611').delete().eq("key", fullKey);
   }
 
+  if (info.table === 'events') {
+    const fullKey = key.startsWith('event:') ? key : `event:${info.id}`;
+    await supabase.from('kv_store_2a4be611').delete().eq("key", fullKey).catch(() => {});
+  }
+
   if (info.table === 'admin_users') {
     const fullKey = key.startsWith('admin_user:') ? key : `admin_user:${info.id}`;
     await supabase.from('kv_store_2a4be611').delete().eq("key", fullKey).catch(() => {});
@@ -210,6 +246,26 @@ export const getByPrefix = async (prefix: string): Promise<any[]> => {
     const { data, error } = await supabase.from(info.table).select("key, value").like("key", prefix + "%");
     if (error) throw new Error(error.message);
     return data ?? [];
+  }
+
+  if (info.table === 'events') {
+    const [kvRes, sqlRes] = await Promise.all([
+      supabase.from('kv_store_2a4be611').select("key, value").like("key", prefix + "%"),
+      supabase.from('events').select("*")
+    ]);
+    const map = new Map<string, any>();
+    if (sqlRes.data) {
+      for (const row of sqlRes.data) {
+        const js = mapToJs('events', prefix, row);
+        map.set(js.key, js);
+      }
+    }
+    if (kvRes.data) {
+      for (const row of kvRes.data) {
+        map.set(row.key, { key: row.key, value: row.value });
+      }
+    }
+    return Array.from(map.values());
   }
   
   const { data, error } = await supabase.from(info.table).select("*");
