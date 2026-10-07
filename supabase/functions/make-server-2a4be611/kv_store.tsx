@@ -74,6 +74,8 @@ const mapToSql = (table: string, id: string, val: any) => {
     };
   }
   if (table === 'events') {
+    const parsedCapacity = (val.capacity !== undefined && val.capacity !== null && val.capacity !== '') ? Number(val.capacity) : null;
+    const parsedRegistered = (val.registered !== undefined && val.registered !== null && val.registered !== '') ? Number(val.registered) : 0;
     return {
       id,
       title: val.title || '',
@@ -83,8 +85,8 @@ const mapToSql = (table: string, id: string, val: any) => {
       location: val.location || null,
       image: val.featured_image || val.image || null,
       category: val.category || val.event_type || 'general',
-      capacity: (val.capacity !== undefined && val.capacity !== null && val.capacity !== '') ? Number(val.capacity) : null,
-      registered: (val.registered !== undefined && val.registered !== null && val.registered !== '') ? Number(val.registered) : 0,
+      capacity: (parsedCapacity !== null && !isNaN(parsedCapacity)) ? parsedCapacity : null,
+      registered: !isNaN(parsedRegistered) ? parsedRegistered : 0,
       status: val.status || 'upcoming',
       created_at: val.createdAt || val.created_at || new Date().toISOString(),
       updated_at: val.updatedAt || val.updated_at || new Date().toISOString()
@@ -151,7 +153,8 @@ export const set = async (key: string, value: any): Promise<void> => {
   const supabase = client();
   const info = getTableInfo(key);
   const sqlData = mapToSql(info.table, info.id, value);
-  const { error } = await supabase.from(info.table).upsert(sqlData);
+  const onConflictCol = info.table === 'kv_store_2a4be611' ? 'key' : 'id';
+  const { error } = await supabase.from(info.table).upsert(sqlData, { onConflict: onConflictCol });
   if (error) throw new Error(error.message);
 
   if (info.table === 'programs') {
@@ -159,7 +162,7 @@ export const set = async (key: string, value: any): Promise<void> => {
     await supabase.from('kv_store_2a4be611').upsert({
       key: fullKey,
       value: { id: info.id, ...value }
-    });
+    }, { onConflict: 'key' });
   }
 
   if (info.table === 'events') {
@@ -167,7 +170,7 @@ export const set = async (key: string, value: any): Promise<void> => {
     await supabase.from('kv_store_2a4be611').upsert({
       key: fullKey,
       value: { id: info.id, ...value }
-    }).catch(err => console.warn('Sync event to kv_store_2a4be611 failed:', err));
+    }, { onConflict: 'key' }).catch(err => console.warn('Sync event to kv_store_2a4be611 failed:', err));
   }
 
   if (info.table === 'admin_users') {
@@ -175,7 +178,7 @@ export const set = async (key: string, value: any): Promise<void> => {
     await supabase.from('kv_store_2a4be611').upsert({
       key: fullKey,
       value: { id: info.id, ...value }
-    }).catch(err => console.warn('Sync admin_user to kv_store_2a4be611 failed:', err));
+    }, { onConflict: 'key' }).catch(err => console.warn('Sync admin_user to kv_store_2a4be611 failed:', err));
   }
 };
 

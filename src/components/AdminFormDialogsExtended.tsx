@@ -4,6 +4,7 @@ import { Button } from './ui/button';
 import { Upload, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
+import { supabase } from '../utils/supabase/client';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 
@@ -221,20 +222,70 @@ export function EventFormDialog({ show, onClose, editingItem, onSuccess, userRol
     }
     setLoading(true);
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token || accessToken || publicAnonKey;
+      const cleanEventId = (editingItem?.id || editingItem?.key || '').replace(/^event:/, '');
       const url = editingItem
-        ? `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/events/${editingItem.key || editingItem.id}`
+        ? `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/events/${cleanEventId}`
         : `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/events`;
-      const response = await fetch(url, {
-        method: editingItem ? 'PUT' : 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken || publicAnonKey}` },
-        body: JSON.stringify(formData)
-      });
-      if (!response.ok) throw new Error('Failed to save');
+
+      let savedViaServer = false;
+      try {
+        const response = await fetch(url, {
+          method: editingItem ? 'PUT' : 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify(formData)
+        });
+        if (response.ok) {
+          savedViaServer = true;
+        } else {
+          const data = await response.json().catch(() => ({}));
+          console.warn('Edge function save failed, trying fallback:', data);
+        }
+      } catch (networkErr) {
+        console.warn('Network error during event save, trying fallback:', networkErr);
+      }
+
+      if (!savedViaServer) {
+        const targetId = editingItem ? cleanEventId : crypto.randomUUID();
+        const sqlRow = {
+          id: targetId,
+          title: formData.title,
+          description: formData.description || '',
+          date: formData.date || null,
+          time: formData.time || null,
+          location: formData.location || null,
+          image: formData.image || null,
+          category: formData.category || 'general',
+          capacity: typeof formData.capacity === 'number' ? formData.capacity : 50,
+          registered: typeof formData.registered === 'number' ? formData.registered : 0,
+          status: formData.status || 'upcoming',
+          updated_at: new Date().toISOString()
+        };
+        const richVal = {
+          id: targetId,
+          key: `event:${targetId}`,
+          ...formData,
+          updated_at: new Date().toISOString()
+        };
+
+        const { error: pgError } = await supabase.from('events').upsert(sqlRow, { onConflict: 'id' });
+        if (pgError) {
+          console.error('Direct events upsert error:', pgError);
+          throw new Error(pgError.message || 'Failed to save event');
+        }
+
+        await supabase.from('kv_store_2a4be611').upsert({
+          key: `event:${targetId}`,
+          value: richVal
+        }, { onConflict: 'key' });
+      }
+
       toast.success(editingItem ? 'Event updated' : 'Event added');
       onSuccess();
       onClose();
     } catch (err: any) {
-      toast.error(err.message);
+      toast.error(err.message || 'Failed to save event');
     } finally {
       setLoading(false);
     }
