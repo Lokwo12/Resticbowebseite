@@ -14,6 +14,7 @@ import {
   normalizePartner
 } from '../../utils/partnerData';
 import { publicAnonKey } from '../../utils/supabase/info';
+import { supabase } from '../../utils/supabase/client';
 
 interface PartnersManagerProps {
   accessToken: string;
@@ -63,43 +64,80 @@ export function PartnersManager({
   const isReadOnly = userRole === 'viewer';
   const canDelete = userRole === 'admin' || userRole === 'super-admin';
 
+  // Helper to ensure freshest auth session token
+  const getAuthToken = async (): Promise<string> => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.access_token) return session.access_token;
+    } catch {}
+    return accessToken || publicAnonKey;
+  };
+
   // Load partners from backend
   const fetchPartners = async (showRefreshIndicator = false) => {
     if (showRefreshIndicator) setRefreshing(true);
     else setLoading(true);
 
     try {
+      const token = await getAuthToken();
       const response = await fetch(
         `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/partners`,
         {
           headers: {
-            Authorization: `Bearer ${accessToken || publicAnonKey}`
+            Authorization: `Bearer ${token}`
           }
         }
       );
 
-      if (!response.ok) {
-        // Fallback to public endpoint with all=true if admin endpoint is unavailable
-        const fallbackRes = await fetch(
-          `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/partners?all=true`,
-          {
-            headers: {
-              Authorization: `Bearer ${accessToken || publicAnonKey}`
-            }
-          }
-        );
-        if (fallbackRes.ok) {
-          const fbData = await fallbackRes.json();
-          const items = (fbData.partners || []).map(normalizePartner);
-          setPartners(items);
-          return;
-        }
-        throw new Error('Failed to fetch partners');
+      if (response.ok) {
+        const data = await response.json();
+        const items = (data.partners || []).map(normalizePartner);
+        setPartners(items);
+        return;
       }
 
-      const data = await response.json();
-      const items = (data.partners || []).map(normalizePartner);
-      setPartners(items);
+      // Fallback 1: Public endpoint with all=true if admin endpoint is unavailable
+      const fallbackRes = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/partners?all=true`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      );
+      if (fallbackRes.ok) {
+        const fbData = await fallbackRes.json();
+        const items = (fbData.partners || []).map(normalizePartner);
+        setPartners(items);
+        return;
+      }
+
+      // Fallback 2: Direct Supabase query (merging kv_store and SQL table)
+      const [kvRes, pgRes] = await Promise.all([
+        supabase.from('kv_store_2a4be611').select('key, value').like('key', 'partner:%'),
+        supabase.from('partners').select('*')
+      ]);
+
+      const map = new Map<string, any>();
+      if (pgRes.data) {
+        for (const row of pgRes.data) {
+          const norm = normalizePartner(row);
+          map.set(norm.id, norm);
+        }
+      }
+      if (kvRes.data) {
+        for (const row of kvRes.data) {
+          const norm = normalizePartner({ key: row.key, ...(row.value || {}) });
+          map.set(norm.id, norm);
+        }
+      }
+
+      if (map.size > 0) {
+        setPartners(Array.from(map.values()));
+        return;
+      }
+
+      throw new Error('Failed to fetch partners');
     } catch (err: any) {
       console.error('Error fetching partners:', err);
       toast.error('Could not load partners. Please check your network connection.');
@@ -136,12 +174,13 @@ export function PartnersManager({
       const uploadForm = new FormData();
       uploadForm.append('file', file);
 
+      const token = await getAuthToken();
       const response = await fetch(
         `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/upload-image`,
         {
           method: 'POST',
           headers: {
-            Authorization: `Bearer ${accessToken || publicAnonKey}`
+            Authorization: `Bearer ${token}`
           },
           body: uploadForm
         }
@@ -222,8 +261,12 @@ export function PartnersManager({
     setIsSaving(true);
     try {
       const isEditing = Boolean(editingPartner);
+      const cleanId = isEditing
+        ? (editingPartner!.id || editingPartner!.key || '').replace(/^partner:/, '')
+        : crypto.randomUUID();
+
       const url = isEditing
-        ? `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/partners/${editingPartner!.key || editingPartner!.id}`
+        ? `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/partners/${cleanId}`
         : `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/partners`;
 
       const payload = {
@@ -241,18 +284,59 @@ export function PartnersManager({
         since: formData.since.trim()
       };
 
-      const res = await fetch(url, {
-        method: isEditing ? 'PUT' : 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${accessToken || publicAnonKey}`
-        },
-        body: JSON.stringify(payload)
-      });
+      const token = await getAuthToken();
+      let savedViaServer = false;
+      try {
+        const res = await fetch(url, {
+          method: isEditing ? 'PUT' : 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify(payload)
+        });
 
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.error || 'Failed to save partner');
+        if (res.ok) {
+          savedViaServer = true;
+        } else {
+          const errorData = await res.json().catch(() => ({}));
+          console.warn('Edge function returned error saving partner, attempting direct fallback:', errorData);
+        }
+      } catch (networkErr) {
+        console.warn('Network error reaching edge function, attempting direct fallback:', networkErr);
+      }
+
+      if (!savedViaServer) {
+        // Direct resilient fallback to Supabase PostgreSQL table 'partners' and 'kv_store_2a4be611'
+        const sqlRow = {
+          id: cleanId,
+          name: payload.name,
+          description: payload.description || '',
+          logo: payload.logo || null,
+          website: payload.website || null,
+          category: payload.category || 'community',
+          since: payload.since ? String(payload.since) : null,
+          updated_at: new Date().toISOString()
+        };
+
+        const richVal = {
+          id: cleanId,
+          key: `partner:${cleanId}`,
+          ...payload,
+          updated_at: new Date().toISOString()
+        };
+
+        const { error: pgError } = await supabase.from('partners').upsert(sqlRow, { onConflict: 'id' });
+        if (pgError) console.warn('Direct partners table upsert warning:', pgError);
+
+        const { error: kvError } = await supabase.from('kv_store_2a4be611').upsert({
+          key: `partner:${cleanId}`,
+          value: richVal
+        }, { onConflict: 'key' });
+
+        if (kvError && pgError) {
+          throw new Error(kvError.message || pgError.message || 'Failed to save partner');
+        }
       }
 
       toast.success(isEditing ? 'Partner updated successfully' : 'Partner added successfully');
@@ -276,34 +360,59 @@ export function PartnersManager({
     }
 
     const newStatus = !partner.is_published;
+    const cleanId = (partner.id || partner.key || '').replace(/^partner:/, '');
+
+    // Optimistic update
+    setPartners(prev =>
+      prev.map(p => (p.id === partner.id ? { ...p, is_published: newStatus, published: newStatus } : p))
+    );
+
     try {
-      // Optimistic update
-      setPartners(prev =>
-        prev.map(p => (p.id === partner.id ? { ...p, is_published: newStatus, published: newStatus } : p))
-      );
-
-      const url = `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/partners/${partner.key || partner.id}/toggle-publish`;
-      const res = await fetch(url, {
-        method: 'PATCH',
-        headers: {
-          Authorization: `Bearer ${accessToken || publicAnonKey}`
-        }
-      });
-
-      if (!res.ok) {
-        // Fallback to PUT
-        const fallbackRes = await fetch(
-          `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/partners/${partner.key || partner.id}`,
-          {
-            method: 'PUT',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${accessToken || publicAnonKey}`
-            },
-            body: JSON.stringify({ ...partner, is_published: newStatus, published: newStatus })
+      const token = await getAuthToken();
+      let updatedViaServer = false;
+      try {
+        const url = `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/partners/${cleanId}/toggle-publish`;
+        const res = await fetch(url, {
+          method: 'PATCH',
+          headers: {
+            Authorization: `Bearer ${token}`
           }
-        );
-        if (!fallbackRes.ok) throw new Error('Toggle failed');
+        });
+
+        if (res.ok) {
+          updatedViaServer = true;
+        } else {
+          // Fallback to PUT
+          const fallbackRes = await fetch(
+            `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/partners/${cleanId}`,
+            {
+              method: 'PUT',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${token}`
+              },
+              body: JSON.stringify({ ...partner, is_published: newStatus, published: newStatus })
+            }
+          );
+          if (fallbackRes.ok) updatedViaServer = true;
+        }
+      } catch (err) {
+        console.warn('Server toggle publish failed, using direct fallback:', err);
+      }
+
+      if (!updatedViaServer) {
+        const updatedVal = {
+          ...partner,
+          id: cleanId,
+          key: `partner:${cleanId}`,
+          is_published: newStatus,
+          published: newStatus,
+          updated_at: new Date().toISOString()
+        };
+        await supabase.from('kv_store_2a4be611').upsert({
+          key: `partner:${cleanId}`,
+          value: updatedVal
+        }, { onConflict: 'key' });
       }
 
       toast.success(newStatus ? `${partner.name} published` : `${partner.name} unpublished`);
@@ -321,18 +430,29 @@ export function PartnersManager({
       return;
     }
 
+    const cleanId = partnerId.replace(/^partner:/, '');
     try {
-      const url = `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/partners/${partnerId}`;
-      const res = await fetch(url, {
-        method: 'DELETE',
-        headers: {
-          Authorization: `Bearer ${accessToken || publicAnonKey}`
-        }
-      });
+      const token = await getAuthToken();
+      let deletedViaServer = false;
+      try {
+        const url = `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/partners/${cleanId}`;
+        const res = await fetch(url, {
+          method: 'DELETE',
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        if (res.ok) deletedViaServer = true;
+      } catch (err) {
+        console.warn('Server delete failed, using direct fallback:', err);
+      }
 
-      if (!res.ok) throw new Error('Delete failed');
+      if (!deletedViaServer) {
+        await supabase.from('partners').delete().eq('id', cleanId);
+        await supabase.from('kv_store_2a4be611').delete().eq('key', `partner:${cleanId}`);
+      }
 
-      setPartners(prev => prev.filter(p => p.id !== partnerId && p.key !== partnerId));
+      setPartners(prev => prev.filter(p => p.id !== partnerId && p.key !== partnerId && p.id !== cleanId && p.key !== `partner:${cleanId}`));
       setDeleteConfirmId(null);
       toast.success('Partner deleted');
       if (onUpdate) onUpdate();

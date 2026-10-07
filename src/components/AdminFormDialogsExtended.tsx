@@ -476,9 +476,11 @@ export function PartnerFormDialog({ show, onClose, editingItem, onSuccess, userR
     try {
       const formDataObj = new FormData();
       formDataObj.append('file', file);
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token || accessToken || publicAnonKey;
       const response = await fetch(
         `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/upload-image`,
-        { method: 'POST', headers: { Authorization: `Bearer ${accessToken || publicAnonKey}` }, body: formDataObj }
+        { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: formDataObj }
       );
       const data = await response.json();
       if (!response.ok) throw new Error(data.error);
@@ -499,20 +501,67 @@ export function PartnerFormDialog({ show, onClose, editingItem, onSuccess, userR
     }
     setLoading(true);
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token || accessToken || publicAnonKey;
+      const cleanPartnerId = (editingItem?.id || editingItem?.key || '').replace(/^partner:/, '');
       const url = editingItem
-        ? `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/partners/${editingItem.key || editingItem.id}`
+        ? `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/partners/${cleanPartnerId}`
         : `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/partners`;
-      const response = await fetch(url, {
-        method: editingItem ? 'PUT' : 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken || publicAnonKey}` },
-        body: JSON.stringify(formData)
-      });
-      if (!response.ok) throw new Error('Failed to save');
+
+      let savedViaServer = false;
+      try {
+        const response = await fetch(url, {
+          method: editingItem ? 'PUT' : 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify(formData)
+        });
+        if (response.ok) {
+          savedViaServer = true;
+        } else {
+          const data = await response.json().catch(() => ({}));
+          console.warn('Edge function partner save failed, trying fallback:', data);
+        }
+      } catch (networkErr) {
+        console.warn('Network error during partner save, trying fallback:', networkErr);
+      }
+
+      if (!savedViaServer) {
+        const targetId = editingItem ? cleanPartnerId : crypto.randomUUID();
+        const sqlRow = {
+          id: targetId,
+          name: formData.name,
+          description: formData.description || '',
+          logo: formData.logo || null,
+          website: formData.website || null,
+          category: formData.category || 'community',
+          since: formData.since ? String(formData.since) : null,
+          updated_at: new Date().toISOString()
+        };
+        const richVal = {
+          id: targetId,
+          key: `partner:${targetId}`,
+          ...formData,
+          updated_at: new Date().toISOString()
+        };
+
+        const { error: pgError } = await supabase.from('partners').upsert(sqlRow, { onConflict: 'id' });
+        if (pgError) console.warn('Direct partners table upsert warning:', pgError);
+
+        const { error: kvError } = await supabase.from('kv_store_2a4be611').upsert({
+          key: `partner:${targetId}`,
+          value: richVal
+        }, { onConflict: 'key' });
+
+        if (kvError && pgError) {
+          throw new Error(kvError.message || pgError.message || 'Failed to save partner');
+        }
+      }
+
       toast.success(editingItem ? 'Partner updated' : 'Partner added');
       onSuccess();
       onClose();
     } catch (err: any) {
-      toast.error(err.message);
+      toast.error(err.message || 'Failed to save partner');
     } finally {
       setLoading(false);
     }

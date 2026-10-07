@@ -92,6 +92,19 @@ const mapToSql = (table: string, id: string, val: any) => {
       updated_at: val.updatedAt || val.updated_at || new Date().toISOString()
     };
   }
+  if (table === 'partners') {
+    return {
+      id,
+      name: val.name || '',
+      description: val.description || '',
+      logo: val.logo_url || val.logo || null,
+      website: val.website_url || val.website || null,
+      category: val.partner_type || val.category || 'community',
+      since: val.since ? String(val.since) : null,
+      created_at: val.createdAt || val.created_at || new Date().toISOString(),
+      updated_at: val.updatedAt || val.updated_at || new Date().toISOString()
+    };
+  }
   
   const mapped: any = { id, ...val };
   // Handle specific snake_case conversions based on schema
@@ -180,6 +193,14 @@ export const set = async (key: string, value: any): Promise<void> => {
       value: { id: info.id, ...value }
     }, { onConflict: 'key' }).catch(err => console.warn('Sync admin_user to kv_store_2a4be611 failed:', err));
   }
+
+  if (info.table === 'partners') {
+    const fullKey = key.startsWith('partner:') ? key : `partner:${info.id}`;
+    await supabase.from('kv_store_2a4be611').upsert({
+      key: fullKey,
+      value: { id: info.id, ...value }
+    }, { onConflict: 'key' }).catch(err => console.warn('Sync partner to kv_store_2a4be611 failed:', err));
+  }
 };
 
 export const get = async (key: string): Promise<any> => {
@@ -200,6 +221,12 @@ export const get = async (key: string): Promise<any> => {
 
   if (info.table === 'events') {
     const fullKey = key.startsWith('event:') ? key : `event:${info.id}`;
+    const { data: kvData } = await supabase.from('kv_store_2a4be611').select("value").eq("key", fullKey).maybeSingle();
+    if (kvData?.value) return kvData.value;
+  }
+
+  if (info.table === 'partners') {
+    const fullKey = key.startsWith('partner:') ? key : `partner:${info.id}`;
     const { data: kvData } = await supabase.from('kv_store_2a4be611').select("value").eq("key", fullKey).maybeSingle();
     if (kvData?.value) return kvData.value;
   }
@@ -235,6 +262,11 @@ export const del = async (key: string): Promise<void> => {
     await supabase.from('kv_store_2a4be611').delete().eq("key", fullKey).catch(() => {});
   }
 
+  if (info.table === 'partners') {
+    const fullKey = key.startsWith('partner:') ? key : `partner:${info.id}`;
+    await supabase.from('kv_store_2a4be611').delete().eq("key", fullKey).catch(() => {});
+  }
+
   if (info.table === 'admin_users') {
     const fullKey = key.startsWith('admin_user:') ? key : `admin_user:${info.id}`;
     await supabase.from('kv_store_2a4be611').delete().eq("key", fullKey).catch(() => {});
@@ -260,6 +292,26 @@ export const getByPrefix = async (prefix: string): Promise<any[]> => {
     if (sqlRes.data) {
       for (const row of sqlRes.data) {
         const js = mapToJs('events', prefix, row);
+        map.set(js.key, js);
+      }
+    }
+    if (kvRes.data) {
+      for (const row of kvRes.data) {
+        map.set(row.key, { key: row.key, value: row.value });
+      }
+    }
+    return Array.from(map.values());
+  }
+
+  if (info.table === 'partners') {
+    const [kvRes, sqlRes] = await Promise.all([
+      supabase.from('kv_store_2a4be611').select("key, value").like("key", prefix + "%"),
+      supabase.from('partners').select("*")
+    ]);
+    const map = new Map<string, any>();
+    if (sqlRes.data) {
+      for (const row of sqlRes.data) {
+        const js = mapToJs('partners', prefix, row);
         map.set(js.key, js);
       }
     }
