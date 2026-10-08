@@ -17,7 +17,7 @@
       cssMinify: false,
       target: 'esnext',
       outDir: 'build',
-      chunkSizeWarningLimit: 750,
+      chunkSizeWarningLimit: 1200,
       rollupOptions: {
         output: {
           manualChunks(id) {
@@ -35,6 +35,12 @@
             }
             if (id.includes('node_modules/react-quill') || id.includes('node_modules/quill')) {
               return 'vendor-quill';
+            }
+            if (id.includes('node_modules/lucide-react')) {
+              return 'vendor-icons';
+            }
+            if (id.includes('node_modules/@radix-ui') || id.includes('node_modules/embla-carousel') || id.includes('node_modules/cmdk')) {
+              return 'vendor-ui';
             }
             if (id.includes('node_modules/@stripe') || id.includes('node_modules/@paypal')) {
               return 'vendor-payments';
