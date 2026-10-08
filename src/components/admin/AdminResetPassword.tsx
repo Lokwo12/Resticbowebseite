@@ -48,7 +48,9 @@ export function AdminResetPassword() {
           if (data.settings.general.tagline) setTagline(data.settings.general.tagline);
         }
       })
-      .catch(() => {});
+      .catch((err) => {
+        console.warn('Notice: Could not load custom site settings for password reset page:', err);
+      });
   }, []);
 
   useEffect(() => {

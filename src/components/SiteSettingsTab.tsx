@@ -2060,7 +2060,7 @@ export function SiteSettingsTab({ settings: initialSettings, onUpdate, accessTok
                           contact: { ...settings.contact, phone: e.target.value },
                         })
                       }
-                      placeholder="+256 700 000 000"
+                      placeholder="+256 772 388 880"
                       className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 bg-white text-sm"
                     />
                   </div>
@@ -2545,7 +2545,7 @@ export function SiteSettingsTab({ settings: initialSettings, onUpdate, accessTok
                               contactPersons[idx] = { ...contactPersons[idx], phone: e.target.value };
                               setSettings({ ...settings, contact: { ...settings.contact, contactPersons } });
                             }}
-                            placeholder="+256 700 000 000"
+                            placeholder="+256 772 388 880"
                             className="w-full px-3 py-1.5 text-sm border rounded-lg bg-white"
                           />
                         </div>

@@ -555,7 +555,7 @@ export function Contact() {
                       required
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      placeholder="e.g. grace@example.com"
+                      placeholder="e.g. grace@resti.org"
                       className={`w-full px-4 py-2.5 rounded-xl border ${
                         fieldErrors.email ? 'border-red-400 bg-red-50/20' : 'border-slate-200 bg-slate-50/50'
                       } text-slate-900 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all`}
@@ -576,7 +576,7 @@ export function Contact() {
                       type="tel"
                       value={formData.phone}
                       onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                      placeholder="+256 700 000 000"
+                      placeholder="+256 772 388 880"
                       className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50/50 text-slate-900 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
                     />
                   </div>

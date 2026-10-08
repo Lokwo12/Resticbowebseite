@@ -68,8 +68,8 @@ export const GET_INVOLVED_STRINGS = {
   formErrorMessage:
     'Please check your information and try again. If the problem continues, contact RESTI directly.',
   defaultEmail: 'info@resticbo.org',
-  defaultPhone: '+256 700 000 000',
-  defaultWhatsApp: '+256700000000',
+  defaultPhone: '+256 772 388 880',
+  defaultWhatsApp: '+256772388880',
 };
 
 export const DEFAULT_CONTACT_SETTINGS: ContactSettings = {
@@ -79,8 +79,8 @@ export const DEFAULT_CONTACT_SETTINGS: ContactSettings = {
   district: 'Kiryandongo District',
   country: 'Uganda',
   email: 'info@resticbo.org',
-  phone: '+256 700 000 000',
-  whatsappNumber: '+256700000000',
+  phone: '+256 772 388 880',
+  whatsappNumber: '+256772388880',
   workingHours: 'Monday - Friday: 8:30 AM - 5:00 PM (EAT)',
   socialLinks: {
     facebook: 'https://facebook.com/resticbo',
@@ -108,7 +108,7 @@ export const DEFAULT_CONTACT_SETTINGS: ContactSettings = {
       name: 'Meta Alex',
       role: 'Co-Founder & Founding Director | Research & Community Engagement',
       email: 'info@resticbo.org',
-      phone: '+256 700 000 000',
+      phone: '+256 772 388 880',
       image:
         'https://mxffqgefsufcdgnhjjsw.supabase.co/storage/v1/object/public/make-2a4be611-uploads/e512cb6f-853c-4dd9-ba34-082c3e6d0adf-WhatsApp_Image_2026-09-08_at_5.30.34_PM.jpeg',
       order: 1,
@@ -119,7 +119,7 @@ export const DEFAULT_CONTACT_SETTINGS: ContactSettings = {
       name: 'Kwaya Daniel Loborach',
       role: 'Co-Founder | Operations & Programs',
       email: 'info@resticbo.org',
-      phone: '+256 700 000 000',
+      phone: '+256 752 488 880',
       image:
         'https://mxffqgefsufcdgnhjjsw.supabase.co/storage/v1/object/public/make-2a4be611-uploads/c4735251-21ab-43c3-aeef-61aa5429b5c1-Screenshot_2026-09-11_011312.png',
       order: 2,
@@ -130,7 +130,7 @@ export const DEFAULT_CONTACT_SETTINGS: ContactSettings = {
       name: 'Anek Immaculate',
       role: 'Co-Founder | Livelihoods & Community Programs',
       email: 'info@resticbo.org',
-      phone: '+256 700 000 000',
+      phone: '+256 772 388 880',
       image:
         'https://mxffqgefsufcdgnhjjsw.supabase.co/storage/v1/object/public/make-2a4be611-uploads/f8d23b1b-e4ae-44dc-9ad1-b2ec7fd7d667-WhatsApp_Image_2026-09-13_at_1.57.38_AM.jpeg',
       order: 3,

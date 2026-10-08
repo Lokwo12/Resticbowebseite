@@ -890,7 +890,7 @@ export function OpportunitiesPage() {
                         required
                         value={applicantEmail}
                         onChange={(e) => setApplicantEmail(e.target.value)}
-                        placeholder="sarah@example.com"
+                        placeholder="sarah@resti.org"
                         className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-800 text-xs"
                       />
                     </div>
@@ -902,7 +902,7 @@ export function OpportunitiesPage() {
                         type="tel"
                         value={applicantPhone}
                         onChange={(e) => setApplicantPhone(e.target.value)}
-                        placeholder="+256 700 000 000"
+                        placeholder="+256 772 388 880"
                         className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-800 text-xs"
                       />
                     </div>

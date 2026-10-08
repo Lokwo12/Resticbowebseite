@@ -205,7 +205,7 @@ export function LiveChat() {
             ...prev,
             {
               sender: 'bot',
-              text: "Please provide a valid email address (e.g., name@example.com) so our team can follow up with you.",
+              text: "Please provide a valid email address (e.g., name@resti.org) so our team can follow up with you.",
               timestamp: new Date().toISOString()
             }
           ]);

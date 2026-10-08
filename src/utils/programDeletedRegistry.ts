@@ -1,10 +1,4 @@
-import { projectId, publicAnonKey } from './supabase/info';
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(
-  `https://${projectId}.supabase.co`,
-  publicAnonKey
-);
+import { supabase } from './supabase/client';
 
 const STORAGE_KEY = 'resti_deleted_programs';
 const KV_KEY = 'system:deleted_programs';
@@ -29,13 +23,15 @@ export async function getDeletedProgramIds(): Promise<Set<string>> {
 
   // 2. Read from Supabase kv_store_2a4be611
   try {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('kv_store_2a4be611')
       .select('value')
       .eq('key', KV_KEY)
       .maybeSingle();
 
-    if (data?.value?.ids && Array.isArray(data.value.ids)) {
+    if (error) {
+      console.warn('Error reading deleted programs registry from database:', error.message);
+    } else if (data?.value?.ids && Array.isArray(data.value.ids)) {
       data.value.ids.forEach((id: string) => {
         if (id) set.add(String(id).trim().toLowerCase());
       });
@@ -45,7 +41,7 @@ export async function getDeletedProgramIds(): Promise<Set<string>> {
       } catch {}
     }
   } catch (err) {
-    console.warn('Notice reading deleted programs registry:', err);
+    console.warn('Exception reading deleted programs registry:', err);
   }
 
   inMemoryDeletedSet = set;
@@ -87,11 +83,14 @@ export async function recordDeletedProgramIds(idsToAdd: string[]): Promise<Set<s
 
   // Persist remotely to kv_store_2a4be611
   try {
-    await supabase
+    const { error } = await supabase
       .from('kv_store_2a4be611')
       .upsert({ key: KV_KEY, value: { ids: arr } });
+    if (error) {
+      console.error('Failed to persist deleted programs registry to Supabase:', error.message);
+    }
   } catch (err) {
-    console.warn('Notice persisting deleted programs registry:', err);
+    console.error('Exception persisting deleted programs registry:', err);
   }
 
   return set;
@@ -110,10 +109,15 @@ export async function unmarkDeletedProgramId(idToRestore: string): Promise<Set<s
   } catch {}
 
   try {
-    await supabase
+    const { error } = await supabase
       .from('kv_store_2a4be611')
       .upsert({ key: KV_KEY, value: { ids: arr } });
-  } catch {}
+    if (error) {
+      console.error('Failed to update unmark deleted program registry in Supabase:', error.message);
+    }
+  } catch (err) {
+    console.error('Exception updating unmark deleted program registry:', err);
+  }
 
   return set;
 }

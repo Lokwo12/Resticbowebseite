@@ -44,7 +44,7 @@ export function Footer() {
   const [contactSettings, setContactSettings] = useState<ContactSettings>({
     address: 'Kiryandongo District, Uganda',
     email: 'info@resticbo.org',
-    phone: '+256 700 000 000',
+    phone: '+256 772 388 880',
     socialLinks: {
       facebook: 'https://www.facebook.com/resticbo',
       twitter: 'https://x.com/resticbo',
@@ -228,34 +228,40 @@ export function Footer() {
           <div>
             <h4 className="text-[16px] font-semibold text-white mb-4 tracking-wide">Follow Us</h4>
             <div className="flex gap-3">
-              <a
-                href={contactSettings.socialLinks.facebook}
-                className="w-10 h-10 bg-white/10 rounded-lg backdrop-blur-sm flex items-center justify-center hover:bg-emerald-600 hover:scale-110 hover:-translate-y-1 transition-all duration-300"
-                aria-label="Facebook"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <Facebook size={20} />
-              </a>
-              <a
-                href={contactSettings.socialLinks.twitter}
-                className="w-10 h-10 bg-white/10 rounded-lg backdrop-blur-sm flex items-center justify-center hover:bg-emerald-600 hover:scale-110 hover:-translate-y-1 transition-all duration-300"
-                aria-label="Twitter"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <Twitter size={20} />
-              </a>
-              <a
-                href={contactSettings.socialLinks.instagram}
-                className="w-10 h-10 bg-white/10 rounded-lg backdrop-blur-sm flex items-center justify-center hover:bg-emerald-600 hover:scale-110 hover:-translate-y-1 transition-all duration-300"
-                aria-label="Instagram"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <Instagram size={20} />
-              </a>
-              {contactSettings.socialLinks.youtube && (
+              {Boolean(contactSettings.socialLinks.facebook?.trim()) && (
+                <a
+                  href={contactSettings.socialLinks.facebook}
+                  className="w-10 h-10 bg-white/10 rounded-lg backdrop-blur-sm flex items-center justify-center hover:bg-emerald-600 hover:scale-110 hover:-translate-y-1 transition-all duration-300"
+                  aria-label="Facebook"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <Facebook size={20} />
+                </a>
+              )}
+              {Boolean(contactSettings.socialLinks.twitter?.trim()) && (
+                <a
+                  href={contactSettings.socialLinks.twitter}
+                  className="w-10 h-10 bg-white/10 rounded-lg backdrop-blur-sm flex items-center justify-center hover:bg-emerald-600 hover:scale-110 hover:-translate-y-1 transition-all duration-300"
+                  aria-label="Twitter"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <Twitter size={20} />
+                </a>
+              )}
+              {Boolean(contactSettings.socialLinks.instagram?.trim()) && (
+                <a
+                  href={contactSettings.socialLinks.instagram}
+                  className="w-10 h-10 bg-white/10 rounded-lg backdrop-blur-sm flex items-center justify-center hover:bg-emerald-600 hover:scale-110 hover:-translate-y-1 transition-all duration-300"
+                  aria-label="Instagram"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <Instagram size={20} />
+                </a>
+              )}
+              {Boolean(contactSettings.socialLinks.youtube?.trim()) && (
                 <a
                   href={contactSettings.socialLinks.youtube}
                   className="w-10 h-10 bg-white/10 rounded-lg backdrop-blur-sm flex items-center justify-center hover:bg-red-600 hover:scale-110 hover:-translate-y-1 transition-all duration-300"

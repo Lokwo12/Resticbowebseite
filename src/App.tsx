@@ -48,6 +48,7 @@ import { FAQPage } from './components/FAQPage';
 import { PartnersPage } from './components/PartnersPage';
 import { OpportunitiesPage } from './components/OpportunitiesPage';
 import { DonationModal } from './components/DonationModal';
+import { NotFoundPage } from './components/NotFoundPage';
 import { DonationModalProvider } from './components/DonationModalContext';
 import { CardPaymentPage } from './components/CardPaymentPage';
 import { ContactPage } from './components/ContactPage';
@@ -89,7 +90,6 @@ function PageTitleManager() {
       '/refund': 'RESTI CBO | Refund Policy',
       '/admin': 'RESTI CBO | Admin Portal',
       '/admin/reset-password': 'RESTI CBO | Reset Administrator Password',
-      '/super-secret-admin-route': 'RESTI CBO | Admin Dashboard',
     };
 
     let title = titleMap[pathname] || 'RESTI CBO';
@@ -237,7 +237,6 @@ export default function App() {
             </React.Suspense>
           </AdminErrorBoundary>
         } />
-        <Route path="/super-secret-admin-route" element={<AdminPage />} />
         <Route path="/privacy" element={<MainLayout><LegalPage type="privacy" /></MainLayout>} />
         <Route path="/cookies" element={<MainLayout><LegalPage type="cookies" /></MainLayout>} />
         <Route path="/terms" element={<MainLayout><LegalPage type="terms" /></MainLayout>} />
@@ -278,7 +277,7 @@ export default function App() {
         <Route path="/transparency" element={<Navigate to="/financials" replace />} />
         <Route path="/financial-transparency" element={<Navigate to="/financials" replace />} />
         <Route path="/pages/:slug" element={<MainLayout><CustomPage /></MainLayout>} />
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="*" element={<MainLayout><NotFoundPage /></MainLayout>} />
       </Routes>
       <Toaster position="top-right" />
     </div>

@@ -3,7 +3,7 @@ import { DraggableDialog } from './DraggableDialog';
 import { Button } from './ui/button';
 import { Upload, X } from 'lucide-react';
 import { toast } from 'sonner';
-import { projectId, publicAnonKey } from '../utils/supabase/info';
+import { projectId } from '../utils/supabase/info';
 import { supabase } from '../utils/supabase/client';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
@@ -57,12 +57,17 @@ export function ReportFormDialog({ show, onClose, editingItem, onSuccess, userRo
     }
     setLoading(true);
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token || accessToken;
+      if (!token) {
+        throw new Error('Admin session expired or unauthenticated. Please sign in again.');
+      }
       const url = editingItem
         ? `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/reports/${editingItem.key || editingItem.id}`
         : `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/reports`;
       const response = await fetch(url, {
         method: editingItem ? 'PUT' : 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken || publicAnonKey}` },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify(formData)
       });
       if (!response.ok) throw new Error('Failed to save');
@@ -197,11 +202,16 @@ export function EventFormDialog({ show, onClose, editingItem, onSuccess, userRol
     if (!file) return;
     setUploading(true);
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token || accessToken;
+      if (!token) {
+        throw new Error('Admin session expired or unauthenticated. Please sign in again.');
+      }
       const formDataObj = new FormData();
       formDataObj.append('file', file);
       const response = await fetch(
         `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/upload-image`,
-        { method: 'POST', headers: { Authorization: `Bearer ${accessToken || publicAnonKey}` }, body: formDataObj }
+        { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: formDataObj }
       );
       const data = await response.json();
       if (!response.ok) throw new Error(data.error);
@@ -223,7 +233,10 @@ export function EventFormDialog({ show, onClose, editingItem, onSuccess, userRol
     setLoading(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      const token = session?.access_token || accessToken || publicAnonKey;
+      const token = session?.access_token || accessToken;
+      if (!token) {
+        throw new Error('Admin session expired or unauthenticated. Please sign in again.');
+      }
       const cleanEventId = (editingItem?.id || editingItem?.key || '').replace(/^event:/, '');
       const url = editingItem
         ? `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/events/${cleanEventId}`
@@ -477,7 +490,10 @@ export function PartnerFormDialog({ show, onClose, editingItem, onSuccess, userR
       const formDataObj = new FormData();
       formDataObj.append('file', file);
       const { data: { session } } = await supabase.auth.getSession();
-      const token = session?.access_token || accessToken || publicAnonKey;
+      const token = session?.access_token || accessToken;
+      if (!token) {
+        throw new Error('Admin session expired or unauthenticated. Please sign in again.');
+      }
       const response = await fetch(
         `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/upload-image`,
         { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: formDataObj }
@@ -502,7 +518,10 @@ export function PartnerFormDialog({ show, onClose, editingItem, onSuccess, userR
     setLoading(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      const token = session?.access_token || accessToken || publicAnonKey;
+      const token = session?.access_token || accessToken;
+      if (!token) {
+        throw new Error('Admin session expired or unauthenticated. Please sign in again.');
+      }
       const cleanPartnerId = (editingItem?.id || editingItem?.key || '').replace(/^partner:/, '');
       const url = editingItem
         ? `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/admin/partners/${cleanPartnerId}`

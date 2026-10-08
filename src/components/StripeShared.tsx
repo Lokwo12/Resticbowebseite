@@ -373,7 +373,7 @@ export function StripeCardForm({
               required 
               type="email" 
               className={inp} 
-              placeholder="you@example.com" 
+              placeholder="donor@resti.org" 
               value={donorData.email || ''} 
               onChange={e => {
                 if (setDonorData) setDonorData((p: any) => ({ ...p, email: e.target.value }));

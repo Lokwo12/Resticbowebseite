@@ -5,8 +5,8 @@ import { projectId, publicAnonKey } from '../utils/supabase/info';
 export function FloatingContact() {
   const [isOpen, setIsOpen] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
-  const [phone, setPhone] = useState('');
-  const [whatsapp, setWhatsapp] = useState('');
+  const [phone, setPhone] = useState('+256772388880');
+  const [whatsapp, setWhatsapp] = useState('256772388880');
 
   const [email, setEmail] = useState('info@resticbo.org');
 
@@ -31,7 +31,9 @@ export function FloatingContact() {
         else if (c?.phone) setWhatsapp(c.phone.replace(/\D/g, ''));
         if (c?.email) setEmail(c.email);
       })
-      .catch(() => {});
+      .catch((err) => {
+        console.warn('Notice: Failed to fetch live contact settings for floating widget, using defaults:', err);
+      });
   }, []);
 
   const contactOptions = [

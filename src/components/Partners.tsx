@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { Handshake, ArrowRight, Building2, Globe, Heart, Loader2 } from 'lucide-react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { useDonationModal } from './DonationModalContext';
@@ -116,12 +117,12 @@ export function Partners() {
               {PARTNER_PAGE_STRINGS.emptyStateDescription}
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-              <a
-                href="#contact"
+              <Link
+                to="/contact"
                 className="w-full sm:w-auto inline-flex items-center justify-center px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs sm:text-sm shadow-sm transition-all"
               >
                 Inquire About Partnerships
-              </a>
+              </Link>
               <Button
                 onClick={openDonationModal}
                 variant="outline"
@@ -244,12 +245,12 @@ export function Partners() {
               We are eager to partner with organizations, foundations, academic researchers, and social enterprises that share our vision for locally driven community empowerment.
             </p>
             <div className="flex flex-col sm:flex-row gap-3.5 justify-center">
-              <a
-                href="#contact"
+              <Link
+                to="/contact"
                 className="inline-flex items-center justify-center bg-emerald-600 text-white font-semibold text-sm px-8 py-3 rounded-xl hover:bg-emerald-700 transition-colors shadow-md shadow-emerald-600/15"
               >
                 Contact Us
-              </a>
+              </Link>
               <Button
                 onClick={openDonationModal}
                 variant="outline"

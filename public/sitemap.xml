@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url><loc>https://resticbo.org/</loc><changefreq>weekly</changefreq><priority>1.0</priority></url>
   <url><loc>https://resticbo.org/about</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
@@ -9,12 +9,16 @@
   <url><loc>https://resticbo.org/events</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
   <url><loc>https://resticbo.org/resources</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
   <url><loc>https://resticbo.org/team</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://resticbo.org/partners</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://resticbo.org/opportunities</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://resticbo.org/contact</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://resticbo.org/get-involved</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
   <url><loc>https://resticbo.org/faqs</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://resticbo.org/impact-dashboard</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://resticbo.org/reports</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
   <url><loc>https://resticbo.org/financials</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://resticbo.org/privacy</loc><changefreq>yearly</changefreq><priority>0.3</priority></url>
   <url><loc>https://resticbo.org/terms</loc><changefreq>yearly</changefreq><priority>0.3</priority></url>
+  <url><loc>https://resticbo.org/cookies</loc><changefreq>yearly</changefreq><priority>0.3</priority></url>
   <url><loc>https://resticbo.org/refund</loc><changefreq>yearly</changefreq><priority>0.3</priority></url>
 </urlset>

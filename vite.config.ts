@@ -17,6 +17,31 @@
       cssMinify: false,
       target: 'esnext',
       outDir: 'build',
+      chunkSizeWarningLimit: 750,
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            if (id.includes('node_modules/recharts')) {
+              return 'vendor-charts';
+            }
+            if (id.includes('node_modules/leaflet') || id.includes('node_modules/react-leaflet')) {
+              return 'vendor-leaflet';
+            }
+            if (id.includes('node_modules/@supabase')) {
+              return 'vendor-supabase';
+            }
+            if (id.includes('node_modules/framer-motion')) {
+              return 'vendor-motion';
+            }
+            if (id.includes('node_modules/react-quill') || id.includes('node_modules/quill')) {
+              return 'vendor-quill';
+            }
+            if (id.includes('node_modules/@stripe') || id.includes('node_modules/@paypal')) {
+              return 'vendor-payments';
+            }
+          }
+        }
+      }
     },
     resolve: {
       extensions: ['.js', '.jsx', '.ts', '.tsx', '.json'],

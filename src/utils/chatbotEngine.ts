@@ -184,7 +184,7 @@ export function generateBotReply(rawMessage: string): BotReply {
     msg.includes('message') || msg.includes('touch')
   ) {
     return {
-      text: "You can reach the RESTI team through our official channels:\n\n📧 Email: info@resticbo.org\n📞 Phone: +256 700 000 000\n📍 Kiryandongo District, Uganda",
+      text: "You can reach the RESTI team through our official channels:\n\n📧 Email: info@resticbo.org\n📞 Phone: +256 772 388 880 / +256 752 488 880\n📍 Kiryandongo District, Uganda",
       link: { text: 'Contact Us →', url: '/contact' },
       quickReplies: ['Speak to Staff', 'About RESTI', 'Main Menu']
     };

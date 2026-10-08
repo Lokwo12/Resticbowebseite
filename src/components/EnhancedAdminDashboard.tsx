@@ -2096,7 +2096,10 @@ export function EnhancedAdminDashboard() {
 
       // Get fresh session token to prevent token expiry issues
       const { data: { session: activeSession } } = await supabase.auth.getSession();
-      const token = activeSession?.access_token || accessToken || publicAnonKey;
+      const token = activeSession?.access_token || accessToken;
+      if (!token) {
+        throw new Error('Admin session expired or unauthenticated. Please refresh or sign in again.');
+      }
 
       // Tier 1: Try Edge Function (handles Resend email sending + updates DB)
       try {
@@ -3132,7 +3135,7 @@ export function EnhancedAdminDashboard() {
                         type="email"
                         value={resetEmail}
                         onChange={(e) => { setResetEmail(e.target.value); setAuthError(null); }}
-                        placeholder="admin@example.com"
+                        placeholder="admin@resti.org"
                         required
                         className="w-full pl-11 pr-4 py-2.5 sm:py-3 bg-slate-50/70 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-all placeholder:text-slate-400 font-medium text-slate-800 text-sm focus:bg-white"
                       />
@@ -3189,7 +3192,7 @@ export function EnhancedAdminDashboard() {
                         type="email"
                         value={email}
                         onChange={(e) => { setEmail(e.target.value); setAuthError(null); }}
-                        placeholder="admin@example.com"
+                        placeholder="admin@resti.org"
                         required
                         autoComplete="email"
                         className="w-full pl-11 pr-4 py-2.5 sm:py-3 bg-slate-50/70 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-all placeholder:text-slate-400 font-medium text-slate-800 text-sm focus:bg-white"

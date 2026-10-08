@@ -9,7 +9,7 @@ import {
 import { toast } from 'sonner';
 import { supabase } from '../utils/supabase/client';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
-import { STRIPE_PK, PAYPAL_CLIENT_ID } from '../utils/env';
+import { STRIPE_PK, PAYPAL_CLIENT_ID, PAYPAL_MERCHANT_EMAIL } from '../utils/env';
 import { StripePaymentProvider, StripeCardForm, prefetchPaymentIntent } from './StripeShared';
 import { PayPalScriptProvider, PayPalButtons } from '@paypal/react-paypal-js';
 import {
@@ -1012,7 +1012,7 @@ export function DonationExperience({
                   setEmail(e.target.value);
                   setErrors(prev => ({ ...prev, email: '' }));
                 }}
-                placeholder="you@example.com (for official donation receipt)"
+                placeholder="donor@resti.org (for official donation receipt)"
                 className="w-full px-3.5 py-2 text-xs rounded-lg border border-stone-300 focus:outline-none focus:ring-1 focus:ring-emerald-600"
               />
               {errors.email && (
@@ -1253,7 +1253,7 @@ export function DonationExperience({
                   <span>Encrypted, buyer-protected donation payment via official PayPal</span>
                 </div>
 
-                {PAYPAL_CLIENT_ID ? (
+                {PAYPAL_CLIENT_ID && !PAYPAL_CLIENT_ID.includes('YOUR_PAYPAL') ? (
                   <PayPalScriptProvider options={{ clientId: PAYPAL_CLIENT_ID }}>
                     <PayPalButtons
                       style={{ layout: 'vertical', shape: 'rect' }}
@@ -1285,7 +1285,7 @@ export function DonationExperience({
                   </PayPalScriptProvider>
                 ) : (
                   <div className="text-center p-4 bg-stone-50 border border-stone-200 rounded-xl text-xs space-y-2">
-                    <p className="text-stone-600">PayPal integration is active. Click below to continue:</p>
+                    <p className="text-stone-600">PayPal direct donation is available. Click below to continue:</p>
                     <button
                       type="button"
                       onClick={() => {
@@ -1293,7 +1293,10 @@ export function DonationExperience({
                           toast.error('Please complete donor name and email first.');
                           return;
                         }
-                        window.open('https://paypal.com/donate', '_blank');
+                        const paypalUrl = PAYPAL_MERCHANT_EMAIL
+                          ? `https://www.paypal.com/donate/?business=${encodeURIComponent(PAYPAL_MERCHANT_EMAIL)}&currency_code=USD`
+                          : 'https://paypal.com/donate';
+                        window.open(paypalUrl, '_blank', 'noopener,noreferrer');
                       }}
                       className="w-full bg-[#FFC439] hover:bg-[#F2BA36] font-bold text-stone-900 py-2.5 rounded-xl text-xs transition-all flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
                     >
