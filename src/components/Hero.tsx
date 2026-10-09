@@ -127,27 +127,27 @@ const FALLBACK_BACKGROUND_IMAGES: string[] = [
 const slideVariants: Variants = {
   enter: (direction: number) => ({
     x: direction > 0 ? '100%' : '-100%',
-    opacity: 0.3,
-    scale: 1.05,
+    opacity: 1,
+    scale: 1,
   }),
   center: {
     x: '0%',
     opacity: 1,
     scale: 1,
     transition: {
-      x: { type: 'tween' as const, duration: 1.8, ease: [0.25, 1, 0.5, 1] },
-      opacity: { duration: 1.4, ease: 'easeInOut' },
-      scale: { duration: 1.8, ease: [0.25, 1, 0.5, 1] },
+      x: { type: 'tween' as const, duration: 1.2, ease: [0.25, 1, 0.5, 1] },
+      opacity: { duration: 0 },
+      scale: { duration: 1.2, ease: [0.25, 1, 0.5, 1] },
     },
   },
   exit: (direction: number) => ({
     x: direction > 0 ? '-100%' : '100%',
-    opacity: 0,
-    scale: 0.98,
+    opacity: 1,
+    scale: 1,
     transition: {
-      x: { type: 'tween' as const, duration: 1.8, ease: [0.25, 1, 0.5, 1] },
-      opacity: { duration: 1.4, ease: 'easeInOut' },
-      scale: { duration: 1.8, ease: [0.25, 1, 0.5, 1] },
+      x: { type: 'tween' as const, duration: 1.2, ease: [0.25, 1, 0.5, 1] },
+      opacity: { duration: 0 },
+      scale: { duration: 1.2, ease: [0.25, 1, 0.5, 1] },
     },
   }),
 };
@@ -303,12 +303,12 @@ export function Hero() {
           />
         </AnimatePresence>
 
-        {/* Stable Dark Gradient Overlay positioned on top of the sliding background (z-[1]) to eliminate flicker */}
-        <div className="absolute inset-0 bg-gradient-to-b from-slate-950/85 via-slate-950/70 to-slate-950/95 z-[1]" />
+        {/* Semi-transparent dark overlay to keep foreground text readable while letting pictures appear clearly */}
+        <div className="absolute inset-0 bg-gradient-to-b from-slate-950/60 via-slate-950/45 to-slate-950/70 z-[1]" />
       </div>
 
       {/* Ambient background glow orb for modern depth */}
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] sm:w-[800px] h-[350px] sm:h-[500px] bg-emerald-500/15 rounded-full blur-3xl pointer-events-none z-0"></div>
+      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] sm:w-[800px] h-[350px] sm:h-[500px] bg-emerald-500/10 rounded-full blur-3xl pointer-events-none z-0"></div>
 
       {/* Slide Navigation Arrows (Prev / Next) */}
       {backgroundImages.length > 1 && (
