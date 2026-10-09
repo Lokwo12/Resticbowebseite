@@ -44,6 +44,7 @@ export interface ProgramFormData {
   description: string;
   content: string;
   image: string;
+  videoUrl?: string;
   location: string;
   timeline: string;
   beneficiaries: string;
@@ -109,6 +110,7 @@ export function ProgramFormDialog({
     description: '',
     content: '',
     image: '',
+    videoUrl: '',
     location: 'Kiryandongo District, Uganda',
     timeline: 'Ongoing (2024–2026)',
     beneficiaries: 'Refugee and host community members',
@@ -158,6 +160,7 @@ export function ProgramFormDialog({
         description: val.description || '',
         content: val.content || val.about || '',
         image: val.image || '',
+        videoUrl: val.videoUrl || val.video_url || '',
         location: val.location || 'Kiryandongo District, Uganda',
         timeline: val.timeline || 'Ongoing (2024–2026)',
         beneficiaries: val.beneficiaries || 'Refugee and host community members',
@@ -656,6 +659,22 @@ export function ProgramFormDialog({
                     </div>
                   )}
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                  Field Video URL (YouTube, Vimeo, or MP4)
+                </label>
+                <input
+                  type="url"
+                  value={formData.videoUrl || ''}
+                  onChange={(e) => setFormData({ ...formData, videoUrl: e.target.value })}
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none text-xs text-slate-800"
+                  placeholder="https://www.youtube.com/watch?v=... or direct MP4 link"
+                />
+                <p className="text-[11px] text-slate-400 mt-1">
+                  Optional. Shows a dedicated video reel card on the program details page.
+                </p>
               </div>
             </div>
           )}

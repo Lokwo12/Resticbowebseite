@@ -2,11 +2,12 @@ import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import {
   ArrowLeft, Calendar, Tag, Heart, Quote, User, MapPin,
-  ShieldCheck, ArrowRight, BookOpen, Share2, Check
+  ShieldCheck, ArrowRight, BookOpen, Share2, Check, Play
 } from 'lucide-react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { supabase } from '../utils/supabase/client';
 import { SEO } from './SEO';
+import { VideoModal, getEmbedVideoUrl } from './VideoModal';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import { useDonationModal } from './DonationModalContext';
@@ -26,6 +27,7 @@ export function StoryDetail() {
   const [story, setStory] = useState<ImpactStory | null>(null);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
+  const [isVideoOpen, setIsVideoOpen] = useState(false);
 
   useEffect(() => {
     const fetchStory = async () => {
@@ -260,6 +262,48 @@ export function StoryDetail() {
               </blockquote>
             )}
 
+            {/* Beneficiary Video Testimonial / Field Clip */}
+            {story.video_url && (
+              <div className="bg-gradient-to-br from-slate-900 to-emerald-950 rounded-2xl p-6 text-white border border-emerald-500/20 shadow-xl space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
+                    <span className="text-xs uppercase font-bold tracking-wider text-emerald-300">Field Video Narrative</span>
+                  </div>
+                  <button
+                    onClick={() => setIsVideoOpen(true)}
+                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-300 hover:text-white transition-colors cursor-pointer"
+                  >
+                    Open in Theater <Play size={12} className="fill-current" />
+                  </button>
+                </div>
+
+                <div className="relative aspect-video rounded-xl overflow-hidden bg-black border border-white/10 group">
+                  {story.image ? (
+                    <img
+                      src={story.image}
+                      alt={story.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-80"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-slate-900" />
+                  )}
+                  <div className="absolute inset-0 bg-slate-950/40 flex items-center justify-center">
+                    <button
+                      onClick={() => setIsVideoOpen(true)}
+                      className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-emerald-500 hover:bg-emerald-400 text-white flex items-center justify-center shadow-2xl hover:scale-110 active:scale-95 transition-all cursor-pointer ring-4 ring-white/20"
+                      aria-label="Play testimonial video"
+                    >
+                      <Play size={28} className="fill-current translate-x-0.5" />
+                    </button>
+                  </div>
+                  <div className="absolute bottom-3 left-3 right-3 text-xs text-white/90 drop-shadow-md">
+                    Watch {displayName}'s documented field testimonial
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Story Narrative */}
             <div className="prose prose-slate max-w-none text-slate-700 leading-relaxed text-base sm:text-lg whitespace-pre-line space-y-4">
               {cleanStoryText(story.story)}
@@ -298,6 +342,16 @@ export function StoryDetail() {
           </div>
         </div>
       </article>
+
+      {/* Video Modal Player */}
+      {story.video_url && (
+        <VideoModal
+          isOpen={isVideoOpen}
+          onClose={() => setIsVideoOpen(false)}
+          videoUrl={story.video_url}
+          title={`${displayName} - Field Story Video`}
+        />
+      )}
     </div>
   );
 }

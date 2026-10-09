@@ -953,6 +953,25 @@ export function SiteSettingsTab({ settings: initialSettings, onUpdate, accessTok
               </div>
 
               <div>
+                <label className="block text-sm text-gray-700 mb-1">Hero Story Video URL (YouTube, Vimeo, or MP4)</label>
+                <p className="text-xs text-gray-500 mb-2">
+                  When set, a "Watch Our Story" button appears next to Donate Now on the homepage, opening a video player popup.
+                </p>
+                <input
+                  type="text"
+                  value={settings.hero?.storyVideoUrl || ''}
+                  onChange={(e) =>
+                    setSettings({
+                      ...settings,
+                      hero: { ...settings.hero, storyVideoUrl: e.target.value },
+                    })
+                  }
+                  placeholder="https://www.youtube.com/watch?v=... or direct MP4 link"
+                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+
+              <div>
                 <label className="block text-sm text-gray-700 mb-2">Hero Background Slides</label>
                 <div className="space-y-3">
                   {(settings.hero?.backgroundImages || []).map((imgUrl: string, index: number) => (

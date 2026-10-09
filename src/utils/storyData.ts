@@ -31,6 +31,7 @@ export interface ImpactStory {
   // Media
   image?: string;
   additional_images?: string[];
+  video_url?: string;
   
   // Metadata & Publishing
   date: string; // ISO date string or YYYY-MM-DD
@@ -152,6 +153,7 @@ export function normalizeStory(raw: any): ImpactStory {
     program_name: cleanStoryText(value.program_name || ''),
     image: value.image || '',
     additional_images: Array.isArray(value.additional_images) ? value.additional_images : [],
+    video_url: value.video_url || value.videoUrl || '',
     date: value.date || value.created_at || new Date().toISOString(),
     status,
     is_published: status === 'published',

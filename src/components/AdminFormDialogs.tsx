@@ -280,6 +280,7 @@ export function StoryFormDialog({ show, onClose, editingItem, onSuccess, userRol
     title: '',
     story: '',
     image: '',
+    video_url: '',
     category: 'general',
     impact: '',
     date: new Date().toISOString().split('T')[0]
@@ -294,6 +295,7 @@ export function StoryFormDialog({ show, onClose, editingItem, onSuccess, userRol
         title: val.title || '',
         story: stripHtml(val.story || ''),
         image: val.image || '',
+        video_url: val.video_url || val.videoUrl || '',
         category: val.category || 'general',
         impact: val.impact || '',
         date: val.date ? val.date.split('T')[0] : new Date().toISOString().split('T')[0]
@@ -304,6 +306,7 @@ export function StoryFormDialog({ show, onClose, editingItem, onSuccess, userRol
         title: '',
         story: '',
         image: '',
+        video_url: '',
         category: 'general',
         impact: '',
         date: new Date().toISOString().split('T')[0]
@@ -378,6 +381,7 @@ export function StoryFormDialog({ show, onClose, editingItem, onSuccess, userRol
         title: formData.title,
         story: stripHtml(formData.story),
         image: formData.image || '',
+        video_url: formData.video_url || '',
         category: formData.category || 'general',
         impact: formData.impact || '',
         date: formData.date ? new Date(formData.date).toISOString() : new Date().toISOString(),
@@ -548,6 +552,19 @@ export function StoryFormDialog({ show, onClose, editingItem, onSuccess, userRol
                 className="w-full px-4 py-2 text-sm bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all outline-none"
               />
             </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Field Testimonial Video URL (YouTube, Vimeo, or MP4)</label>
+            <p className="text-xs text-slate-400 mb-2">
+              Attach a short beneficiary testimonial video or clip to be featured in the story details.
+            </p>
+            <input
+              type="url"
+              value={formData.video_url}
+              onChange={(e) => setFormData({ ...formData, video_url: e.target.value })}
+              placeholder="https://www.youtube.com/watch?v=... or direct MP4 link"
+              className="w-full px-4 py-2.5 text-sm bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all outline-none"
+            />
           </div>
           <div className="flex gap-2 justify-end pt-4">
             <Button type="button" variant="outline" onClick={onClose} className="rounded-xl border-slate-200 hover:bg-slate-50">Cancel</Button>

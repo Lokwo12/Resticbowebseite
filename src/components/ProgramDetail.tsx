@@ -4,7 +4,7 @@ import {
   ArrowLeft, Share2, Heart, CheckCircle2, MapPin, Users, 
   Sparkles, Clock, ChevronRight, Check, Image as ImageIcon,
   ExternalLink, Calendar, HelpCircle, ArrowRight, ShieldCheck,
-  Building2, Globe, BookmarkCheck
+  Building2, Globe, BookmarkCheck, Play, Video
 } from 'lucide-react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { createClient } from '@supabase/supabase-js';
@@ -14,6 +14,7 @@ import { Badge } from './ui/badge';
 import { toast } from 'sonner';
 import { useDonationModal } from './DonationModalContext';
 import { getDeletedProgramIds } from '../utils/programDeletedRegistry';
+import { VideoModal } from './VideoModal';
 
 const supabase = createClient(
   `https://${projectId}.supabase.co`,
@@ -48,6 +49,7 @@ export interface Program {
   description: string;
   content: string;
   image: string;
+  videoUrl?: string;
   createdAt: string;
   updatedAt?: string;
   status?: 'Active' | 'Upcoming' | 'Completed' | 'Paused' | string;
@@ -425,6 +427,7 @@ export function ProgramDetail() {
   const [program, setProgram] = useState<Program | null>(() => DETAILED_FALLBACK_PROGRAMS[cleanId] || null);
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [isVideoOpen, setIsVideoOpen] = useState(false);
   const [relatedNews, setRelatedNews] = useState<NewsArticleSummary[]>([]);
   const [newsLoading, setNewsLoading] = useState(false);
 
@@ -621,6 +624,7 @@ export function ProgramDetail() {
       description: val.description || '',
       content: val.content || val.about || val.description || '',
       image: val.image || 'https://images.unsplash.com/photo-1593113598332-cd288d649433?w=1200&q=80',
+      videoUrl: val.videoUrl || val.video_url || undefined,
       createdAt: val.createdAt || new Date().toISOString(),
       updatedAt: val.updatedAt || undefined,
       location: val.location || 'Kiryandongo District, Uganda',
@@ -1043,6 +1047,53 @@ export function ProgramDetail() {
             </section>
 
             {/* ================================================================ */}
+            {/* SECTION: PROGRAM FIELD VIDEO */}
+            {/* ================================================================ */}
+            {program.videoUrl && (
+              <section className="bg-gradient-to-br from-slate-900 via-slate-950 to-emerald-950 rounded-3xl p-6 sm:p-8 text-white border border-emerald-500/20 shadow-xl space-y-4">
+                <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-300 flex items-center justify-center">
+                      <Video className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h2 className="text-xl sm:text-2xl font-bold font-heading text-white">
+                        On-the-Ground Video Reel
+                      </h2>
+                      <p className="text-xs text-emerald-300/80">Documented field work in Kiryandongo District</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setIsVideoOpen(true)}
+                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-300 hover:text-white transition-colors cursor-pointer"
+                  >
+                    Watch in Theater <Play size={12} className="fill-current" />
+                  </button>
+                </div>
+
+                <div className="relative aspect-video rounded-2xl overflow-hidden bg-black border border-white/10 group">
+                  <img
+                    src={program.image}
+                    alt={program.title}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-75"
+                  />
+                  <div className="absolute inset-0 bg-slate-950/40 flex items-center justify-center">
+                    <button
+                      onClick={() => setIsVideoOpen(true)}
+                      className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-emerald-500 hover:bg-emerald-400 text-white flex items-center justify-center shadow-2xl hover:scale-110 active:scale-95 transition-all cursor-pointer ring-4 ring-white/20"
+                      aria-label="Play program video"
+                    >
+                      <Play size={28} className="fill-current translate-x-0.5" />
+                    </button>
+                  </div>
+                  <div className="absolute bottom-4 left-4 right-4 text-xs sm:text-sm text-white/95 font-medium drop-shadow-md">
+                    {program.title} — Verified Field Video Reel
+                  </div>
+                </div>
+              </section>
+            )}
+
+            {/* ================================================================ */}
             {/* SECTION 10: PROGRAM GALLERY */}
             {/* ================================================================ */}
             {program.gallery && program.gallery.length > 0 && (
@@ -1280,6 +1331,16 @@ export function ProgramDetail() {
         </section>
 
       </div>
+
+      {/* Video Modal Player */}
+      {program.videoUrl && (
+        <VideoModal
+          isOpen={isVideoOpen}
+          onClose={() => setIsVideoOpen(false)}
+          videoUrl={program.videoUrl}
+          title={`${program.title} - Field Video`}
+        />
+      )}
     </div>
   );
 }

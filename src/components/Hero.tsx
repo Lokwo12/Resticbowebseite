@@ -1,8 +1,9 @@
-import { ArrowRight, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowRight, ChevronDown, ChevronLeft, ChevronRight, Play } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { useDonationModal } from './DonationModalContext';
 import { motion, AnimatePresence, Variants } from 'framer-motion';
+import { VideoModal } from './VideoModal';
 
 // Animated counter hook
 function useCountUp(target: number, duration = 1800, start = false) {
@@ -113,6 +114,7 @@ interface HeroSettings {
   primaryButtonText: string;
   secondaryButtonText: string;
   imageUrl: string;
+  storyVideoUrl?: string;
   stats: Array<{ value: string; label: string }>;
 }
 
@@ -165,6 +167,7 @@ const DEFAULT_HERO_SETTINGS: HeroSettings = {
   primaryButtonText: 'Donate Now',
   secondaryButtonText: 'Learn More',
   imageUrl: 'https://images.unsplash.com/photo-1606471015285-85fa1288aa4e?auto=format&fit=crop&w=1920&q=85',
+  storyVideoUrl: '',
   stats: DEFAULT_HERO_STATS
 };
 
@@ -174,6 +177,7 @@ export function Hero() {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [direction, setDirection] = useState(1);
   const [isPaused, setIsPaused] = useState(false);
+  const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
   
   const backgroundImages: string[] = (settings as any)?.backgroundImages?.length > 1
     ? (settings as any).backgroundImages 
@@ -441,7 +445,7 @@ export function Hero() {
             {/* Call to Action Buttons */}
             <motion.div 
               variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease: "easeOut" } } }}
-              className="flex flex-col sm:flex-row gap-3.5 sm:gap-4 justify-center items-center w-full pt-2"
+              className="flex flex-col sm:flex-row gap-3.5 sm:gap-4 justify-center items-center w-full pt-2 flex-wrap"
             >
               <button
                 onClick={openDonationModal}
@@ -450,6 +454,20 @@ export function Hero() {
                 <span>{settings.primaryButtonText}</span>
                 <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform duration-300 text-slate-950" />
               </button>
+
+              {settings.storyVideoUrl ? (
+                <button
+                  type="button"
+                  onClick={() => setIsVideoModalOpen(true)}
+                  className="w-full sm:w-auto group bg-emerald-950/70 hover:bg-emerald-900/90 text-white text-[15px] sm:text-[16px] font-semibold border border-emerald-400/40 hover:border-emerald-400/80 backdrop-blur-md px-7 py-3.5 sm:py-4 rounded-xl transition-all duration-300 hover:-translate-y-0.5 shadow-md active:translate-y-0 flex items-center justify-center gap-2.5 cursor-pointer ring-1 ring-emerald-500/20"
+                >
+                  <span className="w-7 h-7 rounded-full bg-emerald-500/30 group-hover:bg-emerald-500 text-emerald-300 group-hover:text-white flex items-center justify-center transition-colors">
+                    <Play size={14} className="fill-current translate-x-0.5" />
+                  </span>
+                  <span>Watch Our Story</span>
+                </button>
+              ) : null}
+
               <button
                 onClick={scrollToAbout}
                 className="w-full sm:w-auto bg-sky-500/15 hover:bg-sky-500/25 text-sky-200 hover:text-white text-[15px] sm:text-[16px] font-semibold border border-sky-400/35 hover:border-sky-400/60 backdrop-blur-md px-8 py-3.5 sm:py-4 rounded-xl transition-all duration-300 hover:-translate-y-0.5 shadow-md active:translate-y-0 cursor-pointer"
@@ -474,6 +492,16 @@ export function Hero() {
           </motion.div>
         </div>
       </div>
+
+      {/* Video Modal Player */}
+      {settings.storyVideoUrl && (
+        <VideoModal
+          isOpen={isVideoModalOpen}
+          onClose={() => setIsVideoModalOpen(false)}
+          videoUrl={settings.storyVideoUrl}
+          title="RESTI CBO - Field Story Video"
+        />
+      )}
     </section>
   );
 }
