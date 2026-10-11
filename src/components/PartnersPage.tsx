@@ -91,7 +91,7 @@ export function PartnersPage() {
             {PARTNER_PAGE_STRINGS.title}
           </h1>
 
-          <div className="space-y-4 max-w-4xl mx-auto text-emerald-50 text-[16px] sm:text-[17px] leading-[1.7] font-normal">
+          <div className="space-y-4 max-w-4xl mx-auto text-emerald-50 text-[16px] sm:text-[17px] leading-[1.7] font-normal body-justify">
             <p>{PARTNER_PAGE_STRINGS.introParagraph1}</p>
             <p>{PARTNER_PAGE_STRINGS.introParagraph2}</p>
           </div>

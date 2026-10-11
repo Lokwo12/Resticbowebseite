@@ -254,7 +254,7 @@ export function EventDetail() {
               {/* Full Description */}
               <div>
                 <h2 className="text-xl font-bold font-heading text-slate-900 mb-4">About This Event</h2>
-                <div className="prose prose-slate max-w-none text-slate-700 leading-relaxed whitespace-pre-line text-base">
+                <div className="prose prose-slate max-w-none text-slate-700 leading-relaxed whitespace-pre-line text-base body-justify">
                   {event.description || 'Detailed information for this event will be published shortly.'}
                 </div>
               </div>
@@ -267,7 +267,7 @@ export function EventDetail() {
                     Event Summary & Outcomes
                   </div>
                   {event.summary && (
-                    <p className="text-sm text-slate-700 leading-relaxed">{event.summary}</p>
+                    <p className="text-sm text-slate-700 leading-relaxed body-justify">{event.summary}</p>
                   )}
                   {event.outcomes && (
                     <div className="pt-2 text-sm text-slate-800 font-medium leading-relaxed">

@@ -1234,19 +1234,159 @@ export function SiteSettingsTab({ settings: initialSettings, onUpdate, accessTok
                 </div>
               </div>
 
-              <div>
-                <label className="block text-sm text-gray-700 mb-2">Introduction</label>
-                <textarea
-                  value={settings.about?.intro || ''}
-                  onChange={(e) =>
-                    setSettings({
-                      ...settings,
-                      about: { ...settings.about, intro: e.target.value },
-                    })
-                  }
-                  rows={3}
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
-                />
+              {/* Introduction / About RESTI CBO Paragraphs */}
+              <div className="pt-2 pb-2 border-t border-b border-slate-100 my-4 space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div>
+                    <label className="block text-sm font-bold text-gray-900">
+                      About RESTI CBO — Descriptive Paragraphs
+                    </label>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      Paragraphs displayed beneath the "About RESTI CBO" heading on the homepage. Add, edit, delete, or reorder paragraphs.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const current = (
+                        Array.isArray(settings.about?.introParagraphs) && settings.about.introParagraphs.length > 0
+                          ? settings.about.introParagraphs
+                          : (typeof settings.about?.intro === 'string' && settings.about.intro.trim().length > 0
+                              ? settings.about.intro.split(/\r?\n\s*\r?\n/).map((p: string) => p.trim()).filter(Boolean)
+                              : [''])
+                      );
+                      const updated = [...current, ''];
+                      setSettings({
+                        ...settings,
+                        about: {
+                          ...settings.about,
+                          introParagraphs: updated,
+                          intro: updated.filter((p: string) => p.trim().length > 0).join('\n\n'),
+                        },
+                      });
+                    }}
+                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 bg-emerald-100 hover:bg-emerald-200 px-3 py-1.5 rounded-lg transition self-start sm:self-auto shadow-xs"
+                  >
+                    <Plus size={14} /> Add Paragraph
+                  </button>
+                </div>
+
+                <div className="space-y-3 pt-1">
+                  {(
+                    Array.isArray(settings.about?.introParagraphs) && settings.about.introParagraphs.length > 0
+                      ? settings.about.introParagraphs
+                      : (typeof settings.about?.intro === 'string' && settings.about.intro.trim().length > 0
+                          ? settings.about.intro.split(/\r?\n\s*\r?\n/).map((p: string) => p.trim()).filter(Boolean)
+                          : [''])
+                  ).map((paragraph: string, index: number, arr: string[]) => (
+                    <div key={index} className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                          Paragraph {index + 1}
+                        </span>
+                        <div className="flex items-center gap-1">
+                          {/* Move Up */}
+                          <button
+                            type="button"
+                            disabled={index === 0}
+                            onClick={() => {
+                              if (index === 0) return;
+                              const current = [...arr];
+                              const temp = current[index];
+                              current[index] = current[index - 1];
+                              current[index - 1] = temp;
+                              setSettings({
+                                ...settings,
+                                about: {
+                                  ...settings.about,
+                                  introParagraphs: current,
+                                  intro: current.filter((p: string) => p.trim().length > 0).join('\n\n'),
+                                },
+                              });
+                            }}
+                            className={`p-1 rounded hover:bg-slate-200 transition ${
+                              index === 0 ? 'text-slate-300 cursor-not-allowed' : 'text-slate-600'
+                            }`}
+                            title="Move Up"
+                            aria-label={`Move Paragraph ${index + 1} Up`}
+                          >
+                            <ChevronUp size={16} />
+                          </button>
+
+                          {/* Move Down */}
+                          <button
+                            type="button"
+                            disabled={index === arr.length - 1}
+                            onClick={() => {
+                              if (index === arr.length - 1) return;
+                              const current = [...arr];
+                              const temp = current[index];
+                              current[index] = current[index + 1];
+                              current[index + 1] = temp;
+                              setSettings({
+                                ...settings,
+                                about: {
+                                  ...settings.about,
+                                  introParagraphs: current,
+                                  intro: current.filter((p: string) => p.trim().length > 0).join('\n\n'),
+                                },
+                              });
+                            }}
+                            className={`p-1 rounded hover:bg-slate-200 transition ${
+                              index === arr.length - 1 ? 'text-slate-300 cursor-not-allowed' : 'text-slate-600'
+                            }`}
+                            title="Move Down"
+                            aria-label={`Move Paragraph ${index + 1} Down`}
+                          >
+                            <ChevronDown size={16} />
+                          </button>
+
+                          {/* Delete */}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const current = [...arr];
+                              current.splice(index, 1);
+                              const updated = current.length > 0 ? current : [''];
+                              setSettings({
+                                ...settings,
+                                about: {
+                                  ...settings.about,
+                                  introParagraphs: updated,
+                                  intro: updated.filter((p: string) => p.trim().length > 0).join('\n\n'),
+                                },
+                              });
+                            }}
+                            className="p-1 text-rose-500 hover:bg-rose-50 rounded transition ml-1"
+                            title="Delete Paragraph"
+                            aria-label={`Delete Paragraph ${index + 1}`}
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      </div>
+
+                      <textarea
+                        value={paragraph}
+                        onChange={(e) => {
+                          const current = [...arr];
+                          current[index] = e.target.value;
+                          setSettings({
+                            ...settings,
+                            about: {
+                              ...settings.about,
+                              introParagraphs: current,
+                              intro: current.filter((p: string) => p.trim().length > 0).join('\n\n'),
+                            },
+                          });
+                        }}
+                        rows={3}
+                        className="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                        placeholder={`Enter paragraph ${index + 1} text...`}
+                      />
+                    </div>
+                  ))}
+                </div>
               </div>
 
               <div>

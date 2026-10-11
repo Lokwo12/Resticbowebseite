@@ -316,7 +316,7 @@ export function FAQPage() {
                       aria-labelledby={buttonId}
                       className="px-5 sm:px-6 pb-6 pt-1 border-t border-slate-100 bg-slate-50/40 animate-fade-in"
                     >
-                      <p className="text-[15px] sm:text-[16px] lg:text-[16.5px] leading-[1.65] text-slate-700 font-normal">
+                      <p className="text-[15px] sm:text-[16px] lg:text-[16.5px] leading-[1.65] text-slate-700 font-normal body-justify">
                         {faq.answer}
                       </p>
                     </div>

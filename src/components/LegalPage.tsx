@@ -196,7 +196,7 @@ export function LegalPage({ type }: LegalPageProps) {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 -mt-12 relative z-10 pb-20">
         <div className="bg-white rounded-2xl shadow-xl p-8 md:p-12 border border-gray-100">
           
-          <div className="text-gray-700 whitespace-pre-wrap leading-relaxed space-y-4 text-base">
+          <div className="text-gray-700 whitespace-pre-wrap leading-relaxed space-y-4 text-base body-justify">
             {content || fallbacks[type]}
           </div>
           

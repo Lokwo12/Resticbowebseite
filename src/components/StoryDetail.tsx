@@ -305,7 +305,7 @@ export function StoryDetail() {
             )}
 
             {/* Story Narrative */}
-            <div className="prose prose-slate max-w-none text-slate-700 leading-relaxed text-base sm:text-lg whitespace-pre-line space-y-4">
+            <div className="prose prose-slate max-w-none text-slate-700 leading-relaxed text-base sm:text-lg whitespace-pre-line space-y-4 body-justify">
               {cleanStoryText(story.story)}
             </div>
 
@@ -316,7 +316,7 @@ export function StoryDetail() {
                   <ShieldCheck size={16} className="text-emerald-600" />
                   Documented Community & Program Context
                 </div>
-                <p className="text-sm text-slate-700 leading-relaxed">
+                <p className="text-sm text-slate-700 leading-relaxed body-justify">
                   {cleanStoryText(story.short_description)}
                 </p>
               </div>

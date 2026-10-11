@@ -239,14 +239,14 @@ export function NewsDetail() {
 
             {/* Excerpt Summary */}
             {article.description && (
-              <p className="text-base sm:text-lg text-gray-600 font-medium italic border-l-4 border-emerald-500 pl-4 py-1 mb-8 leading-relaxed">
+              <p className="text-base sm:text-lg text-gray-600 font-medium italic border-l-4 border-emerald-500 pl-4 py-1 mb-8 leading-relaxed body-justify">
                 {article.description}
               </p>
             )}
 
             {/* Rich Text Body */}
             <div 
-              className="prose prose-emerald max-w-none text-gray-700 leading-relaxed text-base sm:text-lg"
+              className="prose prose-emerald max-w-none text-gray-700 leading-relaxed text-base sm:text-lg body-justify"
               dangerouslySetInnerHTML={{ __html: article.content }}
             />
 

@@ -164,11 +164,11 @@ export function ImpactDashboard() {
 
           {/* Two Grounded Mission Paragraphs */}
           <div className="bg-white/5 border border-white/10 rounded-3xl p-6 sm:p-8 text-left space-y-4 shadow-xl backdrop-blur-sm">
-            <p className="text-base sm:text-lg text-slate-200 leading-relaxed">
+            <p className="text-base sm:text-lg text-slate-200 leading-relaxed body-justify">
               {data.heroIntroP1}
             </p>
             <div className="h-px bg-white/10 w-full" />
-            <p className="text-base sm:text-lg text-slate-300 leading-relaxed font-normal">
+            <p className="text-base sm:text-lg text-slate-300 leading-relaxed font-normal body-justify">
               {data.heroIntroP2}
             </p>
           </div>

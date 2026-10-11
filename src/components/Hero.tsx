@@ -402,13 +402,31 @@ export function Hero() {
 
             {/* Title Structure: RESTI (acronym / short name) standing prominently above the expanded initiative name */}
             <div className="flex flex-col items-center gap-2.5 sm:gap-3.5 w-full my-1">
-              {/* RESTI — Organization Short Name / Acronym */}
+              {/* RESTi — Organization Short Name / Acronym with clean, crisp edges, bold geometric rounded letterforms, and no shadows */}
               <motion.div 
                 variants={{ hidden: { opacity: 0, scale: 0.96 }, visible: { opacity: 1, scale: 1, transition: { duration: 0.7, ease: "easeOut" } } }}
-                className="inline-block"
+                className="inline-flex items-baseline justify-center select-none font-black font-heading tracking-tight leading-none text-6xl sm:text-7xl md:text-8xl lg:text-9xl"
+                aria-label="RESTi"
               >
-                <span className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black font-heading tracking-tight bg-gradient-to-r from-emerald-300 via-sky-200 to-amber-300 bg-clip-text text-transparent drop-shadow-md select-none leading-none">
-                  {heroTitle.acronym}
+                {/* R: Dark Blue */}
+                <span className="text-[#0F294A]">
+                  R
+                </span>
+                {/* E: Light Green */}
+                <span className="text-[#388E3C]">
+                  E
+                </span>
+                {/* S: Light Green */}
+                <span className="text-[#388E3C]">
+                  S
+                </span>
+                {/* T: Dark Blue */}
+                <span className="text-[#0F294A]">
+                  T
+                </span>
+                {/* i: Orange */}
+                <span className="text-[#FF6B38]">
+                  i
                 </span>
               </motion.div>
 

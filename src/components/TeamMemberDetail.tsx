@@ -286,7 +286,7 @@ export function TeamMemberDetail() {
                       Biography & Professional Background
                     </h2>
                     
-                    <div className="space-y-4 text-slate-700 text-base sm:text-lg leading-relaxed">
+                    <div className="space-y-4 text-slate-700 text-base sm:text-lg leading-relaxed body-justify">
                       {paragraphs.length > 0 ? (
                         paragraphs.map((p, idx) => (
                           <p key={idx} className="leading-relaxed">

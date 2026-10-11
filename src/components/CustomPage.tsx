@@ -111,7 +111,7 @@ export function CustomPage() {
 
           {/* Dynamic HTML Content */}
           <div 
-            className="prose prose-emerald max-w-none text-gray-700 leading-relaxed text-lg"
+            className="prose prose-emerald max-w-none text-gray-700 leading-relaxed text-lg body-justify"
             dangerouslySetInnerHTML={{ __html: page.content }}
           />
         </div>

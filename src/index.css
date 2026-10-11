@@ -932,10 +932,27 @@ html.dark { color-scheme: dark; }
 .dark ::-webkit-scrollbar-thumb:hover { background: #475569; }
 
 /* ── Global Typography & Standard Text Spacing ─────────────────────── */
-p, .prose p, .content p, .body-text, article p, section p {
+p, .content p, .body-text, article p, section p {
   text-align: left;
   word-spacing: normal;
   letter-spacing: normal;
+}
+
+/* ── Content Body & Narrative Justified Paragraphs ─────────────────── */
+.prose p,
+.prose div,
+.body-justify {
+  text-align: justify;
+  text-justify: inter-word;
+}
+
+/* On mobile viewports (<640px), preserve clean left alignment to avoid awkward word gaps without hyphens */
+@media (max-width: 639px) {
+  .prose p,
+  .prose div,
+  .body-justify {
+    text-align: left;
+  }
 }
 
 /* ============================================================

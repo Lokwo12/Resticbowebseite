@@ -706,7 +706,7 @@ export function OpportunitiesPage() {
                 <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
                   Overview
                 </h4>
-                <p className="text-slate-700 leading-relaxed whitespace-pre-line">
+                <p className="text-slate-700 leading-relaxed whitespace-pre-line body-justify">
                   {detailModalOpportunity.description || detailModalOpportunity.shortDescription}
                 </p>
               </div>

@@ -135,11 +135,11 @@ export function ImpactReports() {
           </h1>
 
           <div className="bg-white/5 border border-white/10 rounded-3xl p-6 sm:p-8 text-left space-y-4 shadow-xl backdrop-blur-sm">
-            <p className="text-[17px] text-slate-200 leading-[1.6] font-normal">
+            <p className="text-[17px] text-slate-200 leading-[1.6] font-normal body-justify">
               {data.heroIntroP1}
             </p>
             <div className="h-px bg-white/10 w-full" />
-            <p className="text-[17px] text-slate-300 leading-[1.6] font-normal">
+            <p className="text-[17px] text-slate-300 leading-[1.6] font-normal body-justify">
               {data.heroIntroP2}
             </p>
           </div>

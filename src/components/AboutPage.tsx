@@ -174,7 +174,7 @@ export function AboutPage() {
                 {settings.storyTitle || "From a small village initiative to a district-wide movement."}
               </h3>
               {settings.story?.map((paragraph, idx) => (
-                <p key={idx} className="text-gray-600 text-[17px] font-normal leading-[1.6]">
+                <p key={idx} className="text-gray-600 text-[17px] font-normal leading-[1.6] body-justify">
                   {paragraph}
                 </p>
               ))}
@@ -213,7 +213,7 @@ export function AboutPage() {
                 <Target size={28} />
               </div>
               <h3 className="text-3xl font-bold text-white mb-4 font-heading">Our Mission</h3>
-              <p className="text-gray-300 text-lg leading-relaxed">{settings.mission}</p>
+              <p className="text-gray-300 text-lg leading-relaxed body-justify">{settings.mission}</p>
             </div>
 
             <div className="bg-white/10 backdrop-blur-xl border border-white/20 p-10 rounded-3xl shadow-2xl hover:bg-white/15 transition-all">
@@ -221,7 +221,7 @@ export function AboutPage() {
                 <Play size={28} />
               </div>
               <h3 className="text-3xl font-bold text-white mb-4 font-heading">Our Vision</h3>
-              <p className="text-gray-300 text-lg leading-relaxed">{settings.vision}</p>
+              <p className="text-gray-300 text-lg leading-relaxed body-justify">{settings.vision}</p>
             </div>
           </div>
         </div>

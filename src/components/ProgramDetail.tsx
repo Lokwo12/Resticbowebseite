@@ -883,7 +883,7 @@ export function ProgramDetail() {
               <h2 className="text-xl sm:text-2xl font-bold font-heading text-slate-900 border-b border-slate-100 pb-3">
                 About This Program
               </h2>
-              <div className="text-slate-700 text-base sm:text-lg leading-relaxed whitespace-pre-line font-normal space-y-4">
+              <div className="text-slate-700 text-base sm:text-lg leading-relaxed whitespace-pre-line font-normal space-y-4 body-justify">
                 {program.content}
               </div>
             </section>
@@ -939,7 +939,7 @@ export function ProgramDetail() {
                   Who We Support
                 </h2>
               </div>
-              <p className="text-slate-700 text-base leading-relaxed pt-1">
+              <p className="text-slate-700 text-base leading-relaxed pt-1 body-justify">
                 {program.whoWeSupport}
               </p>
             </section>
@@ -956,7 +956,7 @@ export function ProgramDetail() {
                   Where We Work
                 </h2>
               </div>
-              <p className="text-slate-700 text-base leading-relaxed pt-1">
+              <p className="text-slate-700 text-base leading-relaxed pt-1 body-justify">
                 {program.whereWeWork}
               </p>
             </section>

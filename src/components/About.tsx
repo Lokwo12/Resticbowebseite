@@ -21,6 +21,7 @@ export interface TrustBadge {
 interface AboutSettings {
   title: string;
   intro: string;
+  introParagraphs?: string[];
   mission: string;
   vision: string;
   values: AboutValue[];
@@ -49,6 +50,9 @@ export const DEFAULT_TRUST_BADGES: TrustBadge[] = [
 const DEFAULT_ABOUT_SETTINGS: AboutSettings = {
   title: 'About Refugee Empowerment For Sustainable Transformation Initiative CBO (RESTI)',
   intro: 'Founded with a mission to empower and uplift communities in Kiryandongo District, we are a community-based organization dedicated to creating sustainable positive change through collaborative action and locally-driven solutions.',
+  introParagraphs: [
+    'Founded with a mission to empower and uplift communities in Kiryandongo District, we are a community-based organization dedicated to creating sustainable positive change through collaborative action and locally-driven solutions.'
+  ],
   mission: 'To empower communities in Kiryandongo through sustainable development programs in education, healthcare, and economic empowerment, fostering self-reliance and improved quality of life for all.',
   vision: 'A thriving, self-sustaining community where every individual has access to quality education, healthcare, and opportunities for economic prosperity.',
   values: [
@@ -100,9 +104,27 @@ export function About() {
       
       if (data.settings?.about) {
         const aboutData = data.settings.about;
+
+        // Resolve paragraphs: preserve structured introParagraphs if present, or split existing intro by double newlines
+        let paragraphs: string[] = [];
+        if (Array.isArray(aboutData.introParagraphs) && aboutData.introParagraphs.length > 0) {
+          paragraphs = aboutData.introParagraphs.filter((p: any) => typeof p === 'string' && p.trim().length > 0);
+        } else if (typeof aboutData.intro === 'string' && aboutData.intro.trim().length > 0) {
+          paragraphs = aboutData.intro
+            .split(/\r?\n\s*\r?\n/)
+            .map((p: string) => p.trim())
+            .filter((p: string) => p.length > 0);
+        }
+        if (paragraphs.length === 0 && aboutData.intro) {
+          paragraphs = [aboutData.intro];
+        } else if (paragraphs.length === 0) {
+          paragraphs = DEFAULT_ABOUT_SETTINGS.introParagraphs || [DEFAULT_ABOUT_SETTINGS.intro];
+        }
+
         setSettings({
           title: aboutData.title || DEFAULT_ABOUT_SETTINGS.title,
           intro: aboutData.intro || DEFAULT_ABOUT_SETTINGS.intro,
+          introParagraphs: paragraphs,
           mission: aboutData.mission || DEFAULT_ABOUT_SETTINGS.mission,
           vision: aboutData.vision || DEFAULT_ABOUT_SETTINGS.vision,
           values: (aboutData.values && aboutData.values.length > 0) ? aboutData.values : DEFAULT_ABOUT_SETTINGS.values,
@@ -124,6 +146,15 @@ export function About() {
   };
 
   const displaySettings = settings;
+
+  // Resolve paragraphs for homepage display: introParagraphs if present, else fallback
+  const resolvedIntroParagraphs = (
+    displaySettings.introParagraphs && displaySettings.introParagraphs.length > 0
+      ? displaySettings.introParagraphs
+      : (typeof displaySettings.intro === 'string' && displaySettings.intro.trim().length > 0
+          ? displaySettings.intro.split(/\r?\n\s*\r?\n/).map(p => p.trim()).filter(Boolean)
+          : [DEFAULT_ABOUT_SETTINGS.intro])
+  );
 
   return (
     <section id="about" className="section-spacing-lg bg-slate-50/50 overflow-hidden">
@@ -147,9 +178,11 @@ export function About() {
               About RESTI CBO
             </h2>
             <div className="space-y-4">
-              <p className="text-[17px] text-gray-600 leading-[1.6] font-normal">
-                {displaySettings.intro}
-              </p>
+              {resolvedIntroParagraphs.map((paragraph, idx) => (
+                <p key={idx} className="text-[17px] text-gray-600 leading-[1.7] font-normal body-justify">
+                  {paragraph}
+                </p>
+              ))}
               <div className="pt-2">
                 <Link to="/about" className="inline-flex items-center gap-2 text-emerald-600 font-semibold hover:text-emerald-700 transition-colors group text-base">
                   Read our full story, mission & timeline <span className="group-hover:translate-x-1 transition-transform">→</span>
@@ -169,7 +202,7 @@ export function About() {
             className="group bg-resti-green-vlight p-8 rounded-2xl border border-resti-neutral-border border-l-4 border-l-resti-green shadow-xs hover:shadow-sm hover:-translate-y-0.5 transition-all duration-300"
           >
             <h3 className="text-[22px] lg:text-[24px] font-semibold font-heading text-gray-900 mb-4 leading-[1.3] group-hover:text-emerald-600 transition-colors">Our Mission</h3>
-            <p className="text-[17px] text-gray-700 leading-[1.6] font-normal">
+            <p className="text-[17px] text-gray-700 leading-[1.6] font-normal body-justify">
               {displaySettings.mission}
             </p>
           </motion.div>
@@ -181,7 +214,7 @@ export function About() {
             className="group bg-resti-blue-vlight p-8 rounded-2xl border border-resti-neutral-border border-l-4 border-l-resti-blue shadow-xs hover:shadow-sm hover:-translate-y-0.5 transition-all duration-300"
           >
             <h3 className="text-[22px] lg:text-[24px] font-semibold font-heading text-gray-900 mb-4 leading-[1.3] group-hover:text-blue-600 transition-colors">Our Vision</h3>
-            <p className="text-[17px] text-gray-700 leading-[1.6] font-normal">
+            <p className="text-[17px] text-gray-700 leading-[1.6] font-normal body-justify">
               {displaySettings.vision}
             </p>
           </motion.div>
@@ -312,7 +345,7 @@ export function About() {
                 {/* Narrative text paragraphs */}
                 <div className="space-y-4 text-gray-600 text-base sm:text-[17px] leading-relaxed font-normal">
                   {displaySettings.story.map((paragraph, index) => (
-                    <p key={index}>
+                    <p key={index} className="body-justify">
                       {paragraph}
                     </p>
                   ))}

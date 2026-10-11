@@ -620,7 +620,7 @@ export function FinancialReports() {
             <h3 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold mb-4 tracking-tight">
               {data.transparencyTitle || 'Committed to Transparency'}
             </h3>
-            <p className="mb-8 text-emerald-50 text-base sm:text-lg leading-relaxed font-normal">
+            <p className="mb-8 text-emerald-50 text-base sm:text-lg leading-relaxed font-normal body-justify">
               {data.transparencyStatement || 'RESTI is committed to responsible stewardship of the resources entrusted to us. We provide financial and program information to help donors, partners, community members, and other stakeholders understand how resources are managed and how they support our work.'}
             </p>
             <Link
