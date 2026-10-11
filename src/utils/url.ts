@@ -22,11 +22,16 @@ export function getBaseUrl(): string {
   if (import.meta.env.PROD) {
     if (typeof window !== 'undefined' && window.location?.origin) {
       const hostname = window.location.hostname;
-      if (hostname === 'resticbo.org' || hostname === 'www.resticbo.org') {
+      if (
+        hostname === 'resticbo.org' ||
+        hostname === 'www.resticbo.org' ||
+        hostname === 'resticbo.com' ||
+        hostname === 'www.resticbo.com'
+      ) {
         return window.location.origin;
       }
     }
-    return PRODUCTION_SITE_URL;
+    return typeof window !== 'undefined' && window.location?.origin ? window.location.origin : PRODUCTION_SITE_URL;
   }
 
   // 3. Local development fallback
