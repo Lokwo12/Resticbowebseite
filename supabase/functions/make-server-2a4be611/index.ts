@@ -21,6 +21,8 @@ const ALLOWED_ORIGINS = Array.from(new Set([
   ...configuredOrigins,
   'https://resticbo.org',
   'https://www.resticbo.org',
+  'https://resticbo.com',
+  'https://www.resticbo.com',
   'https://restikirya.org',
   'https://www.restikirya.org',
   'http://localhost:5173',
