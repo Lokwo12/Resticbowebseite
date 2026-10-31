@@ -27,6 +27,7 @@ const ALLOWED_ORIGINS = Array.from(new Set([
   'https://www.restikirya.org',
   'http://localhost:5173',
   'http://localhost:3000',
+  'http://127.0.0.1:3000',
 ]))
 
 if (ALLOWED_ORIGINS.length === 0) {
@@ -714,6 +715,7 @@ app.post('/make-server-2a4be611/create-payment-intent', async (c) => {
     const paymentIntent = await stripe.paymentIntents.create({
       amount: smallestUnitAmount,
       currency: validCurrency.toLowerCase(),
+      payment_method_types: ['card'],
       metadata: {
         restiDonationId: internalReference,
         internalReference,
@@ -784,6 +786,9 @@ app.post('/make-server-2a4be611/create-payment-intent', async (c) => {
   } catch (error) {
     console.error('Error creating payment intent:', error)
     let details = String(error)
+    if (/no valid payment method types/i.test(details)) {
+      details = 'Card checkout is temporarily unavailable. Please ensure card payment methods are activated in your Stripe Dashboard (https://dashboard.stripe.com/settings/payment_methods).'
+    } else
     if (/convert to at least 50 cents/i.test(details) || /minimum/i.test(details)) {
       details = 'Amount must be at least 5,000 UGX (approx. €1.20 / $1.35) to meet card processing network minimums.'
     }
