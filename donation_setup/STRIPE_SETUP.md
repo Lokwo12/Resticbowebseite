@@ -6,9 +6,11 @@ The donation modal uses **Stripe Elements** (`@stripe/react-stripe-js`) for card
 
 Payment flow:
 1. User fills in billing details and card number
-2. Frontend calls your Supabase edge function to create a **PaymentIntent**
+2. Frontend calls your Supabase edge function to create a **card-only PaymentIntent**
 3. Frontend calls `stripe.confirmCardPayment(clientSecret)` — Stripe processes the card
 4. `setDone(true)` fires **only** on confirmed success
+
+The card donation endpoint explicitly sets `payment_method_types: ['card']`, so it does not depend on Stripe's dashboard automatic payment-method configuration.
 
 ---
 

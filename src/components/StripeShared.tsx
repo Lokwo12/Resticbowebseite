@@ -123,13 +123,17 @@ export function StripePaymentProvider({
         } catch (error) {
           if (controller.signal.aborted) return;
           let message = error instanceof Error ? error.message : 'An unexpected network error occurred.';
-          // Translate raw Stripe minimum amount errors into clear user feedback
+          // Translate raw Stripe errors into clear, professional user feedback
           if (/convert to at least 50 cents/i.test(message) || /minimum/i.test(message)) {
             const formattedMin = formatAmt ? formatAmt(minAmt) : `${curr.toUpperCase()} ${minAmt.toLocaleString()}`;
             message = `Card payment network minimum for ${curr.toUpperCase()} is ${formattedMin}.`;
+          } else if (/no valid payment method types/i.test(message)) {
+            message = 'Card checkout is currently being configured in the Stripe Dashboard. Please select another payment method (PayPal, MTN MoMo, Airtel Money, or Bank Transfer) or try again shortly.';
           }
           setErrorMsg(message);
-          toast.error(message);
+          // NOTE: Do NOT call toast.error(message) here.
+          // This prefetch runs automatically in the background on page mount. Showing a global toast error
+          // immediately on site load disrupts the visitor experience. The inline error card below handles this gracefully.
         }
       };
 
