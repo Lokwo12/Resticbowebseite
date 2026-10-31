@@ -7,6 +7,7 @@ import { Card } from './ui/card';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import { useScrollAnimation } from '../utils/animations';
+import { useBackgroundMedia } from '../utils/useBackgroundMedia';
 import {
   ImpactStory,
   RESTI_STORY_CATEGORIES,
@@ -19,6 +20,7 @@ import {
 } from '../utils/storyData';
 
 export function ImpactStories() {
+  const { hasBgMedia } = useBackgroundMedia('impact');
   const [stories, setStories] = useState<ImpactStory[]>([]);
   const [loading, setLoading] = useState(true);
   const [sectionSettings, setSectionSettings] = useState(DEFAULT_PAGE_HEADER);
@@ -119,7 +121,13 @@ export function ImpactStories() {
   };
 
   return (
-    <section ref={ref} className="py-20 sm:py-28 bg-slate-50 relative overflow-hidden">
+    <section 
+      id="stories" 
+      ref={ref} 
+      className={`py-20 sm:py-28 relative overflow-hidden transition-colors duration-700 ${
+        hasBgMedia ? 'bg-transparent' : 'bg-slate-50'
+      }`}
+    >
       {/* Decorative background glow */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[500px] bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
 
@@ -127,6 +135,10 @@ export function ImpactStories() {
         {/* Section Header */}
         <div className={`text-center max-w-3xl mx-auto space-y-4 mb-16 transition-all duration-700 ${
           isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'
+        } ${
+          hasBgMedia 
+            ? 'surface-translucent-header p-6 sm:p-8 rounded-3xl border border-white/60 shadow-sm' 
+            : ''
         }`}>
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-emerald-100/70 text-emerald-800 rounded-full text-xs font-bold uppercase tracking-wider">
             <ShieldCheck size={14} className="text-emerald-600" />
@@ -167,7 +179,11 @@ export function ImpactStories() {
                 return (
                   <Card
                     key={story.id}
-                    className="overflow-hidden hover:shadow-2xl hover:-translate-y-1.5 transition-all duration-300 bg-white border border-slate-200/80 rounded-3xl flex flex-col group"
+                    className={`overflow-hidden hover:shadow-2xl hover:-translate-y-1.5 transition-all duration-300 rounded-3xl flex flex-col group border ${
+                      hasBgMedia 
+                        ? 'surface-translucent-card border-white/60 shadow-md hover:bg-white/95' 
+                        : 'bg-white border-slate-200/80 shadow-xs'
+                    }`}
                   >
                     <Link to={`/stories/${story.slug || story.id.replace('story:', '')}`} className="flex flex-col flex-1">
                       {/* Image / Graphic */}

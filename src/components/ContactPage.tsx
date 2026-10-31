@@ -37,6 +37,8 @@ import {
   ContactPerson,
   OfficeLocation,
 } from '../utils/contactData';
+import { PageBackground } from './PageBackground';
+import { useBackgroundMedia } from '../utils/useBackgroundMedia';
 
 interface FormValues {
   name: string;
@@ -56,6 +58,7 @@ const TOPIC_OPTIONS = [
 ];
 
 export function ContactPage() {
+  const { hasBgMedia } = useBackgroundMedia('page', 'contact');
   const [settings, setSettings] = useState<ContactSettings>(DEFAULT_CONTACT_SETTINGS);
   const [loading, setLoading] = useState<boolean>(true);
 
@@ -200,11 +203,12 @@ export function ContactPage() {
   const whatsappCleanNumber = (settings.whatsappNumber || '').replace(/\D/g, '');
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col selection:bg-emerald-500 selection:text-white">
+    <div className={`min-h-screen ${hasBgMedia ? 'bg-transparent' : 'bg-slate-50'} flex flex-col relative selection:bg-emerald-500 selection:text-white`}>
+      <PageBackground pageKey="contact" />
       <Header />
 
       {/* ── Page Hero Header (ONLY ONE Main Heading) ── */}
-      <section className="relative pt-36 pb-20 md:pt-44 md:pb-28 bg-gradient-to-br from-emerald-950 via-emerald-900 to-teal-950 text-white overflow-hidden">
+      <section className={`relative pt-36 pb-20 md:pt-44 md:pb-28 ${hasBgMedia ? 'bg-emerald-950/75 backdrop-blur-md' : 'bg-gradient-to-br from-emerald-950 via-emerald-900 to-teal-950'} text-white overflow-hidden`}>
         {/* Background decorative textures */}
         <div className="absolute inset-0 opacity-10 mix-blend-overlay pointer-events-none bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:24px_24px]" />
         <div className="absolute -top-40 -right-40 w-96 h-96 bg-emerald-500/20 rounded-full blur-3xl pointer-events-none" />
@@ -234,7 +238,7 @@ export function ContactPage() {
 
       {/* ── Section 1: Contact RESTI (Direct Official Channels) ── */}
       <section className="relative -mt-10 z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
-        <div className="bg-white rounded-2xl shadow-xl shadow-slate-200/60 border border-slate-100 p-6 sm:p-8 lg:p-10">
+        <div className={`${hasBgMedia ? 'surface-translucent-card border-white/60 shadow-xl' : 'bg-white border-slate-100 shadow-xl shadow-slate-200/60'} rounded-2xl p-6 sm:p-8 lg:p-10`}>
           <div className="mb-6">
             <span className="text-xs font-bold uppercase tracking-wider text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full">
               Official Channels
@@ -641,7 +645,7 @@ export function ContactPage() {
 
           {/* Right Column: Contact Us Form */}
           <div className="lg:col-span-7">
-            <div className="bg-white rounded-2xl shadow-xl shadow-slate-200/60 border border-slate-100 p-6 sm:p-8 md:p-10">
+            <div className={`${hasBgMedia ? 'surface-translucent-solid border-slate-200/80 shadow-2xl' : 'bg-white border-slate-100 shadow-xl shadow-slate-200/60'} rounded-2xl p-6 sm:p-8 md:p-10`}>
               <div className="mb-8">
                 <span className="text-xs font-bold uppercase tracking-wider text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full">
                   Direct Inquiry

@@ -2191,14 +2191,20 @@ app.post('/make-server-2a4be611/upload-image', requireEditor, async (c) => {
     }
 
     // Validate file type
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/svg+xml', 'application/pdf']
+    const allowedTypes = [
+      'image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/svg+xml', 'image/avif',
+      'video/mp4', 'video/webm', 'video/ogg', 'video/quicktime',
+      'application/pdf'
+    ]
     if (!allowedTypes.includes(file.type)) {
-      return c.json({ error: 'Invalid file type. Only JPEG, PNG, WebP, GIF, SVG, and PDF allowed' }, 400)
+      return c.json({ error: 'Invalid file type. Allowed: JPEG, PNG, WebP, AVIF, GIF, SVG, MP4, WebM, PDF' }, 400)
     }
 
-    // Validate file size (15MB)
-    if (file.size > 15728640) {
-      return c.json({ error: 'File too large. Maximum size is 15MB' }, 400)
+    // Validate file size: 50MB for videos, 20MB for images/PDFs
+    const isVideo = file.type.startsWith('video/')
+    const maxSizeBytes = isVideo ? 52428800 : 20971520
+    if (file.size > maxSizeBytes) {
+      return c.json({ error: `File too large. Maximum size is ${isVideo ? '50MB for video' : '20MB for image'}` }, 400)
     }
 
     const bucketName = 'make-2a4be611-uploads'
@@ -3944,11 +3950,11 @@ app.get('/make-server-2a4be611/partners', async (c) => {
 
     // Exclude any legacy sample names if any exist in storage
     list = list.filter(p => {
-      const n = (p.name || '').toLowerCase();
+      const n = (p.name || '').toLowerCase().trim();
       return n && 
         !n.includes('global giving') && 
         !n.includes('kiryandongo district local government') &&
-        !n.includes('youth action network') &&
+        (n !== 'youth action network' && n !== 'youth action network uganda') &&
         !n.includes('uganda development foundation') &&
         !n.includes('global health initiative') &&
         !n.includes('community water alliance');
@@ -4823,19 +4829,108 @@ app.get('/make-server-2a4be611/pages', async (c) => {
   }
 })
 
+// Helper to format plaintext legal policies into semantic HTML
+function formatLegalPolicyToHtml(title: string, rawText: string): string {
+  if (!rawText) return '';
+  if (rawText.includes('<p>') || rawText.includes('<h2>') || rawText.includes('<div>')) {
+    return rawText;
+  }
+  const lines = rawText.split('\n');
+  const htmlParts: string[] = [];
+  let inList = false;
+
+  for (const rawLine of lines) {
+    const line = rawLine.trim();
+    if (!line) {
+      if (inList) {
+        htmlParts.push('</ul>');
+        inList = false;
+      }
+      continue;
+    }
+
+    if (line.startsWith('• ') || line.startsWith('- ') || line.startsWith('* ')) {
+      if (!inList) {
+        htmlParts.push('<ul class="list-disc pl-6 space-y-2 mb-4">');
+        inList = true;
+      }
+      htmlParts.push(`<li>${escapeHtml(line.slice(2).trim())}</li>`);
+      continue;
+    }
+
+    if (inList) {
+      htmlParts.push('</ul>');
+      inList = false;
+    }
+
+    if (/^\d+\.\s+[A-Za-z]/.test(line)) {
+      htmlParts.push(`<h2 class="text-2xl font-bold text-gray-900 mt-8 mb-4">${escapeHtml(line)}</h2>`);
+    } else if (line.endsWith(':') && line.length < 60) {
+      htmlParts.push(`<h3 class="text-xl font-semibold text-gray-800 mt-6 mb-3">${escapeHtml(line)}</h3>`);
+    } else {
+      htmlParts.push(`<p class="mb-4 leading-relaxed">${escapeHtml(line)}</p>`);
+    }
+  }
+
+  if (inList) {
+    htmlParts.push('</ul>');
+  }
+
+  return htmlParts.join('\n');
+}
+
 // Get a single page by slug (used by the public-facing CustomPage component)
 app.get('/make-server-2a4be611/pages/:slug', async (c) => {
   try {
-    const slug = c.req.param('slug')
-    const pages = await kv.getByPrefix('page:')
-    const match = pages.find((p: any) => p.value?.slug === slug)
-    if (!match) return c.json({ error: 'Page not found' }, 404)
-    return c.json({ page: { ...match.value, id: match.key, key: match.key } })
+    const rawSlug = (c.req.param('slug') || '').toLowerCase().trim();
+    // Normalize aliases
+    let slug = rawSlug;
+    if (rawSlug === 'privacy') slug = 'privacy-policy';
+    else if (rawSlug === 'terms') slug = 'terms-of-service';
+    else if (rawSlug === 'refund') slug = 'refund-policy';
+    else if (rawSlug === 'cookies') slug = 'cookies-policy';
+
+    const pages = await kv.getByPrefix('page:');
+    let match = pages.find((p: any) => p.value?.slug === slug || p.value?.slug === rawSlug);
+
+    const legalSlugMap: Record<string, { title: string; field: string }> = {
+      'privacy-policy': { title: 'Privacy Policy', field: 'privacyPolicy' },
+      'terms-of-service': { title: 'Terms of Service', field: 'termsOfService' },
+      'refund-policy': { title: 'Refund Policy', field: 'refundPolicy' },
+      'cookies-policy': { title: 'Cookies Policy', field: 'cookiesPolicy' },
+    };
+
+    const legalMeta = legalSlugMap[slug];
+    const isStubOrMissing = !match || !match.value?.content || match.value.content.length < 300;
+
+    if (legalMeta && isStubOrMissing) {
+      const settingsData = await kv.get('site_settings');
+      const legal = settingsData?.legal || {};
+      const legalText = (legal as any)[legalMeta.field] || '';
+
+      if (legalText && legalText.length > 100) {
+        const formattedContent = formatLegalPolicyToHtml(legalMeta.title, legalText);
+        const pageObj = {
+          id: match?.key || `page:legal-${slug}`,
+          key: match?.key || `page:legal-${slug}`,
+          title: match?.value?.title || legalMeta.title,
+          slug: slug,
+          content: formattedContent,
+          published: true,
+          createdAt: match?.value?.createdAt || new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+        return c.json({ page: pageObj });
+      }
+    }
+
+    if (!match) return c.json({ error: 'Page not found' }, 404);
+    return c.json({ page: { ...match.value, id: match.key, key: match.key } });
   } catch (error) {
-    console.error('Error fetching page by slug:', error)
-    return c.json({ error: 'Failed to fetch page', details: String(error) }, 500)
+    console.error('Error fetching page by slug:', error);
+    return c.json({ error: 'Failed to fetch page', details: String(error) }, 500);
   }
-})
+});
 
 app.post('/make-server-2a4be611/pages', requireAdmin, async (c) => {
   try {
@@ -5337,6 +5432,133 @@ app.post('/make-server-2a4be611/site-settings/initialize', async (c) => {
     return c.json({ error: 'Failed to initialize site settings', details: String(error) }, 500)
   }
 })
+
+// ============= BACKGROUND MEDIA ROUTES =============
+
+// Public get published background media
+app.get('/make-server-2a4be611/background-media', async (c) => {
+  try {
+    const section = c.req.query('section');
+    const items = await kv.getByPrefix('bg_media:');
+    let list = items.map((item: any) => ({
+      ...item.value,
+      id: (item.key || '').replace(/^bg_media:/, ''),
+      key: item.key
+    }));
+
+    list = list.filter((item: any) => item.is_published !== false);
+
+    if (section && section !== 'all') {
+      list = list.filter((item: any) => item.section === section);
+    }
+
+    list.sort((a: any, b: any) => (a.display_order || 1) - (b.display_order || 1));
+    return c.json({ backgrounds: list, count: list.length });
+  } catch (error) {
+    console.error('Error fetching background media:', error);
+    return c.json({ error: 'Failed to fetch background media', details: String(error) }, 500);
+  }
+});
+
+// Admin get all background media (including drafts)
+app.get('/make-server-2a4be611/admin/background-media', requireAuthUser, async (c) => {
+  try {
+    const items = await kv.getByPrefix('bg_media:');
+    const list = items.map((item: any) => ({
+      ...item.value,
+      id: (item.key || '').replace(/^bg_media:/, ''),
+      key: item.key
+    }));
+
+    list.sort((a: any, b: any) => (a.display_order || 1) - (b.display_order || 1));
+    return c.json({ backgrounds: list, count: list.length });
+  } catch (error) {
+    console.error('Error fetching admin background media:', error);
+    return c.json({ error: 'Failed to fetch admin background media', details: String(error) }, 500);
+  }
+});
+
+// Admin create background media
+app.post('/make-server-2a4be611/admin/background-media', requireEditor, async (c) => {
+  try {
+    const body = await c.req.json();
+    const rawId = body.id || crypto.randomUUID();
+    const key = `bg_media:${rawId}`;
+    const now = new Date().toISOString();
+
+    const mediaItem = {
+      id: rawId,
+      key,
+      title: (body.title || 'Untitled Background').trim(),
+      alt_text: (body.alt_text || body.altText || '').trim(),
+      page: (body.page || 'home').trim(),
+      section: body.section || 'hero',
+      media_type: body.media_type || body.mediaType || 'image',
+      url: (body.url || body.imageUrl || body.videoUrl || '').trim(),
+      poster_url: (body.poster_url || body.posterUrl || '').trim(),
+      sequence_urls: Array.isArray(body.sequence_urls) ? body.sequence_urls : [],
+      overlay_darkness: typeof body.overlay_darkness === 'number' ? body.overlay_darkness : 50,
+      overlay_color: body.overlay_color || 'black',
+      blur: typeof body.blur === 'number' ? body.blur : 0,
+      parallax: body.parallax !== undefined ? Boolean(body.parallax) : true,
+      position: body.position || 'center',
+      transition_duration: typeof body.transition_duration === 'number' ? body.transition_duration : 1000,
+      transition_effect: body.transition_effect || 'crossfade',
+      program_pillar: body.program_pillar || 'General / Cross-Cutting',
+      display_order: typeof body.display_order === 'number' ? body.display_order : 1,
+      is_published: body.is_published !== undefined ? Boolean(body.is_published) : true,
+      created_at: now,
+      updated_at: now
+    };
+
+    await kv.set(key, mediaItem);
+    return c.json({ success: true, message: 'Background media created', media: mediaItem });
+  } catch (error) {
+    console.error('Error creating background media:', error);
+    return c.json({ error: 'Failed to create background media', details: String(error) }, 500);
+  }
+});
+
+// Admin update background media
+app.put('/make-server-2a4be611/admin/background-media/:id', requireEditor, async (c) => {
+  try {
+    const id = c.req.param('id').replace(/^bg_media:/, '');
+    const key = `bg_media:${id}`;
+    const body = await c.req.json();
+    const existing = await kv.get(key);
+
+    if (!existing) {
+      return c.json({ error: 'Background media not found' }, 404);
+    }
+
+    const updated = {
+      ...existing,
+      ...body,
+      id,
+      key,
+      updated_at: new Date().toISOString()
+    };
+
+    await kv.set(key, updated);
+    return c.json({ success: true, message: 'Background media updated', media: updated });
+  } catch (error) {
+    console.error('Error updating background media:', error);
+    return c.json({ error: 'Failed to update background media', details: String(error) }, 500);
+  }
+});
+
+// Admin delete background media
+app.delete('/make-server-2a4be611/admin/background-media/:id', requireEditor, async (c) => {
+  try {
+    const id = c.req.param('id').replace(/^bg_media:/, '');
+    const key = `bg_media:${id}`;
+    await kv.del(key);
+    return c.json({ success: true, message: 'Background media deleted' });
+  } catch (error) {
+    console.error('Error deleting background media:', error);
+    return c.json({ error: 'Failed to delete background media', details: String(error) }, 500);
+  }
+});
 
 // ============= FINANCIAL TRANSPARENCY ROUTES =============
 

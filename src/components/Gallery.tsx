@@ -3,6 +3,7 @@ import { X } from 'lucide-react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import Masonry, { ResponsiveMasonry } from 'react-responsive-masonry';
 import { useScrollAnimation } from '../utils/animations';
+import { useBackgroundMedia } from '../utils/useBackgroundMedia';
 
 interface GalleryImage {
   id: string;
@@ -22,6 +23,7 @@ const FALLBACK_IMAGES = [
   { id: 'gal6', title: 'Clean Water Project', description: 'New borehole serving 500 families', imageUrl: 'https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=600&q=80', category: 'development', date: new Date().toISOString() },
 ];
 export function Gallery() {
+  const { hasBgMedia } = useBackgroundMedia('gallery');
   const [images, setImages] = useState<GalleryImage[]>(FALLBACK_IMAGES as any);
   const [loading, setLoading] = useState(false);
   const [selectedImage, setSelectedImage] = useState<GalleryImage | null>(null);
@@ -85,7 +87,12 @@ export function Gallery() {
 
   if (loading) {
     return (
-      <section id="gallery" className="section-spacing-lg bg-gray-50">
+      <section 
+        id="gallery" 
+        className={`section-spacing-lg transition-colors duration-700 ${
+          hasBgMedia ? 'bg-transparent' : 'bg-gray-50'
+        }`}
+      >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <div className="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto" />
@@ -96,10 +103,19 @@ export function Gallery() {
   }
 
   return (
-    <section id="gallery" className="section-spacing-lg bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section 
+      id="gallery" 
+      className={`section-spacing-lg overflow-hidden transition-colors duration-700 relative ${
+        hasBgMedia ? 'bg-transparent' : 'bg-gray-50'
+      }`}
+    >
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         {/* Header */}
-        <div className="text-center mb-12">
+        <div className={`text-center mb-12 transition-all duration-300 ${
+          hasBgMedia 
+            ? 'surface-translucent-header p-6 sm:p-8 rounded-3xl border border-white/60 shadow-sm max-w-3xl mx-auto' 
+            : ''
+        }`}>
           <h2 className="text-[28px] sm:text-[30px] lg:text-[36px] font-bold font-heading text-emerald-600 mb-4 leading-[1.2]">{sectionSettings.title}</h2>
           <p className="text-[17px] font-normal leading-[1.6] text-gray-600 max-w-2xl mx-auto">
             {sectionSettings.description}
@@ -116,6 +132,8 @@ export function Gallery() {
                 className={`px-6 py-2 rounded-full transition-all ${
                   selectedCategory === category
                     ? 'bg-emerald-600 text-white shadow-premium-soft hover:shadow-2xl transition-all duration-300'
+                    : hasBgMedia
+                    ? 'surface-translucent text-gray-700 hover:bg-white border border-white/60'
                     : 'bg-white text-gray-700 hover:bg-emerald-50 border border-gray-200'
                 }`}
               >
@@ -132,7 +150,9 @@ export function Gallery() {
               {filteredImages.map((image) => (
                 <div
                   key={image.id}
-                  className="group relative overflow-hidden rounded-lg shadow-premium-soft transition-all duration-300 hover:shadow-premium-soft hover:shadow-2xl transition-all duration-300 transition-all duration-300 cursor-pointer bg-white"
+                  className={`group relative overflow-hidden rounded-lg shadow-premium-soft transition-all duration-300 hover:shadow-2xl cursor-pointer ${
+                    hasBgMedia ? 'surface-translucent-card border border-white/40' : 'bg-white'
+                  }`}
                   onClick={() => setSelectedImage(image)}
                 >
                   <img

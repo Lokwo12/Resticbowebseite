@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { Shield, Lock, FileText, Scale, Cookie } from 'lucide-react';
+import { useBackgroundMedia } from '../utils/useBackgroundMedia';
 
 interface LegalPageProps {
   type: 'privacy' | 'terms' | 'refund' | 'cookies';
@@ -130,6 +131,7 @@ Website: https://resticbo.org`
 };
 
 export function LegalPage({ type }: LegalPageProps) {
+  const { hasBgMedia } = useBackgroundMedia('page', type);
   const [content, setContent] = useState<string>(() => fallbacks[type] || '');
 
   useEffect(() => {
@@ -178,9 +180,9 @@ export function LegalPage({ type }: LegalPageProps) {
   };
 
   return (
-    <div className="bg-gray-50 min-h-screen">
+    <div className={`${hasBgMedia ? 'bg-transparent' : 'bg-gray-50'} min-h-screen`}>
       {/* Premium Hero Banner */}
-      <div className="bg-gradient-to-r from-emerald-600 to-emerald-800 text-white pt-32 sm:pt-40 pb-12 sm:pb-24">
+      <div className={`${hasBgMedia ? 'surface-translucent-header text-white bg-slate-900/60 border-b border-white/20' : 'bg-gradient-to-r from-emerald-600 to-emerald-800 text-white'} pt-32 sm:pt-40 pb-12 sm:pb-24`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-white/10 backdrop-blur-md rounded-full mb-6">
             {icons[type]}
@@ -194,7 +196,7 @@ export function LegalPage({ type }: LegalPageProps) {
 
       {/* Main Content (Overlapping Card Layout) */}
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 -mt-12 relative z-10 pb-20">
-        <div className="bg-white rounded-2xl shadow-xl p-8 md:p-12 border border-gray-100">
+        <div className={`${hasBgMedia ? 'surface-translucent-solid border-white/60 shadow-2xl' : 'bg-white shadow-xl border border-gray-100'} rounded-2xl p-8 md:p-12`}>
           
           <div className="text-gray-700 whitespace-pre-wrap leading-relaxed space-y-4 text-base body-justify">
             {content || fallbacks[type]}

@@ -77,6 +77,12 @@ body {
   --sidebar-border: #0F5C2A;
   --sidebar-ring: #16803A;
 
+  /* Background Media System Architecture Tokens */
+  --bg-media-overlay-opacity: 0.45;
+  --bg-media-overlay-color: rgba(2, 19, 12, 0.45);
+  --bg-media-blur: 0px;
+  --content-surface-opacity: 0.88;
+
   /* RESTI Design System Tokens */
   --resti-green: #16803A;
   --resti-green-dark: #0F5C2A;
@@ -1391,3 +1397,39 @@ p, .content p, .body-text, article p, section p {
 .border-l-resti-orange {
   border-left: 4px solid #E98A3A;
 }
+
+/* ==========================================================================
+   Background Media System — Translucent Layer Surface Utilities
+   Provides WCAG AAA contrast, crisp text legibility, and frosted-glass aesthetics
+   over dynamic admin-managed background images and videos.
+   ========================================================================== */
+.surface-translucent {
+  background-color: rgba(255, 255, 255, var(--content-surface-opacity, 0.88));
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.surface-translucent-header {
+  background-color: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+.surface-translucent-card {
+  background-color: rgba(255, 255, 255, 0.90);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.surface-translucent-solid {
+  background-color: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+.surface-translucent-dark {
+  background-color: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+

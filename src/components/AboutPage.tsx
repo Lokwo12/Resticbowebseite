@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { useScrollAnimation, getStaggerDelay } from '../utils/animations';
 import { resolveCoreValueIcon, VALUE_CARD_THEMES } from '../utils/coreValuesIcons';
+import { useBackgroundMedia } from '../utils/useBackgroundMedia';
 
 interface AboutValue {
   icon: string;
@@ -72,6 +73,7 @@ const DEFAULT_ABOUT_SETTINGS: AboutSettings = {
 };
 
 export function AboutPage() {
+  const { hasBgMedia } = useBackgroundMedia('page', 'about');
   const [settings, setSettings] = useState<AboutSettings>(DEFAULT_ABOUT_SETTINGS);
 
   const { ref: storyRef, isVisible: storyVisible } = useScrollAnimation();
@@ -117,7 +119,7 @@ export function AboutPage() {
   };
 
   return (
-    <div className="bg-gray-50 font-sans overflow-hidden">
+    <div className={`font-sans overflow-hidden ${hasBgMedia ? 'bg-transparent' : 'bg-gray-50'}`}>
       
       {/* ── HERO WITH VIDEO BACKGROUND ── */}
       <section className="relative h-[85vh] flex items-center justify-center overflow-hidden">
@@ -151,7 +153,7 @@ export function AboutPage() {
       </section>
 
       {/* ── OUR STORY ── */}
-      <section className="py-24 relative bg-white">
+      <section className={`py-24 relative ${hasBgMedia ? 'bg-transparent' : 'bg-white'}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div 
             ref={storyRef}
@@ -228,7 +230,7 @@ export function AboutPage() {
       </section>
 
       {/* ── CORE VALUES & GUIDING PRINCIPLES GRID ── */}
-      <section className="py-24 bg-gray-50">
+      <section className={`py-24 ${hasBgMedia ? 'bg-transparent' : 'bg-gray-50'}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto mb-16">
             <span className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700 uppercase tracking-widest px-3.5 py-1.5 bg-emerald-100/80 rounded-full mb-3">
@@ -265,7 +267,7 @@ export function AboutPage() {
                 return (
                   <div 
                     key={index}
-                    className={`group relative bg-white rounded-3xl p-8 border border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 flex flex-col items-center text-center ${theme.accentBorder}`}
+                    className={`group relative ${hasBgMedia ? 'surface-translucent-card border-white/60 hover:bg-white/95' : 'bg-white border-slate-100'} rounded-3xl p-8 shadow-sm hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 flex flex-col items-center text-center ${theme.accentBorder}`}
                   >
                     <span className={`w-2 h-2 rounded-full ${theme.accentDot} mb-3 opacity-60 group-hover:scale-125 transition-transform`} />
                     <div className={`w-16 h-16 rounded-2xl border flex items-center justify-center mb-5 shadow-xs transition-all duration-300 group-hover:scale-110 ${theme.iconBg} ${theme.badgeGlow}`}>
@@ -286,7 +288,7 @@ export function AboutPage() {
       </section>
 
       {/* ── TRUST & ACCREDITATIONS STRIP ── */}
-      <section className="py-14 bg-white border-b border-gray-100">
+      <section className={`py-14 border-b border-gray-100 ${hasBgMedia ? 'bg-transparent' : 'bg-white'}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-10">
             <span className="text-emerald-700 font-bold uppercase tracking-wider text-xs bg-emerald-50 px-3.5 py-1.5 rounded-full border border-emerald-100">
@@ -318,7 +320,7 @@ export function AboutPage() {
       </section>
 
       {/* ── TIMELINE ── */}
-      <section className="py-24 bg-white relative overflow-hidden">
+      <section className={`py-24 relative overflow-hidden ${hasBgMedia ? 'bg-transparent' : 'bg-white'}`}>
         {/* Subtle decorative elements */}
         <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-50 rounded-full blur-3xl opacity-60 -translate-y-1/2 translate-x-1/3"></div>
         

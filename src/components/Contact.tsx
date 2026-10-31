@@ -32,6 +32,7 @@ import {
   normalizeContactSettings,
   ContactSettings,
 } from '../utils/contactData';
+import { useBackgroundMedia } from '../utils/useBackgroundMedia';
 
 const TOPIC_OPTIONS = [
   'General Inquiry',
@@ -43,6 +44,7 @@ const TOPIC_OPTIONS = [
 ];
 
 export function Contact() {
+  const { hasBgMedia } = useBackgroundMedia('contact');
   const [settings, setSettings] = useState<ContactSettings>(DEFAULT_CONTACT_SETTINGS);
   const [loading, setLoading] = useState(true);
 
@@ -184,7 +186,12 @@ export function Contact() {
 
   if (loading) {
     return (
-      <section id="contact" className="py-20 bg-slate-50">
+      <section 
+        id="contact" 
+        className={`py-20 transition-colors duration-700 ${
+          hasBgMedia ? 'bg-transparent' : 'bg-slate-50'
+        }`}
+      >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="animate-pulse space-y-4">
             <div className="h-10 bg-slate-200 rounded w-1/3 mx-auto mb-4"></div>
@@ -196,11 +203,20 @@ export function Contact() {
   }
 
   return (
-    <section id="contact" className="py-20 sm:py-28 bg-gradient-to-b from-slate-50 via-white to-slate-50 scroll-mt-20">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section 
+      id="contact" 
+      className={`py-20 sm:py-28 scroll-mt-20 relative overflow-hidden transition-colors duration-700 ${
+        hasBgMedia ? 'bg-transparent' : 'bg-gradient-to-b from-slate-50 via-white to-slate-50'
+      }`}
+    >
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         
         {/* Section Header */}
-        <div className="max-w-3xl mx-auto text-center mb-16">
+        <div className={`max-w-3xl mx-auto text-center mb-16 transition-all duration-300 ${
+          hasBgMedia 
+            ? 'surface-translucent-header p-6 sm:p-8 rounded-3xl border border-white/60 shadow-sm' 
+            : ''
+        }`}>
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-100/80 text-emerald-800 text-xs font-bold uppercase tracking-wider mb-4 border border-emerald-200/60">
             <span className="w-2 h-2 rounded-full bg-emerald-600 animate-pulse"></span>
             Get Involved
@@ -216,7 +232,11 @@ export function Contact() {
         {/* 4 Action Cards for Ways to Support */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
           {/* Donate */}
-          <div className="p-6 rounded-2xl bg-white border border-slate-200/80 shadow-sm hover:shadow-md hover:border-emerald-300 transition-all flex flex-col justify-between group">
+          <div className={`p-6 rounded-2xl border transition-all flex flex-col justify-between group ${
+            hasBgMedia 
+              ? 'surface-translucent-card border-white/60 shadow-md hover:bg-white/95' 
+              : 'bg-white border-slate-200/80 shadow-sm hover:shadow-md hover:border-emerald-300'
+          }`}>
             <div>
               <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center mb-4 group-hover:bg-emerald-600 group-hover:text-white transition-colors">
                 <Heart className="w-6 h-6" />
@@ -236,7 +256,11 @@ export function Contact() {
           </div>
 
           {/* Volunteer */}
-          <div className="p-6 rounded-2xl bg-white border border-slate-200/80 shadow-sm hover:shadow-md hover:border-emerald-300 transition-all flex flex-col justify-between group">
+          <div className={`p-6 rounded-2xl border transition-all flex flex-col justify-between group ${
+            hasBgMedia 
+              ? 'surface-translucent-card border-white/60 shadow-md hover:bg-white/95' 
+              : 'bg-white border-slate-200/80 shadow-sm hover:shadow-md hover:border-emerald-300'
+          }`}>
             <div>
               <div className="w-12 h-12 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center mb-4 group-hover:bg-teal-600 group-hover:text-white transition-colors">
                 <HandHeart className="w-6 h-6" />
@@ -256,7 +280,11 @@ export function Contact() {
           </div>
 
           {/* Partner With Us */}
-          <div className="p-6 rounded-2xl bg-white border border-slate-200/80 shadow-sm hover:shadow-md hover:border-emerald-300 transition-all flex flex-col justify-between group">
+          <div className={`p-6 rounded-2xl border transition-all flex flex-col justify-between group ${
+            hasBgMedia 
+              ? 'surface-translucent-card border-white/60 shadow-md hover:bg-white/95' 
+              : 'bg-white border-slate-200/80 shadow-sm hover:shadow-md hover:border-emerald-300'
+          }`}>
             <div>
               <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center mb-4 group-hover:bg-blue-600 group-hover:text-white transition-colors">
                 <Users className="w-6 h-6" />
@@ -276,7 +304,11 @@ export function Contact() {
           </div>
 
           {/* Learn More */}
-          <div className="p-6 rounded-2xl bg-white border border-slate-200/80 shadow-sm hover:shadow-md hover:border-emerald-300 transition-all flex flex-col justify-between group">
+          <div className={`p-6 rounded-2xl border transition-all flex flex-col justify-between group ${
+            hasBgMedia 
+              ? 'surface-translucent-card border-white/60 shadow-md hover:bg-white/95' 
+              : 'bg-white border-slate-200/80 shadow-sm hover:shadow-md hover:border-emerald-300'
+          }`}>
             <div>
               <div className="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center mb-4 group-hover:bg-amber-600 group-hover:text-white transition-colors">
                 <BookOpen className="w-6 h-6" />
@@ -301,7 +333,11 @@ export function Contact() {
           
           {/* Left Column: Official Contact Channels */}
           <div className="lg:col-span-5 space-y-6">
-            <div className="p-6 sm:p-8 rounded-2xl bg-white border border-slate-200/80 shadow-sm space-y-6">
+            <div className={`p-6 sm:p-8 rounded-2xl border space-y-6 ${
+              hasBgMedia 
+                ? 'surface-translucent-card border-white/60 shadow-md' 
+                : 'bg-white border-slate-200/80 shadow-sm'
+            }`}>
               <div>
                 <h3 className="text-2xl font-bold font-heading text-slate-900 mb-1">
                   {GET_INVOLVED_STRINGS.contactSectionHeading}
@@ -487,7 +523,11 @@ export function Contact() {
 
           {/* Right Column: Contact Us Form */}
           <div className="lg:col-span-7">
-            <div className="p-6 sm:p-8 md:p-10 rounded-2xl bg-white border border-slate-200/80 shadow-sm">
+            <div className={`p-6 sm:p-8 md:p-10 rounded-2xl border ${
+              hasBgMedia 
+                ? 'surface-translucent-solid border-white/80 shadow-xl' 
+                : 'bg-white border-slate-200/80 shadow-sm'
+            }`}>
               <div className="mb-6">
                 <span className="text-xs font-bold uppercase tracking-wider text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full">
                   Direct Inquiry

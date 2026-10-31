@@ -19,11 +19,13 @@ import {
   getBeneficiaryDisplayName,
   normalizeStory
 } from '../utils/storyData';
+import { useBackgroundMedia } from '../utils/useBackgroundMedia';
 import { toast } from 'sonner';
 
 export function StoryDetail() {
   const { open: openDonationModal } = useDonationModal();
   const { id } = useParams<{ id: string }>();
+  const { hasBgMedia } = useBackgroundMedia('page', 'stories');
   const [story, setStory] = useState<ImpactStory | null>(null);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
@@ -155,7 +157,7 @@ export function StoryDetail() {
   const categoryLabel = categoryObj ? categoryObj.label : story.category;
 
   return (
-    <div className="bg-slate-50 min-h-screen pt-32 sm:pt-40 pb-24">
+    <div className={`${hasBgMedia ? 'bg-transparent' : 'bg-slate-50'} min-h-screen pt-32 sm:pt-40 pb-24`}>
       <SEO
         title={`${story.title} | RESTI CBO Impact Stories`}
         description={story.quote || story.short_description || cleanStoryText(story.story).substring(0, 160)}
@@ -168,7 +170,11 @@ export function StoryDetail() {
         <div className="flex items-center justify-between">
           <Link
             to="/stories"
-            className="inline-flex items-center text-sm font-semibold text-emerald-700 hover:text-emerald-800 transition-colors"
+            className={`inline-flex items-center text-sm font-semibold transition-colors ${
+              hasBgMedia
+                ? 'bg-white/80 hover:bg-white text-emerald-800 px-3.5 py-1.5 rounded-xl border border-white/60 shadow-xs backdrop-blur-xs'
+                : 'text-emerald-700 hover:text-emerald-800'
+            }`}
           >
             <ArrowLeft size={16} className="mr-2" />
             Back to All Impact Stories
@@ -176,7 +182,11 @@ export function StoryDetail() {
 
           <button
             onClick={handleShare}
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-slate-900 bg-white px-3 py-1.5 rounded-xl border border-slate-200/80 shadow-sm transition-all"
+            className={`inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-xl border shadow-sm transition-all ${
+              hasBgMedia
+                ? 'bg-white/80 hover:bg-white text-slate-800 border-white/60 backdrop-blur-xs'
+                : 'text-slate-600 hover:text-slate-900 bg-white border-slate-200/80'
+            }`}
           >
             {copied ? <Check size={14} className="text-emerald-600" /> : <Share2 size={14} />}
             {copied ? 'Link Copied' : 'Share Story'}
@@ -184,7 +194,7 @@ export function StoryDetail() {
         </div>
 
         {/* Story Card Article */}
-        <div className="bg-white rounded-3xl shadow-xl shadow-slate-200/40 border border-slate-100 overflow-hidden">
+        <div className={`${hasBgMedia ? 'surface-translucent-card border-white/60 shadow-2xl' : 'bg-white shadow-xl shadow-slate-200/40 border border-slate-100'} rounded-3xl overflow-hidden`}>
           {/* Hero Image / Emblem */}
           {story.image && story.permission_photo !== false ? (
             <div className="relative h-72 sm:h-96 w-full bg-slate-100 overflow-hidden border-b border-slate-100">
@@ -220,7 +230,9 @@ export function StoryDetail() {
               </h1>
 
               {/* Beneficiary Meta Card */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-100 text-xs sm:text-sm">
+              <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-2xl border text-xs sm:text-sm ${
+                hasBgMedia ? 'bg-white/80 border-white/40' : 'bg-slate-50 border-slate-100'
+              }`}>
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold flex-shrink-0">
                     <User size={20} />
@@ -311,7 +323,9 @@ export function StoryDetail() {
 
             {/* Documented Support Box */}
             {story.short_description && (
-              <div className="p-6 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-2">
+              <div className={`p-6 rounded-2xl border space-y-2 ${
+                hasBgMedia ? 'bg-white/80 border-white/40' : 'bg-slate-50 border-slate-200/80'
+              }`}>
                 <div className="flex items-center gap-2 text-xs font-bold text-emerald-900 uppercase tracking-wider">
                   <ShieldCheck size={16} className="text-emerald-600" />
                   Documented Community & Program Context
@@ -323,7 +337,7 @@ export function StoryDetail() {
             )}
 
             {/* Call to Action Row */}
-            <div className="pt-8 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className={`pt-8 border-t ${hasBgMedia ? 'border-white/30' : 'border-slate-100'} flex flex-col sm:flex-row items-center justify-between gap-4`}>
               <Link to="/programs" className="w-full sm:w-auto">
                 <Button variant="outline" className="w-full sm:w-auto rounded-xl border-emerald-300 text-emerald-800 hover:bg-emerald-50 font-semibold">
                   <BookOpen size={16} className="mr-2" />

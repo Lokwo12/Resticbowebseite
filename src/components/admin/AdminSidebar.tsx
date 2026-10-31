@@ -5,7 +5,7 @@ import {
   Image as ImageIcon, Handshake, Target, Heart, Mail, 
   Send, Users, Settings, Globe, BookOpen, HelpCircle, 
   Shield, Search, X, ChevronRight, Pin, PinOff, 
-  PanelLeftClose, PanelLeftOpen, ExternalLink, PieChart
+  PanelLeftClose, PanelLeftOpen, ExternalLink, PieChart, Film
 } from 'lucide-react';
 import { Avatar, AvatarFallback } from '../ui/avatar';
 
@@ -55,6 +55,7 @@ export const NAVIGATION_GROUPS: NavGroupConfig[] = [
       { id: 'news', label: 'News & Press', icon: Newspaper, color: 'text-slate-400', headerBg: '#084C24', accentBg: '#16803A', description: 'Articles & press releases' },
       { id: 'events', label: 'Events & Calendar', icon: Calendar, color: 'text-slate-400', headerBg: '#084C24', accentBg: '#16803A', description: 'Workshops & community events' },
       { id: 'gallery', label: 'Photo Gallery', icon: ImageIcon, color: 'text-slate-400', headerBg: '#084C24', accentBg: '#16803A', description: 'Field photos & albums' },
+      { id: 'background-media', label: 'Background Media', icon: Film, color: 'text-slate-400', headerBg: '#084C24', accentBg: '#16803A', description: 'Section backgrounds & video loops' },
       { id: 'partners', label: 'Partners & Donors', icon: Handshake, color: 'text-slate-400', headerBg: '#084C24', accentBg: '#16803A', description: 'Partner organizations' },
       { id: 'opportunities', label: 'Opportunities', icon: Target, color: 'text-slate-400', headerBg: '#084C24', accentBg: '#16803A', description: 'Jobs, tenders & internships' },
     ],

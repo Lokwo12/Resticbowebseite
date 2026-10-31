@@ -15,6 +15,7 @@ import { toast } from 'sonner';
 import { useDonationModal } from './DonationModalContext';
 import { getDeletedProgramIds } from '../utils/programDeletedRegistry';
 import { VideoModal } from './VideoModal';
+import { useBackgroundMedia } from '../utils/useBackgroundMedia';
 
 const supabase = createClient(
   `https://${projectId}.supabase.co`,
@@ -424,6 +425,7 @@ export function ProgramDetail() {
   const { open: openDonationModal } = useDonationModal();
   const { id } = useParams<{ id: string }>();
   const cleanId = (id || '').replace(/^program:/, '').trim().toLowerCase();
+  const { hasBgMedia } = useBackgroundMedia('page', cleanId ? `program-${cleanId}` : 'programs');
   const [program, setProgram] = useState<Program | null>(() => DETAILED_FALLBACK_PROGRAMS[cleanId] || null);
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -783,7 +785,7 @@ export function ProgramDetail() {
   const hasVerifiedMetrics = program.impactMetrics && program.impactMetrics.length > 0;
 
   return (
-    <div className="bg-slate-50/60 min-h-screen pt-24 sm:pt-28 pb-24 font-sans selection:bg-emerald-100 selection:text-emerald-900">
+    <div className={`${hasBgMedia ? 'bg-transparent' : 'bg-slate-50/60'} min-h-screen pt-24 sm:pt-28 pb-24 font-sans selection:bg-emerald-100 selection:text-emerald-900`}>
       <SEO 
         title={`${program.title} | RESTI CBO Programs`} 
         description={program.description ? program.description.substring(0, 160) : 'RESTI CBO community initiative in Kiryandongo District, Uganda.'} 
@@ -805,7 +807,7 @@ export function ProgramDetail() {
         {/* ==================================================================== */}
         {/* SECTION 1: PROGRAM HEADER (Clean Hero) */}
         {/* ==================================================================== */}
-        <section className="bg-white rounded-3xl border border-slate-200/80 shadow-sm p-6 sm:p-10 mb-10 overflow-hidden">
+        <section className={`${hasBgMedia ? 'surface-translucent-header border-white/60' : 'bg-white border border-slate-200/80 shadow-sm'} rounded-3xl p-6 sm:p-10 mb-10 overflow-hidden`}>
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-center">
             
             {/* Left Header Content */}
@@ -879,7 +881,7 @@ export function ProgramDetail() {
             {/* ================================================================ */}
             {/* SECTION 2: PROGRAM OVERVIEW ("About This Program") */}
             {/* ================================================================ */}
-            <section className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-xs space-y-4">
+            <section className={`${hasBgMedia ? 'surface-translucent-card border-white/60' : 'bg-white border border-slate-200/80 shadow-xs'} rounded-3xl p-6 sm:p-8 space-y-4`}>
               <h2 className="text-xl sm:text-2xl font-bold font-heading text-slate-900 border-b border-slate-100 pb-3">
                 About This Program
               </h2>
@@ -892,7 +894,7 @@ export function ProgramDetail() {
             {/* SECTION 4: WHAT WE DO (3–6 Activity Cards) */}
             {/* ================================================================ */}
             {program.keyActivities && program.keyActivities.length > 0 && (
-              <section className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-xs space-y-5">
+              <section className={`${hasBgMedia ? 'surface-translucent-card border-white/60' : 'bg-white border border-slate-200/80 shadow-xs'} rounded-3xl p-6 sm:p-8 space-y-5`}>
                 <div>
                   <h2 className="text-xl sm:text-2xl font-bold font-heading text-slate-900">
                     What We Do
@@ -906,7 +908,7 @@ export function ProgramDetail() {
                   {program.keyActivities.map((act, idx) => (
                     <div 
                       key={idx}
-                      className="p-5 rounded-2xl bg-slate-50 border border-slate-100 hover:border-emerald-200 transition-colors flex flex-col justify-between"
+                      className={`p-5 rounded-2xl ${hasBgMedia ? 'bg-white/80 border-white/50' : 'bg-slate-50 border-slate-100'} hover:border-emerald-200 transition-colors flex flex-col justify-between`}
                     >
                       <div>
                         <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-xs mb-3">
@@ -930,7 +932,7 @@ export function ProgramDetail() {
             {/* ================================================================ */}
             {/* SECTION 5: WHO WE SUPPORT */}
             {/* ================================================================ */}
-            <section className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-xs space-y-3">
+            <section className={`${hasBgMedia ? 'surface-translucent-card border-white/60' : 'bg-white border border-slate-200/80 shadow-xs'} rounded-3xl p-6 sm:p-8 space-y-3`}>
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center">
                   <Users className="w-4 h-4" />
@@ -947,7 +949,7 @@ export function ProgramDetail() {
             {/* ================================================================ */}
             {/* SECTION 6: WHERE WE WORK */}
             {/* ================================================================ */}
-            <section className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-xs space-y-3">
+            <section className={`${hasBgMedia ? 'surface-translucent-card border-white/60' : 'bg-white border border-slate-200/80 shadow-xs'} rounded-3xl p-6 sm:p-8 space-y-3`}>
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center">
                   <MapPin className="w-4 h-4" />
@@ -965,7 +967,7 @@ export function ProgramDetail() {
             {/* SECTION 7: PROGRAM GOALS (3–5 Clear Goals) */}
             {/* ================================================================ */}
             {program.objectives && program.objectives.length > 0 && (
-              <section className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-xs space-y-4">
+              <section className={`${hasBgMedia ? 'surface-translucent-card border-white/60' : 'bg-white border border-slate-200/80 shadow-xs'} rounded-3xl p-6 sm:p-8 space-y-4`}>
                 <h2 className="text-xl sm:text-2xl font-bold font-heading text-slate-900 border-b border-slate-100 pb-3">
                   Our Goals
                 </h2>
@@ -974,7 +976,7 @@ export function ProgramDetail() {
                   {program.objectives.map((goal, gIdx) => (
                     <div 
                       key={gIdx}
-                      className="flex items-start gap-3 p-3.5 rounded-2xl bg-slate-50 border border-slate-100"
+                      className={`flex items-start gap-3 p-3.5 rounded-2xl ${hasBgMedia ? 'bg-white/80 border-white/50' : 'bg-slate-50 border-slate-100'}`}
                     >
                       <div className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0 mt-0.5">
                         <Check size={13} className="stroke-[3]" />
@@ -991,7 +993,7 @@ export function ProgramDetail() {
             {/* ================================================================ */}
             {/* SECTION 8: IMPACT (Verified Statistics or Qualitative Statement) */}
             {/* ================================================================ */}
-            <section className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-xs space-y-4">
+            <section className={`${hasBgMedia ? 'surface-translucent-card border-white/60' : 'bg-white border border-slate-200/80 shadow-xs'} rounded-3xl p-6 sm:p-8 space-y-4`}>
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                 <h2 className="text-xl sm:text-2xl font-bold font-heading text-slate-900">
                   Our Impact
@@ -1008,7 +1010,7 @@ export function ProgramDetail() {
                   {program.impactMetrics!.map((metric, mIdx) => (
                     <div 
                       key={mIdx}
-                      className="bg-slate-50 rounded-2xl p-5 border border-slate-100 flex flex-col justify-between"
+                      className={`${hasBgMedia ? 'bg-white/80 border-white/50' : 'bg-slate-50 border-slate-100'} rounded-2xl p-5 border flex flex-col justify-between`}
                     >
                       <div>
                         <p className="text-2xl sm:text-3xl font-extrabold text-emerald-700 font-heading">
@@ -1097,7 +1099,7 @@ export function ProgramDetail() {
             {/* SECTION 10: PROGRAM GALLERY */}
             {/* ================================================================ */}
             {program.gallery && program.gallery.length > 0 && (
-              <section className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-xs space-y-4">
+              <section className={`${hasBgMedia ? 'surface-translucent-card border-white/60' : 'bg-white border border-slate-200/80 shadow-xs'} rounded-3xl p-6 sm:p-8 space-y-4`}>
                 <div className="flex items-center gap-2">
                   <ImageIcon className="w-5 h-5 text-emerald-600" />
                   <h2 className="text-xl sm:text-2xl font-bold font-heading text-slate-900">
@@ -1109,7 +1111,7 @@ export function ProgramDetail() {
                   {program.gallery.map((photo, pIdx) => (
                     <div 
                       key={pIdx}
-                      className="group rounded-2xl overflow-hidden border border-slate-100 bg-slate-50 flex flex-col"
+                      className={`group rounded-2xl overflow-hidden border ${hasBgMedia ? 'border-white/50 bg-white/70' : 'border-slate-100 bg-slate-50'} flex flex-col`}
                     >
                       <div className="aspect-[16/10] overflow-hidden bg-slate-200">
                         <img 
@@ -1139,7 +1141,7 @@ export function ProgramDetail() {
             {/* ================================================================ */}
             {/* SECTION 9: STORIES & UPDATES */}
             {/* ================================================================ */}
-            <section className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-xs space-y-4">
+            <section className={`${hasBgMedia ? 'surface-translucent-card border-white/60' : 'bg-white border border-slate-200/80 shadow-xs'} rounded-3xl p-6 sm:p-8 space-y-4`}>
               <h2 className="text-xl sm:text-2xl font-bold font-heading text-slate-900 border-b border-slate-100 pb-3">
                 Stories & Updates from This Program
               </h2>
@@ -1154,7 +1156,7 @@ export function ProgramDetail() {
                     <Link
                       key={article.id}
                       to={`/news/${article.slug || article.id}`}
-                      className="group p-4 rounded-2xl bg-slate-50 border border-slate-100 hover:border-emerald-200 transition-all flex flex-col justify-between"
+                      className={`group p-4 rounded-2xl ${hasBgMedia ? 'bg-white/80 border-white/50' : 'bg-slate-50 border-slate-100'} hover:border-emerald-200 transition-all flex flex-col justify-between`}
                     >
                       <div>
                         {article.image && (
@@ -1186,7 +1188,7 @@ export function ProgramDetail() {
                   ))}
                 </div>
               ) : (
-                <div className="py-6 px-5 rounded-2xl bg-slate-50 border border-slate-100 text-center">
+                <div className={`py-6 px-5 rounded-2xl ${hasBgMedia ? 'bg-white/80 border-white/50' : 'bg-slate-50 border-slate-100'} text-center`}>
                   <p className="text-slate-600 text-sm">
                     No updates published yet. Check back soon for stories and progress from this program.
                   </p>
@@ -1204,7 +1206,7 @@ export function ProgramDetail() {
             {/* ================================================================ */}
             {/* SECTION 3: AT A GLANCE (Essential Facts) */}
             {/* ================================================================ */}
-            <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/80 shadow-xs space-y-5 sticky top-28">
+            <div className={`${hasBgMedia ? 'surface-translucent-card border-white/60' : 'bg-white border border-slate-200/80 shadow-xs'} rounded-3xl p-6 sm:p-7 space-y-5 sticky top-28`}>
               <h3 className="text-lg font-bold font-heading text-slate-900 border-b border-slate-100 pb-3">
                 At a Glance
               </h3>

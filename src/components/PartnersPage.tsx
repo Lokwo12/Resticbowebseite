@@ -8,10 +8,13 @@ import {
   Partner,
   PARTNER_PAGE_STRINGS,
   normalizePartner,
-  isValidPublicPartner
+  isValidPublicPartner,
+  loadPublicPartners
 } from '../utils/partnerData';
+import { useBackgroundMedia } from '../utils/useBackgroundMedia';
 
 export function PartnersPage() {
+  const { hasBgMedia } = useBackgroundMedia('page', 'partners');
   const { open: openDonationModal } = useDonationModal();
   const [partners, setPartners] = useState<Partner[]>([]);
   const [loading, setLoading] = useState(true);
@@ -21,36 +24,8 @@ export function PartnersPage() {
     const fetchPartners = async () => {
       setLoading(true);
       try {
-        const response = await fetch(
-          `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/partners`,
-          {
-            headers: {
-              Authorization: `Bearer ${publicAnonKey}`,
-            },
-          }
-        );
-
-        if (response.ok) {
-          const data = await response.json();
-          const rawItems = data.partners || [];
-          const normalized = rawItems
-            .map(normalizePartner)
-            .filter(isValidPublicPartner);
-
-          // Sort by display order, then created_at
-          normalized.sort((a: Partner, b: Partner) => {
-            if (a.display_order !== b.display_order) {
-              return a.display_order - b.display_order;
-            }
-            const timeA = new Date(a.created_at || 0).getTime();
-            const timeB = new Date(b.created_at || 0).getTime();
-            return timeB - timeA;
-          });
-
-          setPartners(normalized);
-        } else {
-          setPartners([]);
-        }
+        const items = await loadPublicPartners();
+        setPartners(items);
       } catch (err) {
         console.error('Error fetching published partners:', err);
         setPartners([]);
@@ -78,9 +53,9 @@ export function PartnersPage() {
   }, [partners, selectedType]);
 
   return (
-    <div className="bg-slate-50 min-h-screen">
+    <div className={`${hasBgMedia ? 'bg-transparent' : 'bg-slate-50'} min-h-screen`}>
       {/* Header Banner */}
-      <section className="bg-gradient-to-r from-emerald-700 via-teal-700 to-emerald-900 text-white pt-32 sm:pt-40 pb-16 sm:pb-24 shadow-md relative overflow-hidden">
+      <section className={`${hasBgMedia ? 'surface-translucent-header text-white bg-slate-900/60 border-b border-white/20' : 'bg-gradient-to-r from-emerald-700 via-teal-700 to-emerald-900 text-white shadow-md'} pt-32 sm:pt-40 pb-16 sm:pb-24 relative overflow-hidden`}>
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.08),transparent_60%)] pointer-events-none" />
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-white/10 backdrop-blur-md rounded-2xl mb-6 border border-white/20 shadow-inner">
@@ -102,13 +77,13 @@ export function PartnersPage() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-8 sm:-mt-10 relative z-20 pb-24">
         {/* Loading Spinner */}
         {loading ? (
-          <div className="bg-white rounded-3xl p-16 shadow-xl border border-slate-100 flex flex-col items-center justify-center text-slate-400 space-y-4">
+          <div className={`${hasBgMedia ? 'surface-translucent-card border-white/60' : 'bg-white rounded-3xl border border-slate-100 shadow-xl'} p-16 flex flex-col items-center justify-center text-slate-400 space-y-4`}>
             <Loader2 size={36} className="animate-spin text-emerald-600" />
             <p className="text-sm font-medium text-slate-600">Loading verified partners...</p>
           </div>
         ) : partners.length === 0 ? (
           /* Empty State (No published partners) */
-          <div className="bg-white rounded-3xl p-10 sm:p-16 shadow-xl border border-slate-100 text-center max-w-3xl mx-auto">
+          <div className={`${hasBgMedia ? 'surface-translucent-card border-white/60' : 'bg-white rounded-3xl border border-slate-100 shadow-xl'} p-10 sm:p-16 text-center max-w-3xl mx-auto`}>
             <div className="w-16 h-16 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center mx-auto mb-6 text-emerald-600 shadow-inner">
               <Building2 size={32} />
             </div>
@@ -142,7 +117,7 @@ export function PartnersPage() {
           <div className="space-y-10">
             {/* Category Filter Pills (if multiple partner types exist) */}
             {partnerTypes.length > 2 && (
-              <div className="flex flex-wrap items-center justify-center gap-2.5 bg-white p-3 rounded-2xl shadow-sm border border-slate-100 max-w-3xl mx-auto">
+              <div className={`flex flex-wrap items-center justify-center gap-2.5 p-3 rounded-2xl max-w-3xl mx-auto ${hasBgMedia ? 'surface-translucent-card border-white/60' : 'bg-white shadow-sm border border-slate-100'}`}>
                 {partnerTypes.map((type) => {
                   const isSelected = selectedType === type;
                   const label = type === 'all' ? 'All Partners' : type;
@@ -153,7 +128,9 @@ export function PartnersPage() {
                       className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 ${
                         isSelected
                           ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20'
-                          : 'bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-slate-200/60'
+                          : hasBgMedia
+                            ? 'bg-white/70 text-slate-700 hover:bg-white/95 border border-white/50'
+                            : 'bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-slate-200/60'
                       }`}
                     >
                       {label}
@@ -178,10 +155,18 @@ export function PartnersPage() {
                 return (
                   <div
                     key={partner.id}
-                    className="bg-white rounded-2xl shadow-lg hover:shadow-2xl border border-slate-100 hover:border-emerald-200 transition-all duration-300 flex flex-col group overflow-hidden"
+                    className={`rounded-2xl transition-all duration-300 flex flex-col group overflow-hidden ${
+                      hasBgMedia
+                        ? 'surface-translucent-card border-white/60 hover:bg-white/95 hover:shadow-2xl'
+                        : 'bg-white shadow-lg hover:shadow-2xl border border-slate-100 hover:border-emerald-200'
+                    }`}
                   >
                     {/* Partner Header & Logo */}
-                    <div className="p-6 border-b border-slate-100 bg-slate-50/40 group-hover:bg-emerald-50/20 transition-colors">
+                    <div className={`p-6 border-b transition-colors ${
+                      hasBgMedia
+                        ? 'border-white/30 bg-white/40 group-hover:bg-emerald-50/30'
+                        : 'border-slate-100 bg-slate-50/40 group-hover:bg-emerald-50/20'
+                    }`}>
                       <div className="flex items-center gap-4">
                         {/* Logo Container with object-contain */}
                         <div className="w-18 h-18 sm:w-20 sm:h-20 rounded-2xl bg-white border border-slate-200/80 p-2 flex items-center justify-center flex-shrink-0 shadow-sm overflow-hidden group-hover:border-emerald-300 transition-colors">
@@ -233,7 +218,7 @@ export function PartnersPage() {
 
                       {/* Visit Website Button (Only if valid URL provided) */}
                       {hasValidWebsite && (
-                        <div className="pt-4 border-t border-slate-100 mt-auto">
+                        <div className={`pt-4 border-t ${hasBgMedia ? 'border-white/30' : 'border-slate-100'} mt-auto`}>
                           <a
                             href={websiteUrl}
                             target="_blank"
@@ -255,7 +240,11 @@ export function PartnersPage() {
         )}
 
         {/* Bottom CTA Block */}
-        <div className="mt-16 sm:mt-20 bg-gradient-to-br from-emerald-50 via-teal-50/50 to-white rounded-3xl p-8 sm:p-12 text-center border border-emerald-200/70 shadow-sm max-w-4xl mx-auto">
+        <div className={`mt-16 sm:mt-20 rounded-3xl p-8 sm:p-12 text-center max-w-4xl mx-auto ${
+          hasBgMedia
+            ? 'surface-translucent-card border-white/60'
+            : 'bg-gradient-to-br from-emerald-50 via-teal-50/50 to-white border border-emerald-200/70 shadow-sm'
+        }`}>
           <h2 className="text-2xl sm:text-3xl font-bold font-heading text-slate-900 mb-3 tracking-tight">
             Want to Partner With Us?
           </h2>

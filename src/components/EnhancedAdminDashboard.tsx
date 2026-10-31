@@ -103,6 +103,7 @@ import { PageFormDialog } from './AdminFormDialogsPages';
 import { MapLocationFormDialog } from './AdminMapLocationDialog';
 import { ImpactMap } from './ImpactMap';
 import { ProgramFormDialog } from './admin/ProgramFormDialog';
+import { BackgroundMediaManager } from './admin/BackgroundMediaManager';
 import { DETAILED_FALLBACK_PROGRAMS } from './ProgramDetail';
 import { getDeletedProgramIds, recordDeletedProgramIds, unmarkDeletedProgramId } from '../utils/programDeletedRegistry';
 import { stripHtml } from '../utils/textUtils';
@@ -5062,6 +5063,16 @@ export function EnhancedAdminDashboard() {
               <PartnersManager
                 accessToken={accessToken || publicAnonKey}
                 projectId={projectId}
+                userRole={userRole}
+                userName={userName}
+                onUpdate={loadData}
+              />
+            )}
+
+            {/* Background Media Management */}
+            {activeTab === 'background-media' && (
+              <BackgroundMediaManager
+                accessToken={accessToken || publicAnonKey}
                 userRole={userRole}
                 userName={userName}
                 onUpdate={loadData}

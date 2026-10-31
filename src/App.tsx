@@ -4,6 +4,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from './components/ui/sonner';
 import { Header } from './components/Header';
 import { Hero } from './components/Hero';
+import { ScrollingBackgroundSystem } from './components/ScrollingBackgroundSystem';
+import { PageBackground } from './components/PageBackground';
 
 import { About } from './components/About';
 import { Programs } from './components/Programs';
@@ -104,9 +106,10 @@ function PageTitleManager() {
 
 function HomePage() {
   return (
-    <div className="min-h-screen bg-white overflow-x-hidden w-full">
+    <div className="min-h-screen bg-transparent overflow-x-hidden w-full relative">
+      <ScrollingBackgroundSystem />
       <Header />
-      <main className="w-full overflow-x-hidden">
+      <main className="w-full overflow-x-hidden relative z-10">
         <Hero />
 
         <About />
@@ -193,9 +196,10 @@ function AdminPage() {
 
 function MainLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen flex flex-col bg-white overflow-x-hidden w-full">
+    <div className="min-h-screen flex flex-col bg-transparent overflow-x-hidden w-full relative">
+      <PageBackground />
       <Header />
-      <main className="flex-grow w-full overflow-x-hidden">
+      <main className="flex-grow w-full overflow-x-hidden relative z-10 bg-transparent">
         {children}
       </main>
       <Footer />
@@ -241,6 +245,14 @@ export default function App() {
         <Route path="/cookies" element={<MainLayout><LegalPage type="cookies" /></MainLayout>} />
         <Route path="/terms" element={<MainLayout><LegalPage type="terms" /></MainLayout>} />
         <Route path="/refund" element={<MainLayout><LegalPage type="refund" /></MainLayout>} />
+        <Route path="/privacy-policy" element={<Navigate to="/pages/privacy-policy" replace />} />
+        <Route path="/terms-of-service" element={<Navigate to="/pages/terms-of-service" replace />} />
+        <Route path="/refund-policy" element={<Navigate to="/pages/refund-policy" replace />} />
+        <Route path="/cookies-policy" element={<Navigate to="/pages/cookies-policy" replace />} />
+        <Route path="/pages/privacy" element={<Navigate to="/pages/privacy-policy" replace />} />
+        <Route path="/pages/terms" element={<Navigate to="/pages/terms-of-service" replace />} />
+        <Route path="/pages/refund" element={<Navigate to="/pages/refund-policy" replace />} />
+        <Route path="/pages/cookies" element={<Navigate to="/pages/cookies-policy" replace />} />
         <Route path="/news" element={<MainLayout><NewsArchive /></MainLayout>} />
         <Route path="/news/:id" element={<MainLayout><NewsDetail /></MainLayout>} />
         <Route path="/stories" element={<MainLayout><StoriesArchive /></MainLayout>} />

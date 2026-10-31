@@ -20,8 +20,10 @@ import {
   getBeneficiaryDisplayName,
   normalizeStory
 } from '../utils/storyData';
+import { useBackgroundMedia } from '../utils/useBackgroundMedia';
 
 export function StoriesArchive() {
+  const { hasBgMedia } = useBackgroundMedia('page', 'stories');
   const [stories, setStories] = useState<ImpactStory[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -161,14 +163,14 @@ export function StoriesArchive() {
   }, [stories, selectedCategory, searchQuery]);
 
   return (
-    <div className="bg-slate-50 min-h-screen">
+    <div className={`${hasBgMedia ? 'bg-transparent' : 'bg-slate-50'} min-h-screen`}>
       <SEO
         title="RESTI CBO | Impact Stories"
         description={headerInfo.subtitle}
       />
 
       {/* Hero Header */}
-      <section className="relative bg-gradient-to-br from-emerald-900 via-emerald-800 to-teal-900 text-white pt-36 sm:pt-44 pb-20 sm:pb-28 overflow-hidden">
+      <section className={`${hasBgMedia ? 'surface-translucent-header text-white bg-slate-900/60 border-b border-white/20' : 'bg-gradient-to-br from-emerald-900 via-emerald-800 to-teal-900 text-white'} relative pt-36 sm:pt-44 pb-20 sm:pb-28 overflow-hidden`}>
         {/* Decorative subtle texture */}
         <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:16px_16px] pointer-events-none" />
         <div className="absolute -right-24 -bottom-24 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
@@ -192,7 +194,7 @@ export function StoriesArchive() {
       {/* Main Content Area */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-10 sm:-mt-14 relative z-20 pb-24">
         {/* Controls Bar: Search & Category Pills */}
-        <div className="bg-white rounded-3xl shadow-xl shadow-slate-200/50 p-6 sm:p-8 border border-slate-100 space-y-6">
+        <div className={`${hasBgMedia ? 'surface-translucent-card border-white/60' : 'bg-white shadow-xl shadow-slate-200/50 border border-slate-100'} rounded-3xl p-6 sm:p-8 space-y-6`}>
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             {/* Search Input */}
             <div className="relative flex-1 max-w-md">
@@ -202,19 +204,23 @@ export function StoriesArchive() {
                 placeholder="Search stories by keyword, participant, or location..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all placeholder:text-slate-400"
+                className={`w-full pl-11 pr-4 py-3 rounded-2xl text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all ${
+                  hasBgMedia
+                    ? 'bg-white/80 border border-white/70 text-slate-900 placeholder:text-slate-500'
+                    : 'bg-slate-50 border border-slate-200 placeholder:text-slate-400'
+                }`}
               />
             </div>
 
             {/* Total Count Badge */}
-            <div className="text-xs text-slate-500 font-medium self-end md:self-center">
+            <div className={`text-xs font-medium self-end md:self-center ${hasBgMedia ? 'text-slate-700' : 'text-slate-500'}`}>
               Showing <span className="font-bold text-slate-800">{filteredStories.length}</span> documented {filteredStories.length === 1 ? 'story' : 'stories'}
             </div>
           </div>
 
           {/* Category Tabs */}
           {categoryFilters.length > 2 && (
-            <div className="flex flex-wrap gap-2 pt-2 border-t border-slate-100">
+            <div className={`flex flex-wrap gap-2 pt-2 border-t ${hasBgMedia ? 'border-white/30' : 'border-slate-100'}`}>
               {categoryFilters.map((cat) => (
                 <button
                   key={cat.id}
@@ -222,7 +228,9 @@ export function StoriesArchive() {
                   className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all ${
                     selectedCategory === cat.id
                       ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20 scale-[1.02]'
-                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200/80'
+                      : hasBgMedia
+                        ? 'bg-white/70 text-slate-700 hover:bg-white/95 border border-white/50'
+                        : 'bg-slate-100 text-slate-700 hover:bg-slate-200/80'
                   }`}
                 >
                   {cat.label}
@@ -237,11 +245,11 @@ export function StoriesArchive() {
           {loading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {[1, 2, 3].map((i) => (
-                <div key={i} className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm animate-pulse space-y-4">
-                  <div className="h-48 bg-slate-200 rounded-2xl" />
-                  <div className="h-5 bg-slate-200 rounded-lg w-3/4" />
-                  <div className="h-4 bg-slate-200 rounded w-1/2" />
-                  <div className="h-16 bg-slate-100 rounded-xl" />
+                <div key={i} className={`${hasBgMedia ? 'surface-translucent-card border-white/60' : 'bg-white border border-slate-100 shadow-sm'} rounded-3xl p-6 animate-pulse space-y-4`}>
+                  <div className="h-48 bg-slate-200/60 rounded-2xl" />
+                  <div className="h-5 bg-slate-200/60 rounded-lg w-3/4" />
+                  <div className="h-4 bg-slate-200/60 rounded w-1/2" />
+                  <div className="h-16 bg-slate-100/60 rounded-xl" />
                 </div>
               ))}
             </div>
@@ -249,7 +257,6 @@ export function StoriesArchive() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {filteredStories.map((story) => {
                 const displayName = getBeneficiaryDisplayName(story);
-                const isAnonymous = story.permission_name === false;
                 const categoryObj = RESTI_STORY_CATEGORIES.find(
                   c => c.id === story.category || c.id === story.category?.toLowerCase()
                 );
@@ -258,7 +265,11 @@ export function StoriesArchive() {
                 return (
                   <Card
                     key={story.id}
-                    className="overflow-hidden hover:shadow-2xl hover:-translate-y-1.5 transition-all duration-300 bg-white border border-slate-200/80 rounded-3xl flex flex-col group"
+                    className={`overflow-hidden hover:shadow-2xl hover:-translate-y-1.5 transition-all duration-300 rounded-3xl flex flex-col group ${
+                      hasBgMedia
+                        ? 'surface-translucent-card border-white/60 hover:bg-white/95'
+                        : 'bg-white border border-slate-200/80'
+                    }`}
                   >
                     <Link to={`/stories/${story.slug || story.id.replace('story:', '')}`} className="flex flex-col flex-1">
                       {/* Image / Header Graphic */}
@@ -295,7 +306,9 @@ export function StoriesArchive() {
                         </h2>
 
                         {/* Beneficiary & Location */}
-                        <div className="flex items-center gap-3 p-3 bg-slate-50/80 rounded-2xl border border-slate-100 text-xs">
+                        <div className={`flex items-center gap-3 p-3 rounded-2xl border text-xs ${
+                          hasBgMedia ? 'bg-white/80 border-white/40' : 'bg-slate-50/80 border-slate-100'
+                        }`}>
                           <div className="w-9 h-9 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold flex-shrink-0">
                             <User size={16} />
                           </div>
@@ -317,7 +330,7 @@ export function StoriesArchive() {
                         </p>
 
                         {/* Footer Meta & Read Story CTA */}
-                        <div className="pt-4 border-t border-slate-100 flex items-center justify-between mt-auto text-xs">
+                        <div className={`pt-4 border-t ${hasBgMedia ? 'border-white/40' : 'border-slate-100'} flex items-center justify-between mt-auto text-xs`}>
                           <span className="text-slate-400 flex items-center gap-1 font-medium text-[11px]">
                             <Calendar size={12} />
                             {formatStoryDate(story.date)}
@@ -336,7 +349,7 @@ export function StoriesArchive() {
             </div>
           ) : (
             /* Dignified Empty State */
-            <div className="bg-white rounded-3xl p-12 sm:p-16 text-center max-w-2xl mx-auto border border-slate-200/80 shadow-sm space-y-6">
+            <div className={`${hasBgMedia ? 'surface-translucent-card border-white/60' : 'bg-white border border-slate-200/80 shadow-sm'} rounded-3xl p-12 sm:p-16 text-center max-w-2xl mx-auto space-y-6`}>
               <div className="w-16 h-16 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center mx-auto shadow-inner">
                 <Quote size={32} className="text-emerald-600" />
               </div>

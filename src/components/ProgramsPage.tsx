@@ -12,6 +12,7 @@ import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { DETAILED_FALLBACK_PROGRAMS } from './ProgramDetail';
 import { getDeletedProgramIds, getDeletedProgramIdsSync } from '../utils/programDeletedRegistry';
+import { useBackgroundMedia } from '../utils/useBackgroundMedia';
 
 const supabase = createClient(
   `https://${projectId}.supabase.co`,
@@ -58,6 +59,7 @@ const FALLBACK_PROGRAMS: Program[] = Object.keys(DETAILED_FALLBACK_PROGRAMS).map
 });
 
 export function ProgramsPage() {
+  const { hasBgMedia } = useBackgroundMedia('page', 'programs');
   const { open: openDonationModal } = useDonationModal();
   const [programs, setPrograms] = useState<Program[]>(() => {
     const deleted = getDeletedProgramIdsSync();
@@ -183,7 +185,7 @@ export function ProgramsPage() {
   });
 
   return (
-    <div className="bg-slate-50 min-h-screen pb-24" style={{ paddingTop: '120px' }}>
+    <div className={`${hasBgMedia ? 'bg-transparent' : 'bg-slate-50'} min-h-screen pb-24`} style={{ paddingTop: '120px' }}>
       <SEO 
         title="RESTI CBO | Programs" 
         description="Explore RESTI CBO community programs in livelihoods and economic empowerment, clean water and WASH, environmental sustainability, and community development in Uganda." 
@@ -192,7 +194,7 @@ export function ProgramsPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Header Hero */}
-        <div className="text-center max-w-3xl mx-auto mb-12">
+        <div className={`text-center max-w-3xl mx-auto mb-12 ${hasBgMedia ? 'surface-translucent-header p-8 rounded-3xl' : ''}`}>
           <div className="inline-flex items-center gap-2 bg-emerald-100 text-emerald-700 text-sm font-semibold px-4 py-2 rounded-full mb-4">
             <BookOpen size={16} />
             Our Core Initiatives
@@ -206,7 +208,9 @@ export function ProgramsPage() {
         </div>
 
         {/* Filter and Search Bar */}
-        <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-xs border border-slate-100 mb-10 flex flex-col md:flex-row gap-4 items-center justify-between">
+        <div className={`rounded-2xl p-4 sm:p-6 mb-10 flex flex-col md:flex-row gap-4 items-center justify-between ${
+          hasBgMedia ? 'surface-translucent-card border-white/60' : 'bg-white rounded-2xl shadow-xs border border-slate-100'
+        }`}>
           {/* Category Pills */}
           <div className="flex flex-wrap gap-2 w-full md:w-auto">
             {categories.map(cat => (
@@ -217,7 +221,9 @@ export function ProgramsPage() {
                 className={`px-4 py-2 rounded-xl text-sm font-semibold capitalize transition-all duration-200 ${
                   selectedCategory === cat
                     ? 'bg-emerald-600 text-white shadow-sm'
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    : hasBgMedia
+                      ? 'bg-white/70 text-slate-700 hover:bg-white/90 border border-white/50'
+                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                 }`}
               >
                 {cat}
@@ -233,7 +239,9 @@ export function ProgramsPage() {
               placeholder="Search programs..."
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-50 transition-all text-slate-800"
+              className={`w-full pl-10 pr-4 py-2.5 rounded-xl text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-50 transition-all text-slate-800 ${
+                hasBgMedia ? 'bg-white/80 border border-white/70 backdrop-blur-xs placeholder:text-slate-500' : 'bg-slate-50 border border-slate-200'
+              }`}
             />
           </div>
         </div>
@@ -247,7 +255,11 @@ export function ProgramsPage() {
               return (
                 <div
                   key={program.key || programId}
-                  className="card-lift group bg-white border border-slate-100 rounded-3xl overflow-hidden shadow-xs hover:shadow-xl transition-all duration-300 flex flex-col h-full"
+                  className={`card-lift group rounded-3xl overflow-hidden transition-all duration-300 flex flex-col h-full ${
+                    hasBgMedia
+                      ? 'surface-translucent-card border-white/60 hover:bg-white/95 hover:shadow-xl'
+                      : 'bg-white border border-slate-100 shadow-xs hover:shadow-xl'
+                  }`}
                 >
                   {pVal.image ? (
                     <div className="relative aspect-video overflow-hidden bg-slate-100 border-b border-slate-100 flex items-center justify-center">
@@ -278,7 +290,7 @@ export function ProgramsPage() {
                       </p>
                     </div>
 
-                    <div className="pt-4 border-t border-slate-100 flex items-center justify-between gap-2">
+                    <div className={`pt-4 border-t ${hasBgMedia ? 'border-white/40' : 'border-slate-100'} flex items-center justify-between gap-2`}>
                       <div className="flex items-center gap-2">
                         <Link
                           to={`/programs/${programId}`}
@@ -290,7 +302,11 @@ export function ProgramsPage() {
                         <button
                           type="button"
                           onClick={() => setPreviewProgram({ ...pVal, id: programId })}
-                          className="text-xs font-semibold text-slate-500 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 px-2.5 py-1 rounded-lg transition-colors"
+                          className={`text-xs font-semibold px-2.5 py-1 rounded-lg transition-colors ${
+                            hasBgMedia
+                              ? 'bg-white/80 hover:bg-white text-slate-700 border border-white/50'
+                              : 'bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-900'
+                          }`}
                         >
                           Quick View
                         </button>
@@ -311,7 +327,7 @@ export function ProgramsPage() {
             })}
           </div>
         ) : (
-          <div className="bg-white rounded-3xl p-12 text-center border border-slate-100">
+          <div className={`rounded-3xl p-12 text-center ${hasBgMedia ? 'surface-translucent-card border-white/60' : 'bg-white border border-slate-100'}`}>
             <BookOpen size={48} className="mx-auto text-slate-300 mb-4" />
             <h3 className="text-lg font-bold text-slate-800 mb-1">No programs found</h3>
             <p className="text-sm text-slate-500 mb-6">Try adjusting your search query or selecting a different category filter.</p>

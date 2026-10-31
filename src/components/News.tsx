@@ -4,6 +4,7 @@ import { Newspaper, Calendar, Tag, ArrowRight, Clock } from 'lucide-react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { Card } from './ui/card';
 import { Badge } from './ui/badge';
+import { useBackgroundMedia } from '../utils/useBackgroundMedia';
 
 interface NewsArticle {
   id: string;
@@ -25,6 +26,7 @@ const FALLBACK_NEWS = [
   { id: 'news3', title: 'Women Empowerment Group Launches Savings Scheme', content: 'Thirty women from three villages have formed a cooperative savings group, pooling resources to support small businesses and household needs.', image: 'https://images.unsplash.com/photo-1573497620053-ea5300f94f21?w=600&q=80', category: 'community', author: 'Admin', publishDate: new Date(Date.now()-21*86400000).toISOString(), featured: false, order: 3 },
 ];
 export function News() {
+  const { hasBgMedia } = useBackgroundMedia('global');
   const [newsArticles, setNewsArticles] = useState<NewsArticle[]>(FALLBACK_NEWS as any);
   const [loading, setLoading] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -142,7 +144,12 @@ export function News() {
 
   if (loading) {
     return (
-      <section id="news" className="py-20 bg-white">
+      <section 
+        id="news" 
+        className={`py-20 transition-colors duration-700 ${
+          hasBgMedia ? 'bg-transparent' : 'bg-white'
+        }`}
+      >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-center items-center min-h-[400px]">
             <div className="w-16 h-16 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin" />
@@ -153,10 +160,19 @@ export function News() {
   }
 
   return (
-    <section id="news" className="py-20 bg-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section 
+      id="news" 
+      className={`py-20 relative overflow-hidden transition-colors duration-700 ${
+        hasBgMedia ? 'bg-transparent' : 'bg-white'
+      }`}
+    >
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         {/* Section Header */}
-        <div className="text-center mb-16">
+        <div className={`text-center mb-16 transition-all duration-300 ${
+          hasBgMedia 
+            ? 'surface-translucent-header p-6 sm:p-8 rounded-3xl border border-white/60 shadow-sm max-w-3xl mx-auto' 
+            : ''
+        }`}>
           <div className="inline-flex items-center justify-center w-16 h-16 bg-emerald-100 rounded-full mb-6">
             <Newspaper className="text-emerald-600" size={32} />
           </div>
@@ -204,7 +220,9 @@ export function News() {
                 {filteredArticles.map((article) => (
                   <Card
                     key={article.id}
-                    className={`overflow-hidden hover:shadow-2xl transition-all duration-500 group bg-white ${
+                    className={`overflow-hidden hover:shadow-2xl transition-all duration-500 group border ${
+                      hasBgMedia ? 'surface-translucent-card border-white/60 shadow-md hover:bg-white/95' : 'bg-white'
+                    } ${
                       article.featured ? 'ring-2 ring-emerald-600' : ''
                     }`}
                   >

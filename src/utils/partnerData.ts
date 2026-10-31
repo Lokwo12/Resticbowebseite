@@ -1,3 +1,6 @@
+import { projectId, publicAnonKey } from './supabase/info';
+import { supabase } from './supabase/client';
+
 export interface Partner {
   id: string;
   key?: string;
@@ -98,12 +101,12 @@ export function isValidPublicPartner(partner: Partner): boolean {
   if (!partner || !partner.name || !partner.name.trim()) return false;
   if (!partner.is_published) return false;
 
-  const nameLower = partner.name.toLowerCase();
-  // Filter out any lingering sample entries
+  const nameLower = partner.name.toLowerCase().trim();
+  // Filter out any lingering legacy dummy sample entries
   if (
     nameLower.includes('global giving') ||
     nameLower.includes('kiryandongo district local government') ||
-    nameLower.includes('youth action network') ||
+    (nameLower === 'youth action network' || nameLower === 'youth action network uganda') ||
     nameLower.includes('uganda development foundation') ||
     nameLower.includes('global health initiative') ||
     nameLower.includes('community water alliance')
@@ -112,4 +115,84 @@ export function isValidPublicPartner(partner: Partner): boolean {
   }
 
   return true;
+}
+
+/**
+ * Sort partners by display_order ascending, then created_at descending.
+ */
+export function sortPartners(items: Partner[]): Partner[] {
+  return [...items].sort((a, b) => {
+    if (a.display_order !== b.display_order) {
+      return a.display_order - b.display_order;
+    }
+    const timeA = new Date(a.created_at || 0).getTime();
+    const timeB = new Date(b.created_at || 0).getTime();
+    return timeB - timeA;
+  });
+}
+
+/**
+ * Resilient multi-layer partner loader:
+ * 1. Fetches from Supabase Edge Function (/partners).
+ * 2. If endpoint fails or returns empty, falls back directly to Supabase client
+ *    querying PostgreSQL 'partners' table and 'kv_store_2a4be611' table.
+ */
+export async function loadPublicPartners(): Promise<Partner[]> {
+  try {
+    const response = await fetch(
+      `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/partners`,
+      {
+        headers: {
+          Authorization: `Bearer ${publicAnonKey}`,
+        },
+      }
+    );
+
+    if (response.ok) {
+      const data = await response.json();
+      const rawPartners = data.partners || [];
+      const normalized = rawPartners
+        .map(normalizePartner)
+        .filter(isValidPublicPartner);
+
+      if (normalized.length > 0) {
+        return sortPartners(normalized);
+      }
+    }
+  } catch (error) {
+    console.warn('Edge function partners endpoint failed, trying direct database query:', error);
+  }
+
+  // Fallback: Direct Supabase query (merging PostgreSQL partners and KV store)
+  try {
+    const [pgRes, kvRes] = await Promise.all([
+      supabase.from('partners').select('*'),
+      supabase.from('kv_store_2a4be611').select('key, value').like('key', 'partner:%')
+    ]);
+
+    const map = new Map<string, Partner>();
+
+    if (pgRes.data && Array.isArray(pgRes.data)) {
+      for (const row of pgRes.data) {
+        const norm = normalizePartner(row);
+        if (norm.is_published && isValidPublicPartner(norm)) {
+          map.set(norm.id, norm);
+        }
+      }
+    }
+
+    if (kvRes.data && Array.isArray(kvRes.data)) {
+      for (const row of kvRes.data) {
+        const norm = normalizePartner({ key: row.key, ...(row.value || {}) });
+        if (norm.is_published && isValidPublicPartner(norm)) {
+          map.set(norm.id, norm);
+        }
+      }
+    }
+
+    return sortPartners(Array.from(map.values()));
+  } catch (err) {
+    console.error('Direct database partners query failed:', err);
+    return [];
+  }
 }

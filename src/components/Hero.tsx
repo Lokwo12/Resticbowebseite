@@ -1,9 +1,11 @@
 import { ArrowRight, ChevronDown, ChevronLeft, ChevronRight, Play } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
+import { supabase } from '../utils/supabase/client';
 import { useDonationModal } from './DonationModalContext';
 import { motion, AnimatePresence, Variants } from 'framer-motion';
 import { VideoModal } from './VideoModal';
+import { loadPublicBackgroundMedia, BackgroundMediaItem } from '../utils/backgroundMediaData';
 
 // Animated counter hook
 function useCountUp(target: number, duration = 1800, start = false) {
@@ -245,6 +247,48 @@ export function Hero() {
     setCurrentImageIndex(index);
   };
 
+  const [hasAdminBgMedia, setHasAdminBgMedia] = useState<boolean>(false);
+  const [activeHeroMedia, setActiveHeroMedia] = useState<BackgroundMediaItem | null>(null);
+
+  useEffect(() => {
+    checkAdminBackgroundMedia();
+
+    // Hot-reload if background media changes in KV store
+    try {
+      const channel = supabase
+        .channel('hero_bg_media_check')
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'kv_store_2a4be611' },
+          (payload: any) => {
+            const key = payload?.new?.key || payload?.old?.key;
+            if (typeof key === 'string' && key.startsWith('bg_media:')) {
+              checkAdminBackgroundMedia();
+            }
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    } catch {}
+  }, []);
+
+  const checkAdminBackgroundMedia = async () => {
+    try {
+      const items = await loadPublicBackgroundMedia();
+      const heroItem = items.find(
+        (item) => (item.section === 'hero' || (item as any).sectionId === 'hero') && item.is_published
+      );
+      setHasAdminBgMedia(Boolean(heroItem));
+      setActiveHeroMedia(heroItem || null);
+    } catch {
+      setHasAdminBgMedia(false);
+      setActiveHeroMedia(null);
+    }
+  };
+
   useEffect(() => {
     fetchSettings();
   }, []);
@@ -290,32 +334,34 @@ export function Hero() {
 
   return (
     <section id="home" className="relative pt-28 sm:pt-36 lg:pt-40 pb-20 sm:pb-24 min-h-screen flex items-center justify-center overflow-hidden">
-      {/* Background Image Carousel with Smooth Horizontal Slide */}
-      <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none select-none">
-        <AnimatePresence initial={false} custom={direction}>
-          <motion.div
-            key={currentImageIndex}
-            custom={direction}
-            variants={slideVariants}
-            initial="enter"
-            animate="center"
-            exit="exit"
-            className="absolute inset-0 bg-cover bg-center bg-no-repeat will-change-transform"
-            style={{
-              backgroundImage: `url('${backgroundImages[currentImageIndex]}')`,
-            }}
-          />
-        </AnimatePresence>
+      {/* Background Image Carousel with Smooth Horizontal Slide (Fallback when no admin background media is assigned) */}
+      {!hasAdminBgMedia && (
+        <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none select-none">
+          <AnimatePresence initial={false} custom={direction}>
+            <motion.div
+              key={currentImageIndex}
+              custom={direction}
+              variants={slideVariants}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              className="absolute inset-0 bg-cover bg-center bg-no-repeat will-change-transform"
+              style={{
+                backgroundImage: `url('${backgroundImages[currentImageIndex]}')`,
+              }}
+            />
+          </AnimatePresence>
 
-        {/* Semi-transparent dark overlay to keep foreground text readable while letting pictures appear clearly */}
-        <div className="absolute inset-0 bg-gradient-to-b from-slate-950/60 via-slate-950/45 to-slate-950/70 z-[1]" />
-      </div>
+          {/* Semi-transparent dark overlay to keep foreground text readable while letting pictures appear clearly */}
+          <div className="absolute inset-0 bg-gradient-to-b from-slate-950/60 via-slate-950/45 to-slate-950/70 z-[1]" />
+        </div>
+      )}
 
       {/* Ambient background glow orb for modern depth */}
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] sm:w-[800px] h-[350px] sm:h-[500px] bg-emerald-500/10 rounded-full blur-3xl pointer-events-none z-0"></div>
 
-      {/* Slide Navigation Arrows (Prev / Next) */}
-      {backgroundImages.length > 1 && (
+      {/* Slide Navigation Arrows (Prev / Next) - only if using local fallback carousel */}
+      {!hasAdminBgMedia && backgroundImages.length > 1 && (
         <>
           <button
             onClick={prevSlide}
@@ -338,8 +384,8 @@ export function Hero() {
         </>
       )}
 
-      {/* Carousel Indicators */}
-      {backgroundImages.length > 1 && (
+      {/* Carousel Indicators - only if using local fallback carousel */}
+      {!hasAdminBgMedia && backgroundImages.length > 1 && (
         <div 
           className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-20 flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-950/40 backdrop-blur-md border border-white/10"
           onMouseEnter={() => setIsPaused(true)}
@@ -373,8 +419,19 @@ export function Hero() {
       </div>
 
       {/* Content Container */}
-      <div className="relative z-10 w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16">
-        <div className="flex flex-col items-center justify-center text-center w-full max-w-4xl mx-auto">
+      <div className={`relative z-10 w-full mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16 ${
+        activeHeroMedia?.max_content_width === 'sm' ? 'max-w-2xl' :
+        activeHeroMedia?.max_content_width === 'md' ? 'max-w-3xl' :
+        activeHeroMedia?.max_content_width === 'lg' ? 'max-w-4xl' :
+        activeHeroMedia?.max_content_width === 'xl' ? 'max-w-5xl' :
+        activeHeroMedia?.max_content_width === 'full' ? 'max-w-7xl' :
+        'max-w-6xl'
+      }`}>
+        <div className={`flex flex-col w-full mx-auto ${
+          activeHeroMedia?.text_align === 'left' ? 'items-start text-left' :
+          activeHeroMedia?.text_align === 'right' ? 'items-end text-right' :
+          'items-center justify-center text-center max-w-4xl'
+        }`}>
           {/* Text Content */}
           <motion.div 
             initial="hidden"
@@ -384,7 +441,17 @@ export function Hero() {
               hidden: { opacity: 0 },
               visible: { opacity: 1, transition: { staggerChildren: 0.12 } }
             }}
-            className="space-y-6 sm:space-y-7 flex flex-col items-center w-full"
+            className={`space-y-6 sm:space-y-7 flex flex-col w-full ${
+              activeHeroMedia?.text_align === 'left' ? 'items-start' :
+              activeHeroMedia?.text_align === 'right' ? 'items-end' :
+              'items-center'
+            } ${
+              activeHeroMedia?.text_backdrop === 'card-translucent'
+                ? 'bg-slate-950/65 backdrop-blur-md p-6 sm:p-10 rounded-3xl border border-white/15 shadow-2xl'
+                : activeHeroMedia?.text_backdrop === 'subtle-blur'
+                ? 'backdrop-blur-sm bg-slate-950/30 p-4 sm:p-6 rounded-2xl'
+                : ''
+            }`}
           >
             {/* Elegant Hero Status Badge */}
             <motion.div 
@@ -401,11 +468,22 @@ export function Hero() {
             </motion.div>
 
             {/* Title Structure: RESTI (acronym / short name) standing prominently above the expanded initiative name */}
-            <div className="flex flex-col items-center gap-2.5 sm:gap-3.5 w-full my-1">
+            <div className={`flex flex-col gap-2.5 sm:gap-3.5 w-full my-1 ${
+              activeHeroMedia?.text_align === 'left' ? 'items-start' :
+              activeHeroMedia?.text_align === 'right' ? 'items-end' :
+              'items-center'
+            }`}>
               {/* RESTi — Organization Short Name / Acronym with clean, crisp edges, bold geometric rounded letterforms, and no shadows */}
               <motion.div 
                 variants={{ hidden: { opacity: 0, scale: 0.96 }, visible: { opacity: 1, scale: 1, transition: { duration: 0.7, ease: "easeOut" } } }}
-                className="inline-flex items-baseline justify-center select-none font-black font-heading tracking-tight leading-none text-6xl sm:text-7xl md:text-8xl lg:text-9xl"
+                className={`inline-flex items-baseline justify-center select-none font-black font-heading tracking-tight leading-none ${
+                  activeHeroMedia?.title_size_desktop === 'huge' ? 'text-7xl sm:text-8xl md:text-9xl lg:text-[10rem]' :
+                  activeHeroMedia?.title_size_desktop === 'large' ? 'text-6xl sm:text-7xl md:text-8xl lg:text-9xl' :
+                  'text-6xl sm:text-7xl md:text-8xl lg:text-9xl'
+                } ${
+                  activeHeroMedia?.title_size_mobile === 'compact' ? 'max-sm:text-5xl' :
+                  activeHeroMedia?.title_size_mobile === 'large' ? 'max-sm:text-7xl' : ''
+                }`}
                 aria-label="RESTi"
               >
                 {/* R: Dark Blue */}
@@ -433,7 +511,26 @@ export function Hero() {
               {/* Expanded Initiative Title standing directly below RESTI */}
               <motion.h1 
                 variants={{ hidden: { opacity: 0, y: 15 }, visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease: "easeOut", delay: 0.1 } } }}
-                className="text-[32px] sm:text-[36px] lg:text-[48px] font-bold sm:font-extrabold font-heading text-white tracking-tight leading-[1.1] max-w-4xl mx-auto drop-shadow-sm"
+                className={`font-bold sm:font-extrabold font-heading tracking-tight leading-[1.1] max-w-4xl mx-auto ${
+                  activeHeroMedia?.title_size_desktop === 'huge' ? 'text-[36px] sm:text-[44px] lg:text-[56px]' :
+                  activeHeroMedia?.title_size_desktop === 'large' ? 'text-[34px] sm:text-[40px] lg:text-[52px]' :
+                  'text-[32px] sm:text-[36px] lg:text-[48px]'
+                } ${
+                  activeHeroMedia?.title_size_mobile === 'compact' ? 'max-sm:text-[26px]' :
+                  activeHeroMedia?.title_size_mobile === 'large' ? 'max-sm:text-[36px]' : ''
+                } ${
+                  activeHeroMedia?.text_color === 'stone-900' ? 'text-stone-900' :
+                  activeHeroMedia?.text_color === 'emerald-100' ? 'text-emerald-100' :
+                  activeHeroMedia?.text_color === 'amber-100' ? 'text-amber-100' :
+                  activeHeroMedia?.text_color === 'slate-100' ? 'text-slate-100' :
+                  'text-white'
+                } ${
+                  activeHeroMedia?.text_shadow === 'strong' ? 'drop-shadow-[0_4px_12px_rgba(0,0,0,0.9)]' :
+                  activeHeroMedia?.text_shadow === 'medium' ? 'drop-shadow-lg' :
+                  activeHeroMedia?.text_shadow === 'subtle' ? 'drop-shadow-md' :
+                  activeHeroMedia?.text_shadow === 'none' ? '' :
+                  'drop-shadow-sm'
+                }`}
               >
                 {heroTitle.expandedTitle}
               </motion.h1>
@@ -444,14 +541,36 @@ export function Hero() {
               variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease: "easeOut" } } }}
               className="max-w-3xl mx-auto space-y-3.5"
             >
-              <div className="space-y-3 text-[17px] font-sans font-normal leading-[1.6] text-slate-200/90 drop-shadow-sm text-center">
+              <div className={`space-y-3 text-[17px] font-sans font-normal leading-[1.6] ${
+                activeHeroMedia?.text_align === 'left' ? 'text-left' :
+                activeHeroMedia?.text_align === 'right' ? 'text-right' :
+                'text-center'
+              } ${
+                activeHeroMedia?.text_backdrop === 'pill-badge'
+                  ? 'inline-block bg-slate-950/70 backdrop-blur-md px-6 py-4 rounded-2xl border border-white/10'
+                  : ''
+              } ${
+                activeHeroMedia?.text_color === 'stone-900' ? 'text-stone-800' :
+                activeHeroMedia?.text_color === 'emerald-100' ? 'text-emerald-50' :
+                activeHeroMedia?.text_color === 'amber-100' ? 'text-amber-50' :
+                'text-slate-200/90'
+              } ${
+                activeHeroMedia?.text_shadow === 'strong' ? 'drop-shadow-[0_2px_8px_rgba(0,0,0,0.85)]' :
+                activeHeroMedia?.text_shadow === 'medium' ? 'drop-shadow-md' :
+                activeHeroMedia?.text_shadow === 'subtle' ? 'drop-shadow-sm' :
+                ''
+              }`}>
                 {paragraphs.map((para, idx) => (
-                  <p key={idx} className="text-center">{para}</p>
+                  <p key={idx}>{para}</p>
                 ))}
               </div>
 
               {motto && (
-                <div className="pt-2 flex justify-center">
+                <div className={`pt-2 flex ${
+                  activeHeroMedia?.text_align === 'left' ? 'justify-start' :
+                  activeHeroMedia?.text_align === 'right' ? 'justify-end' :
+                  'justify-center'
+                }`}>
                   <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-slate-900/60 border border-amber-400/30 text-amber-300 backdrop-blur-md text-xs sm:text-sm font-medium tracking-wide shadow-sm">
                     <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>
                     <span className="italic font-heading">"{motto}"</span>

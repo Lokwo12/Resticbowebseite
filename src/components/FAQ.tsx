@@ -7,8 +7,10 @@ import {
   DEFAULT_FAQS, 
   normalizeFaqList 
 } from '../utils/faqData';
+import { useBackgroundMedia } from '../utils/useBackgroundMedia';
 
 export function FAQ() {
+  const { hasBgMedia } = useBackgroundMedia('global');
   const [faqs, setFaqs] = useState<FAQItem[]>(DEFAULT_FAQS);
   const [loading, setLoading] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -113,7 +115,12 @@ export function FAQ() {
 
   if (loading && faqs.length === 0) {
     return (
-      <section id="faq" className="py-20 bg-slate-50">
+      <section 
+        id="faq" 
+        className={`py-20 transition-colors duration-700 ${
+          hasBgMedia ? 'bg-transparent' : 'bg-slate-50'
+        }`}
+      >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <div className="w-12 h-12 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin mx-auto" />
@@ -124,10 +131,19 @@ export function FAQ() {
   }
 
   return (
-    <section id="faq" className="py-20 bg-slate-50">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section 
+      id="faq" 
+      className={`py-20 relative overflow-hidden transition-colors duration-700 ${
+        hasBgMedia ? 'bg-transparent' : 'bg-slate-50'
+      }`}
+    >
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         {/* Header */}
-        <div className="text-center mb-12">
+        <div className={`text-center mb-12 transition-all duration-300 ${
+          hasBgMedia 
+            ? 'surface-translucent-header p-6 sm:p-8 rounded-3xl border border-white/60 shadow-sm max-w-3xl mx-auto' 
+            : ''
+        }`}>
           <div className="inline-flex items-center justify-center w-14 h-14 bg-emerald-100 rounded-2xl mb-4 text-emerald-700">
             <HelpCircle size={28} />
           </div>
@@ -183,7 +199,9 @@ export function FAQ() {
               return (
                 <div
                   key={faq.id || index}
-                  className={`bg-white rounded-2xl border transition-all duration-200 overflow-hidden ${
+                  className={`rounded-2xl border transition-all duration-200 overflow-hidden ${
+                    hasBgMedia ? 'surface-translucent-card border-white/60 shadow-md' : 'bg-white'
+                  } ${
                     isOpen 
                       ? 'border-emerald-300 shadow-sm ring-1 ring-emerald-200/50' 
                       : 'border-slate-200/90 shadow-xs hover:border-slate-300'

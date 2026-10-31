@@ -2,11 +2,23 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Heart, Shield, Lock, ArrowRight, User } from 'lucide-react';
 import { DonationExperience } from './DonationExperience';
+import { useBackgroundMedia } from '../utils/useBackgroundMedia';
 
 export function Donation() {
+  const { hasBgMedia } = useBackgroundMedia('donate');
+
   return (
-    <section id="donate" className="py-16 sm:py-24 bg-gradient-to-b from-stone-50 via-white to-stone-50 overflow-hidden relative">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+    <section 
+      id="donate" 
+      className={`py-16 sm:py-24 overflow-hidden relative transition-colors duration-700 ${
+        hasBgMedia ? 'bg-transparent' : 'bg-gradient-to-b from-stone-50 via-white to-stone-50'
+      }`}
+    >
+      <div className={`max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 transition-all duration-300 ${
+        hasBgMedia 
+          ? 'surface-translucent-solid p-6 sm:p-10 rounded-3xl border border-white/80 shadow-2xl' 
+          : ''
+      }`}>
         
         {/* Top Trust Header */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8 pb-6 border-b border-stone-200">

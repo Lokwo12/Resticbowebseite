@@ -10,10 +10,13 @@ import {
   Partner,
   PARTNER_PAGE_STRINGS,
   normalizePartner,
-  isValidPublicPartner
+  isValidPublicPartner,
+  loadPublicPartners
 } from '../utils/partnerData';
+import { useBackgroundMedia } from '../utils/useBackgroundMedia';
 
 export function Partners() {
+  const { hasBgMedia } = useBackgroundMedia('partners');
   const { open: openDonationModal } = useDonationModal();
   const [partners, setPartners] = useState<Partner[]>([]);
   const [loading, setLoading] = useState(true);
@@ -26,35 +29,8 @@ export function Partners() {
   const fetchPartners = async () => {
     setLoading(true);
     try {
-      const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-2a4be611/partners`,
-        {
-          headers: {
-            Authorization: `Bearer ${publicAnonKey}`,
-          },
-        }
-      );
-
-      if (response.ok) {
-        const data = await response.json();
-        const rawPartners = data.partners || [];
-        const normalized = rawPartners
-          .map(normalizePartner)
-          .filter(isValidPublicPartner);
-
-        normalized.sort((a: Partner, b: Partner) => {
-          if (a.display_order !== b.display_order) {
-            return a.display_order - b.display_order;
-          }
-          const timeA = new Date(a.created_at || 0).getTime();
-          const timeB = new Date(b.created_at || 0).getTime();
-          return timeB - timeA;
-        });
-
-        setPartners(normalized);
-      } else {
-        setPartners([]);
-      }
+      const items = await loadPublicPartners();
+      setPartners(items);
     } catch (error) {
       console.error('Error fetching homepage partners:', error);
       setPartners([]);
@@ -77,10 +53,19 @@ export function Partners() {
   }, [partners, selectedCategory]);
 
   return (
-    <section id="partners" className="py-20 bg-slate-50 relative overflow-hidden">
+    <section 
+      id="partners" 
+      className={`py-20 relative overflow-hidden transition-colors duration-700 ${
+        hasBgMedia ? 'bg-transparent' : 'bg-slate-50/75 backdrop-blur-xs'
+      }`}
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         {/* Header */}
-        <div className="text-center max-w-4xl mx-auto mb-14">
+        <div className={`text-center max-w-4xl mx-auto mb-14 transition-all duration-300 ${
+          hasBgMedia 
+            ? 'surface-translucent-header p-6 sm:p-8 rounded-3xl border border-white/60 shadow-sm' 
+            : ''
+        }`}>
           <div className="flex items-center justify-center gap-2.5 mb-4">
             <div className="w-10 h-10 rounded-xl bg-emerald-100/70 text-emerald-700 flex items-center justify-center">
               <Handshake size={22} />
@@ -144,6 +129,8 @@ export function Partners() {
                     className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 ${
                       selectedCategory === category
                         ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20'
+                        : hasBgMedia
+                        ? 'surface-translucent text-slate-700 hover:bg-white border border-white/60'
                         : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200/80'
                     }`}
                   >
@@ -168,7 +155,11 @@ export function Partners() {
                 return (
                   <Card
                     key={partner.id}
-                    className="p-6 hover:shadow-xl hover:border-emerald-300 transition-all duration-300 group bg-white border border-slate-100 rounded-2xl shadow-sm flex flex-col justify-between"
+                    className={`p-6 hover:shadow-xl hover:border-emerald-300 transition-all duration-300 group rounded-2xl flex flex-col justify-between border ${
+                      hasBgMedia 
+                        ? 'surface-translucent-card border-white/60 shadow-md hover:bg-white/95' 
+                        : 'bg-white border-slate-100 shadow-sm'
+                    }`}
                   >
                     <div>
                       {/* Logo Container with object-contain */}

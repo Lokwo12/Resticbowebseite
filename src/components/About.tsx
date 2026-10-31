@@ -5,6 +5,7 @@ import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { motion } from 'framer-motion';
 import { DEFAULT_WAY_WE_WORK, WayWeWorkSettings } from './SiteSettingsTab';
 import { resolveCoreValueIcon, VALUE_CARD_THEMES } from '../utils/coreValuesIcons';
+import { useBackgroundMedia } from '../utils/useBackgroundMedia';
 
 interface AboutValue {
   icon: string;
@@ -80,6 +81,7 @@ const TRUST_BADGE_COLOR_THEMES = [
 ];
 
 export function About() {
+  const { hasBgMedia } = useBackgroundMedia('about');
   const [settings, setSettings] = useState<AboutSettings>(DEFAULT_ABOUT_SETTINGS);
 
   useEffect(() => {
@@ -157,15 +159,24 @@ export function About() {
   );
 
   return (
-    <section id="about" className="section-spacing-lg bg-slate-50/50 overflow-hidden">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section 
+      id="about" 
+      className={`section-spacing-lg overflow-hidden transition-colors duration-700 relative ${
+        hasBgMedia ? 'bg-transparent' : 'bg-slate-50/50'
+      }`}
+    >
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         {/* Intro (Who we are) */}
         <motion.div 
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, amount: 0.2 }}
           transition={{ duration: 0.8, ease: "easeOut" }}
-          className="relative overflow-hidden bg-gradient-to-br from-slate-50 to-emerald-50/20 p-8 lg:p-12 rounded-3xl border border-slate-100 shadow-sm hover:shadow-premium-soft transition-all duration-300 mb-16"
+          className={`relative overflow-hidden p-8 lg:p-12 rounded-3xl border transition-all duration-300 mb-16 ${
+            hasBgMedia 
+              ? 'surface-translucent-card border-white/60 shadow-lg' 
+              : 'bg-gradient-to-br from-slate-50 to-emerald-50/20 border-slate-100 shadow-sm hover:shadow-premium-soft'
+          }`}
         >
           <div className="absolute top-0 left-0 w-1.5 h-full bg-emerald-600"></div>
           <div className="max-w-3xl mx-auto">
@@ -199,7 +210,11 @@ export function About() {
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true, amount: 0.2 }}
             transition={{ duration: 0.8, ease: "easeOut" }}
-            className="group bg-resti-green-vlight p-8 rounded-2xl border border-resti-neutral-border border-l-4 border-l-resti-green shadow-xs hover:shadow-sm hover:-translate-y-0.5 transition-all duration-300"
+            className={`group p-8 rounded-2xl border border-l-4 border-l-resti-green transition-all duration-300 ${
+              hasBgMedia 
+                ? 'surface-translucent-card border-white/60 shadow-md hover:shadow-lg' 
+                : 'bg-resti-green-vlight border-resti-neutral-border shadow-xs hover:shadow-sm'
+            }`}
           >
             <h3 className="text-[22px] lg:text-[24px] font-semibold font-heading text-gray-900 mb-4 leading-[1.3] group-hover:text-emerald-600 transition-colors">Our Mission</h3>
             <p className="text-[17px] text-gray-700 leading-[1.6] font-normal body-justify">
@@ -211,7 +226,11 @@ export function About() {
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true, amount: 0.2 }}
             transition={{ duration: 0.8, ease: "easeOut", delay: 0.2 }}
-            className="group bg-resti-blue-vlight p-8 rounded-2xl border border-resti-neutral-border border-l-4 border-l-resti-blue shadow-xs hover:shadow-sm hover:-translate-y-0.5 transition-all duration-300"
+            className={`group p-8 rounded-2xl border border-l-4 border-l-resti-blue transition-all duration-300 ${
+              hasBgMedia 
+                ? 'surface-translucent-card border-white/60 shadow-md hover:shadow-lg' 
+                : 'bg-resti-blue-vlight border-resti-neutral-border shadow-xs hover:shadow-sm'
+            }`}
           >
             <h3 className="text-[22px] lg:text-[24px] font-semibold font-heading text-gray-900 mb-4 leading-[1.3] group-hover:text-blue-600 transition-colors">Our Vision</h3>
             <p className="text-[17px] text-gray-700 leading-[1.6] font-normal body-justify">
@@ -229,7 +248,9 @@ export function About() {
           className="mb-16"
         >
           {/* Header */}
-          <div className="text-center max-w-3xl mx-auto mb-10 md:mb-12">
+          <div className={`text-center max-w-3xl mx-auto mb-10 md:mb-12 transition-all duration-300 ${
+            hasBgMedia ? 'surface-translucent-header p-6 sm:p-8 rounded-3xl border border-white/60 shadow-sm' : ''
+          }`}>
             <span className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700 uppercase tracking-widest px-3.5 py-1.5 bg-emerald-100/80 rounded-full mb-3">
               <Sparkles size={14} className="text-emerald-600" />
               {displaySettings.wayWeWork?.badge || DEFAULT_WAY_WE_WORK.badge}
@@ -265,7 +286,9 @@ export function About() {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ duration: 0.5, delay: index * 0.08 }}
-                  className={`group relative bg-white rounded-3xl p-7 lg:p-8 border border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 flex flex-col items-center text-center ${theme.accentBorder}`}
+                  className={`group relative rounded-3xl p-7 lg:p-8 border shadow-sm hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 flex flex-col items-center text-center ${theme.accentBorder} ${
+                    hasBgMedia ? 'surface-translucent-card border-white/60 hover:bg-white/95' : 'bg-white border-slate-100'
+                  }`}
                 >
                   <span className={`w-2 h-2 rounded-full ${theme.accentDot} mb-3 opacity-60 group-hover:scale-125 transition-transform`} />
                   
